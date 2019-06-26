@@ -97,6 +97,21 @@ def _getUCellsFromBulkModFolder(refFolder):
 	[x.convAngToBohr() for x in parsedUCells]
 	return parsedUCells
 
+#Random structures:
+def getMgHcpComprStructAsUCell():
+	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
+	refPath = os.path.join(refFolder, "hcp", "Mg_hcp_SPE_otf_10el_usp_PP_5pt81.castep")
+	initUCell = parseCastep.parseCastepOutfile(refPath)["unitCell"]
+	initUCell.convAngToBohr()
+	return initUCell
+
+
+def getMgBccComprStructAsUCell():
+	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
+	refPath = os.path.join(refFolder, "bcc", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt592.castep")
+	initUCell = parseCastep.parseCastepOutfile(refPath)["unitCell"]
+	initUCell.convAngToBohr()
+	return initUCell
 
 
 #Plane wave bulk mod fits using ASE (Actually does the fit while function is called)
@@ -133,7 +148,9 @@ def _getEosDictFromFilePaths(filePaths):
 def getDosPlaneWave(structType:str):
 	structTypeToFunct = {"hcpExpt".lower(): _getHCPDosPlaneWaveExptGeom,
 	                     "fcc": _getFCCDosPlaneWave,
-	                     "bcc": _getBCCDosPlaneWave}
+	                     "bcc": _getBCCDosPlaneWave,
+	                     "hcpCompr".lower(): _getHcpDosPlaneWaveComprGeomA,
+	                     "bccCompr".lower():_getBccDosPlaneWaveComprGeomA}
 
 	return structTypeToFunct[structType.lower()]()
 
@@ -151,6 +168,18 @@ def _getBCCDosPlaneWave():
 	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/some_dos/bcc_eqm"
 	outFile = os.path.join(baseRefFolder, "Mg_bcc.fixed.dat")
 	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
+
+
+def _getHcpDosPlaneWaveComprGeomA():
+	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/some_dos/hcp_compr"
+	outFile = os.path.join(baseRefFolder, "Mg_hcp.fixed.dat")
+	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
+
+def _getBccDosPlaneWaveComprGeomA():
+	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/some_dos/bcc_compr"
+	outFile = os.path.join(baseRefFolder, "Mg_bcc.fixed.dat")
+	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
+
 
 
 #Structures to use for intersitials
