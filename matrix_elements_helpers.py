@@ -7,14 +7,15 @@ sys.path.append('/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Fu
 import parse_ham_files as parseHam
 import parse_plato_out_files as parseOut
 
-def getVolVsOnSiteDiagTerms(inpFileList):
+def getVolVsOnSiteDiagTerms(inpFileList, volPerAtom=False):
 	''' Note the diags have the struct [atomIdx][row or col(obviously same number)] '''
 	allVolumes = list()
 	allDiagTerms = list()
 	for fPath in inpFileList:
 		baseFilePath = os.path.splitext(fPath)[0]
 		outFilePath, hamFilePath = baseFilePath + ".out", baseFilePath + ".ham"
-		allVolumes.append( parseOut.parsePlatoOutFile( outFilePath )["unitCell"].getVolume() )
+		currVol = _getVolFromParsedFile( parseOut.parsePlatoOutFile( outFilePath ), volPerAtom )
+		allVolumes.append( currVol )
 		allDiagTerms.append( parseHam.getOnSiteDiagHamilTermsFromHamFile(hamFilePath) )
 
 	outStruct = list()
@@ -22,3 +23,13 @@ def getVolVsOnSiteDiagTerms(inpFileList):
 		outStruct.append( [vol,diags] )
 
 	return outStruct
+
+
+
+def _getVolFromParsedFile(parsedFile, volPerAtom):
+	totalVol = parsedFile["unitCell"].getVolume()
+	if volPerAtom:
+		return totalVol / parsedFile["numbAtoms"]
+	else:
+		return totalVol
+
