@@ -391,6 +391,38 @@ def _getOptDict_dft2_exacthop_mcweda_xtal_exacte0():
 	return outOptDict
 
 
+@registerMethodStrToObj("dft2_2bodyhop_2bxtal_exacte0")
+def createPlatoMethod_():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_2bodyhop_2bxtal_exacte0()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_2bodyhop_2bxtal_exacte0():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"xtalxcmethod".lower(): 2,
+	               "hopxcmethod".lower():1,
+				  "e0method":0}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+
+@registerMethodStrToObj("dft2_2bodyhop_mcwedaxtal_exacte0")
+def createPlatoMethod_():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_2bodyhop_mcwedaxtal_exacte0()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_2bodyhop_mcwedaxtal_exacte0():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"xtalxcmethod".lower(): 4,
+	               "hopxcmethod".lower():1,
+				  "e0method":0}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
 
 
 @registerMethodStrToObj("dft2_exact_e1_pp")
@@ -439,6 +471,8 @@ def _getOptDict_dft2_exact_e1_pp_uniform_e0():
 				  "e0method":1}
 	outOptDict.update(modOptsDict)
 	return outOptDict
+
+
 
 
 @registerMethodStrToObj("dft2_exact")
