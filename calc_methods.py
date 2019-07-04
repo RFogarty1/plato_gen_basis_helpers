@@ -2,7 +2,6 @@
 ''' My attempt to factor out calculation methods to a single methodStr '''
 
 import os
-import pathlib
 
 import plato_pylib.plato.parse_plato_out_files as parsePlato 
 import plato_pylib.plato.mod_plato_inp_files as platoInp
@@ -10,6 +9,8 @@ import plato_pylib.utils.job_running_functs as jobRun
 
 import evol_test_vs_ref_helpers as evolHelp
 import dft_file_helpers as dftHelpers
+
+from plato_calc_objs import PlatoMethod, CalcObj
 
 
 METHOD_STR_TO_OBJ = dict()
@@ -23,46 +24,6 @@ def registerMethodStrToObj(key):
 		ALL_METHOD_STRS.add(key)
 		return funct
 	return decorate
-
-#Method class should encapsulate all the things that vary between different methods in plato
-class PlatoMethod():
-
-	def __init__(self, optDict, runCommFunction, strDictFromOptDictFunction, gridKwarg=None):
-		self.optDict = optDict
-		self.runCommFunction = runCommFunction #interface is getRunComm(fileName)
-		self.getStrDictFromOptDict = strDictFromOptDictFunction #interface is getStrDictFromOptDict
-		self.gridKwarg = "IntegralMeshSpacing".lower() if gridKwarg is None else gridKwarg #Different for dft case annoyingly
-#		self.gridKwarg = "IntegralMeshSpacing".lower()
-
-	@property
-	def kpts(self):
-		return self.optDict["BlochStates".lower()]
-
-	@kpts.setter
-	def kpts(self,value):
-		self.optDict["BlochStates".lower()] = value
-
-	@property
-	def dataSet(self):
-		return self.optDict["dataset"]
-
-	@dataSet.setter
-	def dataSet(self,value:"str, plato relative path"):
-		self.optDict["dataset"] = value
-
-	@property
-	def integGrid(self):
-		return self.optDict[self.gridKwarg]
-
-	@integGrid.setter
-	def integGrid(self,value):
-		self.optDict[self.gridKwarg] = value
-
-	def getStrDictWithStruct(self, struct:"ucell obj"):
-		strDict = self.getStrDictFromOptDict(self.optDict)
-		geomDict = platoInp.getPlatoGeomDictFromUnitCell(struct)
-		strDict.update(geomDict)
-		return strDict
 
 
 #Different plato Run Comms which get attached to method objects
@@ -87,37 +48,6 @@ def getPlatoCalcObjFromInpPathAndStrDictAndRunCommFunction(inpFilePath, strDict,
 	                                  fileParser=fileParser, runCommFunction=runCommFunction, inpFileExt=".in",
 	                                  outFileExt = ".out")
 
-class CalcObj():
-	def __init__(self, filePath, strDict, strDictWriteFunction, fileParser, runCommFunction, inpFileExt, outFileExt):
-		self.filePath = os.path.splitext(filePath)[0]
-		self.strDict = strDict
-		self.inpFileExt = inpFileExt
-		self.outFileExt = outFileExt
-		self._strDictWriteFunction = strDictWriteFunction
-		self._fileParser = fileParser
-		self._runCommFunction = runCommFunction
-
-	@classmethod
-	def fromEnforcedKwargs(cls, **kwargs):
-		kwargs = {k.lower():v for k,v in kwargs.items()}
-		reqArgsOrder = ["filePath", "strDict", "strDictWriteFunction", "fileParser",
-		                "runCommFunction", "inpFileExt", "outFileExt"]
-		argsList = list()
-		for x in reqArgsOrder:
-			argsList.append( kwargs[x.lower()] )
-	
-		return cls(*argsList)
-
-	def getRunComm(self):
-		return self._runCommFunction(self.filePath + self.inpFileExt)
-
-	def writeFile(self):
-		writeFolder = os.path.split(self.filePath)[0]
-		pathlib.Path(writeFolder).mkdir(exist_ok=True, parents=True)
-		self._strDictWriteFunction(self.filePath + self.inpFileExt, self.strDict)
-
-	def parseOutFile(self):
-		return self._fileParser(self.filePath + self.outFileExt)
 
 #Creating PlatoMethod objects
 def createPlatoMethodObj(methodStr):
@@ -163,6 +93,7 @@ def _getOptDict_tb1_vxc_sncorr3_exc_corr1():
 	return outOptDict
 
 
+@registerMethodStrToObj("dft2_2bhopxc_noxtalxc_pp")
 @registerMethodStrToObj("dft2_2centxc_noxtal")
 def createPlatoMethod_dft2_2centxc_noxtal():
 	runCommFunct = _getRunCommPlatoDft2
@@ -173,15 +104,17 @@ def createPlatoMethod_dft2_2centxc_noxtal():
 
 def _getOptDict_dft2_2centxc_noxtal():
 	outOptDict = evolHelp.loadDefaultTb2OptDict()
-	modOptsDict = {"McWedaXcFlag".lower():1,
+	modOptsDict = {"xtalxcmethod".lower(): 1,
+	              "hopxcmethod".lower(): 1,
 				  "excMbCorr".lower():0,
 				  "e0method":1}
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
 
+@registerMethodStrToObj("dft2_mcwedahop_2bxtalxc_pp")
 @registerMethodStrToObj("dft2_2centxc_withxtal")
-def createPlatoMethod_dft2_2centxc_noxtal():
+def createPlatoMethod_dft2_2centxc_withxtal():
 	runCommFunct = _getRunCommPlatoDft2
 	optDict = _getOptDict_dft2_2centxc_withxtal()
 	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
@@ -189,13 +122,15 @@ def createPlatoMethod_dft2_2centxc_noxtal():
 
 def _getOptDict_dft2_2centxc_withxtal():
 	outOptDict = evolHelp.loadDefaultTb2OptDict()
-	modOptsDict = {"McWedaXcFlag".lower():3,
+	modOptsDict = {"xtalxcmethod".lower():2,
+	              "hopxcmethod".lower(): 2,
 				  "excMbCorr".lower():0,
 				  "e0method":1}
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
 
+@registerMethodStrToObj("dft2_mcwedahop_mcwedaxtal_pp")
 @registerMethodStrToObj("dft2_mcweda4_pp")
 def createPlatoMethod_dft2_mcweda4_pp():
 	runCommFunct = _getRunCommPlatoDft2
@@ -206,12 +141,14 @@ def createPlatoMethod_dft2_mcweda4_pp():
 
 def _getOptDict_dft2_mcweda4_pp():
 	outOptDict = evolHelp.loadDefaultTb2OptDict()
-	modOptsDict = {"McWedaXcFlag".lower():4,
+	modOptsDict = {"xtalxcmethod".lower(): 4,
+	              "hopxcmethod".lower(): 2,
 				  "excMbCorr".lower():0,
 				  "e0method":1}
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
+@registerMethodStrToObj("dft2_mcwedahop_mcwedaxtal_pp_uniform")
 @registerMethodStrToObj("dft2_mcweda4_pp_uniform")
 def createPlatoMethod_dft2_mcweda4_pp_uniform():
 	runCommFunct = _getRunCommPlatoDft2
@@ -222,13 +159,14 @@ def createPlatoMethod_dft2_mcweda4_pp_uniform():
 
 def _getOptDict_dft2_mcweda4_pp_uniform():
 	outOptDict = evolHelp.loadDefaultTb2OptDict()
-	modOptsDict = {"McWedaXcFlag".lower():4,
+	modOptsDict = {"xtalxcmethod".lower(): 4,
+	              "hopxcmethod".lower(): 2,
 				  "excMbCorr".lower():1,
 				  "e0method":1}
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
-
+@registerMethodStrToObj("dft2_mcwedahop_mcwedaxtal_pp_uniform_second_order")
 @registerMethodStrToObj("dft2_mcweda4_pp_uniform_second_order")
 def createPlatoMethod_dft2_mcweda4_pp_uniform_second_order():
 	runCommFunct = _getRunCommPlatoDft2
@@ -239,14 +177,15 @@ def createPlatoMethod_dft2_mcweda4_pp_uniform_second_order():
 
 def _getOptDict_dft2_dft2_mcweda4_pp_uniform_second_order():
 	outOptDict = evolHelp.loadDefaultTb2OptDict()
-	modOptsDict = {"McWedaXcFlag".lower():4,
+	modOptsDict = {"xtalxcmethod".lower(): 4,
+	              "hopxcmethod".lower(): 2,
 				  "excMbCorr".lower():3,
 				  "e0method":1}
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
 
-
+@registerMethodStrToObj("dft2_mcwedahop_mcwedaxtal_exact_e0")
 @registerMethodStrToObj("dft2_mcweda4_exact_e0")
 def createPlatoMethod_dft2_mcweda4_exact_e0():
 	runCommFunct = _getRunCommPlatoDft2
@@ -256,12 +195,15 @@ def createPlatoMethod_dft2_mcweda4_exact_e0():
 
 def _getOptDict_dft2_mcweda4_exact_e0():
 	outOptDict = evolHelp.loadDefaultTb2OptDict()
-	modOptsDict = {"McWedaXcFlag".lower():4,
+	modOptsDict = {"xtalxcmethod".lower(): 4,
+	               "hopxcmethod".lower(): 2,
 				  "excMbCorr".lower():0,
 				  "e0method":0}
+
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
+@registerMethodStrToObj("dft2_mcwedahop_xtalsncorrd_exact_e0")
 @registerMethodStrToObj("dft2_mcweda5_exact_e0")
 def createPlatoMethod_dft2_mcweda5_exact_e0():
 	runCommFunct = _getRunCommPlatoDft2
@@ -422,6 +364,78 @@ def _getOptDict_dft2_2bodyhop_mcwedaxtal_exacte0():
 				  "e0method":0}
 	outOptDict.update(modOptsDict)
 	return outOptDict
+
+
+
+@registerMethodStrToObj("dft2_2bodyhopvnl_else_exact")
+def createPlatoMethod_():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_2bodyhopvnl_else_exact()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_2bodyhopvnl_else_exact():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"hopVnlMethod":1,
+				   "e0method":0}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+@registerMethodStrToObj("dft2_2bodyhopvna_else_exact")
+def createPlatoMethod_():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_2bodyhopvna_else_exact()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_2bodyhopvna_else_exact():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"hopVnaMethod":1,
+				   "e0method":0}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+@registerMethodStrToObj("dft2_no_xtal_at_all_else_exact")
+def createPlatoMethod_():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_no_xtal_at_all_else_exact()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_no_xtal_at_all_else_exact():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"xtalVnlMethod":1,
+	               "xtalVnaMethod":1,
+	               "xtalXcMethod":1,
+				   "e0method":0}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+
+@registerMethodStrToObj("")
+def createPlatoMethod_():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_2bodyhopvnl_else_exact()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_2bodyhopvnl_else_exact():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"hopVnlMethod":1,
+				   "e0method":0}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+
+
+
+
+
+
 
 
 
