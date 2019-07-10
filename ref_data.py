@@ -188,7 +188,8 @@ def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:
                                    relaxType:"str, unrelaxed or relaxed", cellSize:"Str with dims, e.g 3_3_2"):
 
 	paramsToStructDict = {("hcp","tetrahedral","unrelaxed","3_3_2"):_getHcpPlaneWaveStruct_interTetraUnrelaxed332(),
-	                      ("hcp","octahedral" ,"unrelaxed","3_3_2"):_getHcpPlaneWaveStruct_interOctaUnrelaxed332() }
+	                      ("hcp","octahedral" ,"unrelaxed","3_3_2"):_getHcpPlaneWaveStruct_interOctaUnrelaxed332(),
+	                      ("hcp","octahedral", "relaxed_constant_pressure","3_3_2"):_getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332()}
 
 	return paramsToStructDict[(structType,interstitialType,relaxType,cellSize)]
 
@@ -205,6 +206,11 @@ def _getHcpPlaneWaveStruct_interOctaUnrelaxed332():
 	refFile = os.path.join(refFolder,"mg_octahedral_interstitial_3_3_2.cell")
 	return getUCellFromCrystalMakerCastepOutFile(refFile)
 
+def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
+	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/interstitial/relaxed/const_p"
+	refFile = os.path.join(refFolder,"hcp_octa_inter.geom")
+	outUCell = parseCastep.parseCastepGeomFile(refFile)[-1]["unitCell"]
+	return outUCell
 
 def getUCellFromCrystalMakerCastepOutFile(refFile):
 	tokenizedFile = parseCastep.tokenizeCastepCellFileAndRemoveBlockFromKeys(refFile)

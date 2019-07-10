@@ -475,7 +475,7 @@ def _getOptDict_dft2_2bodyhop_all_else_exact():
 	outOptDict = evolHelp.loadDefaultTb2OptDict()
 	modOptsDict = {"hopVnlMethod".lower():1,
 	               "hopVnaMethod".lower():1,
-	               "hopVxcMethod".lower():1,
+	               "hopXcMethod".lower():1,
 				   "e0method".lower():0}
 	outOptDict.update(modOptsDict)
 	return outOptDict
