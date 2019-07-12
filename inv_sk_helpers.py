@@ -160,10 +160,16 @@ def getXvsYStructsFromSKFile(inpPath, xProp="distance", yProp="hVal".lower(), tb
 	''' Access np array you want by outLists[shellAIdx][shellBIdx][bondType], e.g. outLists[0][1]["pi"] '''
 	''' Bond Type can be "sigma", "pi", "delta" '''
 
-	allBondTypes = ["sigma","pi","delta"]
 	parsedFileObj = parseInvSK.parseInvSK(inpPath)
 	if inclXtal is False:
 		parsedFileObj.removeXtalFieldTerms()
+
+	return getXvsYStructsFromSkObj(parsedFileObj, xProp="distance", yProp="hVal".lower())
+
+
+
+def getXvsYStructsFromSkObj(parsedFileObj, xProp="distance", yProp="hVal".lower(), tbintPath=None):
+	allBondTypes = ["sigma","pi","delta"]
 
 	#Need to figure out all shell combinations
 	shellIndA = parsedFileObj.getShellIndices(atomIdx=0)
@@ -187,7 +193,6 @@ def getXvsYStructsFromSKFile(inpPath, xProp="distance", yProp="hVal".lower(), tb
 		outLists.append(currListA)
 
 	return outLists
-
 
 
 #---------->Lower level inv-sk parsers<--------------
