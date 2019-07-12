@@ -4,6 +4,7 @@
 ''' etc. for Mg perfect crystals '''
 
 import copy
+import itertools as it
 import os
 import sys
 
@@ -30,6 +31,43 @@ def getStandardMultiCrystsDictFromMethodStrsAndDataSetFolder(methodStrs:list, da
 	allMultiCrystsDict = {k:v.getMultiCrystalObj() for k,v in optsDict.items()}
 
 	return allMultiCrystsDict
+
+
+#TODO: Remove all the duplicated code from getStandardMultiCrystsDictFromMethodStrsAndDataSetFolder
+def getLargeVolMultiCrystsDictsFromMethodStrsAndDataSetFolder(methodStrs:list, dataSetFolder:"str to tell plato where to find model"):
+	startFolder = getStandardStartFolderBulkModCalcsBasedOnCurrDir()
+	startFolder = os.path.join(startFolder,"larger_volumes")
+	kPts = getStandardKPtDict()
+
+	#Get structures then set volumes to be larger
+	maxVolume, volStep = 250,5
+	structDict = getStandardStructDictHcpFccBcc()
+	for key in structDict:
+		volVals = _getVolumeValues(maxVolume,volStep,len(structDict[key]))
+		for x,volVal in it.zip_longest( structDict[key],volVals  ):
+			nAtoms = len(x.fractCoords)
+			x.volume = volVal*nAtoms
+
+
+
+	gridDict = getStandardGridDictsForMethods(methodStrs)
+	startDict = {"kpts": kPts,
+	             "startFolder": startFolder,
+	             "structDict": structDict,
+	             "dataFolder": dataSetFolder}
+
+
+	optsDict = createAllEvolOptsDictFromStartDictAndMethodStrs(startDict, methodStrs, gridDict)
+	allMultiCrystsDict = {k:v.getMultiCrystalObj() for k,v in optsDict.items()}
+
+	return allMultiCrystsDict
+
+def _getVolumeValues(maxVolume,volStep,numbStructs):
+	outVols = list()
+	for sIdx in range(numbStructs):
+		currVol = maxVolume - (volStep*sIdx)
+		outVols.append(currVol)
+	return outVols
 
 def getStandardGridDictsForMethods(methodStrs):
 	outDict = dict()
