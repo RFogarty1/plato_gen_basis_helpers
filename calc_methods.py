@@ -78,7 +78,7 @@ def _getOptDict_tb1_2c_noxtalxc():
 
 
 @registerMethodStrToObj("tb1_2bxtal_plus_sncorr")
-def createPlatoMethod_tb1_vxc_sncorr4_exc_corr1():
+def createPlatoMethod_tb1_2bxtal_plus_sncorr():
 	runCommFunct = _getRunCommPlatoTb1
 	optDict = _getOptDict_tb1_2bxtal_plus_sncorr()
 	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
@@ -148,6 +148,76 @@ def _getOptDict_tb1_snxtal_2bmb_fittedHop():
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
+
+@registerMethodStrToObj("tb1_snxtal_2bmb_fittedHop_fittedPP")
+def createPlatoMethod_tb1_snxtal_2bmb_fittedHop_fittedPP():
+	runCommFunct = _getRunCommPlatoTb1
+	optDict = _getOptDict_tb1_tb1_snxtal_2bmb_fittedHop_fittedPP()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_tb1_tb1_snxtal_2bmb_fittedHop_fittedPP():
+	outOptDict = evolHelp.loadDefaultTb1OptDict()
+	modOptsDict = {"VxcMBCorrXtal".lower(): [4,1.0],
+	               "CrystalFieldXCWeight".lower(): 0}
+	modOptsDict["addCorrectingHopFromBdt".lower()] = 1
+	modOptsDict["addCorrectingPPFromBdt".lower()] = 1
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+
+@registerMethodStrToObj("tb1_snxtal_2bmb_fittedHop_uniformdens_pp")
+def createPlatoMethod_tb1_snxtal_2bmb_fittedHop_uniformdens():
+	runCommFunct = _getRunCommPlatoTb1
+	optDict = _getOptDict_tb1_snxtal_2bmb_fittedHop_uniformdens()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_tb1_snxtal_2bmb_fittedHop_uniformdens():
+	outOptDict = evolHelp.loadDefaultTb1OptDict()
+	modOptsDict = {"VxcMBCorrXtal".lower(): [4,1.0],
+	               "CrystalFieldXCWeight".lower(): 0}
+	modOptsDict["addCorrectingHopFromBdt".lower()] = 1
+	modOptsDict["excmbcorr"] = [1, 1.0]
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+@registerMethodStrToObj("tb1_snxtal_2bmb_fittedHop_uniformdens_pp_fittedPP")
+def createPlatoMethod_tb1_snxtal_2bmb_fittedHop_uniformdens_pp_fittedPP():
+	runCommFunct = _getRunCommPlatoTb1
+	optDict = _getOptDict_tb1_snxtal_2bmb_fittedHop_uniformdens_pp_fittedPP()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_tb1_snxtal_2bmb_fittedHop_uniformdens_pp_fittedPP():
+	outOptDict = evolHelp.loadDefaultTb1OptDict()
+	modOptsDict = {"VxcMBCorrXtal".lower(): [4,1.0],
+	               "CrystalFieldXCWeight".lower(): 0}
+	modOptsDict["addCorrectingHopFromBdt".lower()] = 1
+	modOptsDict["addCorrectingPPFromBdt".lower()] = 1
+	modOptsDict["excmbcorr"] = [1, 1.0]
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+
+
+@registerMethodStrToObj("tb1_2bxtal_plus_sncorr_uniform_dens_pp")
+def createPlatoMethod_tb1_2bxtal_plus_sncorr_uniform_dens_pp():
+	runCommFunct = _getRunCommPlatoTb1
+	optDict = _getOptDict_tb1_2bxtal_plus_sncorr_uniform_dens_pp()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_tb1_2bxtal_plus_sncorr_uniform_dens_pp():
+	outOptDict = evolHelp.loadDefaultTb1OptDict()
+	modOptsDict = {"VxcMBCorrXtal".lower(): [3,1.0]}
+	modOptsDict["excmbcorr"] = [1, 1.0]
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
 @registerMethodStrToObj("tb1_2bxtal_plus_sncorr_fittedhop_uniform_dens_pp")
 def createPlatoMethod_tb1_2bxtal_plus_sncorr_fittedhop_uniform_dens_pp():
 	runCommFunct = _getRunCommPlatoTb1
@@ -162,6 +232,24 @@ def _getOptDict_tb1_2bxtal_plus_sncorr_fittedhop_uniform_dens_pp():
 	modOptsDict["excmbcorr"] = [1, 1.0]
 	outOptDict.update(modOptsDict)
 	return outOptDict
+
+
+@registerMethodStrToObj("tb1_2bxtal_plus_sncorr_fittedhop_uniform_dens_pp_fitted_pp")
+def createPlatoMethod_tb1_2bxtal_plus_sncorr_fittedhop_uniform_dens_pp_fitted_pp():
+	runCommFunct = _getRunCommPlatoTb1
+	optDict = _getOptDict_tb1_2bxtal_plus_sncorr_fittedhop_uniform_dens_pp_fitted_pp()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_tb1_2bxtal_plus_sncorr_fittedhop_uniform_dens_pp_fitted_pp():
+	outOptDict = evolHelp.loadDefaultTb1OptDict()
+	modOptsDict = {"VxcMBCorrXtal".lower(): [3,1.0]}
+	modOptsDict["addCorrectingHopFromBdt".lower()] = 1
+	modOptsDict["addCorrectingPPFromBdt".lower()] = 1
+	modOptsDict["excmbcorr"] = [1, 1.0]
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
 
 
 @registerMethodStrToObj("tb1_vxc_sncorr3_exc_corr1")
@@ -534,6 +622,23 @@ def _getOptDict_dft2_2bodyhop_all_else_exact():
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
+
+
+@registerMethodStrToObj("dft2_2bodyhop_2bodyxtal_pp")
+def createPlatoMethod_():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_2bodyhop_2bodyxtal_pp()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_2bodyhop_2bodyxtal_pp():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"hopVnlMethod".lower():1,
+	               "hopVnaMethod".lower():1,
+	               "hopXcMethod".lower():1,
+				   "e0method".lower():1}
+	outOptDict.update(modOptsDict)
+	return outOptDict
 
 
 
