@@ -16,8 +16,18 @@ import numpy as np
 sys.path.append("/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions")
 import fit_bulk_mod as fitBMod
 
+
+tb1Model = os.path.join("Mg_bases_spd_att6","rc_7pt3","tb1_mcweda")
+dft2Model = str(tb1Model)
+dftModel = str(tb1Model)
+
 # Experimental Structure
-def getMgExptHcpAsUCell():
+
+def getExptStructAsUCell():
+	''' From Walker 1959: DOI=10.1016/0001-6160(59)90090-2 Units of returned ucell are in bohr'''
+	return getMgExptHcpAsUCell()
+
+def _getMgExptHcpAsUCell():
 	''' From Walker 1959: DOI=10.1016/0001-6160(59)90090-2 Units of returned ucell are in bohr'''
 	
 	cOverA = 1.624
@@ -29,6 +39,8 @@ def getMgExptHcpAsUCell():
 	outCell.convAngToBohr()
 
 	return outCell
+
+
 
 def _getPerfectHcpMinimalUCell(element):
 	lattVects = [ [ 1.00000000, 0.00000000, 0.00000000],
@@ -43,11 +55,13 @@ def _getPerfectHcpMinimalUCell(element):
 	return perfectHcpCell
 
 
-def getMgPlaneWaveGeom(structType:str):
+#INTERFACE FUNCTION
+def getPlaneWaveGeom(structType:str):
 	structTypeToFunct = {"hcp":_getMgPlaneWaveHcpGeomAsUCell,
 	                     "bcc": _getMgPlaneWaveBCCGeomAsUCell,
 	                     "fcc": _getMgPlaneWaveFCCGeomAsUCell}
 	return structTypeToFunct[structType.lower()]()
+
 
 # Optimised Plane-wave structures (PBE)
 def _getMgPlaneWaveHcpGeomAsUCell():
@@ -98,7 +112,7 @@ def _getUCellsFromBulkModFolder(refFolder):
 	return parsedUCells
 
 #Random structures:
-def getMgHcpComprStructAsUCell():
+def getHcpComprStructAsUCell():
 	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
 	refPath = os.path.join(refFolder, "hcp", "Mg_hcp_SPE_otf_10el_usp_PP_5pt81.castep")
 	initUCell = parseCastep.parseCastepOutfile(refPath)["unitCell"]
@@ -106,7 +120,7 @@ def getMgHcpComprStructAsUCell():
 	return initUCell
 
 
-def getMgBccComprStructAsUCell():
+def getBccComprStructAsUCell():
 	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
 	refPath = os.path.join(refFolder, "bcc", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt592.castep")
 	initUCell = parseCastep.parseCastepOutfile(refPath)["unitCell"]
@@ -198,13 +212,13 @@ def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:
 def _getHcpPlaneWaveStruct_interTetraUnrelaxed332():
 	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/interstitial/ref_files"
 	refFile = os.path.join(refFolder,"mg_tetrahedral_interstitial_3_3_2.cell")
-	return getUCellFromCrystalMakerCastepOutFile(refFile)
+	return _getUCellFromCrystalMakerCastepOutFile(refFile)
 
 
 def _getHcpPlaneWaveStruct_interOctaUnrelaxed332():
 	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/interstitial/ref_files"
 	refFile = os.path.join(refFolder,"mg_octahedral_interstitial_3_3_2.cell")
-	return getUCellFromCrystalMakerCastepOutFile(refFile)
+	return _getUCellFromCrystalMakerCastepOutFile(refFile)
 
 def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
 	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/interstitial/relaxed/const_p"
@@ -212,7 +226,7 @@ def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
 	outUCell = parseCastep.parseCastepGeomFile(refFile)[-1]["unitCell"]
 	return outUCell
 
-def getUCellFromCrystalMakerCastepOutFile(refFile):
+def _getUCellFromCrystalMakerCastepOutFile(refFile):
 	tokenizedFile = parseCastep.tokenizeCastepCellFileAndRemoveBlockFromKeys(refFile)
 
 	#Step 1 = get lattice vectors via the cell parameters. The fract co-ords should work fine for this (checked for octa supercell of hcp)
