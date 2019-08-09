@@ -3,6 +3,7 @@
 ''' Very specific code with the purpose of helping to run/analyse calculations to get bulk modulii/eqm volumes '''
 ''' etc. for Mg perfect crystals '''
 
+from collections import OrderedDict
 import copy
 import itertools as it
 import os
@@ -11,14 +12,15 @@ import sys
 import numpy as np
 
 import calc_methods as calcMethods
-import ref_data as refData
+import ref_data_mg as refData
 
 sys.path.append('/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions')
 import fit_bulk_mod as fitBMod
 
 
 
-def getStandardMultiCrystsDictFromMethodStrsAndDataSetFolder(methodStrs:list, dataSetFolder:"str to tell plato where to find model"):
+
+def getStandardMultiCrystsDictFromMethodStrsAndDataSetFolder(methodStrs:list, dataSetFolder:"str to tell plato where to find model", refStr=None):
 	startFolder = getStandardStartFolderBulkModCalcsBasedOnCurrDir()
 	kPts = getStandardKPtDict()
 	structDict = getStandardStructDictHcpFccBcc()
@@ -28,7 +30,17 @@ def getStandardMultiCrystsDictFromMethodStrsAndDataSetFolder(methodStrs:list, da
 	             "structDict": structDict,
 	             "dataFolder": dataSetFolder}
 	optsDict = createAllEvolOptsDictFromStartDictAndMethodStrs(startDict, methodStrs, gridDict)
-	allMultiCrystsDict = {k:v.getMultiCrystalObj() for k,v in optsDict.items()}
+	allMultiCrystsDict = copy.deepcopy(optsDict) #Overly cautious really
+	for key,val in allMultiCrystsDict.items():
+		allMultiCrystsDict[key] = val.getMultiCrystalObj() 
+#	allMultiCrystsDict = {k:v.getMultiCrystalObj() for k,v in optsDict.items()}
+
+	#Create a mock object for the reference string if it isnt present
+	if refStr is not None:
+		if refStr in methodStrs:
+			pass
+		else:
+			allMultiCrystsDict[refStr] = getRefBModMockedMultiCrystal()
 
 	return allMultiCrystsDict
 
@@ -102,16 +114,24 @@ def getStandardKPtDict():
 	return {"fcc": [20,20,20], "bcc": [20,20,20], "hcp": [20,20,12] }
 
 def getRefBModMockedMultiCrystal():
-    bmodDict = _getRefBModDict()
-    mockObj = EvolMultiCrystType(None)
-    mockObj.fittedEos = bmodDict
-    return mockObj
+	bmodDict = _getRefBModDict()
+	mockObj = EvolMultiCrystType({k:None for k in bmodDict},label="reference")
+	mockObj.writeFiles = lambda: None
+	mockObj.getRunComms = lambda: list()
+	mockObj.fitEos = _decorateFunctToDoNothing(mockObj.fitEos)
+	mockObj.fittedEos = bmodDict
+	return mockObj
 
 def _getRefBModDict():
     refEosDict = {"hcp": refData.getPlaneWaveEosFitDict("hcp"),
                     "bcc": refData.getPlaneWaveEosFitDict("bcc"),
                     "fcc": refData.getPlaneWaveEosFitDict("fcc")}
     return refEosDict
+
+def _decorateFunctToDoNothing(funct):
+	def outFunct(*args,**kwargs):
+		return None
+	return outFunct
 
 
 def createAllEvolOptsDictFromStartDictAndMethodStrs(startDict, methodStrs, gridValsDict):
@@ -136,7 +156,7 @@ def createAllEvolOptsDictFromStartDictAndMethodStrs(startDict, methodStrs, gridV
 		None
 	"""
 	optDict = {k.lower():v for k,v in startDict.items()}
-	outDict = dict()
+	outDict = OrderedDict()
 	for key in methodStrs:
 		outDict[key] = EvolCalcOptions(key, optDict["kpts"], optDict["startfolder"], optDict["structdict"], optDict["datafolder"], gridValsDict[key])
 	
@@ -171,76 +191,181 @@ class EvolCalcOptions():
             outFolder = os.path.join(self.startFolder, self.methodStr, key)
             currObjs = _getCalcObjsListFromStructListAndFolderAndMethodObj(self.structDict[key], outFolder, self.platoMethodDict[key])
             multiCrystDict[key] = EvolSingleCrystType(currObjs)
-        return EvolMultiCrystType(multiCrystDict)
-    
-class EvolMultiCrystType():
-    def __init__(self, calcObjDict):
-        self.calcObjDict = calcObjDict
-    
-    def writeFiles(self):
-        for key in self.calcObjDict:
-            self.calcObjDict[key].writeFiles()
-    
-    def getRunComms(self):
-        allRunComms = list()
-        for key in self.calcObjDict:
-            currRunComms = self.calcObjDict[key].getRunComms()
-            allRunComms.extend(currRunComms)
-        return allRunComms
-    
-    
-    def fitEos(self, eos):
-        bmodDict = dict()
-        for key in self.calcObjDict.keys():
-            outPaths = self.calcObjDict[key].outPaths
-            currBModDict = fitBMod.getBulkModFromOutFilesAseWrapper(outPaths,eos=eos)
-            bmodDict[key] = currBModDict
-        self.fittedEos = bmodDict
-    
-    def appendBlankEos(self):
-        blankDict = dict()
-        for key in self.calcObjDict.keys():
-            blankDict[key] = {k:np.nan for k in ["v0", "b0", "e0"]}
-            outPaths = self.calcObjDict[key].outPaths
-            energies,vols = fitBMod.getVolAndEnergiesForASEFromOutFileList(outPaths)
-            blankDict[key]["data"] = np.array( (energies,vols) )
-        self.fittedEos = blankDict
-    
-    @property
-    def bulkModDict(self):
-        try:
-            outDict = {k:v["b0"] for k,v in self.fittedEos.items()}
-            return outDict
-        except (KeyError, AttributeError):
-            return None
-    
-    @property
-    def volDict(self):
-        try:
-            outDict = {k:v["v0"] for k,v in self.fittedEos.items()}
-            return outDict
-        except (KeyError, AttributeError):
-            return None
-    
-    @property
-    def deltaE0Dict(self):
-        absE0 = self._getAbsE0Dict()
-        minE0 = min(absE0.values())
-        relE0 = {k:(v["e0"]-minE0) for k,v in self.fittedEos.items()}
-        return relE0
-    
-    @property
-    def deltaE0EvolPlotDict(self):
-        absE0Dict = self._getAbsE0Dict()
-        outDict = dict()
-        for key in self.fittedEos.keys():
-            outDict[key] = copy.deepcopy(self.fittedEos[key]["data"])
-            outDict[key][:,1] = outDict[key][:,1] - min(absE0Dict.values())
-        return outDict
+        return EvolMultiCrystType(multiCrystDict, label=self.methodStr)
+ 
 
-    
-    def _getAbsE0Dict(self):
-        return {k:v["e0"] for k,v in self.fittedEos.items()}
+
+class EvolMultiCrystsAndMethods():
+
+	def __init__(self, multiCrystObjList, label=""):
+		self.objList = multiCrystObjList
+		self.label = label
+
+	def writeFiles(self):
+		for obj in self.objList:
+			obj.writeFiles()
+
+	def getRunComms(self):
+		outList = list()
+		for obj in self.objList:
+			outList.extend( obj.getRunComms() )
+		return outList
+
+	def fitEos(self,eos,fitBlankIfError=None):
+		for obj in self.objList:
+			if fitBlankIfError is None:
+				obj.fitEos(eos)
+			else:
+				obj.fitEos(eos,fitBlankIfError=fitBlankIfError)
+
+	@property
+	def _tableHeadings(self):
+		return ["Method", "v0/ bohr cubed", "b0 / GPa", "Delta e0 / eV"]
+
+
+	def getTablesForTabulate(self):
+		tabDictList = list()		
+		for obj in self.objList:
+			tabDictList.append(obj.getTableDictForTabulate())
+
+	
+		uniqueKeys = self._getUniqueKeysFromDictList(tabDictList)	
+
+		outTabList = list()
+		print("uniqueKeys = {}".format(uniqueKeys))
+		for key in uniqueKeys:
+			currKeyTab = [[key]]
+			currKeyTab.append(self._tableHeadings)
+			for currDict in tabDictList:
+				try:
+					currTab = currDict[key]
+				except KeyError:
+					pass
+				else: #This runs only when the exception doesnt occur
+					currTab.pop(0)
+					currTab.pop(0)
+					currKeyTab.extend(currTab)
+			outTabList.append(currKeyTab)
+
+		return outTabList
+
+	def _getUniqueKeysFromDictList(self, tabDictList):
+		allKeys = list()
+		for currDict in tabDictList:
+			allKeys.extend(currDict.keys())	
+		return list(set(allKeys))	
+
+
+	def getPlotDataDict(self, keyOrder=None):
+		outDict = dict()
+		for currObj in self.objList:
+			currDict = currObj.deltaE0EvolPlotDict
+			if keyOrder is None:
+				currDict = [val for k,v in currDict.items()]
+			else:
+				currDict = [currDict[k] for k in currDict.keys()]
+			outDict[currObj.label] = currDict #RHS is actually now a list			
+		return outDict
+
+
+
+
+
+class EvolMultiCrystType():
+	def __init__(self, calcObjDict, label=""):
+		self.calcObjDict = calcObjDict
+		self.label = label
+	
+	def writeFiles(self):
+		for key in self.calcObjDict:
+			self.calcObjDict[key].writeFiles()
+	
+	def getRunComms(self):
+		allRunComms = list()
+		for key in self.calcObjDict:
+			currRunComms = self.calcObjDict[key].getRunComms()
+			allRunComms.extend(currRunComms)
+		return allRunComms
+	
+	#Eos is essentially the 2nd function of this class, and makes it tricky	
+	def fitEos(self, eos, fitBlankIfError=False):
+		bmodDict = dict()
+		for key in self.calcObjDict.keys():
+			outPaths = self.calcObjDict[key].outPaths
+			try:
+				currBModDict = fitBMod.getBulkModFromOutFilesAseWrapper(outPaths,eos=eos)
+				bmodDict[key] = currBModDict
+			except RuntimeError as e:
+				if fitBlankIfError:
+					bmodDict[key] = self.appendBlankEos()
+				else:
+					raise(e)
+		self.fittedEos = bmodDict
+	
+	def appendBlankEos(self):
+		blankDict = dict()
+		for key in self.calcObjDict.keys():
+			blankDict[key] = {k:np.nan for k in ["v0", "b0", "e0"]}
+			outPaths = self.calcObjDict[key].outPaths
+			energies,vols = fitBMod.getVolAndEnergiesForASEFromOutFileList(outPaths)
+			blankDict[key]["data"] = np.array( (energies,vols) )
+		self.fittedEos = blankDict
+
+
+	def getTableDictForTabulate(self):
+		tabDict = dict()
+		for key in self.calcObjDict.keys():
+			tabList = list()
+			tabList.append(self.label)
+			colHeadings = self._tableHeadings
+			v0,b0,e0 = self.volDict[key], self.bulkModDict[key], self.deltaE0Dict[key]
+			strList = [ "{:.3f}".format(x) for x in [v0,b0,e0] ]
+			values = [self.label] + strList
+			tabList.append(colHeadings)
+			tabList.append(values)
+			tabDict[key] = tabList
+		return tabDict
+
+
+	@property
+	def _tableHeadings(self):
+		return ["Method", "v0/ bohr cubed", "b0 / GPa", "Delta e0 / eV"]
+	
+	@property
+	def bulkModDict(self):
+		try:
+			outDict = {k:v["b0"] for k,v in self.fittedEos.items()}
+			return outDict
+		except (KeyError, AttributeError):
+			return None
+	
+	@property
+	def volDict(self):
+		try:
+			outDict = {k:v["v0"] for k,v in self.fittedEos.items()}
+			return outDict
+		except (KeyError, AttributeError):
+			return None
+	
+	@property
+	def deltaE0Dict(self):
+		absE0 = self._getAbsE0Dict()
+		minE0 = min(absE0.values())
+		relE0 = {k:(v["e0"]-minE0) for k,v in self.fittedEos.items()}
+		return relE0
+	
+	@property
+	def deltaE0EvolPlotDict(self):
+		absE0Dict = self._getAbsE0Dict()
+		outDict = dict()
+		for key in self.fittedEos.keys():
+			outDict[key] = copy.deepcopy(self.fittedEos[key]["data"])
+			outDict[key][:,1] = outDict[key][:,1] - min(absE0Dict.values())
+		return outDict
+
+	
+	def _getAbsE0Dict(self):
+		return {k:v["e0"] for k,v in self.fittedEos.items()}
    
 
 
