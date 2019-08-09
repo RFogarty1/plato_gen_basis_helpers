@@ -2,27 +2,53 @@
 
 #Purpose of this code it to provide access to reference structures + similar to use for calculations
 
+""" Provides access to reference structures and data for pure Mg """
+
 import os
 import math
 import sys
 
 import dos_helpers as dosHelp
+import ref_elemental_objs as refEleObjs
 import plato_pylib.shared.ucell_class as UCell
 import plato_pylib.parseOther.parse_castep_files as parseCastep
-
+import plato_pylib.plato.mod_plato_inp_files as modInp
+import plato_pylib.plato.plato_paths as platoPaths
 import numpy as np
 
 
 sys.path.append("/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions")
 import fit_bulk_mod as fitBMod
 
-
 tb1Model = os.path.join("Mg_bases_spd_att6","rc_7pt3","tb1_mcweda")
 dft2Model = str(tb1Model)
 dftModel = str(tb1Model)
 
-# Experimental Structure
 
+
+def createMgReferenceDataObj():
+	basePath = "/media/ssd1/rf614/Work/Plato"
+	tb1ModAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(tb1Model)
+	dft2ModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dft2Model)
+	dftModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dftModel,dtype="dft")
+	modelHolder = platoPaths.PlatoModelFolders(tb1Path=tb1ModAbs, dft2Path=dft2ModelAbs, dftPath=dftModelAbs)
+	return MgReferenceDataObj(modelHolder)
+
+#Overall object holding ref Data
+class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
+
+	def __init__(self, modelHolder):
+		self._modelHolder = modelHolder
+
+	@property
+	def modelFiles(self):
+		return self._modelHolder
+
+	def getPlaneWaveGeom(self,key):
+		return getPlaneWaveGeom(key)
+	
+
+# Experimental Structure
 def getExptStructAsUCell():
 	''' From Walker 1959: DOI=10.1016/0001-6160(59)90090-2 Units of returned ucell are in bohr'''
 	return getMgExptHcpAsUCell()
@@ -42,12 +68,12 @@ def _getMgExptHcpAsUCell():
 
 
 
-def _getPerfectHcpMinimalUCell(element):
+def _getPerfectHcpMinimalUCell(element="Mg"):
 	lattVects = [ [ 1.00000000, 0.00000000, 0.00000000],
 	              [-0.50000000, 0.86602540, 0.00000000],
 	              [ 0.00000000, 0.00000000, 1.00000000] ]
 	
-	fractCoords = [ [0.0,0.0,0.0,"Mg"], [ 1/3, 2/3, 0.5, "Mg"] ]
+	fractCoords = [ [0.0,0.0,0.0,element], [ 1/3, 2/3, 0.5, element] ]
 	idealCoverA = math.sqrt( 8/3 )
 
 	perfectHcpCell = UCell.UnitCell.fromLattVects(lattVects, fractCoords=fractCoords)
