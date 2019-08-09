@@ -1,7 +1,4 @@
 
-import os
-import plato_pylib.plato.mod_plato_inp_files as modInp
-
 from plato_pylib.plato.plato_paths import PlatoPathDescriptor, PlatoModelFolders
 
 
