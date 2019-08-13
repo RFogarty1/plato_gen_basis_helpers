@@ -24,3 +24,29 @@ class RefElementalDataBase():
 		"""
 		raise NotImplementedError
 
+	def getStructsForEos(self, key):
+		""" Get UnitCells for carrying out equation of states
+		
+		Args:
+			key: structure key; hcp/bcc/fcc are standard options. More may be added in subclasses
+				
+		Returns
+			outStructs: list of plato_pylib UnitCell object containing the geometries to use for calculating and energy vs volume curve
+		
+		"""
+		raise NotImplementedError
+
+
+	def getEosFitDict(self,key, eosModel="murnaghan"):
+		""" Get dictionary containing eos fit data. 
+		
+		Args:
+			key: structure key; hcp/bcc/fcc are standard options. More may be added in subclasses
+			eosModel(Optional) = key to pass to ASE denoting eos model to use
+		Returns
+			outDict: dict containing info such as v0,b0,e0
+
+		"""
+		return NotImplementedError
+
+

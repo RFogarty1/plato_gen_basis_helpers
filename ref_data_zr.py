@@ -35,7 +35,19 @@ class ZrReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getPlaneWaveGeom(self,key):
 		return _get_FAKE_MADE_UP_PLANE_WAVE_GEOM(key)
 
+	#TODO: THIS IS USING THE MG VALUES AT THE MOMENT
+	def getStructsForEos(self,key):
+		mgStructs = refMg.getUCellsForBulkModCalcs(key)
+		for currStruct in mgStructs:
+			fCoords = currStruct.fractCoords
+			for currCoords in fCoords:
+				currCoords[-1] = "Zr"
+			currStruct.fractCoords = fCoords
+		return mgStructs
 
+	#TODO: THIS IS USING MG VALUES
+	def getEosFitDict(self,key,eos="murnaghan"):
+		return refMg.getPlaneWaveEosFitDict(key,eos=eos)
 
 def _get_FAKE_MADE_UP_PLANE_WAVE_GEOM(key):
 	structTypeToFunct = {"hcp":_getZrPlaneWaveHcpGeomAsUCell}

@@ -46,7 +46,13 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 
 	def getPlaneWaveGeom(self,key):
 		return getPlaneWaveGeom(key)
+
+	def getStructsForEos(self,key):
+		return getUCellsForBulkModCalcs(key)
 	
+	def getEosFitDict(self,key,eos="murnaghan"):
+		return getPlaneWaveEosFitDict(key,eos=eos)
+
 
 # Experimental Structure
 def getExptStructAsUCell():
@@ -155,33 +161,33 @@ def getBccComprStructAsUCell():
 
 
 #Plane wave bulk mod fits using ASE (Actually does the fit while function is called)
-def getPlaneWaveEosFitDict(structType:str):
+def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
 	structTypeToFunct = {"hcp": _getPlaneWaveEosDictHCP,
 	                     "fcc": _getPlaneWaveEosDictFCC,
 	                     "bcc": _getPlaneWaveEosDictBCC}
-	return structTypeToFunct[structType]()
+	return structTypeToFunct[structType](eos)
 
-def _getPlaneWaveEosDictHCP():
+def _getPlaneWaveEosDictHCP(eos):
 	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
 	outFolder = os.path.join(refFolder,"hcp")
 	fileList = [os.path.join(outFolder,x) for x in os.listdir(outFolder) if x.endswith('.castep')]
-	return _getEosDictFromFilePaths(fileList)
+	return _getEosDictFromFilePaths(fileList,eos)
 
-def _getPlaneWaveEosDictFCC():
+def _getPlaneWaveEosDictFCC(eos):
 	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
 	outFolder = os.path.join(refFolder,"fcc")
 	fileList = [os.path.join(outFolder,x) for x in os.listdir(outFolder) if x.endswith('.castep')]
-	return _getEosDictFromFilePaths(fileList)
+	return _getEosDictFromFilePaths(fileList,eos)
 
-def _getPlaneWaveEosDictBCC():
+def _getPlaneWaveEosDictBCC(eos):
 	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
 	outFolder = os.path.join(refFolder,"bcc")
 	fileList = [os.path.join(outFolder,x) for x in os.listdir(outFolder) if x.endswith('.castep')]
-	return _getEosDictFromFilePaths(fileList)
+	return _getEosDictFromFilePaths(fileList,eos)
 
 
-def _getEosDictFromFilePaths(filePaths):
-	outDict = fitBMod.getBulkModFromOutFilesAseWrapper(filePaths, eos="birchmurnaghan")
+def _getEosDictFromFilePaths(filePaths,eos):
+	outDict = fitBMod.getBulkModFromOutFilesAseWrapper(filePaths, eos=eos)
 	return outDict
 
 #Density of states for planeWave Calcs
