@@ -53,6 +53,9 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getEosFitDict(self,key,eos="murnaghan"):
 		return getPlaneWaveEosFitDict(key,eos=eos)
 
+	def getSelfInterstitialPlaneWaveStruct(self, structType, interstitialType, relaxType, cellSize):
+		return getInterstitialPlaneWaveStruct(structType, interstitialType, relaxType, cellSize)
+
 
 # Experimental Structure
 def getExptStructAsUCell():

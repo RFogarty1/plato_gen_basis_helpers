@@ -62,6 +62,7 @@ class ZrKPointConv(refObjBase.KPointConvergence):
 
 def _getHcpKPtsForSuperCells(dims):
 	dimKey = tuple(dims)
-	dimToKpts = {(4,4,3):[4,4,3]}
+	dimToKpts = {(4,4,3):[4,4,3],
+	             (3,3,2):[8,8,6]}
 	return dimToKpts[dimKey]
 
