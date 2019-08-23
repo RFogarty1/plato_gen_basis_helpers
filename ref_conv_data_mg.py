@@ -41,6 +41,10 @@ class MgIntegGridConv(refObjBase.IntegGridConvergencePureElements):
 		structToGrid = {key:0.15 for key in ["fcc","bcc","hcp"]} 
 		return structToGrid[structKey]
 
+	def getInterstitialDft2AngularGrid(self,structKey, dims):
+		structToGrid = {"fcc": [50,40,40], "bcc": [50,40,40], "hcp": [50,40,40]}
+		return structToGrid[structKey]
+
 class MgKPointConv(refObjBase.KPointConvergence):
 
 	def __init__(self):
@@ -50,7 +54,7 @@ class MgKPointConv(refObjBase.KPointConvergence):
 		structToKpts = {"fcc": [20,20,20], "bcc": [20,20,20], "hcp": [20,20,12]}
 		return structToKpts[ structKey.lower() ]
 		
-	def getKptsSuperCell(self,structKey,dims):
+	def getKPtsSuperCell(self,structKey,dims):
 		if tuple(dims) == (1,1,1):
 			return self.getKptsPrimCell(structKey)
 		structToFunct = {"hcp": _getHcpKPtsForSuperCells}

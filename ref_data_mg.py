@@ -14,6 +14,9 @@ import plato_pylib.shared.ucell_class as UCell
 import plato_pylib.parseOther.parse_castep_files as parseCastep
 import plato_pylib.plato.mod_plato_inp_files as modInp
 import plato_pylib.plato.plato_paths as platoPaths
+import plato_pylib.plato.parse_tbint_files as parseTbint
+import plato_pylib.utils.defects as defects
+import plato_pylib.utils.supercell as supCell
 import numpy as np
 
 
@@ -33,6 +36,19 @@ def createMgReferenceDataObj():
 	dftModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dftModel,dtype="dft")
 	modelHolder = platoPaths.PlatoModelFolders(tb1Path=tb1ModAbs, dft2Path=dft2ModelAbs, dftPath=dftModelAbs)
 	return MgReferenceDataObj(modelHolder)
+
+
+def createMgAngMomShellIndices():
+	dft2ModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dft2Model)
+	dft2AdtPath = os.path.join(dft2ModelAbs, "Mg.adt")
+	shellToAngMomDict = parseTbint.parseAdtFile(dft2AdtPath)["shellToAngMom"]
+	
+	angMomIndices = list()
+	for key in range(len(shellToAngMomDict.keys())):
+		angMomIndices.append( shellToAngMomDict[key] )
+
+	return angMomIndices
+
 
 #Overall object holding ref Data
 class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
@@ -55,6 +71,10 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 
 	def getSelfInterstitialPlaneWaveStruct(self, structType, interstitialType, relaxType, cellSize):
 		return getInterstitialPlaneWaveStruct(structType, interstitialType, relaxType, cellSize)
+
+	def getVacancyPlaneWaveStruct(self, structType, relaxType, cellSize):
+		return getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
+
 
 
 # Experimental Structure
@@ -277,5 +297,16 @@ def _getUCellFromCrystalMakerCastepOutFile(refFile):
 	return outUCell
 
 
+
+def getVacancyPlaneWaveStruct(structType, relaxType, cellSize):
+	baseUCell = getPlaneWaveGeom(structType)
+	cellDims = [int(x) for x in cellSize.split("_")]
+
+	if relaxType == "unrelaxed":
+		vacCell = supCell.superCellFromUCell(baseUCell, cellDims)
+		defects.makeVacancyUnitCell(vacCell)
+		return vacCell
+	else:
+		raise NotImplementedError("Only unrelaxed vancancies are currently implemented")
 
 

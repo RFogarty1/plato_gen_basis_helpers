@@ -4,6 +4,7 @@
 import os
 import ref_elemental_objs as refEleObjs
 import plato_pylib.plato.mod_plato_inp_files as modInp
+import plato_pylib.plato.parse_tbint_files as parseTbint
 import plato_pylib.plato.plato_paths as platoPaths
 
 import ref_data_mg as refMg
@@ -20,6 +21,19 @@ def createZrReferenceDataObj():
 	dftModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dftModel,dtype="dft")
 	modelHolder = platoPaths.PlatoModelFolders(tb1Path=tb1ModAbs, dft2Path=dft2ModelAbs, dftPath=dftModelAbs)
 	return ZrReferenceDataObj(modelHolder)
+
+def createZrAngMomShellIndices():
+	dft2ModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dft2Model)
+	dft2AdtPath = os.path.join(dft2ModelAbs, "Zr.adt")
+	shellToAngMomDict = parseTbint.parseAdtFile(dft2AdtPath)["shellToAngMom"]
+	
+	angMomIndices = list()
+	for key in range(len(shellToAngMomDict.keys())):
+		angMomIndices.append( shellToAngMomDict[key] )
+
+
+	return angMomIndices
+
 
 
 #Overall object holding ref Data
@@ -56,11 +70,18 @@ class ZrReferenceDataObj(refEleObjs.RefElementalDataBase):
 		self._replaceMgWithZrInUCell(mgStruct)
 		return mgStruct
 
+
+	def getVacancyPlaneWaveStruct(self, structType, relaxType, cellSize):
+		mgStruct = refMg.getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
+		self._replaceMgWithZrInUCell(mgStruct)
+		return mgStruct
+
 	def _replaceMgWithZrInUCell(self,ucell):
 		fCoords = ucell.fractCoords
 		for currCoords in fCoords:
 			currCoords[-1] = "Zr"
 		ucell.fractCoords = fCoords
+
 
 
 def _get_FAKE_MADE_UP_PLANE_WAVE_GEOM(key):

@@ -33,13 +33,16 @@ class ZrIntegGridConv(refObjBase.IntegGridConvergencePureElements):
 	def __init__(self):
 		pass
 
-
 	def getPrimCellDft2AngularGrid(self,structKey):
 		structToGrid = {"fcc": [50,50,50], "bcc": [60,50,50], "hcp": [50,50,50]}
 		return structToGrid[ structKey.lower() ]
 
 	def getPrimCellDftFFTGrid(self,structKey):
 		structToGrid = {key:0.15 for key in ["fcc","bcc","hcp"]} 
+		return structToGrid[structKey]
+
+	def getInterstitialDft2AngularGrid(self,structKey, dims):
+		structToGrid = {"fcc": [50,35,35], "bcc": [50,35,35], "hcp": [50,35,35]}
 		return structToGrid[structKey]
 
 class ZrKPointConv(refObjBase.KPointConvergence):
@@ -51,7 +54,7 @@ class ZrKPointConv(refObjBase.KPointConvergence):
 		structToKpts = {"fcc": [20,20,20], "bcc": [20,20,20], "hcp": [20,20,12]}
 		return structToKpts[ structKey.lower() ]
 		
-	def getKptsSuperCell(self,structKey,dims):
+	def getKPtsSuperCell(self,structKey,dims):
 		if tuple(dims) == (1,1,1):
 			return self.getKptsPrimCell(structKey)
 		structToFunct = {"hcp": _getHcpKPtsForSuperCells}
