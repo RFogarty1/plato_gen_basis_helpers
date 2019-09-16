@@ -2,7 +2,7 @@
 
 ''' Purpose of this is simply to get the overlap of mcweda weight functions at rc*2 '''
 
-import gau_prod_theorem as gProd
+from . import gau_prod_theorem as gProd
 import itertools as it
 import plato_pylib.plato.parse_gau_files as parseGau
 
