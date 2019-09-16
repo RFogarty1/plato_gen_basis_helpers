@@ -708,6 +708,46 @@ def _getOptDict_dft2_exact():
 	return outOptDict
 
 
+@registerMethodStrToObj("dft2_lda")
+def createPlatoMethod_dft2_lda():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_lda()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_lda():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"McWedaXcFlag".lower():0,
+				  "excMbCorr".lower():0,
+				  "e0method":0,
+	              "XCFunctional".lower():"lda"}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+
+@registerMethodStrToObj("dft2_lda_1body_pbe_corr")
+def createPlatoMethod_dft2_lda_1body_pbe_corr():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_lda_1body_pbe_corr()
+	getStrDictFromOptDict = evolHelp.getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_lda_1body_pbe_corr():
+	outOptDict = evolHelp.loadDefaultTb2OptDict()
+	modOptsDict = {"McWedaXcFlag".lower():0,
+				  "excMbCorr".lower():0,
+				  "e0method":0,
+	              "XCFunctional".lower():"lda",
+	              "E0NonLocalXcCorr".lower(): 1,
+	              "e1XtalNonLocalXcCorr".lower():1,
+	              "e1HopNonLocalXcCorr".lower():1}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
+
+
 @registerMethodStrToObj("dft_plato")
 def createPlatoMethod_dft_plato():
 	runCommFunct = _getRunCommPlatoDft
