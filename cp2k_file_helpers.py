@@ -2,6 +2,7 @@
 
 import os
 from pycp2k import CP2K
+#import ase.calculators.cp2k as cp2kAseCalc
 
 
 def createCp2kSinglePointObjFromUCellGeom(uCell, elementBasisInfo:"obj list each with .element,.basis,.potential", **kwargs):
@@ -14,6 +15,15 @@ def createCp2kSinglePointFromMinimalGeom(lattVects, fractCoords, elementBasisInf
 	outObj = createDefaultCp2kCalcObj(**kwargs)
 	addSubSysSectionCp2kObj(outObj, lattVects, fractCoords, elementBasisInfo)
 	return outObj
+
+
+#def __getCP2KCalculatorObjFromUCellGeom(uCell, elementBasisInfo:"obj list each with .element,.basis,.potential", **kwargs):
+#	""" pass an optDict as **optDict to add whatever options you want to the default. AVOID for now. Untested + likely unworking """
+#	initObj = createCp2kSinglePointObjFromUCellGeom(uCell, elementBasisInfo, **kwargs)
+#	inpStr = initObj.get_input_string()
+#	outCalc = cp2kAseCalc.CP2K(inp=inpStr, command="cp2k_shell.sopt")
+##	outCalc = cp2kAseCalc.CP2K(command="cp2k_shell.sopt")
+#	return outCalc
 
 
 def createDefaultCp2kCalcObj(**kwargs):

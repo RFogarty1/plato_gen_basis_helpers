@@ -46,11 +46,12 @@ class CP2KCalcObj(CalcMethod):
 
 
 #Optional descriptors that can be added
-
 def addInpPathDescriptorToCP2KCalcObjCLASS(inpCls):
 	attrName = "inpPath"
 	setattr(inpCls, attrName, InpPathDescriptorCP2K(attrName))
 
+def addQuickStepEpsDefDescriptorToCP2KCalcObjCLASS(inpCls, attrName="qs_eps_def"):
+	setattr(inpCls, attrName, QuickStepEpsDefaultCP2K(attrName))
 
 #Defining an inpPath property for CP2KCalcObj
 class InpPathDescriptorCP2K(object): 
@@ -61,4 +62,16 @@ class InpPathDescriptorCP2K(object):
   
 	def __set__(self, instance, value):
 		raise NotImplementedError("Cannot set attribute {}".format(self.name))
+
+#Defining quickstep_eps_default parameter for CP2KCalcObj
+class QuickStepEpsDefaultCP2K(object):
+	def __init__(self,attrName):
+		self.name = attrName
+
+	def __get__(self, instance, owner):
+		return instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_default
+
+	def __set__(self, instance, value):
+		assert( len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1 )
+		instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_default = value
 
