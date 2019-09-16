@@ -3,7 +3,6 @@
 import os
 import subprocess
 import sys
-sys.path.append('/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions')
 import plato_pylib.plato.mod_plato_inp_files as platoInp
 from tbint_helpers import ChDir
 

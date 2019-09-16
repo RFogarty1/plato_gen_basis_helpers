@@ -12,9 +12,8 @@ import plato_pylib.plato.mod_plato_inp_files as platoInp
 from tbint_helpers import ChDir
 
 import sys
-sys.path.append("/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions")
 
-import parse_inv_sk as parseInvSK
+import plato_pylib.parse_inv_sk as parseInvSK
 import plato_pylib.plato.parse_tbint_files as parseTbint
 
 '''Purpose of this code is to make it easier to run/analyse tb2 calculations (mainly inv-sk) '''
@@ -116,7 +115,7 @@ def _getOutputInvSkFileNames(inpFilePath):
 
 #----------------->Functions for parsing inv-sk calculations <-----------------------
 
-def getTbintHoppingListStructFormat(tbintPath):
+def getTbintHoppingListStructFormat(tbintPath,intType="hopping"):
 	allInts = parseTbint.getIntegralsFromBdt(tbintPath)
 	adtPaths = parseTbint.getAdtFilePathsFromBdt(tbintPath)
 	shellsA, shellsB = parseTbint.parseAdtFile(adtPaths[0])["numbShells"], parseTbint.parseAdtFile(adtPaths[1])["numbShells"]
@@ -129,7 +128,7 @@ def getTbintHoppingListStructFormat(tbintPath):
 		for shellBIdx in range(shellsB):
 			currDict = dict()
 			for bondType in allBondTypes:
-				 currDict[bondType] = getTbintIntegralTableFromObjDict(allInts, shellAIdx, shellBIdx, bondType)
+				 currDict[bondType] = getTbintIntegralTableFromObjDict(allInts, shellAIdx, shellBIdx, bondType, intType=intType)
 			currListA.append(currDict)
 		outLists.append(currListA)
 

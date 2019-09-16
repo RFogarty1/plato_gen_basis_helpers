@@ -20,8 +20,8 @@ import plato_pylib.utils.supercell as supCell
 import numpy as np
 
 
-sys.path.append("/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions")
-import fit_bulk_mod as fitBMod
+import plato_pylib.utils.fit_eos as fitBMod
+
 
 tb1Model = os.path.join("Mg_bases_spd_att6","rc_7pt3","tb1_mcweda")
 dft2Model = str(tb1Model)

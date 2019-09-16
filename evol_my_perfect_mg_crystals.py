@@ -14,8 +14,7 @@ import numpy as np
 import calc_methods as calcMethods
 import ref_data_mg as refData
 
-sys.path.append('/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions')
-import fit_bulk_mod as fitBMod
+import plato_pylib.utils.fit_eos as fitBMod
 
 
 
