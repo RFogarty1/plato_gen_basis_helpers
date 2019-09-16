@@ -4,7 +4,8 @@ import os
 import subprocess
 import sys
 import plato_pylib.plato.mod_plato_inp_files as platoInp
-from tbint_helpers import ChDir
+
+from ..shared import ch_dir as chDir
 
 ''' Code to help create *.atm files easily in python3'''
 
@@ -83,7 +84,7 @@ def runBasis(basePath, **kwargs):
 		_createYesNoResponseFile(baseFolder, nOrbs, splitIndices, fName=splitOrbRespFile)
 
 	#Run the program
-	with ChDir(os.getcwd(),baseFolder):
+	with chDir.ChDir(os.getcwd(),baseFolder):
 		if splitIndices is not None:
 			subprocess.check_call(commStr + "<{}".format(splitOrbRespFile) ,shell=True)
 		else:

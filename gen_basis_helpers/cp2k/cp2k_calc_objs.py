@@ -1,11 +1,11 @@
 import os
 
-from method_objs import CalcMethod
 import plato_pylib.parseOther.parse_cp2k_files as parseCP2K
 
+from ..shared import methodObjs
 
 
-class CP2KCalcObj(CalcMethod):
+class CP2KCalcObj(methodObjs.CalcMethod):
 	def __init__(self, pycp2kObj, basePath=None):
 		self.cp2kObj = pycp2kObj
 		if basePath is None:

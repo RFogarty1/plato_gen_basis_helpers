@@ -9,11 +9,11 @@ import numpy as np
 from concurrent import futures
 
 import plato_pylib.plato.mod_plato_inp_files as platoInp
-from tbint_helpers import ChDir
+from ..shared import ch_dir as chDir
 
 import sys
 
-import plato_pylib.parse_inv_sk as parseInvSK
+import plato_pylib.plato.parse_inv_sk as parseInvSK
 import plato_pylib.plato.parse_tbint_files as parseTbint
 
 '''Purpose of this code is to make it easier to run/analyse tb2 calculations (mainly inv-sk) '''
@@ -64,7 +64,7 @@ def runInvSk(inpPath, startDir=None):
 	outputInvSkFileNames = _getOutputInvSkFileNames(runFilePath)
 
 	#Step 5 = run the actual inv-sk calculation [Mod the file to use inverse-SK if not already present]
-	with ChDir(startDir, tempDir):
+	with chDir.ChDir(startDir, tempDir):
 		subprocess.check_call("cd {};tb2 {}".format(tempDir,baseFName),shell=True) #Often breaks when the cd {} is missing
 
 	#Step 6 = rename the relevant inv-sk output files to something unique

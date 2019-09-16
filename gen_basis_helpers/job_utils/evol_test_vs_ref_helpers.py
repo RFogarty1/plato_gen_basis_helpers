@@ -10,7 +10,6 @@ import plato_pylib.parseOther.parse_castep_files as parseCastep
 import plato_pylib.plato.parse_plato_out_files as platoOut
 import plato_pylib.utils.job_running_functs as jobRun
 
-import dft_file_helpers as dftHelpers
 
 ''' Functions to help run test of energy vs volume data vs a reference () for plato basis sets '''
 

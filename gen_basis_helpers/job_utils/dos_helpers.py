@@ -7,9 +7,9 @@ import sys
 
 import numpy as np
 
-sys.path.append("/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions")
 import analyse_plato_bandstructures as bStructs
-from fitgauss_plato_file_helpers import ChDir
+import plato_pylib.parse_plato_out_files as platoOut
+from ..shared import ch_dir as chDir 
 
 
 
@@ -25,7 +25,7 @@ def getDosPlotData(inpFile:"Path to input file", smearing:"eV"=0.1, stepSize:"eV
 def _getDosInfoPlato(inpFile, smearing=0.1, stepSize=0.01, runDos=True):
 	#Figure out number of points needed to get ~stepSize
 	extraSigmaWidth = smearing*5.0 #determines how far we plot energies relative to smearing and min/max eigenvals; val taken from plato src code
-	parsedFile = bStructs.parseOccFile(inpFile)
+	parsedFile = platoOut.parseOccFile(inpFile)
 	minE,maxE =  np.min(parsedFile["eigen_vals"]) - extraSigmaWidth , np.max(parsedFile["eigen_vals"]) + extraSigmaWidth
 	nPts = ( abs(maxE - minE) ) / stepSize
 
@@ -37,7 +37,7 @@ def _getDosInfoPlato(inpFile, smearing=0.1, stepSize=0.01, runDos=True):
 	runComm = "plotdos -n {} -s {} {}".format(nPts, smearing, fileName)
 
 	# Run the command + get the output data
-	with ChDir(os.getcwd(), folder):
+	with chDir.ChDir(os.getcwd(), folder):
 		if runDos:
 			subprocess.check_call(runComm,shell=True)
 		outDict = _parsePlatoPlotDosOutput(fileName + "-dos.csv")
@@ -48,7 +48,7 @@ def getDosRunComm_plato(inpFile, smearing:"ev", stepSize:"eV"):
 	inpFile = os.path.splitext(inpFile)[0] + ".occ"
 
 	extraSigmaWidth = smearing*5.0 #determines how far we plot energies relative to smearing and min/max eigenvals; val taken from plato src code
-	parsedFile = bStructs.parseOccFile(inpFile)
+	parsedFile = platoOut.parseOccFile(inpFile)
 	minE,maxE =  np.min(parsedFile["eigen_vals"]) - extraSigmaWidth , np.max(parsedFile["eigen_vals"]) + extraSigmaWidth
 	nPts = ( abs(maxE - minE) ) / stepSize
 

@@ -7,7 +7,7 @@ import unittest.mock as mock
 import sys
 sys.path.append('..')
 
-import interstit_helpers as tCode #WARNING: tCode alias doesnt work for the patch decorator
+import gen_basis_helpers.job_utils.interstit_helpers as tCode #WARNING: tCode alias doesnt work for the patch decorator
 
 
 def simpleMockedFunct(*args,**kwargs):
@@ -34,9 +34,9 @@ class TestInterstitialTypeClass(unittest.TestCase):
 		self.testObj.getInterStructFromRefDataStruct(mockDb)
 		mockDb.getSelfInterstitialPlaneWaveStruct.assert_called_with(*expQueryArgs)
 
-@mock.patch('interstit_helpers.supCell.superCellFromUCell')
-@mock.patch('interstit_helpers.wFlowCoordinator.WorkFlowCoordinator')
-@mock.patch('interstit_helpers.createWFlows.CreateInterstitialWorkFlow')
+@mock.patch('gen_basis_helpers.job_utils.interstit_helpers.supCell.superCellFromUCell')
+@mock.patch('gen_basis_helpers.job_utils.interstit_helpers.wFlowCoordinator.WorkFlowCoordinator')
+@mock.patch('gen_basis_helpers.job_utils.interstit_helpers.createWFlows.CreateInterstitialWorkFlow')
 class TestInterstitialCalcFactory(unittest.TestCase):
 
 	def setUp(self):

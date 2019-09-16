@@ -7,6 +7,8 @@ import sys
 import plato_pylib.plato.mod_plato_inp_files as platoInp
 import plato_pylib.plato.parse_gau_files as parseGau
 
+from ..shared import ch_dir as chDir
+
 def getDefaultFitGaussDict():
 	''' Returns dict of default keyword:string used to make *.gin file. '''
 	''' Using a function (vs global) so that it doesnt get altered between calls '''
@@ -81,7 +83,7 @@ def runFitGauss(ginPath, nYes=0):
 	basePath = os.path.splitext(ginPath)[0]
 	workFolder, fileName = os.path.split(basePath)
 
-	with ChDir(os.getcwd(),workFolder): #Context manager to temporarily step into a directory
+	with chDir.ChDir(os.getcwd(),workFolder): #Context manager to temporarily step into a directory
 		yesPath = createYesFile(nYes)
 		subprocess.check_call( "fitgauss {} < {}".format(fileName,yesPath) , shell=True)
 	outPath = os.path.join(workFolder,fileName + ".gau")
@@ -111,16 +113,3 @@ def getFitFromPyFitProgOut(filePath):
 	return parseGau.GauPolyBasis.fromIterable(parsedFit)
 
 
-class ChDir(object):
-    """
-    Step into a directory temporarily. Propagates exceptions upwards (since __exit__ always returns None)
-    """
-    def __init__(self, startDir, workDir):
-        self.old_dir = startDir
-        self.new_dir = workDir
- 
-    def __enter__(self):
-        os.chdir(self.new_dir)
- 
-    def __exit__(self, *args):
-        os.chdir(self.old_dir)

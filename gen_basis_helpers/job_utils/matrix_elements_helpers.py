@@ -2,7 +2,6 @@
 import itertools as it
 import os
 import sys
-sys.path.append('/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions')
 
 import plato_pylib.plato.parse_matrices_out_files as parseMatrix
 import plato_pylib.plato.parse_plato_out_files as parseOut

@@ -6,33 +6,17 @@ import copy
 import itertools as it
 import os
 import pathlib
-import evol_test_vs_ref_helpers as evolHelpers
-import dft_file_helpers as dftHelp
-import calc_methods as calcMethods
+
 
 import plato_pylib.utils.elastic_consts as elastic
 import plato_pylib.plato.mod_plato_inp_files as platoInp
 import plato_pylib.parseOther.parse_castep_files as parseCastep
 import plato_pylib.plato.parse_plato_out_files as parsePlatoOut
 
+from ..shared import calc_methods as calcMethods
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-#def createPlatoElasCalcsFileObjs_fromMethodStr(targFolder:"str, folder path", startStruct:"UnitCell class obj", strainParams:list, crystType, dataSet, extraKwargs:dict)
-#	allStrainedStructs = elastic.getStrainedStructsForElasticConsts(startStruct, strainParams, crystType=crystType)
-#	allOutObjs = list()
-#
-#	for idx, structSet in enumerate(allStrainedStructs):
-#		currObjs = _createPlatoFilesOneStrainPattern(targFolder, structSet, idx, strainparams, fileStrDict)
-#
-#
-#
-#def _createPlatoFilesOneStrainPattern_fromMethodStr(targFolder:"str, folder path", strainedStructs:"list of ucell objs", pattIdx:"int, idx for naming files",
-#                                                    strainCoeffs:list, methodStr:str, dataSet, kpts, integGrid=None):
-#
-
 
 
 
@@ -41,16 +25,16 @@ def createPlatoElasCalcsFileObjs(targFolder:"str, folder path", startStruct:"Uni
 	allStrainedStructs = elastic.getStrainedStructsForElasticConsts(startStruct, strainParams, crystType=crystType)
 
 	if dftFiles:
-                fileDict = dftHelp.loadDefaultDftOptDict()
+		fileDict = platoInp.getDefOptDict("dft")
 	else:
-                fileDict = evolHelpers.loadDefaultTb2OptDict()
+		fileDict = platoInp.getDefOptDict("dft2")
 
 	fileDict.update(inpOptDict) #User options always overwrite the defaults when given
 
 	if dftFiles:
-		fileStrDict = dftHelp.getPlatoStrDictFromOptDict_dft(fileDict)
+		fileStrDict = platoInp.getStrDictFromOptDict(fileDict,"dft")
 	else:
-		fileStrDict = evolHelpers.getPlatoStrDictFromOptDict_tb1OrTb2(fileDict)
+		fileStrDict = platoInp.getStrDictFromOptDict(fileDict,"dft2")
 
 	allOutObjs = list()
 

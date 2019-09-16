@@ -7,10 +7,9 @@ sys.path.append('..')
 import unittest
 
 import numpy as np
-import inv_sk_helpers as tCode
+import gen_basis_helpers.job_utils.inv_sk_helpers as tCode
 
-sys.path.append('/media/ssd1/rf614/Work/usr_scripts/coding/Plato_Analysis_Lib_Functions')
-import parse_inv_sk as parseInvSk
+import plato_pylib.plato.parse_inv_sk as parseInvSk
 import plato_pylib.plato.parse_tbint_files as parseTbint
 
 class testGetDataInvSK(unittest.TestCase):

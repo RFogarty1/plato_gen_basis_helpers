@@ -9,7 +9,7 @@ import unittest.mock as mock
 
 import sys
 sys.path.append('..')
-import inv_sk_workflows as tCode
+import gen_basis_helpers.job_utils.inv_sk_workflows as tCode
 
 
 class TestFetchForComposite(unittest.TestCase):
@@ -90,7 +90,7 @@ class TestCompositeSkWorkFlow(unittest.TestCase):
 
 
 
-@mock.patch('inv_sk_workflows.InvSkWorkFlow._writeFiles')
+@mock.patch('gen_basis_helpers.job_utils.inv_sk_workflows.InvSkWorkFlow._writeFiles')
 class TestInvSkWorkFlow(unittest.TestCase):
 
 	def setUp(self):
@@ -120,7 +120,7 @@ class TestInvSkWorkFlow(unittest.TestCase):
 		actAttrs = self.testWorkFlow.namespaceAttrs
 		[self.assertEqual(exp,act) for exp,act in it.zip_longest(expAttrs,actAttrs)]
 
-	@mock.patch('inv_sk_workflows.jobRun.invSkInputPathsToBashComms')
+	@mock.patch('gen_basis_helpers.job_utils.inv_sk_workflows.jobRun.invSkInputPathsToBashComms')
 	def testPreRunShellComms(self,cmdConvMock,writeFilesMock):
 		self.initWorkFlow() 
 		expComms = "test_cmd_convStr"

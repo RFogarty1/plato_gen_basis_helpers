@@ -3,7 +3,8 @@ import os
 import subprocess
 
 
-from fitgauss_plato_file_helpers import ChDir
+from ..shared import ch_dir as chDir
+
 
 def runTbintFromCommStr(filePath:"Should really be a folder", optStr=None, startDir=None, elements:list=None):
 
@@ -30,7 +31,7 @@ def runTbintFromCommStr(filePath:"Should really be a folder", optStr=None, start
 
 	runComm = "tbint " + optStr.strip() + " " + elementStr
 
-	with ChDir(startDir, workFolder):
+	with chDir.ChDir(startDir, workFolder):
 		subprocess.check_call(runComm,shell=True)
 
 

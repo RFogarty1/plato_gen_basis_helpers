@@ -5,7 +5,7 @@ import sys
 import unittest
 
 sys.path.append('..')
-import ref_elemental_objs as tCode
+import gen_basis_helpers.ref_data.ref_elemental_objs as tCode
 
 class TestShellAngMomMapper(unittest.TestCase):
 

@@ -4,7 +4,7 @@
 import os
 import pathlib
 
-import bulk_mod_fitting as fitBMod
+import plato_pylib.utils.fit_eos as fitBMod
 import cp2k_file_helpers as cp2kHelp
 import cp2k_calc_objs as cp2kCalcObjs
 
