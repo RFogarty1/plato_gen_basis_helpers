@@ -10,6 +10,7 @@ import sys
 
 from ..job_utils import dos_helpers as dosHelp
 from . import ref_elemental_objs as refEleObjs
+from . import helpers_ref_data as helpers
 import plato_pylib.parseOther.parse_castep_files as parseCastep
 import plato_pylib.plato.mod_plato_inp_files as modInp
 import plato_pylib.plato.plato_paths as platoPaths
@@ -20,17 +21,13 @@ import plato_pylib.utils.supercell as supCell
 import numpy as np
 
 
-import plato_pylib.utils.fit_eos as fitBMod
-
-
 tb1Model = os.path.join("Mg_bases_spd_att6","rc_7pt3","tb1_mcweda")
 dft2Model = str(tb1Model)
 dftModel = str(tb1Model)
 
-
+BASE_FOLDER = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/testing_models/castep_database/mg"
 
 def createMgReferenceDataObj():
-	basePath = "/media/ssd1/rf614/Work/Plato"
 	tb1ModAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(tb1Model)
 	dft2ModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dft2Model)
 	dftModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dftModel,dtype="dft")
@@ -93,25 +90,11 @@ def _getMgExptHcpAsUCell():
 	aVal = 3.20922 #In Angstrom
 	lattParams = [aVal,aVal,aVal*cOverA]
 
-	outCell = _getPerfectHcpMinimalUCell("Mg")
+	outCell = helpers.getPerfectHcpMinimalUCell("Mg")
 	outCell.setLattParams(lattParams)
 	outCell.convAngToBohr()
 
 	return outCell
-
-
-
-def _getPerfectHcpMinimalUCell(element="Mg"):
-	lattVects = [ [ 1.00000000, 0.00000000, 0.00000000],
-	              [-0.50000000, 0.86602540, 0.00000000],
-	              [ 0.00000000, 0.00000000, 1.00000000] ]
-	
-	fractCoords = [ [0.0,0.0,0.0,element], [ 1/3, 2/3, 0.5, element] ]
-	idealCoverA = math.sqrt( 8/3 )
-
-	perfectHcpCell = UCell.UnitCell.fromLattVects(lattVects, fractCoords=fractCoords)
-	perfectHcpCell.setLattParams([1.0,1.0,idealCoverA])
-	return perfectHcpCell
 
 
 #INTERFACE FUNCTION
@@ -124,20 +107,17 @@ def getPlaneWaveGeom(structType:str):
 
 # Optimised Plane-wave structures (PBE)
 def _getMgPlaneWaveHcpGeomAsUCell():
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/opt_geoms"
-	refPath = os.path.join(refFolder,"hcp","Mg_hcp_SPE_otf_10el_usp_PP_6pt06.geom")
+	refPath = os.path.join(BASE_FOLDER,"opt_geoms","hcp","Mg_hcp_SPE_otf_10el_usp_PP_6pt06.geom")
 	initUCell = parseCastep.parseCastepGeomFile(refPath)[-1]["unitCell"]
 	return initUCell
 
 def _getMgPlaneWaveBCCGeomAsUCell():
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/opt_geoms"
-	refPath = os.path.join(refFolder, "bcc", "Mg_bcc_opt_otf_10el_usp_PP.geom")
+	refPath = os.path.join(BASE_FOLDER,"opt_geoms","bcc", "Mg_bcc_opt_otf_10el_usp_PP.geom")
 	initUCell = parseCastep.parseCastepGeomFile(refPath)[-1]["unitCell"]
 	return initUCell
 
 def _getMgPlaneWaveFCCGeomAsUCell():
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/opt_geoms"
-	refPath = os.path.join(refFolder, "fcc", "Mg_fcc_opt_otf_10el_usp_PP.geom")
+	refPath = os.path.join(BASE_FOLDER,"opt_geoms", "fcc", "Mg_fcc_opt_otf_10el_usp_PP.geom")
 	initUCell = parseCastep.parseCastepGeomFile(refPath)[-1]["unitCell"]
 	return initUCell
 
@@ -150,38 +130,28 @@ def getUCellsForBulkModCalcs(structType:str):
 	return structTypeToFunct[structType.lower()]()
 
 def _getHCPBulkModUCells():
-	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
-	refFolder = os.path.join(baseRefFolder,"hcp")
-	return _getUCellsFromBulkModFolder(refFolder)
+	refFolder = os.path.join(BASE_FOLDER,"eos","hcp")
+	return helpers.getUCellsFromCastepBulkModFolder(refFolder)
 
 def _getBCCBulkModUCells():
-	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
-	refFolder = os.path.join(baseRefFolder,"bcc")
-	return _getUCellsFromBulkModFolder(refFolder)
+	refFolder = os.path.join(BASE_FOLDER,"eos","bcc")
+	return helpers.getUCellsFromCastepBulkModFolder(refFolder)
 
 def _getFCCBulkModUCells():
-	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
-	refFolder = os.path.join(baseRefFolder,"fcc")
-	return _getUCellsFromBulkModFolder(refFolder)
+	refFolder = os.path.join(BASE_FOLDER,"eos","fcc")
+	return helpers.getUCellsFromCastepBulkModFolder(refFolder)
 
-def _getUCellsFromBulkModFolder(refFolder):
-	casOutFiles = [os.path.join(refFolder,x) for x in os.listdir(refFolder) if x.endswith('.castep')]
-	parsedUCells = [parseCastep.parseCastepOutfile(x)["unitCell"] for x in casOutFiles]
-	[x.convAngToBohr() for x in parsedUCells]
-	return parsedUCells
 
 #Random structures:
 def getHcpComprStructAsUCell():
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
-	refPath = os.path.join(refFolder, "hcp", "Mg_hcp_SPE_otf_10el_usp_PP_5pt81.castep")
+	refPath = os.path.join(BASE_FOLDER,"eos", "hcp", "Mg_hcp_SPE_otf_10el_usp_PP_5pt81.castep")
 	initUCell = parseCastep.parseCastepOutfile(refPath)["unitCell"]
 	initUCell.convAngToBohr()
 	return initUCell
 
 
 def getBccComprStructAsUCell():
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
-	refPath = os.path.join(refFolder, "bcc", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt592.castep")
+	refPath = os.path.join(BASE_FOLDER,"eos", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt592.castep")
 	initUCell = parseCastep.parseCastepOutfile(refPath)["unitCell"]
 	initUCell.convAngToBohr()
 	return initUCell
@@ -195,27 +165,18 @@ def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
 	return structTypeToFunct[structType](eos)
 
 def _getPlaneWaveEosDictHCP(eos):
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
-	outFolder = os.path.join(refFolder,"hcp")
-	fileList = [os.path.join(outFolder,x) for x in os.listdir(outFolder) if x.endswith('.castep')]
-	return _getEosDictFromFilePaths(fileList,eos)
+	outFolder = os.path.join(BASE_FOLDER,"eos","hcp")
+	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
 
 def _getPlaneWaveEosDictFCC(eos):
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
-	outFolder = os.path.join(refFolder,"fcc")
-	fileList = [os.path.join(outFolder,x) for x in os.listdir(outFolder) if x.endswith('.castep')]
-	return _getEosDictFromFilePaths(fileList,eos)
+	outFolder = os.path.join(BASE_FOLDER,"eos","fcc")
+	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
 
 def _getPlaneWaveEosDictBCC(eos):
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/bulk_modulii/pure_mg"
-	outFolder = os.path.join(refFolder,"bcc")
-	fileList = [os.path.join(outFolder,x) for x in os.listdir(outFolder) if x.endswith('.castep')]
-	return _getEosDictFromFilePaths(fileList,eos)
+	outFolder = os.path.join(BASE_FOLDER,"eos","bcc")
+	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
 
 
-def _getEosDictFromFilePaths(filePaths,eos):
-	outDict = fitBMod.getBulkModFromOutFilesAseWrapper(filePaths, eos=eos)
-	return outDict
 
 #Density of states for planeWave Calcs
 def getDosPlaneWave(structType:str):
@@ -228,29 +189,24 @@ def getDosPlaneWave(structType:str):
 	return structTypeToFunct[structType.lower()]()
 
 def _getHCPDosPlaneWaveExptGeom():
-	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/some_dos/hcp_eqm"
-	outFile = os.path.join(baseRefFolder, "Mg_hcp.fixed.dat")
+	outFile = os.path.join(BASE_FOLDER, "dos", "hcp_eqm", "Mg_hcp.fixed.dat")
 	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
 
 def _getFCCDosPlaneWave():
-	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/some_dos/fcc_eqm"
-	outFile = os.path.join(baseRefFolder, "Mg_fcc.fixed.dat")
+	outFile = os.path.join(BASE_FOLDER, "dos", "fcc_eqm", "Mg_fcc.fixed.dat")
 	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
 
 def _getBCCDosPlaneWave():
-	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/some_dos/bcc_eqm"
-	outFile = os.path.join(baseRefFolder, "Mg_bcc.fixed.dat")
+	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_eqm", "Mg_bcc.fixed.dat")
 	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
 
 
 def _getHcpDosPlaneWaveComprGeomA():
-	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/some_dos/hcp_compr"
-	outFile = os.path.join(baseRefFolder, "Mg_hcp.fixed.dat")
+	outFile = os.path.join(BASE_FOLDER, "dos", "hcp_compr", "Mg_hcp.fixed.dat")
 	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
 
 def _getBccDosPlaneWaveComprGeomA():
-	baseRefFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/some_dos/bcc_compr"
-	outFile = os.path.join(baseRefFolder, "Mg_bcc.fixed.dat")
+	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_compr", "Mg_bcc.fixed.dat")
 	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
 
 
@@ -269,35 +225,23 @@ def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:
 
 
 def _getHcpPlaneWaveStruct_interTetraUnrelaxed332():
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/interstitial/ref_files"
-	refFile = os.path.join(refFolder,"mg_tetrahedral_interstitial_3_3_2.cell")
-	return _getUCellFromCrystalMakerCastepOutFile(refFile)
+	refFile = os.path.join(BASE_FOLDER, "interstitial", "unrelaxed", "hcp_tetra_inter.castep")
+	pasedUCell = parseCastep.parseCastepOutFile(refRef)["unitCell"]
+	parsedUCell.convAngToBohr()
+	return parsedUCell
 
 
 def _getHcpPlaneWaveStruct_interOctaUnrelaxed332():
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/interstitial/ref_files"
-	refFile = os.path.join(refFolder,"mg_octahedral_interstitial_3_3_2.cell")
-	return _getUCellFromCrystalMakerCastepOutFile(refFile)
+	refFile = os.path.join(BASE_FOLDER, "interstitial", "unrelaxed", "hcp_octa_inter.castep")
+	parsedUCell = parseCastep.parseCastepOutFile(refRef)["unitCell"]
+	parsedUCell.convAngToBohr()
+	return parsedUCell
 
+
+#NOTE: This geometry is wrong, acidentally obtained with the wrong k-point mesh being used in the final optimisation, hence this will give a bug until i replace the file
 def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
-	refFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/build_database/fermi_dirac_smearing/interstitial/relaxed/const_p"
-	refFile = os.path.join(refFolder,"hcp_octa_inter.geom")
+	refFile = os.path.join(BASE_FOLDER,"interstitial","relaxed","constant_p","hcp_octa_inter.geom")
 	outUCell = parseCastep.parseCastepGeomFile(refFile)[-1]["unitCell"]
-	return outUCell
-
-def _getUCellFromCrystalMakerCastepOutFile(refFile):
-	tokenizedFile = parseCastep.tokenizeCastepCellFileAndRemoveBlockFromKeys(refFile)
-
-	#Step 1 = get lattice vectors via the cell parameters. The fract co-ords should work fine for this (checked for octa supercell of hcp)
-	cellParamStrList = tokenizedFile["lattice_abc"].strip().split()
-	lattParams = [float(x) for x in cellParamStrList[1:4]]
-	lattAngles = [float(x) for x in cellParamStrList[4:]]
-	outUCell = UCell.UnitCell(lattParams=lattParams, lattAngles=lattAngles)
-	outUCell.convAngToBohr()
-
-	#Step 2 = get the fractional co-ords. Note I'm pretty sure this relies on me picking the "right" lattice vectors.
-	outUCell.fractCoords = parseCastep._getFractCoordsFromTokenizedCellFile(tokenizedFile)
-
 	return outUCell
 
 

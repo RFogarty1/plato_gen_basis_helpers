@@ -8,7 +8,7 @@ import plato_pylib.plato.mod_plato_inp_files as platoInp
 import plato_pylib.utils.job_running_functs as jobRun
 
 
-from plato_calc_objs import PlatoMethod, CalcObj
+from .plato_calc_objs import PlatoMethod, CalcObj
 
 
 METHOD_STR_TO_OBJ = dict()

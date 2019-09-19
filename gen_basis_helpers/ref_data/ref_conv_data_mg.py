@@ -1,5 +1,5 @@
 
-import ref_conv_data_objs as refObjBase
+from . import ref_conv_data_objs as refObjBase
 
 
 def createConvObj():

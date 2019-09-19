@@ -1,5 +1,5 @@
 
-import ref_conv_data_objs as refObjBase
+from . import ref_conv_data_objs as refObjBase
 
 """ NOTE: Just used the Mg values at the moment; and will stay that way until i run the convergence calculations for Zr """
 

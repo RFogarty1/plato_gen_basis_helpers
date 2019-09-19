@@ -2,16 +2,20 @@
 """ Provides access to reference structures and data for pure Zr """
 
 import os
+from . import helpers_ref_data as helpers
 from . import ref_elemental_objs as refEleObjs
 import plato_pylib.plato.mod_plato_inp_files as modInp
 import plato_pylib.plato.parse_tbint_files as parseTbint
 import plato_pylib.plato.plato_paths as platoPaths
 
-from . import ref_data_mg as refMg
 
-tb1Model = os.path.join("Test","zr_reg_test")
+tb1Model = os.path.join("Test","zr_reg_test") #TODO:CHANGE
 dft2Model = str(tb1Model)
 dftModel = str(tb1Model) #Note havnet even got this stub version yet
+
+
+BASE_FOLDER = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/testing_models/castep_database/zr"
+
 
 
 def createZrReferenceDataObj():
@@ -47,53 +51,87 @@ class ZrReferenceDataObj(refEleObjs.RefElementalDataBase):
 		return self._modelHolder
 
 	def getPlaneWaveGeom(self,key):
-		return _get_FAKE_MADE_UP_PLANE_WAVE_GEOM(key)
+		return getPlaneWaveGeom(key)
 
-	#TODO: THIS IS USING THE MG VALUES AT THE MOMENT
+	def getExptGeom(self,key):
+		keyToFunct = {"hcp": getExptStructAsUCell}
+		return keyToFunct[key]()
+
+
 	def getStructsForEos(self,key):
-		mgStructs = refMg.getUCellsForBulkModCalcs(key)
-		for currStruct in mgStructs:
-			fCoords = currStruct.fractCoords
-			for currCoords in fCoords:
-				currCoords[-1] = "Zr"
-			currStruct.fractCoords = fCoords
-		return mgStructs
+		return getUCellsForBulkModCalcs(key)
 
-	#TODO: THIS IS USING MG VALUES
 	def getEosFitDict(self,key,eos="murnaghan"):
-		return refMg.getPlaneWaveEosFitDict(key,eos=eos)
+		return getPlaneWaveEosFitDict(key,eos=eos)
 
 
-	#TODO: THIS IS USING THE MG VALUES
-	def getSelfInterstitialPlaneWaveStruct(self, structType, interstitialType, relaxType, cellSize):
-		mgStruct = refMg.getInterstitialPlaneWaveStruct(structType, interstitialType, relaxType, cellSize)
-		self._replaceMgWithZrInUCell(mgStruct)
-		return mgStruct
+	def getInterstitialPlaneWaveStruct(self, structType, interstitialType, relaxType, cellSize):
+		return getInterstitialPlaneWaveStruct(structType, interstitialType, relaxType, cellSize)
 
 
 	def getVacancyPlaneWaveStruct(self, structType, relaxType, cellSize):
-		mgStruct = refMg.getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
-		self._replaceMgWithZrInUCell(mgStruct)
-		return mgStruct
-
-	def _replaceMgWithZrInUCell(self,ucell):
-		fCoords = ucell.fractCoords
-		for currCoords in fCoords:
-			currCoords[-1] = "Zr"
-		ucell.fractCoords = fCoords
+		return getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
 
 
 
-def _get_FAKE_MADE_UP_PLANE_WAVE_GEOM(key):
-	structTypeToFunct = {"hcp":_getZrPlaneWaveHcpGeomAsUCell}
-	return structTypeToFunct[key.lower()]()
+
+def getExptStructAsUCell():
+	''' a=3.233 A and c=5.182 A, making c/a = 1.063  - originally from W.B. Pearson, A Handbook of Lattice Spacings and Structures ofMetals (Pergamon Press, Oxford, 1967). '''
+
+	aVal = 3.233
+	cVal = 5.182
+	lattParams = [aVal, aVal, cVal] 
+
+	outCell = helpers.getPerfectHcpMinimalUCell("Zr")
+	outCell.setLattParams(lattParams)
+	outCell.convAngToBohr()
+
+	return outCell
 
 
-def _getZrPlaneWaveHcpGeomAsUCell():
-	lattParams = [3.23,3.23,5.15] #Angstroms
-	basicHcp = refMg._getPerfectHcpMinimalUCell("Zr")
-	basicHcp.setLattParams(lattParams)
-	basicHcp.convAngToBohr()
-	return basicHcp
+def getPlaneWaveGeom(structType:str):
+	refFolder = os.path.join(BASE_FOLDER, "opt_geoms", structType)
+	structTypeToFileName = {"hcp": "Zr_hcp_opt.castep",
+	                        "bcc": "Zr_bcc_opt.castep",
+	                        "fcc": "Zr_fcc_opt.castep"}
 
+	return structTypeToFunct[structType.lower()]()
+
+
+def getUCellsForBulkModCalcs(structType:str):
+	refFolder = os.path.join(BASE_FOLDER, "eos", structType)
+	return helpers.getUCellsFromCastepBulkModFolder(refFolder)
+
+
+#Plane wave bulk mod fits using ASE (Actually does the fit while function is called)
+def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
+	outFolder = os.path.join(BASE_FOLDER, "eos", structType)
+	print("USING BASE FOLDER = {}".format(BASE_FOLDER))
+	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
+
+
+
+def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:"str, octahedral or tetrahedral",
+                                   relaxType:"str, unrelaxed or relaxed", cellSize:"Str with dims, e.g 3_3_2"):
+	paramsToStructDict = {("hcp","octahedral", "relaxed_constant_pressure","3_3_2"):_getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332()}
+	return paramsToStructDict[(structType,interstitialType,relaxType,cellSize)]
+
+
+def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
+	refFile = os.path.join(BASE_FOLDER, "interstitial", "relaxed", "constant_p", "Zr_hcp_strain6_0-Ointerstitial.castep")
+	parsedUCell = parseCastep.parseCastepOutFile(refRef)["unitCell"]
+	parsedUCell.convAngToBohr()
+	return parsedUCell
+
+
+def getVacancyPlaneWaveStruct(structType, relaxType, cellSize):
+	baseUCell = getPlaneWaveGeom(structType)
+	cellDims = [int(x) for x in cellSize.split("_")]
+
+	if relaxType == "unrelaxed":
+		vacCell = supCell.superCellFromUCell(baseUCell, cellDims)
+		defects.makeVacancyUnitCell(vacCell)
+		return vacCell
+	else:
+		raise NotImplementedError("Only unrelaxed vancancies are currently implemented")
 
