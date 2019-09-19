@@ -8,8 +8,9 @@ import plato_pylib.plato.mod_plato_inp_files as modInp
 import plato_pylib.plato.parse_tbint_files as parseTbint
 import plato_pylib.plato.plato_paths as platoPaths
 
+import plato_pylib.parseOther.parse_castep_files as parseCastep
 
-tb1Model = os.path.join("Test","zr_reg_test") #TODO:CHANGE
+tb1Model = os.path.join("Zr_models","two_body_2019") 
 dft2Model = str(tb1Model)
 dftModel = str(tb1Model) #Note havnet even got this stub version yet
 
@@ -94,8 +95,10 @@ def getPlaneWaveGeom(structType:str):
 	structTypeToFileName = {"hcp": "Zr_hcp_opt.castep",
 	                        "bcc": "Zr_bcc_opt.castep",
 	                        "fcc": "Zr_fcc_opt.castep"}
-
-	return structTypeToFunct[structType.lower()]()
+	refPath = os.path.join(refFolder, structTypeToFileName[structType])
+	uCell = parseCastep.parseCastepOutfile(refPath)["unitCell"]
+	uCell.convAngToBohr()
+	return uCell
 
 
 def getUCellsForBulkModCalcs(structType:str):
@@ -106,7 +109,6 @@ def getUCellsForBulkModCalcs(structType:str):
 #Plane wave bulk mod fits using ASE (Actually does the fit while function is called)
 def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
 	outFolder = os.path.join(BASE_FOLDER, "eos", structType)
-	print("USING BASE FOLDER = {}".format(BASE_FOLDER))
 	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
 
 
