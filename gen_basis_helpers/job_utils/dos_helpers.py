@@ -7,8 +7,7 @@ import sys
 
 import numpy as np
 
-import analyse_plato_bandstructures as bStructs
-import plato_pylib.parse_plato_out_files as platoOut
+import plato_pylib.plato.parse_plato_out_files as platoOut
 from ..shared import ch_dir as chDir 
 
 

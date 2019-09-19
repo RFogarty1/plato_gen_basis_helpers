@@ -8,13 +8,13 @@ import os
 import math
 import sys
 
-import dos_helpers as dosHelp
-import ref_elemental_objs as refEleObjs
-import plato_pylib.shared.ucell_class as UCell
+from ..job_utils import dos_helpers as dosHelp
+from . import ref_elemental_objs as refEleObjs
 import plato_pylib.parseOther.parse_castep_files as parseCastep
 import plato_pylib.plato.mod_plato_inp_files as modInp
 import plato_pylib.plato.plato_paths as platoPaths
 import plato_pylib.plato.parse_tbint_files as parseTbint
+import plato_pylib.shared.ucell_class as UCell
 import plato_pylib.utils.defects as defects
 import plato_pylib.utils.supercell as supCell
 import numpy as np
@@ -60,6 +60,10 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def modelFiles(self):
 		return self._modelHolder
 
+	def getExptGeom(self,key):
+		keyToFunct = {"hcp": getExptStructAsUCell}
+		return keyToFunct[key]()
+
 	def getPlaneWaveGeom(self,key):
 		return getPlaneWaveGeom(key)
 
@@ -80,7 +84,7 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 # Experimental Structure
 def getExptStructAsUCell():
 	''' From Walker 1959: DOI=10.1016/0001-6160(59)90090-2 Units of returned ucell are in bohr'''
-	return getMgExptHcpAsUCell()
+	return _getMgExptHcpAsUCell()
 
 def _getMgExptHcpAsUCell():
 	''' From Walker 1959: DOI=10.1016/0001-6160(59)90090-2 Units of returned ucell are in bohr'''

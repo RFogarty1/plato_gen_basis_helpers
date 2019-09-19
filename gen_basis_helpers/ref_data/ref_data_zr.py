@@ -2,12 +2,12 @@
 """ Provides access to reference structures and data for pure Zr """
 
 import os
-import ref_elemental_objs as refEleObjs
+from . import ref_elemental_objs as refEleObjs
 import plato_pylib.plato.mod_plato_inp_files as modInp
 import plato_pylib.plato.parse_tbint_files as parseTbint
 import plato_pylib.plato.plato_paths as platoPaths
 
-import ref_data_mg as refMg
+from . import ref_data_mg as refMg
 
 tb1Model = os.path.join("Test","zr_reg_test")
 dft2Model = str(tb1Model)
