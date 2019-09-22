@@ -47,7 +47,6 @@ class ElementConfigEqmStructs():
 
 
 
-#TODO: Implement eleAndStructKeyToUCell
 class TotalEnergyConvRunnerOptions():
 	"""Class which encapsulates all the options (except converged paramter type) for running convergence calculations 
 	for total energy for a single structure. NOTE: Recommended to use the fromEnforcedKwargs initialisation function
@@ -115,7 +114,7 @@ def _createJobRunnerSingleElementConvStructType(element, convRunnerOpts, structK
     paramToOptDictMapper = _getVaryTypeParamToOptDictMapper(varyType)
     uCell = convRunnerOpts.eleAndStructKeyToUCell(element,structKey)
     label = "{}_{}_{}{}".format(element,varyType,structKey,labelExt)
-    workFolder = os.path.join(convRunnerOpts.baseFolder,element,structKey,varyType)
+    workFolder = os.path.join(convRunnerOpts.baseFolder,element,structKey,varyType, labelExt)
     platoCode = convRunnerOpts.eleConfigStructs[element].getPlatoCodeFromVaryType(varyType)
     
     baseModOptsDict = _getBaseModOptsDictFromVaryTypeEleConfigAndStructKey(varyType, convRunnerOpts.eleConfigStructs[element], structKey)
@@ -189,7 +188,7 @@ def _getDataSetFromPlatoCodeAndElementAndRefDataStruct(platoCode, element,refDat
     if platoCode == "dft2":
         return eleData.modelFiles.dft2PlatoPath
     elif platoCode == "dft":
-        return eleData.modelFiles.dftPlatoPath #TODO: modelFiles is bugged for this; fix it
+        return eleData.modelFiles.dftPlatoPath
     else:
         raise ValueError("platoCode = {} isnt allowed".format(platoCode))
 
