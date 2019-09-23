@@ -102,6 +102,11 @@ class MultiCrystEosResult( EosDataHolderOneElementAndMethod ):
 	def elementLabel(self):
 		return self._singCrysts[0].elementLabel
 
+	@elementLabel.setter
+	def elementLabel(self,value):
+		for x in self._singCrysts:
+			x.elementLabel = value
+
 	@property
 	def methodLabel(self):
 		return self._singCrysts[0].methodLabel
@@ -195,6 +200,10 @@ class SingleCrystEosResult( EosDataHolderOneElementAndMethod ):
 	def elementLabel(self):
 		return self._elementLabel
 
+	@elementLabel.setter
+	def elementLabel(self,value):
+		self._elementLabel = value
+
 	@property
 	def tableHeadings(self):
 		return ["Method","v0","b0","e0"]
@@ -267,7 +276,7 @@ class GroupedMultiCrystEosForOneElement():
         
         xLabel = "Volume per atom / $a_{0}^{3}$"
         yLabel = "$\Delta$E per atom / eV"
-        title = self.elementLabel + " " + methodLabel.replace("_"," ")
+        title = self.elementLabel.replace("_"," ") + " " + methodLabel.replace("_"," ")
         structLabels = [x.replace("_"," ") for x in structOrder]
         modelLabels = [x.replace("_"," ") for x in [refStr,methodLabel]]
         currFig = pltFuncts.createEnergyVsVolCurves_multiStructEachMethod( [refData, plotData], title=title,structLabels=structLabels,

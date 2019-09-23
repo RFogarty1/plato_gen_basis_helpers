@@ -704,6 +704,25 @@ def _getOptDict_dft2_exact_e1_pp_uniform_e0():
 	return outOptDict
 
 
+#@registerMethodStrToObj("dft2_minimal_for_debuggingA")
+#def createPlatoMethod_dft2_minimal_for_debuggingA():
+#	runCommFunct = _getRunCommPlatoDft2
+#	optDict = _getOptDict_dft2_minimal_for_debuggingA()
+#	getStrDictFromOptDict = getPlatoStrDictFromOptDict_tb1OrTb2
+#	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+#
+#def _getOptDict_dft2_minimal_for_debuggingA():
+#	outOptDict = loadDefaultTb2OptDict()
+#	modOptsDict = {"XtalXCMethod".lower():-1,
+#				  "HopXCMethod".lower():-1,
+#	              "XtalVnaMethod".lower():-1,
+#	              "HopVnaMethod".lower():-1,
+#	              "XtalVnlMethod".lower():-1,
+#	              "HopVnlMethod".lower():-1}
+#	outOptDict.update(modOptsDict)
+#	return outOptDict
+
+
 
 
 @registerMethodStrToObj("dft2_exact")
