@@ -359,9 +359,11 @@ class PropConvAnalyserStandard(PropConvAnalyser):
 
 	def plotData(self, **kwargs):
 		inpKwargs = {"titleStr":self.label}
-		inpKwargs.update(kwargs)
+		inpKwargs.update(kwargs) #Overwrite any inpKwargs with use options
 		return [self.dataPlotter.createPlot(self.data, **inpKwargs)]
 
 	def tabulateData(self, **kwargs):
-		return [self.tabulator.createTable(self.data[0], **kwargs)] #0 is pretty dumb really, we shouldnt actually be storing this as a list since there can only ever be 1 entry (unless i want to combine analysers in a weird way)
+		inpKwargs = {"titleStr":self.label}
+		inpKwargs.update(kwargs)
+		return [self.tabulator.createTable(self.data[0], **inpKwargs)] #0 is pretty dumb really, we shouldnt actually be storing this as a list since there can only ever be 1 entry (unless i want to combine analysers in a weird way)
 
