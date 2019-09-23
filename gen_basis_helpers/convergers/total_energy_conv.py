@@ -71,6 +71,7 @@ class TotalEnergyConvRunnerOptions():
 		self.baseFolder = kwargs.get( "baseFolder", None )
 		self.runJobsDict = kwargs.get( "runJobsDict", None ) #Keys are convType keywords, values are True/False for whether to run the jobs or not
 		self.eTypeAll = kwargs.get( "eTypeAll", None ) #String denoting the type of energy to pull from files
+		self.ePerAtom = kwargs.get( "ePerAtom", True ) # Bool on whether to use energy per atom in output
 		
 	@classmethod
 	def fromEnforcedKwargs(cls,**kwargs):
@@ -133,7 +134,7 @@ def _createJobRunnerSingleElementConvStructType(element, convRunnerOpts, structK
         varyParamStr = "{:.3f}".format(vSingleVal).replace(".","pt")
         currWorkFolder = os.path.join(workFolder, varyParamStr )
         outWorkFlow = eCurveWorkFlows.CreateStructEnergiesWorkFlow([uCell], modOptsDict, currWorkFolder, platoCode,
-                                                                     varyType=None, eType=convRunnerOpts.eTypeAll)()
+                                                                     varyType=None, eType=convRunnerOpts.eTypeAll, ePerAtom=convRunnerOpts.ePerAtom)()
         _modECurveWorkFlowToReturnFirstListValue(outWorkFlow)
         _modECurveWorkFlowToReturnValueInEv(outWorkFlow)
         allWorkFlows.append(outWorkFlow)
