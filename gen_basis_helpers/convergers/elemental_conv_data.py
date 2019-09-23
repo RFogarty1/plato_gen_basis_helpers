@@ -49,7 +49,7 @@ class MgElementConfig(eConvergers.ElementConfigEqmStructs):
 	
 	def _getVaryAngularPoints(self,structType):
 #		return [5,10,15]
-		return [x for x in range(30, 70, 5)]
+		return [x for x in range(30, 65, 5)] #60 angular is the limit for rc=8.0 basis
 
 	def _getVaryRadialPoints(self,structType):
 		return [x for x in range(40,90,10)]
@@ -107,7 +107,7 @@ class ZrElementConfig(eConvergers.ElementConfigEqmStructs):
 	
 	def _getVaryAngularPoints(self,structType):
 #		return [5,8,13]
-		return [x for x in range(30, 70, 5)]
+		return [x for x in range(30, 65, 5)] #60 angular is the limit for rc=8.0 basis
 
 	def _getVaryRadialPoints(self,structType):
 #		return [10,15,20]
