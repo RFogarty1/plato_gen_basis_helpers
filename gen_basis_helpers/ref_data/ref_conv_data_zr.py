@@ -23,6 +23,10 @@ class ZrConvObj(refObjBase.RefConvergenceDatabase):
 	def integGridVals(self):
 		return self._integGridVals
 
+	@integGridVals.setter
+	def integGridVals(self,value):
+		self._integGridVals = value
+
 	@property
 	def kptGridVals(self):
 		return self._kptGridVals
@@ -35,6 +39,7 @@ class ZrIntegGridConv(refObjBase.IntegGridConvergencePureElements):
 
 	def getPrimCellDft2AngularGrid(self,structKey):
 		structToGrid = {"fcc": [50,50,50], "bcc": [60,50,50], "hcp": [50,50,50]}
+#		structToGrid = {"fcc": [5,5,5], "bcc": [6,5,5], "hcp": [5,5,5]}
 		return structToGrid[ structKey.lower() ]
 
 	def getPrimCellDftFFTGrid(self,structKey):
@@ -52,6 +57,7 @@ class ZrKPointConv(refObjBase.KPointConvergence):
 
 	def getKptsPrimCell(self,structKey):
 		structToKpts = {"fcc": [20,20,20], "bcc": [20,20,20], "hcp": [20,20,12]}
+#		structToKpts = {"fcc": [1,1,1], "bcc": [1,1,1], "hcp": [1,1,1]}
 		return structToKpts[ structKey.lower() ]
 		
 	def getKPtsSuperCell(self,structKey,dims):

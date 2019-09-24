@@ -151,7 +151,7 @@ def getHcpComprStructAsUCell():
 
 
 def getBccComprStructAsUCell():
-	refPath = os.path.join(BASE_FOLDER,"eos", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt592.castep")
+	refPath = os.path.join(BASE_FOLDER,"eos", "bcc", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt592.castep")
 	initUCell = parseCastep.parseCastepOutfile(refPath)["unitCell"]
 	initUCell.convAngToBohr()
 	return initUCell
