@@ -77,7 +77,7 @@ class MgElementConfig(eConvergers.ElementConfigEqmStructs):
 		hcpVals = [ [2,2,1],   [6,6,4],	[8,8,5]   ,   [10,10,6],
 					[14,14,9], [20,20,12], [24,24,15],   [32,32,20]  ]
 
-		hcp332_vals = [ [2,2,1], [4,4,3], [6,6,4], [8,8,6], [10,10,6] ]
+		hcp332_vals = [ [2,2,1], [4,4,3], [6,6,4], [8,8,6], [10,10,8] ]
 		structToVaryPoints = { "hcp":hcpVals,
 							   "bcc":singleAtomVals,
 							   "fcc":singleAtomVals,
@@ -155,7 +155,7 @@ class ZrElementConfig(eConvergers.ElementConfigEqmStructs):
 		hcpVals = [ [2,2,1],   [6,6,4],	[8,8,5]   ,   [10,10,6],
 					[14,14,9], [20,20,12], [24,24,15],   [32,32,20]  ]
 
-		hcp332_vals = [ [2,2,1], [4,4,3], [6,6,4], [8,8,6], [10,10,6] ]
+		hcp332_vals = [ [2,2,1], [4,4,3], [5,5,5], [6,6,4], [8,8,6], [10,10,8] ]
 		structToVaryPoints = { "hcp":hcpVals,
 							   "bcc":singleAtomVals,
 							   "fcc":singleAtomVals,
