@@ -2,6 +2,10 @@
 """ Provides access to reference structures and data for pure Zr """
 
 import os
+
+import numpy as np 
+
+from ..job_utils import dos_helpers as dosHelp
 from . import helpers_ref_data as helpers
 from . import ref_elemental_objs as refEleObjs
 import plato_pylib.plato.mod_plato_inp_files as modInp
@@ -36,7 +40,6 @@ def createZrAngMomShellIndices():
 	for key in range(len(shellToAngMomDict.keys())):
 		angMomIndices.append( shellToAngMomDict[key] )
 
-
 	return angMomIndices
 
 
@@ -66,13 +69,15 @@ class ZrReferenceDataObj(refEleObjs.RefElementalDataBase):
 		return getPlaneWaveEosFitDict(key,eos=eos)
 
 
-	def getInterstitialPlaneWaveStruct(self, structType, interstitialType, relaxType, cellSize):
+	def getSelfInterstitialPlaneWaveStruct(self, structType, interstitialType, relaxType, cellSize):
 		return getInterstitialPlaneWaveStruct(structType, interstitialType, relaxType, cellSize)
 
 
 	def getVacancyPlaneWaveStruct(self, structType, relaxType, cellSize):
 		return getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
 
+	def getPlaneWaveDosData(self, structKey):
+		return getDosPlaneWave(structKey)
 
 
 
@@ -121,7 +126,7 @@ def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:
 
 def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
 	refFile = os.path.join(BASE_FOLDER, "interstitial", "relaxed", "constant_p", "Zr_hcp_strain6_0-Ointerstitial.castep")
-	parsedUCell = parseCastep.parseCastepOutFile(refRef)["unitCell"]
+	parsedUCell = parseCastep.parseCastepOutfile(refFile)["unitCell"]
 	parsedUCell.convAngToBohr()
 	return parsedUCell
 
@@ -136,4 +141,37 @@ def getVacancyPlaneWaveStruct(structType, relaxType, cellSize):
 		return vacCell
 	else:
 		raise NotImplementedError("Only unrelaxed vancancies are currently implemented")
+
+
+
+def getDosPlaneWave(structType:str):
+
+	structTypeToFunct = {"hcpExpt".lower(): _getHCPDosPlaneWaveExptGeom,
+	                     "bcc": _getBCCDosPlaneWave,
+	                     "hcpCompr".lower(): _getHcpDosPlaneWaveComprGeomA,
+	                     "bccCompr".lower():_getBccDosPlaneWaveComprGeomA}
+
+	return structTypeToFunct[structType.lower()]()
+
+
+
+def _getHCPDosPlaneWaveExptGeom():
+	outFile = os.path.join(BASE_FOLDER, "dos", "hcp_expt", "Zr_hcp.fixed.dat")
+	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosData"])
+
+
+def _getHcpDosPlaneWaveComprGeomA():
+	outFile = os.path.join(BASE_FOLDER, "dos", "hcp_compr", "Zr_hcp.fixed.dat")
+	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosData"])
+
+
+def _getBCCDosPlaneWave():
+	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_eqm", "Zr_bcc.fixed.dat")
+	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosData"])
+
+
+def _getBccDosPlaneWaveComprGeomA():
+	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_compr", "Zr_bcc_compr.fixed.dat")
+	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosData"])
+
 

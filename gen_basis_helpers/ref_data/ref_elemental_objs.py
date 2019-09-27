@@ -101,6 +101,20 @@ class RefElementalDataBase():
 		"""
 		raise NotImplementedError
 
+	def getPlaneWaveDosData(self, structKey):
+		""" Get energy vs density of states numpy array for structure determined by structKey 
+
+		Args:
+			structKey: key that lets the code fetch the correct density of states
+
+		Returns:
+			dos: np array, 1st row is energies while second is density of states
+
+		Raises:
+			KeyError: If structKey not found
+		"""
+		raise NotImplementedError
+
 class ShellAngMomMapper():
 	""" Maps shell indices to and from angular momentum values for elements """
 	def __init__(self, eleAngMomDict:dict):

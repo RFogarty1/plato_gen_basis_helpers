@@ -76,6 +76,8 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getVacancyPlaneWaveStruct(self, structType, relaxType, cellSize):
 		return getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
 
+	def getPlaneWaveDosData(self, structKey):
+		return getDosPlaneWave(structKey)
 
 
 # Experimental Structure
