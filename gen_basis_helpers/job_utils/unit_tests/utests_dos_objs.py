@@ -6,6 +6,8 @@ import types
 import unittest
 import unittest.mock as mock
 
+import numpy as np
+
 import gen_basis_helpers.job_utils.dos_objs as tCode
 
 class TestDosRunnerPlato(unittest.TestCase):
@@ -53,7 +55,7 @@ class TestDosRunnerPlato(unittest.TestCase):
 		self.testObj.runDosGeneratingCalcs()
 		mockedRunParralel.assert_called_once_with(fakeComm,1) 
 
-	@mock.patch("gen_basis_helpers.job_utils.dos_objs.DosAnalyserPlato")
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.DosAnalyserStandard")
 	@mock.patch("gen_basis_helpers.job_utils.dos_objs.dosHelp.getDosPlotData")
 	def testCreateAnalyser(self, mockedGetDosData, mockedAnalyserClass):
 		fakeDosData = "fake_dos_data"
@@ -108,17 +110,104 @@ class TestDosLabel(unittest.TestCase):
 class TestDosRunnerComposite(unittest.TestCase):
 
 	def setUp(self):
-		pass
-	@unittest.skip("")
+		self.runnerStubA = createRunnerStubA()
+		self.runnerStubB = createRunnerStubB()
+		self.createTestObj()
+
+	def createTestObj(self):
+		self.testObj = tCode.DosRunnerComposite( [self.runnerStubA, self.runnerStubB] )
+
+	def testLabelProperty(self):
+		expLabel = ["fake_labelA","fake_labelB", "fake_labelC"]
+		actLabel = self.testObj.label
+		self.assertEqual(expLabel, actLabel)
+
 	def testInitFailsForDuplicateLabels(self):
-		self.assertTrue(False)
+		self.runnerStubA.label = self.runnerStubB.label
+		with self.assertRaises(ValueError):
+			self.createTestObj()
+
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.DosAnalyserComposite")
+	def testCreateAnalyser(self, analyserMock):
+		expInpObjs = ["fake_analyser_a", "fake_analyser_b"]
+		self.testObj.createAnalyser()
+		analyserMock.assert_called_once_with(expInpObjs)
+
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.jobRun.executeRunCommsParralel")
+	def testRunDosComms(self, mockRunner):
+		nCores=4
+		self.testObj.runDosGeneratingCalcs(nCores)
+		expDosComms = ["fake_dos_a","fake_dos_b","fake_dos_c","fake_dos_d"]
+		mockRunner.assert_called_once_with(expDosComms, nCores)
+
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.jobRun.executeRunCommsParralel")
+	def testRunEnergyComms(self,mockRunner):
+		nCores=3
+		self.testObj.runSinglePointEnergyCalcs(nCores)
+		expEnergyComms = ["fake_e_a", "fake_e_b", "fake_e_c", "fake_e_d"]
+		mockRunner.assert_called_once_with(expEnergyComms, nCores)
+	
+def createRunnerStubA():
+	runnerDictA = {"label":["fake_labelA"],
+	               "createAnalyser": lambda : "fake_analyser_a",
+	               "dosComms":["fake_dos_a","fake_dos_b"],
+	               "singlePointEnergyComms":["fake_e_a", "fake_e_b"]}
+	return types.SimpleNamespace(**runnerDictA)
+
+#This one should mimic a composite
+def createRunnerStubB():
+	runnerDictB = {"label":["fake_labelB", "fake_labelC"],
+	               "createAnalyser": lambda : "fake_analyser_b",
+	               "dosComms":["fake_dos_c","fake_dos_d"],
+	               "singlePointEnergyComms":["fake_e_c", "fake_e_d"]}
+	return types.SimpleNamespace(**runnerDictB)
 
 
 
-def createRunnerCompositeFromStubsA():
-	runnerDictA = {"label": ["fake_labelA"]}
-	runnerDictB = {"label": ["fake_labelB"]}
-	#TODO: Use these stubs as input to a composite constructor; maybe need to make this part of the class actually (so i can set and mess with runnerDictA properties)
+class TestDosAnalyserStandard(unittest.TestCase):
+
+	def setUp(self):
+		self.dosData = [ [1,2], [2,4] ]
+		self.eFermi = 5.4
+		self.eleKey = "Zr"
+		self.methodKey = "method"
+		self.structKey = "struct"
+		self.createTestObj()
+
+	def createTestObj(self):
+		label = tCode.DosLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
+		self.testObj = tCode.DosAnalyserStandard(self.dosData, self.eFermi, label)
+
+	def testGetObjectsWithComponentsAllMatch(self):
+		components = [self.eleKey, self.methodKey, self.structKey]
+		outObjs = self.testObj.getObjectsWithComponents(components)
+		self.assertTrue( len(outObjs)==1 )
+
+	def testGetObjectsWithComponentsEmptyList(self):
+		components = []
+		outObjs = self.testObj.getObjectsWithComponents(components)
+		self.assertTrue( len(outObjs)==1 )
+	
+	def testGetObjectWithComponentsCaseInsensitiveMatch(self):
+		components = [x.upper() for x in [self.eleKey, self.methodKey, self.structKey]]
+		components[0] = components[0].lower()
+		outObjs = self.testObj.getObjectsWithComponents(components, caseSensitive=False)
+		self.assertTrue( len(outObjs)==1 )
+
+	def testGetObjectWithComponentsNotMatching(self):
+		components = [self.eleKey, self.methodKey,"this_doesnt_match"]
+		outObjs = self.testObj.getObjectsWithComponents(components)
+		self.assertTrue( len(outObjs)==0 )
+
+	def testAttachRefDataCorrectComponents(self):
+		components = [self.eleKey]
+		fakeRefData = np.array( [ [2,3],[3,4] ] )
+		self.testObj.attachRefData(fakeRefData,components)
+		self.assertTrue( np.allclose( fakeRefData, self.testObj.refData ) )
+
+
+
+def createAnalyserStubA():
 	return None
 
 

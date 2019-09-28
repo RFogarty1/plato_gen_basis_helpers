@@ -1,8 +1,13 @@
 
 import os
+
+import numpy as np
+
 from ..shared import calc_methods as calcMethods
 from . import dos_helpers as dosHelp
+from . import dos_base_objs as baseObjs
 import plato_pylib.utils.job_running_functs as jobRun
+
 
 
 class DosLabel():
@@ -49,73 +54,51 @@ class DosLabel():
 		return hash( tuple([getattr(self,x) for x in self.reqArgs]) )
 
 
-class DosRunnerBase():
-	"""Class for running DoS calculations.
+class DosRunnerComposite(baseObjs.DosRunnerBase):
 
-	Attributes:
-		dosComms: Bash commands for creating density of states data
-		singlePointEnergyComms: Bash commands for running the single-point energy calculations required
+	def __init__(self, inpObjs):
+		self.objs = inpObjs
+		self._ensureNoDuplicateLabels()
 
-	"""
 
 	@property
 	def dosComms(self):
-		""" iter, each entry is a string for the bash command to create density of states data
-		
-		"""
-		raise NotImplementedError()
-
+		outList = list()
+		for x in self.objs:
+			outList.extend(x.dosComms)
+		return outList
 
 	@property
 	def singlePointEnergyComms(self):
-		""" iter, each entry is a string for the bash command to run the total energy calculation (which is needed to generate Dos Data
-		
-		"""
-		raise NotImplementedError()
+		outList = list()
+		for x in self.objs:
+			outList.extend(x.singlePointEnergyComms)
+		return outList
 
-	def runSinglePointEnergyCalcs(self, nCores=1):
-		""" Runs the single-point energy calculations required to get density of states data
-		
-		Args:
-			nCores: (int) Number of cores to run calculations over (default=1)
-				
-		Returns
-			Nothing
-		
-		"""
-		raise NotImplementedError()
-
+	@property
+	def label(self):
+		outList = list()
+		for x in self.objs:
+			outList.extend(x.label)
+		return outList
 
 	def runDosGeneratingCalcs(self, nCores=1):
-		""" Calculates (and saves somewhere accesible) the density of states data 
-		
-		Args:
-			nCores: (int, optional) Number of cores to run calculations over (default=1)
-				
-		Returns
-			Nothing
-		
-		"""
-		raise NotImplementedError()
+		jobRun.executeRunCommsParralel(self.dosComms,nCores)
+
+	def runSinglePointEnergyCalcs(self, nCores=1):
+		jobRun.executeRunCommsParralel(self.singlePointEnergyComms, nCores)
+
+	def _ensureNoDuplicateLabels(self):
+		if len(self.label) != len(set(self.label)):
+			raise ValueError("Duplicate labels detected")
 
 	def createAnalyser(self):
-		""" Creates a DosAnalyser (possibly composite) object - see DosAnalyserBase or similar
-		
-		Returns
-			DosAnalyser object
-		
-		"""
-		raise NotImplementedError()
+		inpObjs = list()
+		for x in self.objs:
+			inpObjs.append( x.createAnalyser() )
+		return DosAnalyserComposite(inpObjs)
 
-
-
-class DosRunnerComposite(DosRunnerBase):
-
-	def __init__(self, inpObjs):
-		pass
-
-
-class DosRunnerPlato(DosRunnerBase):
+class DosRunnerPlato(baseObjs.DosRunnerBase):
 
 	def __init__(self, platoCalcObj, smearWidth, stepSize, label):
 		""" Initialiser for DosRunnerPlato
@@ -165,12 +148,18 @@ class DosRunnerPlato(DosRunnerBase):
 		dosDataDict = self._getDosDosDataDictAfterRunningCalcs()
 		dosData = dosDataDict["dosdata"]
 		eFermi = dosDataDict["efermi"]
-		return DosAnalyserPlato(dosData, eFermi, self._label)
+		return DosAnalyserStandard(dosData, eFermi, self._label)
 
 
 
-#TODO: Define the base class
-class DosAnalyserPlato():
+class DosAnalyserComposite(baseObjs.DosAnalyserBase):
+
+	def __init__(self, inpObjs):
+		self.objs = inpObjs
+
+
+
+class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 
 	def __init__(self, dosData, eFermi, label):
 		""" Initialiser for DosAnalyser for plato
@@ -181,72 +170,73 @@ class DosAnalyserPlato():
 			label (DosLabel object):
 	
 		"""
-		self.dosData = dosData
+		self.data = np.array(dosData)
+		self.refData = None
 		self.eFermi = eFermi
 		self.label = label
+		self.dataPlotter = None #TODO: Will make a standard dataplotter for DoS plots
+
+	def getObjectsWithComponents(self, components, caseSensitive=True):
+		if self._analyserConsistentWithInpComponentLabels(components,caseSensitive=caseSensitive):
+			return [self]
+		else:
+			return list()
+
+	def attachRefData(self, dosData, components, errorIfNoMatches=True, caseSensitiveComponents=True):
+		if self._analyserConsistentWithInpComponentLabels(components, caseSensitiveComponents):
+			self.refData = np.array(dosData)
+		else:
+			if errorIfNoMatches:
+				raise ValueError("Reference data with components {} not matched".format(components))
 
 
+	def _analyserConsistentWithInpComponentLabels(self, components, caseSensitive=True):
+		inpComponents = list(components)
+		allComps = list(self.label.components)
+		if not caseSensitive:
+			inpComponents = [x.lower() for x in inpComponents]
+			allComps = [x.lower() for x in allComps]
+
+		for x in inpComponents:
+			if x not in allComps:
+				return False
+
+		return True
 
 
+	def plotData(self, **kwargs):
+		return None
 
-
-
-
-
-
-
-
-
+#TODO: Probably accept label as an input argument
 class DosOptions():
-    def __init__(self, methodStr, kpts, startFolder, uCellStruct, smearWidth, stepSize, modelDataFolder, integGrid = None):
-        
-        self.methodStr = methodStr
-        self.kpts = kpts
-        self.startFolder = startFolder
-        self.smearWidth = smearWidth
-        self.stepSize = stepSize
-        self.integGrid = integGrid
-        self.struct = uCellStruct
-        
-        #Create the method
-        self.platoMethodObj = calcMethods.createPlatoMethodObj(self.methodStr)
-        self.platoMethodObj.kpts = kpts
-        self.platoMethodObj.dataSet = modelDataFolder
-        if integGrid is not None:
-            self.platoMethodObj.integGrid = integGrid
+	def __init__(self, methodStr, structKey, eleKey, kpts, startFolder, uCellStruct, smearWidth, stepSize, modelDataFolder, integGrid = None):
+	   
+		self.eleKey = eleKey
+		self.structKey= structKey 
+		self.methodStr = methodStr
+		self.kpts = kpts
+		self.startFolder = startFolder
+		self.smearWidth = smearWidth
+		self.stepSize = stepSize
+		self.integGrid = integGrid
+		self.struct = uCellStruct
+		
+		#Create the method
+		self.platoMethodObj = calcMethods.createPlatoMethodObj(self.methodStr)
+		self.platoMethodObj.kpts = kpts
+		self.platoMethodObj.dataSet = modelDataFolder
+		if integGrid is not None:
+			self.platoMethodObj.integGrid = integGrid
 
-            
-    def createDosObj(self):
-        inpPath = os.path.abspath( os.path.join(self.startFolder,self.methodStr,"spe_for_dos.in") )
-        strDict = self.platoMethodObj.getStrDictWithStruct(self.struct)
-        runCommFunct = self.platoMethodObj.runCommFunction
-        calcObj =  calcMethods.getPlatoCalcObjFromInpPathAndStrDictAndRunCommFunction(inpPath, strDict, runCommFunct)
-        return DosCalcObj(calcObj, self.smearWidth, self.stepSize)
-            
-#class DosCalcObj():
-#    def __init__(self, calcObj:"calcMethods.CalcObj object", smearWidth, stepSize):
-#        self.fileCalcObj = calcObj
-#        self.smearWidth = smearWidth
-#        self.stepSize = stepSize
-#    
-#    def writeEnergyCalcFile(self):
-#        self.fileCalcObj.writeFile()
-#    
-#    def getRunCommEnergyCalc(self):
-#        return self.fileCalcObj.getRunComm()
-#    
-#    def getRunCommDos(self):
-#        return dosHelp.getDosPlotData(self.baseFilePath, self.smearWidth, self.stepSize)
-#    
-#    def getDosPlotData(self):
-#        return dosHelp.getDosPlotData(self.baseFilePath + ".occ", self.smearWidth, self.stepSize, runDos=False)["dosdata"]
-#    
-#    @property
-#    def baseFilePath(self):
-#        return self.fileCalcObj.filePath
-#    
-#    @property
-#    def eFermi(self):
-#        return dosHelp.getDosPlotData(self.baseFilePath + ".occ", self.smearWidth, self.stepSize, runDos=False)["efermi"]
+			
+	def createDosObj(self):
+		inpPath = os.path.abspath( os.path.join(self.startFolder,self.methodStr,"spe_for_dos.in") )
+		strDict = self.platoMethodObj.getStrDictWithStruct(self.struct)
+		runCommFunct = self.platoMethodObj.runCommFunction
+		calcObj =  calcMethods.getPlatoCalcObjFromInpPathAndStrDictAndRunCommFunction(inpPath, strDict, runCommFunct)
+		label = baseObjs.DosLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodStr)
+		return DosRunnerPlato(calcObj, self.smearWidth, self.stepSize, label)
+
+
 
 
