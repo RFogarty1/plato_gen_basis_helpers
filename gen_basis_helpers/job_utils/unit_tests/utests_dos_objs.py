@@ -206,10 +206,79 @@ class TestDosAnalyserStandard(unittest.TestCase):
 		self.assertTrue( np.allclose( fakeRefData, self.testObj.refData ) )
 
 
+class TestDosAnalyserComposite(unittest.TestCase):
+	
+	def setUp(self):
+		self.analyserA = createAnalyserStubA()
+		self.analyserB = createAnalyserStubB()
+		self.analyserC = createAnalyserStubC()
+		self.allAnalysers = [self.analyserA, self.analyserB, self.analyserC]
+		for x in self.allAnalysers:
+			x.plotData = mock.Mock()
+			x.plotData.return_value = ["handle"]
+		self.createTestObj()
+
+	def createTestObj(self):
+		self.testObj = tCode.DosAnalyserComposite( self.allAnalysers )
+
+	def testGetObjectsWithComponents(self):
+		fakeComponents = ["irrelevant"]
+		actObjs = self.testObj.getObjectsWithComponents(fakeComponents)
+		expObjs = ["fake_obj_a", "fake_obj_b","fake_obj_c"]
+		[x.getObjectsWithComponents.assert_called_once_with(fakeComponents, caseSensitive=True) for x in self.allAnalysers]
+		self.assertEqual(expObjs, actObjs)
+
+	def testAttachRefDataMultipleMatches(self):
+		fakeComponents = ["irrelevant"]
+		refDataToAttach = "not_important"
+		self.testObj.attachRefData(refDataToAttach, fakeComponents, errorIfNoMatches=True)
+		for x in self.allAnalysers:
+			x.attachRefData.assert_called_once_with(refDataToAttach,fakeComponents, errorIfNoMatches=False, caseSensitiveComponents=True)
+
+	def testAttachRefDataErrorsWhenNoMatches(self):
+		fakeComponents = ["irrelevant"]
+		refDataToAttach = "unimportant"
+		for x in self.allAnalysers:
+			x.getObjectsWithComponents.return_value = list()
+		self.createTestObj()
+		with self.assertRaises(ValueError):
+			self.testObj.attachRefData(refDataToAttach, fakeComponents, errorIfNoMatches=True)
+
+	def testPlotData(self):
+		fakeKwargs = {"xlim":[4,10], "ylim":[3,5]}
+		expVals = ["handle", "handle", "handle"]
+		actVals = self.testObj.plotData(**fakeKwargs)
+		self.assertEqual(expVals, actVals)
+		for x in self.allAnalysers:
+			x.plotData.assert_called_once_with( xlim=[4,10], ylim=[3,5] )
+
 
 def createAnalyserStubA():
-	return None
+	getObjsWithCompsFunct = mock.Mock()
+	attachRefData = mock.Mock()
+	getObjsWithCompsFunct.return_value = ["fake_obj_a"]
+	outDict = {"getObjectsWithComponents": getObjsWithCompsFunct,
+	           "attachRefData": attachRefData}
+	outObj = types.SimpleNamespace(**outDict)
+	return outObj
 
+def createAnalyserStubB():
+	getObjsWithCompsFunct = mock.Mock()
+	attachRefData = mock.Mock()
+	getObjsWithCompsFunct.return_value = []
+	outDict = {"getObjectsWithComponents": getObjsWithCompsFunct,
+	           "attachRefData": attachRefData}
+	outObj = types.SimpleNamespace(**outDict)
+	return outObj
+
+def createAnalyserStubC():
+	getObjsWithCompsFunct = mock.Mock()
+	attachRefData = mock.Mock()
+	getObjsWithCompsFunct.return_value = ["fake_obj_b","fake_obj_c"]
+	outDict = {"getObjectsWithComponents": getObjsWithCompsFunct,
+	           "attachRefData": attachRefData}
+	outObj = types.SimpleNamespace(**outDict)
+	return outObj
 
 if __name__ == '__main__':
 	unittest.main()

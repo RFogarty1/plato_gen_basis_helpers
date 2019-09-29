@@ -158,6 +158,30 @@ class DosAnalyserComposite(baseObjs.DosAnalyserBase):
 	def __init__(self, inpObjs):
 		self.objs = inpObjs
 
+	def getObjectsWithComponents(self, components, caseSensitive=True):
+		outObjs = list()
+		for x in self.objs:
+			outObjs.extend( x.getObjectsWithComponents(components,caseSensitive=caseSensitive) )
+		return outObjs
+
+
+	def attachRefData(self, dosData, components, errorIfNoMatches=True, caseSensitiveComponents=True):
+
+		if errorIfNoMatches:
+			allMatched = self.getObjectsWithComponents(components,caseSensitive=caseSensitiveComponents)
+			if (len(allMatched) == 0):
+				raise ValueError("Couldnt find analyser object with components {}".format(components))
+
+		for x in self.objs:
+			x.attachRefData(dosData,components,errorIfNoMatches=False,caseSensitiveComponents=caseSensitiveComponents)
+
+
+	def plotData(self, **kwargs):
+		outHandles = list()
+		for x in self.objs:
+			currHandles = x.plotData(**kwargs)
+			outHandles.extend(currHandles)
+		return outHandles
 
 
 class DosAnalyserStandard(baseObjs.DosAnalyserBase):
