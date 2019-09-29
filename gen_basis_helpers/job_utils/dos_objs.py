@@ -6,6 +6,7 @@ import numpy as np
 from ..shared import calc_methods as calcMethods
 from . import dos_helpers as dosHelp
 from . import dos_base_objs as baseObjs
+from . import dos_data_plotter as dosPlotter
 import plato_pylib.utils.job_running_functs as jobRun
 
 
@@ -174,7 +175,7 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 		self.refData = None
 		self.eFermi = eFermi
 		self.label = label
-		self.dataPlotter = None #TODO: Will make a standard dataplotter for DoS plots
+		self.dataPlotter = dosPlotter.DataPlotterDos.fromDefaultPlusKwargs()
 
 	def getObjectsWithComponents(self, components, caseSensitive=True):
 		if self._analyserConsistentWithInpComponentLabels(components,caseSensitive=caseSensitive):
@@ -205,7 +206,35 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 
 
 	def plotData(self, **kwargs):
-		return None
+		thisFunctKwargs = ["inclRefData", "extraData", "shiftDataEFermiToZero"]
+		plotData = [self.data]
+		inclRefData = kwargs.get("inclRefData",True)
+
+		if (self.refData is not None) and (inclRefData):
+			plotData.extend([self.refData])
+
+		if "extraData" in kwargs:
+			plotData.extend(kwargs["extraData"])
+
+		if kwargs.get("shiftDataEFermiToZero", False):
+			shiftedData = np.array(self.data)
+			shiftedData[:,0] = shiftedData[:,0] - self.eFermi
+			plotData[0] = shiftedData
+
+
+		#Want to try to catch any wrong keywords and throw an error here, instead of in call to createPlot
+		allKwargs = list(thisFunctKwargs)
+		allKwargs.extend( self.dataPlotter.registeredKwargs)
+		for key in kwargs:
+			if key not in allKwargs:
+				raise KeyError("{} is an invalid keyword arg. valid args are {}".format(key, allKwargs))
+
+		#Need to only pass kwargs that are relevant to dataPlotter
+		for key in thisFunctKwargs:
+			if key in kwargs:
+				kwargs.pop(key)
+
+		return self.dataPlotter.createPlot(plotData, **kwargs)
 
 #TODO: Probably accept label as an input argument
 class DosOptions():
