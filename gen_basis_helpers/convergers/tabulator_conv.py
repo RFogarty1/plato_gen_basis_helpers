@@ -1,6 +1,6 @@
 
 import tabulate
-from . import data_plot_conv
+from ..shared import data_plot_base
 
 class TableMakerBase():
 
@@ -17,8 +17,7 @@ class TableMakerBase():
 		raise NotImplementedError
 
 
-#TODO: Most the logic of this class is identical to DataPlotterConvergers, whcih suggests i need a refactor
-@data_plot_conv.addSetOfKwargDescriptorsToClass
+@data_plot_base.addSetOfKwargDescriptorsToClass
 class ConvDataTabulator():
 
 	registeredKwargs = set()
