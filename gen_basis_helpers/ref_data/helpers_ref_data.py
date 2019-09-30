@@ -30,6 +30,12 @@ def getEosFitDictFromEosCastepFolder(refFolder,eos="murnaghan"):
 	outPaths = _getCastepOutPathsForFolder(refFolder)
 	return _getEosDictFromFilePaths(outPaths,eos)
 
+
+def getUCellInBohrFromCastepOutFile(outFilePath):
+	uCell = parseCastep.parseCastepOutfile(outFilePath)["unitCell"]
+	uCell.convAngToBohr()
+	return uCell
+
 def _getEosDictFromFilePaths(filePaths,eos):
 	outDict = fitBMod.getBulkModFromOutFilesAseWrapper(filePaths, eos=eos)
 	return outDict
