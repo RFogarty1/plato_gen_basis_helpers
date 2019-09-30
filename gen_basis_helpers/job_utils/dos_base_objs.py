@@ -68,6 +68,28 @@ class DosRunnerBase():
 	"""
 
 	@property
+	def runEnergy(self):
+		""" Bool: True means singlePointEnergyCalcs are run when calling runSinglePointEnergyCalcs, False means they dont
+		
+		"""
+		raise NotImplementedError()
+
+	@runEnergy.setter
+	def runEnergy(self, value):
+		raise NotImplementedError
+
+	@property
+	def runDosGenerating(self):
+		""" Bool: True means generate Dos when runDosGeneratingCalcs is called, False means dont
+		"""
+		raise NotImplementedError
+
+	@runDosGenerating.setter
+	def runDosGenerating(self,value):
+		raise NotImplementedError
+
+
+	@property
 	def dosComms(self):
 		""" iter, each entry is a string for the bash command to create density of states data
 		

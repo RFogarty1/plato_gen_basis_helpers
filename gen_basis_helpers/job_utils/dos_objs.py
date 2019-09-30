@@ -57,10 +57,29 @@ class DosLabel():
 
 class DosRunnerComposite(baseObjs.DosRunnerBase):
 
-	def __init__(self, inpObjs):
+	def __init__(self, inpObjs, runDosGenerating=True, runEnergy=True):
 		self.objs = inpObjs
 		self._ensureNoDuplicateLabels()
+		self._runDos = runDosGenerating
+		self._runEnergy = runEnergy
 
+	@property
+	def runDosGenerating(self):
+		return self._runDos
+
+	@runDosGenerating.setter
+	def runDosGenerating(self,value):
+		assert( isinstance(value,bool) )
+		self._runDos = value
+
+	@property
+	def runEnergy(self):
+		return self._runEnergy
+
+	@runEnergy.setter
+	def runEnergy(self, value):
+		assert( isinstance(value,bool) )
+		self._runEnergy = value
 
 	@property
 	def dosComms(self):
@@ -83,11 +102,20 @@ class DosRunnerComposite(baseObjs.DosRunnerBase):
 			outList.extend(x.label)
 		return outList
 
+
+	#NOTE: Currently writeFiles() isnt garanteed in the interface definition
+	def writeFiles(self):
+		for x in self.objs:
+			x.writeFiles()
+
 	def runDosGeneratingCalcs(self, nCores=1):
-		jobRun.executeRunCommsParralel(self.dosComms,nCores)
+		if self.runDosGenerating:
+			jobRun.executeRunCommsParralel(self.dosComms,nCores)
 
 	def runSinglePointEnergyCalcs(self, nCores=1):
-		jobRun.executeRunCommsParralel(self.singlePointEnergyComms, nCores)
+		if self.runEnergy:
+			self.writeFiles()
+			jobRun.executeRunCommsParralel(self.singlePointEnergyComms, nCores)
 
 	def _ensureNoDuplicateLabels(self):
 		if len(self.label) != len(set(self.label)):
@@ -101,7 +129,7 @@ class DosRunnerComposite(baseObjs.DosRunnerBase):
 
 class DosRunnerPlato(baseObjs.DosRunnerBase):
 
-	def __init__(self, platoCalcObj, smearWidth, stepSize, label):
+	def __init__(self, platoCalcObj, smearWidth, stepSize, label, runDosGenerating=True, runEnergy=True):
 		""" Initialiser for DosRunnerPlato
 		
 		Args:
@@ -115,10 +143,31 @@ class DosRunnerPlato(baseObjs.DosRunnerBase):
 		self._smearWidth = smearWidth
 		self._stepSize = stepSize
 		self._label = label
+		self._runDos = runDosGenerating
+		self._runEnergy = runEnergy
+
+
+	@property
+	def runDosGenerating(self):
+		return self._runDos
+
+	@runDosGenerating.setter
+	def runDosGenerating(self,value):
+		assert( isinstance(value,bool) )
+		self._runDos = value
+
+	@property
+	def runEnergy(self):
+		return self._runEnergy
+
+	@runEnergy.setter
+	def runEnergy(self, value):
+		assert( isinstance(value,bool) )
+		self._runEnergy = value
 
 	@property
 	def dosComms(self):
-		return [dosHelp.getDosPlotData(self._baseFilePath +'.occ', self._smearWidth, self._stepSize)]
+		return [dosHelp.getDosRunComm_plato(self._baseFilePath +'.occ', self._smearWidth, self._stepSize)]
 
 	@property
 	def singlePointEnergyComms(self):
@@ -132,14 +181,19 @@ class DosRunnerPlato(baseObjs.DosRunnerBase):
 
 	@property
 	def label(self):
-		return self.label
+		return [self._label]
+
+	def writeFiles(self):
+		self._calcObj.writeFile()
 
 	def runSinglePointEnergyCalcs(self, nCores=1):
-		self._calcObj.writeFile()
-		jobRun.executeRunCommsParralel( self.singlePointEnergyComms, nCores )
+		if self.runEnergy:
+			self.writeFiles()
+			jobRun.executeRunCommsParralel( self.singlePointEnergyComms, nCores )
 
 	def runDosGeneratingCalcs(self, nCores=1):
-		jobRun.executeRunCommsParralel( self.dosComms, nCores )
+		if self.runDosGenerating:
+			jobRun.executeRunCommsParralel( self.dosComms, nCores )
 
 	def _getDosDosDataDictAfterRunningCalcs(self):
 		return dosHelp.getDosPlotData(self._baseFilePath + ".occ", self._smearWidth, self._stepSize, runDos=False)
@@ -246,6 +300,13 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 			plotData[0] = shiftedData
 
 
+		#Set the title str (if usr hasnt)
+		titleStr = "{}-{}-{}".format(self.label.eleKey, self.label.structKey, self.label.methodKey)
+		if "titleStr" in kwargs:
+			pass
+		else:
+			kwargs["titleStr"] = titleStr
+
 		#Want to try to catch any wrong keywords and throw an error here, instead of in call to createPlot
 		allKwargs = list(thisFunctKwargs)
 		allKwargs.extend( self.dataPlotter.registeredKwargs)
@@ -258,7 +319,7 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 			if key in kwargs:
 				kwargs.pop(key)
 
-		return self.dataPlotter.createPlot(plotData, **kwargs)
+		return [self.dataPlotter.createPlot(plotData, **kwargs)]
 
 #TODO: Probably accept label as an input argument
 class DosOptions():
@@ -287,7 +348,7 @@ class DosOptions():
 		strDict = self.platoMethodObj.getStrDictWithStruct(self.struct)
 		runCommFunct = self.platoMethodObj.runCommFunction
 		calcObj =  calcMethods.getPlatoCalcObjFromInpPathAndStrDictAndRunCommFunction(inpPath, strDict, runCommFunct)
-		label = baseObjs.DosLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodStr)
+		label = DosLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodStr)
 		return DosRunnerPlato(calcObj, self.smearWidth, self.stepSize, label)
 
 

@@ -18,6 +18,8 @@ class DataPlotterDos(basePlotter.DataPlotterBase):
 		inpKwargs["plotFunct"] = "plot"
 		inpKwargs["xlabel"] = "Energy / eV"
 		inpKwargs["ylabel"] = "Density of States"
+		inpKwargs["showTitle"] = True
+		inpKwargs["titleStr"] = "Default Title"
 		inpKwargs.update(kwargs)
 		return cls(**inpKwargs)
 

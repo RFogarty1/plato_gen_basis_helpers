@@ -19,18 +19,21 @@ class TestDosRunnerPlato(unittest.TestCase):
 		self.eleKey = "element"
 		self.structKey = "structure"
 		self.methodKey = "method"
+		self.runDosGenerating = True
+		self.runEnergy = True
 		self.createTestObj()
 
 	def createTestObj(self):
 		self.testLabel = tCode.DosLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
-		self.testObj = tCode.DosRunnerPlato(self.mockPlatoCalcObj, self.smearWidth, self.stepSize, self.testLabel)
+		self.testObj = tCode.DosRunnerPlato(self.mockPlatoCalcObj, self.smearWidth, self.stepSize, self.testLabel,
+		                                    runDosGenerating=self.runDosGenerating, runEnergy=self.runEnergy)
 
 	def testExpectedEnergyComms(self):
 		expectedRunComms = ["fake_run_comm_a"]
 		actualRunComm = self.testObj.singlePointEnergyComms
 		self.assertEqual(expectedRunComms, actualRunComm)
 
-	@mock.patch("gen_basis_helpers.job_utils.dos_objs.dosHelp.getDosPlotData")
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.dosHelp.getDosRunComm_plato")
 	def testExpectedDoSComms(self, getDosRunCommMock):
 		getDosRunCommMock.return_value = "fake_dos_comm_a"
 		expectedOutput = ["fake_dos_comm_a"]
@@ -47,6 +50,16 @@ class TestDosRunnerPlato(unittest.TestCase):
 		self.mockPlatoCalcObj.writeFile.assert_called_once_with()
 		mockedRunParralel.assert_called_once_with(fakeComms,1)
 
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.DosRunnerPlato.singlePointEnergyComms",new_callable=mock.PropertyMock)
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.jobRun.executeRunCommsParralel")
+	def testRunEnergyCommsWhenSetToFalse(self, mockedRunParralel, mockedComms):
+		self.createTestObj()
+		self.assertTrue(self.testObj.runEnergy)
+		self.testObj.runEnergy = False
+		self.testObj.runSinglePointEnergyCalcs()
+		mockedRunParralel.assert_not_called()
+
+
 	@mock.patch("gen_basis_helpers.job_utils.dos_objs.DosRunnerPlato.dosComms",new_callable=mock.PropertyMock)
 	@mock.patch("gen_basis_helpers.job_utils.dos_objs.jobRun.executeRunCommsParralel")
 	def testRunDosComms(self, mockedRunParralel, mockedComms):
@@ -54,6 +67,15 @@ class TestDosRunnerPlato(unittest.TestCase):
 		mockedComms.return_value = fakeComm
 		self.testObj.runDosGeneratingCalcs()
 		mockedRunParralel.assert_called_once_with(fakeComm,1) 
+
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.DosRunnerPlato.dosComms",new_callable=mock.PropertyMock)
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.jobRun.executeRunCommsParralel")
+	def testRunDosCommsWhenSetToFalse(self, mockedExecuteRunComms, mockedComms):
+		self.createTestObj()
+		self.assertTrue(self.testObj.runDosGenerating)
+		self.testObj.runDosGenerating = False
+		self.testObj.runDosGeneratingCalcs()
+		mockedExecuteRunComms.assert_not_called()
 
 	@mock.patch("gen_basis_helpers.job_utils.dos_objs.DosAnalyserStandard")
 	@mock.patch("gen_basis_helpers.job_utils.dos_objs.dosHelp.getDosPlotData")
@@ -146,12 +168,31 @@ class TestDosRunnerComposite(unittest.TestCase):
 		self.testObj.runSinglePointEnergyCalcs(nCores)
 		expEnergyComms = ["fake_e_a", "fake_e_b", "fake_e_c", "fake_e_d"]
 		mockRunner.assert_called_once_with(expEnergyComms, nCores)
+
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.jobRun.executeRunCommsParralel")
+	def testRunDosWhenDosGeneratingFalse(self, mockRunner):
+		self.assertTrue(self.testObj.runDosGenerating)
+		self.testObj.runDosGenerating = False
+		self.testObj.runDosGeneratingCalcs()
+		mockRunner.assert_not_called()
+
+	@mock.patch("gen_basis_helpers.job_utils.dos_objs.jobRun.executeRunCommsParralel")
+	def testRunEnergyCalcsWhenRunEnergyFalse(self, mockRunner):
+		self.assertTrue(self.testObj.runEnergy)
+		self.testObj.runEnergy = False
+		self.testObj.runSinglePointEnergyCalcs()
+		mockRunner.assert_not_called()
+
+
 	
 def createRunnerStubA():
 	runnerDictA = {"label":["fake_labelA"],
 	               "createAnalyser": lambda : "fake_analyser_a",
 	               "dosComms":["fake_dos_a","fake_dos_b"],
-	               "singlePointEnergyComms":["fake_e_a", "fake_e_b"]}
+	               "singlePointEnergyComms":["fake_e_a", "fake_e_b"],
+	               "runEnergy":True,
+	               "runDosGenerating":True,
+	               "writeFiles": lambda: None}
 	return types.SimpleNamespace(**runnerDictA)
 
 #This one should mimic a composite
@@ -159,7 +200,10 @@ def createRunnerStubB():
 	runnerDictB = {"label":["fake_labelB", "fake_labelC"],
 	               "createAnalyser": lambda : "fake_analyser_b",
 	               "dosComms":["fake_dos_c","fake_dos_d"],
-	               "singlePointEnergyComms":["fake_e_c", "fake_e_d"]}
+	               "singlePointEnergyComms":["fake_e_c", "fake_e_d"],
+	               "runEnergy": True,
+	               "runDosGenerating":True,
+	               "writeFiles": lambda: None}
 	return types.SimpleNamespace(**runnerDictB)
 
 
