@@ -70,7 +70,7 @@ class MgElementConfig(eConvergers.ElementConfigEqmStructs):
 			raise KeyError("structType = {} not recognised".format(structType))
 
 	def _getFFTVaryPoints(self,structType):
-		return [0.7,0.6,0.5] #TODO: Set proper values
+		return [0.7,0.6,0.5,0.4,0.3,0.2] 
 		
 	def _getVaryKPoints(self,structType):
 		singleAtomVals = [ [x,x,x] for x in [2,6,8,10,14,20,24,32] ]
@@ -148,7 +148,7 @@ class ZrElementConfig(eConvergers.ElementConfigEqmStructs):
 
 
 	def _getFFTVaryPoints(self,structType):
-		return [0.7,0.6,0.5] #TODO: Set proper values
+		return [0.7,0.6,0.5,0.4,0.3,0.2] 
 		
 	def _getVaryKPoints(self,structType):
 		singleAtomVals = [ [x,x,x] for x in [2,6,8,10,14,20,24,32] ]

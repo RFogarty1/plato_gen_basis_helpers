@@ -284,16 +284,25 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 
 
 	def plotData(self, **kwargs):
-		thisFunctKwargs = ["inclRefData", "extraData", "shiftDataEFermiToZero"]
+		thisFunctKwargs = ["inclRefData", "extraData", "shiftDataEFermiToZero", "extraDataBeforeRef"]
 		plotData = [self.data]
 		inclRefData = kwargs.get("inclRefData",True)
 
+		#Add ref/extra data to plotData
+		extraData = kwargs.get("extraData",list())
 		if (self.refData is not None) and (inclRefData):
-			plotData.extend([self.refData])
+			refData = [self.refData]
+		else:
+			refData = list()		
 
-		if "extraData" in kwargs:
-			plotData.extend(kwargs["extraData"])
+		if kwargs.get("extraDataBeforeRef",True):
+			plotData.extend(extraData)
+			plotData.extend(refData)
+		else:
+			plotData.extend(refData)
+			plotData.extend(extraData)
 
+		#Apply shift to normal data if requested
 		if kwargs.get("shiftDataEFermiToZero", False):
 			shiftedData = np.array(self.data)
 			shiftedData[:,0] = shiftedData[:,0] - self.eFermi

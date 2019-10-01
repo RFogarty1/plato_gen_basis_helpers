@@ -1,8 +1,9 @@
 
-
 import itertools as it
 
 import numpy as np
+import matplotlib.pyplot as plt
+
 from ..shared import data_plot_base as basePlotter
 from ..shared import misc_utils as misc
 
@@ -33,10 +34,18 @@ class DataPlotterDos(basePlotter.DataPlotterBase):
 				raise misc.fragile.Break
 			dataLines = outFig.get_axes()[0].get_lines()
 			lineStyles = it.cycle(self.lineStyles)
-			for handle,style in zip(dataLines,lineStyles):
+			for idx,(handle,style) in enumerate( zip(dataLines,lineStyles) ):
 				handle.set_linestyle(style)
-				
+				#Need to modify the style in the legend too (which holds a copy of the line)
+				if self.legend:
+					legLineHandles = outFig.get_axes()[0].get_legend().get_lines()
+					legLineHandles[idx].set_linestyle(style)
 
+
+				
+		#Which means i need to possibly redo the legend
+		if self.legend:
+			plt.legend()
 
 		return outFig
 

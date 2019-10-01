@@ -43,7 +43,7 @@ class ZrIntegGridConv(refObjBase.IntegGridConvergencePureElements):
 		return structToGrid[ structKey.lower() ]
 
 	def getPrimCellDftFFTGrid(self,structKey):
-		structToGrid = {key:0.15 for key in ["fcc","bcc","hcp"]} 
+		structToGrid = {key:0.2 for key in ["fcc","bcc","hcp"]} 
 		return structToGrid[structKey]
 
 	def getInterstitialDft2AngularGrid(self,structKey, dims):
