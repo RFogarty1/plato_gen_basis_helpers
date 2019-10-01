@@ -103,7 +103,7 @@ class InterstitialCalculationSet():
 
 
 class InterstitialCalcSetFactory():
-	def __init__(self,workFolder, platoComm, optDict, allInterstitInfoObjs, refData, nCores, label, geomType="plane-wave"):
+	def __init__(self,workFolder, platoComm, optDict, allInterstitInfoObjs, refData, nCores, label, geomType="plane-wave", eType="electronicCohesiveE"):
 		""" Initialise factory instance.
 		
 		Args:
@@ -115,6 +115,7 @@ class InterstitialCalcSetFactory():
 			nCores: Number of cores to use
 			label: Str used to differentiate this object from others. Example might be the method used (e.g. tb1_2c)
 			geomType(Optional): str, what type of geometry to use for the reference structure. currently only plane-wave (will add expt later)
+			eType(Optional): str, the energy type to use. See energies object in plato_pylib. One possible option is electronicTotalE
 		"""
 
 		self.workFolder = workFolder
@@ -125,6 +126,7 @@ class InterstitialCalcSetFactory():
 		self.geomType = geomType
 		self.nCores = nCores
 		self.label = label
+		self.eType = eType
 
 	def _getRefGeom(self, interObj):
 		if self.geomType == "plane-wave":
@@ -148,7 +150,7 @@ class InterstitialCalcSetFactory():
 			relaxed = x.relaxed
 			interType = x.interstitType
 			runCalcs = x.runCalcs
-			currObj = createWFlows.CreateInterstitialWorkFlow(refStruct, interStruct, startFolder, modOptDict, platoComm, relaxed=relaxed, cellDims=cellDims, interType=interType, genPreShellComms=runCalcs)()
+			currObj = createWFlows.CreateInterstitialWorkFlow(refStruct, interStruct, startFolder, modOptDict, platoComm, relaxed=relaxed, cellDims=cellDims, interType=interType, genPreShellComms=runCalcs, eType=self.eType)()
 			allObjs.append(currObj)
 
 		workFlowCoord = wFlowCoordinator.WorkFlowCoordinator(allObjs,nCores=self.nCores,quietPreShellComms=False)
