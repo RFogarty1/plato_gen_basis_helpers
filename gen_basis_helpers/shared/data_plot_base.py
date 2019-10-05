@@ -1,8 +1,10 @@
 
 import contextlib
+import itertools as it
 
 import numpy as np
 import matplotlib.pyplot as plt
+from ..shared import misc_utils as misc
 
 
 def addSetOfKwargDescriptorsToClass(inpCls):
@@ -99,7 +101,7 @@ class DataPlotterBase():
 		Returns
 			Handle to the overall figure
 		"""
-		#Backup the state from before the function call. TODO: Need to use a context manager to do this more safely
+
 		with temporarilySetDataPlotterRegisteredAttrs(self,kwargs):
 	
 			toPlot = [np.array(x) for x in plotData]
@@ -152,10 +154,64 @@ class DataPlotterBase():
 			raise ValueError("{} is an invalid value for plotFunct".format(self.plotFunct))
 
 
+#Recommended class to use. Less flexible than Base but has a couple of painful to code features inbuilt 
+class DataPlotterStandard(DataPlotterBase):
+	""" Class containing a createPlot(self, plotData, **kwargs) used to plot a specific type of graph from data of a specific format
+
+	Attributes:
+		registeredKwargs: This contains a set of all keyword arguments associated with the class. These can be passed to the constructor
+		                  or createPlot. If passed to createPlot they will only be set temporarily (the class state will be the same before/after the call).
+		                  NOTE: Some of these are defined in the class, but some are only added upon initialisation. Hence you should query an INSTANCE rather 
+		                  than the class
+	"""
+
+	def __init__(self, **kwargs):
+		self.registeredKwargs.add("lineStyles")
+		self.registeredKwargs.add("lineColors")
+		super().__init__(**kwargs)
+		
+
+	def createPlot(self, plotData, **kwargs):
+		outFig = super().createPlot(plotData, **kwargs)
 
 
+		self._changeLineStylesIfNeeded(outFig, **kwargs)
+		self._changeColorsIfNeeded(outFig, **kwargs)
+
+		#Changes to lineStyles/lineColors means the legend needs remaking (if it was present)
+		if self.legend:
+			plt.legend()
+
+		return outFig
 
 
+	#TODO: Refactor to remove duplication with the change line colors function
+	def _changeLineStylesIfNeeded(self, outFig, **kwargs):
+		with misc.fragile(temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
+			if self.lineStyles is None:
+				raise misc.fragile.Break
+			dataLines = outFig.get_axes()[0].get_lines()
+			lineStyles = it.cycle(self.lineStyles)
+			for idx,(handle,style) in enumerate( zip(dataLines,lineStyles) ):
+				handle.set_linestyle(style)
+				#Need to modify the style in the legend too (which holds a copy of the line)
+				if self.legend:
+					legLineHandles = outFig.get_axes()[0].get_legend().get_lines()
+					legLineHandles[idx].set_linestyle(style)
+
+
+	def _changeColorsIfNeeded(self, outFig, **kwargs):
+		with misc.fragile(temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
+			if self.lineColors is None:
+				raise misc.fragile.Break
+			dataLines = outFig.get_axes()[0].get_lines()
+			lineColors = it.cycle(self.lineColors)
+			for idx,(handle,color) in enumerate( zip(dataLines,lineColors) ):
+				handle.set_color(color)
+				#Need to modify the style in the legend too (which holds a copy of the line)
+				if self.legend:
+					legLineHandles = outFig.get_axes()[0].get_legend().get_lines()
+					legLineHandles[idx].set_color(color)
 
 
 
