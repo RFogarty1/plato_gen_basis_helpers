@@ -79,22 +79,6 @@ class StructSetInfo():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def createWorkFlowCoordinator(eleInfoStructs, methodStrs, eos, baseFolder, nCores):
 	allWorkFlows = list()
 	for eleStr in eleInfoStructs.keys():

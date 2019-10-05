@@ -21,24 +21,33 @@ def getMultiCrystEosResultsFromSingleCrysts(allSingleCrysts):
 	outList = _groupMultiCrystsByElement(multiEosGrouped)
 	return outList
 
-
-def getMultiCrystEosResultsFromWorkFlowCoord(wFlowCoord):
-	#Loop over the individual workflows directly. Use the labels i inserted into them
-	singleWorkFlows = _createSingleCrystEosFromWorkFlowCoord(wFlowCoord)
-
 	
 
 def _groupSingleCrystEosByMethodAndElement(singleCrystEosList):
-	allMethods = set( [x.methodLabel for x in singleCrystEosList] )
-	allElements = set( [x.elementLabel for x in singleCrystEosList] )
+	""" Groups structures by their element and method key.
+	
+	Args:
+		singCrystEosList (iter): Each entry contains an objects which has an attribute .label returning a single-entry list of StandardLabel objects.
+			
+	Returns
+		groupedObjs (iter of iters): Each entry contains a list of objects which all have the same eleKey and methodKey, only structType differs
+	
+	Raises:
+		Errors
+	"""
+	allMethods, allElements = list(), list()
+	for x in singleCrystEosList:
+		assert len(x.label)==1
+		allMethods.append(x.label[0].methodKey)
+		allElements.append(x.label[0].eleKey)
+	allMethods, allElements = set(allMethods), set(allElements)
+
 	groupedObjs = list()
-	print("allMethods = {}".format(allMethods))
-	print("allElements = {}".format(allElements))
 	for mKey in allMethods:
 		for eleKey in allElements:
 			currList = list()
 			for currObj in singleCrystEosList:
-				if (currObj.methodLabel == mKey) and (currObj.elementLabel == eleKey):
+				if (currObj.label[0].methodKey == mKey) and (currObj.label[0].eleKey == eleKey):
 					currList.append( currObj )
 			groupedObjs.append(currList)
 		
@@ -47,16 +56,16 @@ def _groupSingleCrystEosByMethodAndElement(singleCrystEosList):
 def _groupSingleCrystEosIntoMultiCrysts(singleCrystEosList):
 	multiCrystObjs = list()
 	for crystSet in singleCrystEosList:
-		currSet = multCrystEos.MultiCrystEosResult( crystSet, crystSet[0].methodLabel)
+		currSet = multCrystEos.MultiCrystEosResult( crystSet )
 		multiCrystObjs.append(currSet)
 	
 	return multiCrystObjs
 
 def _groupMultiCrystsByElement(multiCrystsList):
-	#Step 1 = get ALL ELEMENTS. TODO: ACTUALLY FINISH THIS
+
 	allElements = list()
 	for x in multiCrystsList:
-		allElements.append(x.elementLabel)
+		allElements.append(x.label[0].eleKey)
 	allElements = list(set(allElements))
 	
 	#Step 2 = group them into lists
@@ -64,7 +73,7 @@ def _groupMultiCrystsByElement(multiCrystsList):
 	for currEle in allElements:
 		currList = list()
 		for x in multiCrystsList:
-			if x.elementLabel == currEle:
+			if x.label[0].eleKey == currEle:
 				currList.append(x)
 		allObjInpLists.append(currList)
 

@@ -46,7 +46,7 @@ class TestMultiCrystEos(unittest.TestCase):
 		self.createTestObj()
 
 	def createTestObj(self):
-		self.testObjA = tCode.MultiCrystEosResult([self.singCrystA,self.singCrystB], self.testLabelA)
+		self.testObjA = tCode.MultiCrystEosResult([self.singCrystA,self.singCrystB])
 
 	def testDeltaE0(self):
 		expDict = {"testStructA": 8,
@@ -55,17 +55,17 @@ class TestMultiCrystEos(unittest.TestCase):
 		self.assertEqual(expDict,actDict)
 
 	def testInitiationWithDuplicateStructLabels(self):
-		self.singCrystB.structLabels = self.singCrystA.structLabels
+		self.singCrystB.label[0].structKey = self.singCrystA.label[0].structKey
 		with self.assertRaises(ValueError):
 			self.createTestObj()
 
 	def testInitiationWithVaryingMethodLabels(self):
-		self.singCrystB.methodLabel = self.singCrystA.methodLabel + "_now_different"
+		self.singCrystB.label[0].methodKey = self.singCrystB.label[0].methodKey + "_now_different"
 		with self.assertRaises(ValueError):
 			self.createTestObj()
 
 	def testInitialisationWithVaryingElementLabels(self):
-		self.singCrystB.elementLabel = self.singCrystA.elementLabel + "now_different"
+		self.singCrystB.label[0].eleKey = self.singCrystA.label[0].eleKey + "now_different"
 		with self.assertRaises(ValueError):
 			self.createTestObj()
 
@@ -84,36 +84,40 @@ class TestMultiCrystEos(unittest.TestCase):
 
 
 def createSingleCrystForCompositeTestStubA():
-	outStructKey = "testStructA"
-	fakeTableData = {outStructKey: [1,2,3]}
-	fakePlotData = {outStructKey: np.array( ([1,2],[2,4]) )}
+	eleLabel, structLabel, methodLabel = "Zr", "testStructA", "fake_method"
+	fakeLabel = tCode.StandardLabel(eleKey=eleLabel, structKey=structLabel, methodKey=methodLabel)
+	fakeTableData = {structLabel: [1,2,3]}
+	fakePlotData = {structLabel: np.array( ([1,2],[2,4]) )}
 
 	def tableDataFunct(numbDp=None):
 		return {"testStructA": ["fake_method"] + ["{:.3f}".format(x) for x in [1,2,3]]}
 
-	outDict = { "e0": {outStructKey:22},
-	            "structLabels": [outStructKey],
-	            "methodLabel": "fake_method",
-	            "elementLabel": "Zr",
+	outDict = { "e0": {structLabel:22},
+	            "structLabels": [structLabel],
+	            "methodLabel": methodLabel,
+	            "elementLabel": eleLabel,
 	            "getTableData": tableDataFunct,
-	            "getPlotData": lambda: fakePlotData }
+	            "getPlotData": lambda: fakePlotData,
+	            "label": [fakeLabel] }
 	outObj = types.SimpleNamespace(**outDict)
 	return outObj
 
 def createSingleCrystForCompositeTestStubB():
-	outStructKey = "testStructB"
-	fakeTableData ={outStructKey: [4,5,6]}
-	fakePlotData = {outStructKey: np.array( ([1,4],[2,6]) )}
+	eleLabel, structLabel, methodLabel = "Zr", "testStructB", "fake_method"
+	fakeLabel = tCode.StandardLabel(eleKey=eleLabel, structKey=structLabel, methodKey=methodLabel)
+	fakeTableData ={structLabel: [4,5,6]}
+	fakePlotData = {structLabel: np.array( ([1,4],[2,6]) )}
 
 	def tableDataFunct(numbDp=None):
 		return {"testStructB": ["fake_method"] + ["{:.3f}".format(x) for x in [4,5,6]]}
 
-	outDict = {"e0": {outStructKey:14},
-	           "structLabels": [outStructKey],
-	           "methodLabel": "fake_method",
-	           "elementLabel": "Zr",
+	outDict = {"e0": {structLabel:14},
+	           "structLabels": [structLabel],
+	           "methodLabel": methodLabel,
+	           "elementLabel": eleLabel,
 	           "getTableData": tableDataFunct,
-	           "getPlotData": lambda: fakePlotData }
+	           "getPlotData": lambda: fakePlotData,
+	           "label": [fakeLabel] }
 	outObj = types.SimpleNamespace(**outDict)
 	return outObj
 
