@@ -24,7 +24,7 @@ class TestDosRunnerPlato(unittest.TestCase):
 		self.createTestObj()
 
 	def createTestObj(self):
-		self.testLabel = tCode.DosLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
+		self.testLabel = tCode.labelsBase.StandardLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
 		self.testObj = tCode.DosRunnerPlato(self.mockPlatoCalcObj, self.smearWidth, self.stepSize, self.testLabel,
 		                                    runDosGenerating=self.runDosGenerating, runEnergy=self.runEnergy)
 
@@ -109,11 +109,11 @@ class TestDosLabel(unittest.TestCase):
 		self.createTestObj()
 
 	def createTestObj(self):
-		self.testObj = tCode.DosLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
+		self.testObj = tCode.labelsBase.StandardLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
 
 	def testInitFailsWhenMissingMethodKey(self):
 		with self.assertRaises(ValueError):
-			tCode.DosLabel(self.eleKey,self.structKey)
+			tCode.labelsBase.StandardLabel(self.eleKey,self.structKey)
 
 	def testEqualityMethodTwoEqual(self):
 		testObjA = copy.deepcopy(self.testObj)
@@ -219,7 +219,7 @@ class TestDosAnalyserStandard(unittest.TestCase):
 		self.createTestObj()
 
 	def createTestObj(self):
-		label = tCode.DosLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
+		label = tCode.labelsBase.StandardLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
 		self.testObj = tCode.DosAnalyserStandard(self.dosData, self.eFermi, label)
 
 	def testGetObjectsWithComponentsAllMatch(self):

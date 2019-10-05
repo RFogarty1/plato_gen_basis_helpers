@@ -19,7 +19,7 @@ class DosAnalyserBase():
 		""" Returns analyser objects which match the components
 		
 		Args:
-			components (str list): Strings which will be matched against DosLabel components. Any analyser with 
+			components (str list): Strings which will be matched against BaseLabel (or inherited cls) components. Any analyser with 
 		all of these components present will be returned 
 			caseSensitive(bool): Whether we need to match the case of each component or not 
 		Returns
