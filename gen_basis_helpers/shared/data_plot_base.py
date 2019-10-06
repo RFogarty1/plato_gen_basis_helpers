@@ -187,32 +187,41 @@ class DataPlotterStandard(DataPlotterBase):
 
 	#TODO: Refactor to remove duplication with the change line colors function
 	def _changeLineStylesIfNeeded(self, outFig, **kwargs):
-		with misc.fragile(temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
-			if self.lineStyles is None:
-				raise misc.fragile.Break
-			dataLines = outFig.get_axes()[0].get_lines()
-			lineStyles = it.cycle(self.lineStyles)
-			for idx,(handle,style) in enumerate( zip(dataLines,lineStyles) ):
-				handle.set_linestyle(style)
-				#Need to modify the style in the legend too (which holds a copy of the line)
-				if self.legend:
-					legLineHandles = outFig.get_axes()[0].get_legend().get_lines()
-					legLineHandles[idx].set_linestyle(style)
+		def lineStyleModFunct(inpLine, value):
+			inpLine.set_linestyle(value)
+
+		self.changeLineProp(outFig, "lineStyles", lineStyleModFunct, **kwargs)
 
 
 	def _changeColorsIfNeeded(self, outFig, **kwargs):
+		def colorLineModFunct(inpLine, value):
+			inpLine.set_color(value)
+
+		self.changeLineProp(outFig, "lineColors", colorLineModFunct, **kwargs)
+
+	def changeLineProp(self, outFig, propName, propSetFunct, **kwargs):
+		""" Changes a property for each line in the plot based on the setter function
+		
+		Args:
+			outFig: Plot of interest (assumed to have 1 axis)
+			propName: Name of property as stored on dataPlotter (e.g. lineStyles). Used to extract values we want to set lines to
+			propSetFunct: Function with interface (inpLine, value). Used to set individual lines to individual values (e.g. the style of 1 line)
+			kwargs: Values to temporarily set on object (must be registered Kwargs) 
+				 
+		"""
 		with misc.fragile(temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
-			if self.lineColors is None:
+			usedProp = getattr(self,propName)
+			if usedProp is None:
 				raise misc.fragile.Break
 			dataLines = outFig.get_axes()[0].get_lines()
-			lineColors = it.cycle(self.lineColors)
-			for idx,(handle,color) in enumerate( zip(dataLines,lineColors) ):
-				handle.set_color(color)
-				#Need to modify the style in the legend too (which holds a copy of the line)
-				if self.legend:
-					legLineHandles = outFig.get_axes()[0].get_legend().get_lines()
-					legLineHandles[idx].set_color(color)
+			linePropVals = it.cycle( usedProp )
+			for idx, (handle, propVal) in enumerate( zip(dataLines,linePropVals) ):
+				propSetFunct(handle,propVal)
 
+			#Need to modify the property for the line in the legend(assuming one is present)
+			if self.legend:
+				legLineHandles = outFig.get_axes()[0].get_legend().get_lines()
+				propSetFunct( legLineHandles[idx], propVal )
 
 
 

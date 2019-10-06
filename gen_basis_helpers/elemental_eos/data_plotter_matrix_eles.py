@@ -13,7 +13,8 @@ class DataPlotterDiagMatrixEles(basePlotter.DataPlotterStandard):
 
 	#Add extra Kwargs here
 	def __init__(self, **kwargs):
-		self.registeredKwargs.add("lineStyles") #TODO: Suspect this is redundant - check
+		self.registeredKwargs.add("lineMarkers")
+		self.registeredKwargs.add("lineMarkerSizes")
 		self.registeredKwargs.add("sortXBeforePlot")
 		super().__init__(**kwargs)
 
@@ -21,7 +22,8 @@ class DataPlotterDiagMatrixEles(basePlotter.DataPlotterStandard):
 	@classmethod
 	def fromDefaultPlusKwargs(cls, **kwargs):
 		inpKwargs = dict()
-		inpKwargs["xlabel"] = "Volume / bohr^{3}"
+		inpKwargs["xlabel"] = "Volume ($a_0^3$ per atom)"
+		inpKwargs["ylabel"] = "$\Delta E$ On-site matrix elements (eV)"
 		inpKwargs["sortXBeforePlot"] = True
 		inpKwargs.update(kwargs)
 		return cls(**inpKwargs)
@@ -39,17 +41,26 @@ class DataPlotterDiagMatrixEles(basePlotter.DataPlotterStandard):
 
 		toPlot = self._getDataFormattedForSuperPlotter(plotData)
 
-		#We need to temporarily change the format of self.lineStyles in order for the super() method to interpret/plot
-		#them correctly
+		#We need to temporarily change the format of self.lineStyles and similar
 		with misc.fragile(basePlotter.temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
-			if self.lineStyles is not None:
-				self.lineStyles = self._getLineStylesFormattedForSuperPlotter(plotData, self.lineStyles)
-			if self.lineColors is not None:
-				self.lineColors = self._getLineColorsFormattedForSuperPlotter(plotData, self.lineColors)
-			if self.dataLabels is not None:
-				self.dataLabels = self._getDataLabelsFormattedForSuperPlotter(plotData, self.dataLabels)
+
+			methodProps = ["lineStyles","lineMarkers", "lineMarkerSizes", "dataLabels"]
+			dataSeriesProps = ["lineColors"]
+
+			for prop in methodProps:
+				currVal = getattr(self,prop)
+				if currVal is not None:
+					setattr(self, prop, self._getMethodBasedArgListInCorrectFormat(plotData,currVal))
+
+			for prop in dataSeriesProps:
+				currVal = getattr(self,prop)
+				if currVal is not None:
+					setattr(self, prop, self._getDataSeriesBasedArgListInCorrectFormat(plotData, currVal))
 
 			outFig = super().createPlot(toPlot) #Important not to pass any Kwargs, the context manager has already translated them into attributes
+			self.changeLineProp(outFig, "lineMarkers", lambda inpLine,value:inpLine.set_marker(value))
+			self.changeLineProp(outFig, "lineMarkerSizes", lambda inpLine,value:inpLine.set_markersize(value))
+
 			if self.legend:
 				self.changeLegendEntriesToMethodOnly(outFig)
 
@@ -67,15 +78,35 @@ class DataPlotterDiagMatrixEles(basePlotter.DataPlotterStandard):
 				outData.append( currData )
 		return outData
 
-	def _getLineStylesFormattedForSuperPlotter(self, plotData, lineStyles):
-		return self._getMethodBasedArgListInCorrectFormat(plotData, lineStyles)
 
-	def _getLineColorsFormattedForSuperPlotter(self, plotData, lineColors):
-		return self._getDataSeriesBasedArgListInCorrectFormat(plotData, lineColors)
 
-	def _getDataLabelsFormattedForSuperPlotter(self, plotData, dataLabels):
-		return self._getMethodBasedArgListInCorrectFormat(plotData, dataLabels)
+	def _getMethodBasedArgListInCorrectFormat(self, plotData, propInInputFormat):
+		outData = list()
+		inpData = self._getCycleListToMaxLength(propInInputFormat, len(plotData))
+		for idx,methodData in enumerate(plotData):
+			for cIdx in range(1, methodData.shape[1]):
+				outData.append( inpData[idx] )
+		return outData
 
+	def _getDataSeriesBasedArgListInCorrectFormat(self, plotData, propInInputFormat):
+		outData = list()
+
+		maxNumbDataSeries = max( [x.shape[1] for x in plotData] )
+		inpData = self._getCycleListToMaxLength(propInInputFormat, maxNumbDataSeries)
+
+		for mIdx, methodData in enumerate(plotData):
+			for cIdx in range(1,methodData.shape[1]):
+				outData.append( inpData[cIdx-1] )
+		return outData
+
+	def _getCycleListToMaxLength(self,inpList, maxLength):
+		generator = it.cycle(inpList)
+		outList = list()
+		for x in range(maxLength):
+			outList.append( next(generator) )
+		return outList
+
+#
 	def changeLegendEntriesToMethodOnly(self, outFig):
 		currLegend = outFig.get_axes()[0].get_legend()
 		usefulLines, usefulText = list(), list()
@@ -88,21 +119,6 @@ class DataPlotterDiagMatrixEles(basePlotter.DataPlotterStandard):
 
 		plt.legend(usefulLines,usefulText)
 			
-
-
-	def _getMethodBasedArgListInCorrectFormat(self, plotData, propInInputFormat):
-		outData = list()
-		for idx,methodData in enumerate(plotData):
-			for cIdx in range(1, methodData.shape[1]):
-				outData.append( propInInputFormat[idx] )
-		return outData
-
-	def _getDataSeriesBasedArgListInCorrectFormat(self, plotData, propInInputFormat):
-		outData = list()
-		for mIdx, methodData in enumerate(plotData):
-			for cIdx in range(1,methodData.shape[1]):
-				outData.append( propInInputFormat[cIdx-1] )
-		return outData
 
 
 
