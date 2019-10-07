@@ -242,8 +242,11 @@ class MatEleEosDataPresenter():
 		for key in methodKeys:
 			mappedDataDict[key] = self._getShellMappedVersionOfArray( startDataDict[key], shellOrdering, mapper)
 
+		#We assume refMethod isnt in methodKeys in this case (not harmful if it is though). 
+		#TODO: Remove duplicate code (essentially this is the same as the bit above)
 		if subRefData:
-			refData = np.array( mappedDataDict[refMethod] )
+			startData = self.getPlotDataWithoutMapping([refMethod], structKey, eleKey)
+			refData =  np.array( self._getShellMappedVersionOfArray( startData[refMethod], shellOrdering, mapper) )
 			for key in methodKeys:
 				mappedDataDict[key][:,1:] -= refData[:,1:]
 
