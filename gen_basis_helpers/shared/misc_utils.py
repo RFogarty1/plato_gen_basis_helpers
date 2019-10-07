@@ -1,6 +1,29 @@
 
+import itertools as it
 import functools
 import types
+
+
+
+def getCycleListToMaxLength(inpList, maxLength):
+	""" Get list made of duplicated inpList entries up to maxLength
+	
+	Args:
+		inpList(iter): Should probably be immutable only for now (e.g. strings or numbers) 
+		maxLength: Number of entries required in output list
+			
+	Returns
+		outList: List with maxLength indices, padded from inpList by cycling through. For example inpList=["a","b"], maxLength=5 should give
+		["a","b","a","b","a"]
+	
+	Raises:
+		Errors
+	"""
+	generator = it.cycle(inpList)
+	outList = list()
+	for x in range(maxLength):
+		outList.append( next(generator) )
+	return outList
 
 #Use as a function really (e.g. with fragile(open("file.txt","rt")) as f:)
 #call raise fragile.Break to escape out of the context manager

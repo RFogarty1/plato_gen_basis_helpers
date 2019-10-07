@@ -199,7 +199,7 @@ class DataPlotterStandard(DataPlotterBase):
 
 		self.changeLineProp(outFig, "lineColors", colorLineModFunct, **kwargs)
 
-	def changeLineProp(self, outFig, propName, propSetFunct, **kwargs):
+	def changeLineProp(self, outFig, propName, propSetFunct, inclLegend=True,**kwargs):
 		""" Changes a property for each line in the plot based on the setter function
 		
 		Args:
@@ -219,7 +219,7 @@ class DataPlotterStandard(DataPlotterBase):
 				propSetFunct(handle,propVal)
 
 			#Need to modify the property for the line in the legend(assuming one is present)
-			if self.legend:
+			if self.legend and inclLegend:
 				legLineHandles = outFig.get_axes()[0].get_legend().get_lines()
 				propSetFunct( legLineHandles[idx], propVal )
 

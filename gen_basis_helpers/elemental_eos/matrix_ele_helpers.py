@@ -5,6 +5,7 @@ import types
 import plato_pylib.plato.parse_tbint_files as parseTbint
 
 from . import data_plotter_matrix_eles as dPlotter
+from . import base_objs as baseObjs
 from ..shared.label_objs import StandardLabel
 from ..job_utils import matrix_elements_helpers as matHelp
 from ..shared import misc_utils as misc
@@ -47,32 +48,11 @@ def createMatrixEleAnalyserFromWorkFlow(workFlow):
 
 	return EleEosMatrixDiagElementsResult(outData, eleKey=workFlow.element,structKey=workFlow.structKey,methodKey=workFlow.methodKey)
 
-class EleEosMatrixDiagElementsComposite():
+class EleEosMatrixDiagElementsComposite(baseObjs.StandardEosPropAnalyserComposite):
+	pass
 
-	@misc.getObjectsWithComponentsInstanceWrapper(isComposite=True)
-	def __init__(self, inpObjs):
-		self.objs = list(inpObjs)
-		self._ensureLabelsAllDifferent()
 
-	def _ensureLabelsAllDifferent(self):
-		if len(list(self.label)) != len(set(self.label)):
-			raise ValueError("Duplicate labels detected")
-
-	@property
-	def label(self):
-		outList = list()
-		for x in self.objs:
-			outList.extend(x.label)
-
-		return outList
-
-	def getPlotData(self):
-		outList = list()
-		for x in self.objs:
-			outList.extend(x.getPlotData())
-		return outList
-
-class EleEosMatrixDiagElementsResult():
+class EleEosMatrixDiagElementsResult(baseObjs.BaseEosPropAnalyser):
 	""" Class for holding data related to diagonal matrix elements for structures used to calculate eos
 
 	Attributes:
@@ -211,6 +191,8 @@ class MatEleEosDataPresenter():
 		self.shellMapper = shellMapper
 		if dataPlotter is None:
 			self.dataPlotter = dPlotter.DataPlotterDiagMatrixEles.fromDefaultPlusKwargs()
+		else:
+			self.dataPlotter = dataPlotter
 
 
 	#WARNING: NOT UNIT-TESTED
