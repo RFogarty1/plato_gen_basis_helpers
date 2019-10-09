@@ -1,11 +1,14 @@
 
 """ Provides access to reference structures and data for pure Zr """
 
+import itertools as it
 import os
+import types
 
 import numpy as np 
 
 from ..job_utils import dos_helpers as dosHelp
+from ..shared import unit_convs as unitConvs
 from . import helpers_ref_data as helpers
 from . import ref_elemental_objs as refEleObjs
 import plato_pylib.plato.mod_plato_inp_files as modInp
@@ -68,6 +71,9 @@ class ZrReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getStructsForEos(self,key):
 		return getUCellsForBulkModCalcs(key)
 
+	def getStructsForEosWithPlaneWaveEnergies(self,key, perAtom=True, eUnits="eV"):
+		return getUCellsAndEnergiesForBulkModCalcs(key,perAtom=perAtom, eUnits=eUnits)
+
 	def getEosFitDict(self,key,eos="murnaghan"):
 		return getPlaneWaveEosFitDict(key,eos=eos)
 
@@ -114,6 +120,34 @@ def getPlaneWaveGeom(structType:str):
 def getUCellsForBulkModCalcs(structType:str):
 	refFolder = os.path.join(BASE_FOLDER, "eos", structType)
 	return helpers.getUCellsFromCastepBulkModFolder(refFolder)
+
+
+
+def getUCellsAndEnergiesForBulkModCalcs(structType,perAtom=True, eUnits="eV"):
+	refFolder = os.path.join(BASE_FOLDER, "eos", structType)
+	parsedFiles = [parseCastep.parseCastepOutfile(x) for x in helpers.getCastepOutPathsForFolder(refFolder)]
+	allUCells = [x["unitCell"] for x in parsedFiles]
+	[x.convAngToBohr() for x in allUCells]
+	allEnergies = [x["energies"].electronicTotalE for x in parsedFiles]
+	if perAtom:
+		allEnergies = [ energy/parsed["numbAtoms"] for energy,parsed in it.zip_longest(allEnergies, parsedFiles) ]
+	outObjs = list()
+	for cell,energy in it.zip_longest(allUCells,allEnergies):
+		currObj = types.SimpleNamespace(uCell=cell, energy=energy)
+		outObjs.append(currObj)
+
+	#Do any energy conversions needed
+	if eUnits.lower()=="ev":
+		pass
+	elif eUnits.lower()=="ryd":
+		print("Converting to Rydberg units")
+		convUnits = unitConvs.EV_TO_RYD
+		for x in outObjs:
+			x.energy *= convUnits
+	else:
+		raise AttributeError("{} is an invalid value for eUnits".format(eUnits))
+
+	return outObjs
 
 
 #Plane wave bulk mod fits using ASE (Actually does the fit while function is called)
@@ -244,6 +278,8 @@ def getVacancyPlaneWaveStruct(structType, relaxType, cellSize):
 		vacCell = supCell.superCellFromUCell(baseUCell, cellDims)
 		defects.makeVacancyUnitCell(vacCell)
 		return vacCell
+	elif relaxType == "novac":
+		return supCell.superCellFromUCell(baseUCell, cellDims)
 	else:
 		raise NotImplementedError("Only unrelaxed vancancies are currently implemented")
 

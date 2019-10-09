@@ -228,21 +228,20 @@ def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:
 
 def _getHcpPlaneWaveStruct_interTetraUnrelaxed332():
 	refFile = os.path.join(BASE_FOLDER, "interstitial", "unrelaxed", "hcp_tetra_inter.castep")
-	pasedUCell = parseCastep.parseCastepOutFile(refRef)["unitCell"]
+	parsedUCell = parseCastep.parseCastepOutfile(refFile)["unitCell"]
 	parsedUCell.convAngToBohr()
 	return parsedUCell
 
 
 def _getHcpPlaneWaveStruct_interOctaUnrelaxed332():
 	refFile = os.path.join(BASE_FOLDER, "interstitial", "unrelaxed", "hcp_octa_inter.castep")
-	parsedUCell = parseCastep.parseCastepOutFile(refRef)["unitCell"]
+	parsedUCell = parseCastep.parseCastepOutfile(refFile)["unitCell"]
 	parsedUCell.convAngToBohr()
 	return parsedUCell
 
 
-#NOTE: This geometry is wrong, acidentally obtained with the wrong k-point mesh being used in the final optimisation, hence this will give a bug until i replace the file
 def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
-	refFile = os.path.join(BASE_FOLDER,"interstitial","relaxed","constant_p","hcp_octa_inter.geom")
+	refFile = os.path.join(BASE_FOLDER,"interstitial","relaxed","constant_p","octa","opt","hcp_octa_inter.geom")
 	outUCell = parseCastep.parseCastepGeomFile(refFile)[-1]["unitCell"]
 	return outUCell
 

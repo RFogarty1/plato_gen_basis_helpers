@@ -20,14 +20,14 @@ def getPerfectHcpMinimalUCell(element):
 	return perfectHcpCell
 
 def getUCellsFromCastepBulkModFolder(refFolder):
-	casOutFiles = _getCastepOutPathsForFolder(refFolder)
+	casOutFiles = getCastepOutPathsForFolder(refFolder)
 	parsedUCells = [parseCastep.parseCastepOutfile(x)["unitCell"] for x in casOutFiles]
 	[x.convAngToBohr() for x in parsedUCells]
 	return parsedUCells
 
 
 def getEosFitDictFromEosCastepFolder(refFolder,eos="murnaghan"):
-	outPaths = _getCastepOutPathsForFolder(refFolder)
+	outPaths = getCastepOutPathsForFolder(refFolder)
 	return _getEosDictFromFilePaths(outPaths,eos)
 
 
@@ -40,7 +40,7 @@ def _getEosDictFromFilePaths(filePaths,eos):
 	outDict = fitBMod.getBulkModFromOutFilesAseWrapper(filePaths, eos=eos)
 	return outDict
 
-def _getCastepOutPathsForFolder(refFolder):
+def getCastepOutPathsForFolder(refFolder):
 	return [os.path.join(refFolder,x) for x in os.listdir(refFolder) if x.endswith('.castep')]
 
 
