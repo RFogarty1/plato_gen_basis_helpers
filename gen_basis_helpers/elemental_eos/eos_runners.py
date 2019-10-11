@@ -1,7 +1,7 @@
 
 import copy
 import os
-
+from collections import OrderedDict
 
 import plato_fit_integrals.initialise.create_eos_workflows as createEosWorkflow
 import plato_fit_integrals.core.workflow_coordinator as wFlowCoordinator
@@ -13,7 +13,7 @@ from ..shared import calc_methods as calcMethods
 
 def createElementInfoStructs(elements, structKeys, refStructDataPureElements, refConvDataPureElements, labelExt=None):
 	#Step 1 = create ALL possible elemental structs
-	outDict = dict()
+	outDict = OrderedDict()
 	for eleKey in elements:
 		outDict[eleKey] = _createElementalInfoStructForOneKey(eleKey, refStructDataPureElements, refConvDataPureElements, structKeys)
 	return outDict
@@ -28,7 +28,7 @@ def _createElementalInfoStructForOneKey(eleKey, refStructDataPureElements, refCo
 
 	
 def _getStructDictFromReferenceElementAndConvData(refEleData, refConvData, structKeys):
-	outDict = dict()
+	outDict = OrderedDict()
 	for structKey in structKeys:
 		currStructs = refEleData.getStructsForEos(structKey)
 		currKptsInfo = refConvData.kptGridVals.getKptsPrimCell(structKey)

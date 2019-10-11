@@ -1,6 +1,7 @@
 
 ''' Purpose of these objects are to hold data on the eos fits to multiple crystal structures '''
 
+from collections import OrderedDict
 import numpy as np 
 
 from ..shared.label_objs import StandardLabel
@@ -114,14 +115,14 @@ class MultiCrystEosResult( EosDataHolderOneElementAndMethod ):
 		return outLabels
 
 	def _getCombinedDictFromAllInputObjs(self, prop):
-		outDict = dict()
+		outDict = OrderedDict()
 		for x in self._singCrysts:
 			currDict = getattr(x,prop)
 			outDict.update(currDict)
 		return outDict
 
 	def getTableData(self,numbDp=3):
-		outDict = dict()
+		outDict = OrderedDict()
 		for x in self._singCrysts:
 			currData = x.getTableData(numbDp=numbDp)
 			outDict.update(currData)
@@ -129,7 +130,7 @@ class MultiCrystEosResult( EosDataHolderOneElementAndMethod ):
 		return outDict
 
 	def getPlotData(self):
-		outDict = dict()
+		outDict = OrderedDict()
 		for x in self._singCrysts:
 			outDict.update(x.getPlotData())
 		return outDict

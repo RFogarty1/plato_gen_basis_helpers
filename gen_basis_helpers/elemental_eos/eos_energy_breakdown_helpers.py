@@ -1,8 +1,11 @@
 
+
 import functools
 import os
 import types
 import numpy as np
+
+from collections import OrderedDict
 
 import plato_pylib.plato.parse_plato_out_files as platoOut
 
@@ -122,7 +125,7 @@ class EosEnergyPresenter():
 
 
 	def _getPlotDataOneEle(self, eleKey, structKeys, methodKeys, plotRelE=None, refMethod=None):
-		dataDict = dict()
+		dataDict = OrderedDict()
 		for mKey in methodKeys:
 			dataDict[mKey] = self._getRawPlotDataOneMethod(eleKey, structKeys, mKey)
 
