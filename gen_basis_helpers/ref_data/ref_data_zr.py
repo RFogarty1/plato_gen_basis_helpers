@@ -91,6 +91,26 @@ class ZrReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getPlaneWaveDosGeom(self, structKey):
 		return getDosPlaneWaveGeom(structKey)
 
+	def getPlaneWaveAtomTotalEnergy(self):
+		inpFolder = os.path.join(BASE_FOLDER,"atom_calc")
+		inpFiles = helpers.getCastepOutPathsForFolder(inpFolder)
+		assert len(inpFiles)==1
+		outEnergy = parseCastep.parseCastepOutfile(inpFiles[0])["energies"].electronicTotalE
+		return outEnergy
+
+	def getPlaneWaveDissocSepVsEnergy(self, relativeE=True, inBohr=True):
+		if relativeE:
+			zeroEnergy = 2*self.getPlaneWaveAtomTotalEnergy()
+		else:
+			zeroEnergy = 0.0
+		sepsVsEnergies = getPlaneWaveDissocSepVsTotalE(inBohr=inBohr)
+		for x in sepsVsEnergies:
+			x[1] -= zeroEnergy
+		return sepsVsEnergies
+
+
+
+
 
 def getExptStructAsUCell():
 	''' a=3.233 A and c=5.182 A, making c/a = 1.063  - originally from W.B. Pearson, A Handbook of Lattice Spacings and Structures ofMetals (Pergamon Press, Oxford, 1967). '''
@@ -334,4 +354,18 @@ def _getHcpComprGeomForDos():
 def _getBccComprGeomForDos():
 	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_compr", "Zr_bcc_compr_spe.castep")
 	return helpers.getUCellInBohrFromCastepOutFile(outFile)
+
+
+def getPlaneWaveDissocSepVsTotalE(inBohr=True):
+	outFolder = os.path.join(BASE_FOLDER,"dissoc_curve")
+	outFiles = helpers.getCastepOutPathsForFolder(outFolder)
+	outEnergies = [parseCastep.parseCastepOutfile(x)["energies"].electronicTotalE for x in outFiles]
+	outSeps = [helpers.getDimerSepFromCastepOutFile(x,inBohr=True) for x in outFiles]
+	outList = list()
+	for sep,e in it.zip_longest(outSeps,outEnergies):
+		outList.append( [sep,e] ) 
+
+	return outList
+
+
 
