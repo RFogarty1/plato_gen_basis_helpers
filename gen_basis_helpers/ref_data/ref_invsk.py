@@ -1,6 +1,7 @@
 
 import os
 
+from ..shared import config_vars as cfgVars
 import plato_pylib.plato.parse_inv_sk as parseInvSk
 
 """ Purpose of this code is to make it easier to access inverse-SK data """
@@ -12,8 +13,8 @@ ZR_PERFECT_CRYSTALS_DATA = dict()
 
 #Despite the data being the same in both Mg folders, they seem to lead to SLIGHTLY different fits
 #BASE_MG_DATA_FOLDER = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/testing_models/work_folder/inv_sk/all_terms/mg"
-BASE_MG_DATA_FOLDER = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/Building_Mg_Model/opt_basis/10el_PP_dorbs/att6_longer_range/create_basis_sets/rc_7pt3/work_folder/inv_sk_calcs/screen1_no_damp"
-BASE_ZR_DATA_FOLDER = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/testing_models/work_folder/inv_sk/all_terms/zr"
+BASE_MG_DATA_FOLDER = cfgVars.MG_INV_SK_REF_PATH
+BASE_ZR_DATA_FOLDER = cfgVars.ZR_INV_SK_REF_PATH
 
 def registerFunctoToDict(key,regDict):
 	def decorate(funct):

@@ -1,10 +1,10 @@
 
 from . import figure_savers_base as baseObjs 
-
+from ..shared import config_vars as configVars
 
 
 def createFigureSaver_twoCentreTightBindingPaper():
-	baseFolder = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/testing_models/paper_figures/two_centre_tight_binding"
+	baseFolder = configVars.TWO_CENTRE_PAPER_2019_FIG_SAVE_FOLDER
 	return baseObjs.StandardFigureSaver.fromDefaultPlusKwargs(baseFolder=baseFolder)
 
 

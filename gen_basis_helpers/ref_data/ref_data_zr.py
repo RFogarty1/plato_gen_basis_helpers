@@ -7,6 +7,7 @@ import types
 
 import numpy as np 
 
+from ..shared import config_vars as configVars
 from ..job_utils import dos_helpers as dosHelp
 from ..shared import unit_convs as unitConvs
 from . import helpers_ref_data as helpers
@@ -25,7 +26,7 @@ dft2Model = str(tb1Model)
 dftModel = str(tb1Model) #Note havnet even got this stub version yet
 
 
-BASE_FOLDER = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/testing_models/castep_database/zr"
+BASE_FOLDER =  os.path.join( configVars.CASTEP_DB_PATH, "zr" )
 
 
 

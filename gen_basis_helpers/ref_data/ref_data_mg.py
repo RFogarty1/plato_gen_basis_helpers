@@ -8,6 +8,7 @@ import os
 import math
 import sys
 
+from ..shared import config_vars as configVars
 from ..job_utils import dos_helpers as dosHelp
 from . import ref_elemental_objs as refEleObjs
 from . import helpers_ref_data as helpers
@@ -25,7 +26,7 @@ tb1Model = os.path.join("Mg_bases_spd_att6","rc_7pt3","tb1_mcweda")
 dft2Model = str(tb1Model)
 dftModel = str(tb1Model)
 
-BASE_FOLDER = "/media/ssd1/rf614/Work/Documents/jobs/Corrosion_Work/testing_models/castep_database/mg"
+BASE_FOLDER = os.path.join( configVars.CASTEP_DB_PATH, "mg" )
 
 def createMgReferenceDataObj():
 	tb1ModAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(tb1Model)
