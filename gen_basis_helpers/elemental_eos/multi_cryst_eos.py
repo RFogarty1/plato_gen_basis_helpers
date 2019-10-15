@@ -52,35 +52,6 @@ class EosDataHolderOneElementAndMethod():
 
 
 
-#class SingleCrystEosData():
-#	""" Holds data for a single crystal type for multiple volumes used in generating Eos curves. Data can be any type 
-#
-#	Attributes:
-#		structLabels: Description of `attr1`.
-#		methodLabel: Description of `attr2`.
-#		elementLabel: 
-#
-#	"""
-#	@property
-#	def structLabels(self):
-#		raise NotImplementedError("")
-#
-#	@property
-#	def methodLabel(self):
-#		raise NotImplementedError("")
-#
-#	@property
-#	def elementLabel(self):
-#		raise NotImplementedError("")
-#
-#
-#	def getPlotData(self):
-#		""" Returns dictionary of plot data. Each key is a structure type (see structLabels prop). Dict is returned even when only 1 structKey present
-#		
-#		"""
-#		raise NotImplementedError("")
-
-
 class MultiCrystEosResult( EosDataHolderOneElementAndMethod ):
 
 	def __init__(self,singleCrysts:"SingleCrystEosResult objs"):
@@ -272,7 +243,10 @@ class GroupedMultiCrystEosForOneElement():
 		if deltaE0:
 			e0ValDict = relObjs[0].e0
 			minE0 = min(e0ValDict.values())
-			print("minE0 = {}".format(minE0))
+			for key in dataDict.keys():
+				currDataMin = min( dataDict[key][:,1] )
+				minE0 = min([minE0,currDataMin])
+
 			for key in dataDict.keys():
 				dataDict[key][:,1] -= minE0
 		return dataDict

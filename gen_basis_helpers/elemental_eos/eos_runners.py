@@ -168,8 +168,7 @@ class WorkFlowFactory():
 		baseOptDict = platoMethod.optDict
 		outDict = {uniqueKey:baseOptDict}
 		
-		#TODO: THIS BIT OF CODE - finish making the factory object
-		
+
 		factoryInstance = createEosWorkflow.CreateEosWorkFlow(structDict, outDict, workFolder,
 															  self._platoCode, eosModel=self.eos, varyType=None)
 		objInstance = factoryInstance()
