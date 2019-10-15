@@ -134,8 +134,9 @@ class DataPlotterBase():
 			if self.ylabel is not None:
 				plt.ylabel(self.ylabel)
 	
-			if self.showTitle is not None:
-				plt.title(self.titleStr)
+			if (self.showTitle is not None):
+				if (self.showTitle is not False):
+					plt.title(self.titleStr)
 
 			if self.legend is True:
 				plt.legend()

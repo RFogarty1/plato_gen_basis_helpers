@@ -6,7 +6,7 @@ import numpy as np
 
 from ..shared.label_objs import StandardLabel
 import gen_basis_helpers.shared.plot_functions as pltFuncts
-
+from . import data_plotter_energy_breakdowns as dPlotter
 
 class EosDataHolderOneElementAndMethod():
 	""" Holds data for equation of state fits. Can include fits to multiple structures together(but single element/method)
@@ -167,10 +167,27 @@ class SingleCrystEosResult( EosDataHolderOneElementAndMethod ):
 
 
 class GroupedMultiCrystEosForOneElement():
-	def __init__(self, multiCrystResults):
+	def __init__(self, multiCrystResults, dataPlotter=None):
 		self._multiCrystResults = multiCrystResults
 		self._ensureAllElementKeysTheSame()
-	
+		if dataPlotter is None:
+			self._createDefaultDataPlotter()
+		else:
+			self.dataPlotter = dataPlotter
+
+
+	def _createDefaultDataPlotter(self):
+		kwargsDict = {"ylabel": "$\Delta$E per atom / eV",
+		              "lineStyles": ["-","--"],
+		              "showTitle": True,
+		              "legend": True,
+		              "lineColors": ['b','g','orange'],
+		              "lineMarkers": ['x'] }
+
+		self.dataPlotter = dPlotter.EosEnergyDataPlotter.fromDefaultPlusKwargs(**kwargsDict)
+		self.dataPlotter.methodProps.remove("dataLabels")
+		self.dataPlotter.dataSeriesProps.append("dataLabels")
+
 	def _ensureAllElementKeysTheSame(self):
 		pass
 	
@@ -194,19 +211,25 @@ class GroupedMultiCrystEosForOneElement():
 			outTableDict[key][-1] = "{:.3f}".format( float(outTableDict[key][-1]) - minE )
 		return outTableDict
 	
-	def createPlots(self, refStr=None, structOrder=None, deltaE0=True):
+	def createPlots(self, refStr=None, structOrder=None, deltaE0=True, methodStr=None):
 		if refStr is None:
 			pass
 		else:
 			refMethod = refStr
-		
+
+		if methodStr is None:
+			methods = set([x.label[0].methodKey for x in self._multiCrystResults])
+		else:
+			methods = [methodStr]
+	
 		allPlots = list()
 		for currObj in self._multiCrystResults:
 			methodStr = currObj.label[0].methodKey
 			if refStr is None:
 				refMethod = methodStr
-			currFig = self._createPlotOneMethod(methodStr,refStr=refMethod, structOrder=structOrder,deltaE0=deltaE0)
-			allPlots.append(currFig)
+			if methodStr in methods:
+				currFig = self._createPlotOneMethod(methodStr,refStr=refMethod, structOrder=structOrder,deltaE0=deltaE0)
+				allPlots.append(currFig)
 		return allPlots
 	
 	def _createPlotOneMethod(self, methodLabel,refStr=None, structOrder=None, deltaE0=True):
@@ -220,13 +243,11 @@ class GroupedMultiCrystEosForOneElement():
 			plotData.append(plotDataDict[struct])
 			refData.append(refDataDict[struct])
 		
-		xLabel = "Volume per atom / $a_{0}^{3}$"
-		yLabel = "$\Delta$E per atom / eV"
 		title = self.elementLabel.replace("_"," ") + " " + methodLabel.replace("_"," ")
 		structLabels = [x.replace("_"," ") for x in structOrder]
-		modelLabels = [x.replace("_"," ") for x in [refStr,methodLabel]]
-		currFig = pltFuncts.createEnergyVsVolCurves_multiStructEachMethod( [refData, plotData], title=title,structLabels=structLabels,
-																		   modelLabels=modelLabels,xlabel=xLabel,ylabel=yLabel )
+
+
+		currFig = self.dataPlotter.createPlot([refData,plotData], titleStr=title, dataLabels=structLabels)
 		return currFig
 	
 	def _getPlotDataDictOneMethod(self,methodLabel,deltaE0=True):

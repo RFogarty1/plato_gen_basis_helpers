@@ -16,6 +16,10 @@ class EosEnergyDataPlotter(basePlotter.DataPlotterStandard):
 		self.registeredKwargs.add("lineMarkerFillStyles")
 		super().__init__(**kwargs)
 
+		self.methodProps = ["lineStyles", "lineMarkers", "lineMarkerSizes", "dataLabels","lineMarkerFillStyles"]
+		self.dataSeriesProps = ["lineColors"]
+
+
 
 	@classmethod
 	def fromDefaultPlusKwargs(cls, **kwargs):
@@ -40,15 +44,13 @@ class EosEnergyDataPlotter(basePlotter.DataPlotterStandard):
 		toPlot = self._getDataFormattedForSuperPlotter(plotData)
 
 		with misc.fragile(basePlotter.temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
-			methodProps = ["lineStyles", "lineMarkers", "lineMarkerSizes", "dataLabels","lineMarkerFillStyles"]
-			dataSeriesProps = ["lineColors"]
 
-			for prop in methodProps:
+			for prop in self.methodProps:
 				currVal = getattr(self,prop)
 				if currVal is not None:
 					setattr(self, prop, self._getMethodBasedArgListInCorrectFormat(plotData,currVal))
 
-			for prop in dataSeriesProps:
+			for prop in self.dataSeriesProps:
 				currVal = getattr(self,prop)
 				if currVal is not None:
 					setattr(self, prop, self._getDataSeriesBasedArgListInCorrectFormat(plotData, currVal))

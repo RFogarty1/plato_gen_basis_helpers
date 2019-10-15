@@ -219,29 +219,34 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 
 
 	def plotData(self, **kwargs):
-		thisFunctKwargs = ["inclRefData", "extraData", "shiftDataEFermiToZero", "extraDataBeforeRef"]
-		plotData = [self.data]
+		thisFunctKwargs = ["inclRefData", "extraData", "shiftDataEFermiToZero", "refDataFirst"]
+		ourData = np.array(self.data)
 		inclRefData = kwargs.get("inclRefData",True)
+		refDataFirst = kwargs.get("refDataFirst",False)
 
-		#Add ref/extra data to plotData
-		extraData = kwargs.get("extraData",list())
-		if (self.refData is not None) and (inclRefData):
-			refData = [self.refData]
-		else:
-			refData = list()		
-
-		if kwargs.get("extraDataBeforeRef",True):
-			plotData.extend(extraData)
-			plotData.extend(refData)
-		else:
-			plotData.extend(refData)
-			plotData.extend(extraData)
 
 		#Apply shift to normal data if requested
 		if kwargs.get("shiftDataEFermiToZero", False):
-			shiftedData = np.array(self.data)
+			shiftedData = np.array(ourData)
 			shiftedData[:,0] = shiftedData[:,0] - self.eFermi
-			plotData[0] = shiftedData
+			ourData = shiftedData
+
+
+
+		print("Calling the gen_basis_analyser.plotData")
+		#self.data
+		if (self.refData is not None) and (inclRefData):
+			if refDataFirst:
+				print("Putting the reference data first")
+				plotData = [self.refData, ourData]
+			else:
+				print("refDataFirst = {}".format(refDataFirst))
+				plotData = [ourData, self.refData]
+
+		#Add ref/extra data to plotData
+		extraData = kwargs.get("extraData",list())
+		plotData.extend(extraData)
+
 
 
 		#Set the title str (if usr hasnt)
