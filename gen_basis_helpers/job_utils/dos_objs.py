@@ -232,15 +232,11 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 			ourData = shiftedData
 
 
-
-		print("Calling the gen_basis_analyser.plotData")
 		#self.data
 		if (self.refData is not None) and (inclRefData):
 			if refDataFirst:
-				print("Putting the reference data first")
 				plotData = [self.refData, ourData]
 			else:
-				print("refDataFirst = {}".format(refDataFirst))
 				plotData = [ourData, self.refData]
 
 		#Add ref/extra data to plotData

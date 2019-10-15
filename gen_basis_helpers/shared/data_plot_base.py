@@ -180,7 +180,7 @@ class DataPlotterStandard(DataPlotterBase):
 		self._changeColorsIfNeeded(outFig, **kwargs)
 
 		#Changes to lineStyles/lineColors means the legend needs remaking (if it was present)
-		if self.legend:
+		if self.legend or kwargs.get("legend",False):
 			plt.legend()
 
 		return outFig
