@@ -10,6 +10,7 @@ from concurrent import futures
 
 import plato_pylib.plato.mod_plato_inp_files as platoInp
 from ..shared import ch_dir as chDir
+from ..shared import unit_convs as uConvs
 
 import sys
 
@@ -115,10 +116,15 @@ def _getOutputInvSkFileNames(inpFilePath):
 
 #----------------->Functions for parsing inv-sk calculations <-----------------------
 
-def getTbintHoppingListStructFormat(tbintPath,intType="hopping"):
+def getTbintHoppingListStructFormat(tbintPath,intType="hopping", convToEv=False):
 	allInts = parseTbint.getIntegralsFromBdt(tbintPath)
 	adtPaths = parseTbint.getAdtFilePathsFromBdt(tbintPath)
 	shellsA, shellsB = parseTbint.parseAdtFile(adtPaths[0])["numbShells"], parseTbint.parseAdtFile(adtPaths[1])["numbShells"]
+
+	intTypesToConvToEv = ["hopping", "HopXcContrib", ]
+
+	if convToEv and (intType not in intTypesToConvToEv):
+		raise AttributeError( "{} is an invalid integral type to convert to electron volts".format(intType) )
 
 	#Put all the info in the required structure (TODO: extract this method somehow w/strat patt.)
 	allBondTypes = ["sigma","pi","delta"]
@@ -128,7 +134,10 @@ def getTbintHoppingListStructFormat(tbintPath,intType="hopping"):
 		for shellBIdx in range(shellsB):
 			currDict = dict()
 			for bondType in allBondTypes:
-				 currDict[bondType] = getTbintIntegralTableFromObjDict(allInts, shellAIdx, shellBIdx, bondType, intType=intType)
+				currDict[bondType] = getTbintIntegralTableFromObjDict(allInts, shellAIdx, shellBIdx, bondType, intType=intType)
+				if (intType in intTypesToConvToEv) and (convToEv) and (currDict[bondType] is not None):
+					currDict[bondType][:,1] *= uConvs.RYD_TO_EV
+	
 			currListA.append(currDict)
 		outLists.append(currListA)
 
