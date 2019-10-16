@@ -271,87 +271,95 @@ def plotDos( dosData:"list of nx2 np arrays", **kwargs):
 
 
 def _plotAllInvSkResults(dataListDict, shellIdxToAngMomA, shellIdxToAngMomB, **kwargs):
-    kwargs = {k.lower():v for k,v in kwargs.items()}
-    refData = kwargs.get("refData".lower(),None)
-    shareX = kwargs.get("sharex","col")
-    shareY = kwargs.get("sharey","row")
-    xlimAll = kwargs.get("xlim",None)
-    ylimAll = kwargs.get("ylim",None)
-    xLabel = kwargs.get("xLabel".lower(),None)
-    yLabel = kwargs.get("yLabel".lower(),None)
-    title = kwargs.get("title",None)
-    
-    nShellsA, nShellsB = len(dataListDict), len(dataListDict[0])
-    angMomToLetter = {0:"s",1:"p",2:"d"}
+	kwargs = {k.lower():v for k,v in kwargs.items()}
+	refData = kwargs.get("refData".lower(),None)
+	shareX = kwargs.get("sharex","col")
+	shareY = kwargs.get("sharey","row")
+	xlimAll = kwargs.get("xlim",None)
+	ylimAll = kwargs.get("ylim",None)
+	xLabel = kwargs.get("xLabel".lower(),None)
+	yLabel = kwargs.get("yLabel".lower(),None)
+	title = kwargs.get("title",None)
+   
+	ylimByRow = kwargs.get("ylimByRow".lower(), None) #List of tuples, we start from top row
 
-    nRows, nCols =2, 3
-    outFig, allAxes = plt.subplots(nRows, nCols, figsize=(10,7), sharex=shareX, sharey=shareY)
-    nPlotted = 0
-    currRow, currCol = 0,0
-    invSKColors = {"sigma":'b', "pi":'orange', "delta":'green'}
-    tbintColors = {"sigma": 'turquoise', "pi":'y', "delta":'limegreen'} 
-    markerStyle = 'o'
-    #For now just plot all the sigma
-    for sIdxA in range(nShellsA):
-        for sIdxB in range(nShellsB):
-            angMomStr = angMomToLetter[shellIdxToAngMomA[sIdxA]] +  angMomToLetter[shellIdxToAngMomB[sIdxB]]
-            legend_elements, legLabels = list(), list()
-            if sIdxA <= sIdxB:
-                if refData is not None:
-                    allAxes[currRow,currCol].plot( refData[sIdxA][sIdxB]["sigma"][:,0], refData[sIdxA][sIdxB]["sigma"][:,1], c=tbintColors["sigma"] )
-                allAxes[currRow,currCol].plot( dataListDict[sIdxA][sIdxB]["sigma"][:,0], dataListDict[sIdxA][sIdxB]["sigma"][:,1],
-                                              ms=1, marker=markerStyle, linestyle='', c=invSKColors["sigma"])
-                legend_elements.append( Line2D([0], [0], linestyle='None',marker=markerStyle, color=invSKColors["sigma"],
-                                                markerfacecolor=invSKColors["sigma"], markersize=2) )
-                legLabels.append(angMomStr + "$\sigma$")
-                
-                if dataListDict[sIdxA][sIdxB]["pi"] is not None:
-                    currBond = "pi"
-                    if refData is not None:
-                        allAxes[currRow,currCol].plot( refData[sIdxA][sIdxB][currBond][:,0], refData[sIdxA][sIdxB][currBond][:,1], c=tbintColors[currBond] )
-                    allAxes[currRow,currCol].plot( dataListDict[sIdxA][sIdxB][currBond][:,0], dataListDict[sIdxA][sIdxB][currBond][:,1],
-                                                    ms=1, marker=markerStyle, linestyle='', c=invSKColors[currBond])
-                    legend_elements.append( Line2D([0], [0], linestyle='None',marker=markerStyle, color=invSKColors[currBond],
-                                                   markerfacecolor=invSKColors[currBond], markersize=2) )
-                    legLabels.append(angMomStr + "$\pi$")
+ 
+	nShellsA, nShellsB = len(dataListDict), len(dataListDict[0])
+	angMomToLetter = {0:"s",1:"p",2:"d"}
 
-                if dataListDict[sIdxA][sIdxB]["delta"] is not None:
-                    currBond = "delta"
-                    if refData is not None:
-                        allAxes[currRow,currCol].plot( refData[sIdxA][sIdxB][currBond][:,0], refData[sIdxA][sIdxB][currBond][:,1], c=tbintColors[currBond] )
-                    allAxes[currRow,currCol].plot( dataListDict[sIdxA][sIdxB][currBond][:,0], dataListDict[sIdxA][sIdxB][currBond][:,1],
-                                                    ms=1, marker=markerStyle, linestyle='', c=invSKColors[currBond])
-                    legend_elements.append( Line2D([0], [0], linestyle='None',marker=markerStyle, color=invSKColors[currBond],
-                                                   markerfacecolor=invSKColors[currBond], markersize=2) ) 
-                    legLabels.append(angMomStr + "$\delta$")
-                
-                allAxes[currRow,currCol].legend(legend_elements,legLabels)
-                
-                nPlotted += 1
-                if currCol + 1 >= nCols:
-                    currCol = 0
-                    currRow +=1
-                else:
-                    currCol += 1
-                    
-                    
-    for a in allAxes.flat:
-        if xLabel is not None:
-            a.set(xlabel=xLabel)
-        if yLabel is not None:
-            a.set(ylabel=yLabel)
-        if xlimAll is not None:
-            a.set(xlim=xlimAll)
-        if ylimAll is not None:
-            a.set(ylim=ylimAll)
-    for a in allAxes.flat:
-        a.label_outer()
-    
-    if title is not None:
-        allAxes[0,0].set_title(title)
-    
-    outFig.subplots_adjust(hspace=0.05, wspace=0.05)                    
-    return outFig 
+	nRows, nCols =2, 3
+	outFig, allAxes = plt.subplots(nRows, nCols, figsize=(10,7), sharex=shareX, sharey=shareY)
+	nPlotted = 0
+	currRow, currCol = 0,0
+	invSKColors = {"sigma":'b', "pi":'orange', "delta":'green'}
+	tbintColors = {"sigma": 'turquoise', "pi":'y', "delta":'limegreen'} 
+	markerStyle = 'o'
+	#For now just plot all the sigma
+	for sIdxA in range(nShellsA):
+		for sIdxB in range(nShellsB):
+			angMomStr = angMomToLetter[shellIdxToAngMomA[sIdxA]] +  angMomToLetter[shellIdxToAngMomB[sIdxB]]
+			legend_elements, legLabels = list(), list()
+			if sIdxA <= sIdxB:
+				if refData is not None:
+					allAxes[currRow,currCol].plot( refData[sIdxA][sIdxB]["sigma"][:,0], refData[sIdxA][sIdxB]["sigma"][:,1], c=tbintColors["sigma"] )
+				allAxes[currRow,currCol].plot( dataListDict[sIdxA][sIdxB]["sigma"][:,0], dataListDict[sIdxA][sIdxB]["sigma"][:,1],
+											  ms=1, marker=markerStyle, linestyle='', c=invSKColors["sigma"])
+				legend_elements.append( Line2D([0], [0], linestyle='None',marker=markerStyle, color=invSKColors["sigma"],
+												markerfacecolor=invSKColors["sigma"], markersize=2) )
+				legLabels.append(angMomStr + "$\sigma$")
+				
+				if dataListDict[sIdxA][sIdxB]["pi"] is not None:
+					currBond = "pi"
+					if refData is not None:
+						allAxes[currRow,currCol].plot( refData[sIdxA][sIdxB][currBond][:,0], refData[sIdxA][sIdxB][currBond][:,1], c=tbintColors[currBond] )
+					allAxes[currRow,currCol].plot( dataListDict[sIdxA][sIdxB][currBond][:,0], dataListDict[sIdxA][sIdxB][currBond][:,1],
+													ms=1, marker=markerStyle, linestyle='', c=invSKColors[currBond])
+					legend_elements.append( Line2D([0], [0], linestyle='None',marker=markerStyle, color=invSKColors[currBond],
+												   markerfacecolor=invSKColors[currBond], markersize=2) )
+					legLabels.append(angMomStr + "$\pi$")
+
+				if dataListDict[sIdxA][sIdxB]["delta"] is not None:
+					currBond = "delta"
+					if refData is not None:
+						allAxes[currRow,currCol].plot( refData[sIdxA][sIdxB][currBond][:,0], refData[sIdxA][sIdxB][currBond][:,1], c=tbintColors[currBond] )
+					allAxes[currRow,currCol].plot( dataListDict[sIdxA][sIdxB][currBond][:,0], dataListDict[sIdxA][sIdxB][currBond][:,1],
+													ms=1, marker=markerStyle, linestyle='', c=invSKColors[currBond])
+					legend_elements.append( Line2D([0], [0], linestyle='None',marker=markerStyle, color=invSKColors[currBond],
+												   markerfacecolor=invSKColors[currBond], markersize=2) ) 
+					legLabels.append(angMomStr + "$\delta$")
+				
+				allAxes[currRow,currCol].legend(legend_elements,legLabels)
+				
+				nPlotted += 1
+				if currCol + 1 >= nCols:
+					currCol = 0
+					currRow +=1
+				else:
+					currCol += 1
+					
+	   
+	if ylimByRow is not None:
+		for rIdx,yLim in enumerate(ylimByRow):
+			for cIdx in range(nCols):
+				allAxes[rIdx,cIdx].set_ylim(yLim)
+ 
+	for a in allAxes.flat:
+		if xLabel is not None:
+			a.set(xlabel=xLabel)
+		if yLabel is not None:
+			a.set(ylabel=yLabel)
+		if xlimAll is not None:
+			a.set(xlim=xlimAll)
+		if (ylimAll is not None) and (ylimByRow is None):
+			a.set(ylim=ylimAll)
+	for a in allAxes.flat:
+		a.label_outer()
+	
+	if title is not None:
+		allAxes[0,0].set_title(title)
+	
+	outFig.subplots_adjust(hspace=0.05, wspace=0.05)					
+	return outFig 
 
 
 
