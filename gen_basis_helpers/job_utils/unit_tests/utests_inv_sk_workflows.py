@@ -34,6 +34,21 @@ class TestFetchForComposite(unittest.TestCase):
 		self.assertEqual(expLabel,outObj.label)
 
 
+class TestAllLabelsForComposite(unittest.TestCase):
+
+	def setUp(self):
+		self.mockCompositeObj = createMockCompositeObjA()
+		self.createTestObj()
+
+	def createTestObj(self):
+		self.testObj = tCode.CompositeInvSkWorkFlow([self.mockCompositeObj],label="top-level")
+
+	def testAllLabelsGivesExpOutput(self):
+		expOutput = sorted(["hcp","bcc","interstit","perfectCrystals","Zr", "top-level"])
+		actOutput = sorted(self.testObj.allLabels)
+		self.assertEqual(expOutput, actOutput)
+
+
 class TestCompositeNamespaceAttrs(unittest.TestCase):
 
 	def setUp(self):
@@ -51,9 +66,9 @@ class TestCompositeNamespaceAttrs(unittest.TestCase):
 def createMockCompositeObjA():
 	standardNamespaceAtt = "fake_generic"
 	altNamespaceAtt = "fake_ver_two"
-	leafHcpPerfect = types.SimpleNamespace(label="hcp",namespaceAttrs=[standardNamespaceAtt]) #Only property leafs need for this
-	leafBccPerfect = types.SimpleNamespace(label="bcc",namespaceAttrs=[standardNamespaceAtt])
-	interstitialLeaf = types.SimpleNamespace(label="interstit", namespaceAttrs = [altNamespaceAtt])
+	leafHcpPerfect = types.SimpleNamespace(label="hcp",namespaceAttrs=[standardNamespaceAtt],allLabels=["hcp"]) #Only property leafs need for this
+	leafBccPerfect = types.SimpleNamespace(label="bcc",namespaceAttrs=[standardNamespaceAtt], allLabels=["bcc"])
+	interstitialLeaf = types.SimpleNamespace(label="interstit", namespaceAttrs = [altNamespaceAtt], allLabels=["interstit"])
 
 	perfectCrystalComposite = tCode.CompositeInvSkWorkFlow([leafHcpPerfect,leafBccPerfect],"perfectCrystals")
 	topLevel = tCode.CompositeInvSkWorkFlow([perfectCrystalComposite,interstitialLeaf],"Zr")

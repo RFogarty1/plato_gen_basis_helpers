@@ -36,6 +36,13 @@ class CompositeInvSkWorkFlow(WFlowCoordinate.WorkFlowBase):
 		return outList
 
 	@property
+	def allLabels(self):
+		outList = [self.label]
+		for x in self.branches:
+			outList.extend(x.allLabels)
+		return outList
+
+	@property
 	def workFolder(self):
 		return None
 
@@ -121,7 +128,7 @@ class CompositeInvSkWorkFlow(WFlowCoordinate.WorkFlowBase):
 class InvSkWorkFlow(WFlowCoordinate.WorkFlowBase):
 	""" WorkFlow for running inverse-SK calculations """
 
-	def __init__(self, workFolder, optDict, elements, structs, label, removeXtal=True):
+	def __init__(self, workFolder, optDict, elements, structs, label, removeXtal=True, units="ryd"):
 		""" Create an Inverse-SK workFlow
 		
 		Args:
@@ -131,6 +138,7 @@ class InvSkWorkFlow(WFlowCoordinate.WorkFlowBase):
 			structs: list of plato_pylib UnitCell structures
 			label: Str, a way of identifying workFlow components
 			removeXtal: Bool, whether to remove crystal-field terms from the parsed results
+			units: units for the output energies; ryd or ev
 		"""
 		self._workFolder = os.path.abspath(workFolder)
 		self.optDict = {k.lower():v for k,v in dict(optDict).items()}
@@ -140,6 +148,7 @@ class InvSkWorkFlow(WFlowCoordinate.WorkFlowBase):
 		self._platoComm = "dft2" #only code that does inverse-SK calculations
 		self.label = label
 		self.removeXtal = removeXtal
+		self.units=units
 
 		#Only need to write the input files upon initialisation
 		pathlib.Path(self.workFolder).mkdir(parents=True,exist_ok=True)
@@ -154,6 +163,10 @@ class InvSkWorkFlow(WFlowCoordinate.WorkFlowBase):
 	@property
 	def workFolder(self):
 		return self._workFolder
+
+	@property
+	def allLabels(self):
+		return [self.label]
 
 	@property
 	def namespaceAttrs(self):
@@ -200,7 +213,7 @@ class InvSkWorkFlow(WFlowCoordinate.WorkFlowBase):
 		for comboStr in self.namespaceAttrs:
 			eleCombo = comboStr.split("_")[1:]
 			allFiles = self.getOutFilePathsOneEleCombo(*eleCombo)
-			allParsed = [parseInvSk.parseInvSK(x) for x in allFiles]
+			allParsed = [parseInvSk.parseInvSK(x, units=self.units) for x in allFiles]
 			for x in allParsed:
 				if self.removeXtal:
 					x.removeXtalFieldTerms()
