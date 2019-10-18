@@ -22,7 +22,8 @@ import plato_pylib.utils.supercell as supCell
 import numpy as np
 
 
-tb1Model = os.path.join("Mg_bases_spd_att6","rc_7pt3","tb1_mcweda")
+#tb1Model = os.path.join("Mg_bases_spd_att6","rc_7pt3","tb1_mcweda")
+tb1Model = os.path.join("Mg_models","two_body_2019")
 dft2Model = str(tb1Model)
 dftModel = str(tb1Model)
 
@@ -79,6 +80,9 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 
 	def getPlaneWaveDosData(self, structKey):
 		return getDosPlaneWave(structKey)
+
+	def getPlaneWaveDosGeom(self, structKey):
+		return getDosPlaneWaveGeom(structKey)
 
 
 # Experimental Structure
@@ -212,6 +216,26 @@ def _getBccDosPlaneWaveComprGeomA():
 	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_compr", "Mg_bcc.fixed.dat")
 	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
 
+
+#Density og states as geom
+def getDosPlaneWaveGeom(structType:str):
+	if structType == "bcc":
+		return getPlaneWaveGeom("bcc")
+
+	structTypeToFunct = {"hcpExpt".lower(): getExptStructAsUCell,
+	                     "hcpCompr".lower(): _getHcpComprGeomForDos,
+	                     "bccCompr".lower(): _getBccComprGeomForDos}
+
+	return structTypeToFunct[structType.lower()]()
+
+
+def _getHcpComprGeomForDos():
+	outFile = os.path.join(BASE_FOLDER, "dos", "hcp_compr", "Mg_hcp_SPE_otf_10el_usp_PP_5pt81.castep")
+	return helpers.getUCellInBohrFromCastepOutFile(outFile)
+
+def _getBccComprGeomForDos():
+	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_compr", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt592.castep")
+	return helpers.getUCellInBohrFromCastepOutFile(outFile)
 
 
 #Structures to use for intersitials
