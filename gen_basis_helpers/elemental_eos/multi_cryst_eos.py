@@ -143,6 +143,14 @@ class SingleCrystEosResult( EosDataHolderOneElementAndMethod ):
 		return {self._label.structKey: outData}
 
 	@property
+	def elementLabel(self):
+		return self._label.eleKey
+
+	@elementLabel.setter
+	def elementLabel(self,val):
+		self._label.eleKey = val
+
+	@property
 	def e0(self):
 		return {self._label.structKey:self._e0}
 
