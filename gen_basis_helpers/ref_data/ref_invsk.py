@@ -48,17 +48,17 @@ def getMgInverseSkPerfectCrystalsSingleDataset(structType:str, removeXtal=True):
 
 @registerFunctoToDict("hcp", MG_PERFECT_CRYSTALS_DATA)
 def _getInvSkDataPerfectHcpCrystalsMg():
-	outFolder = os.path.join(BASE_MG_DATA_FOLDER,"hcp")
+	outFolder = os.path.join(BASE_MG_DATA_FOLDER, "perfect_crystals", "hcp")
 	return parseAllInvSkOneFolder(outFolder)
 
 @registerFunctoToDict("bcc", MG_PERFECT_CRYSTALS_DATA)
 def _getInvSkDataPerfectHcpCrystalsMg():
-	outFolder = os.path.join(BASE_MG_DATA_FOLDER,"bcc")
+	outFolder = os.path.join(BASE_MG_DATA_FOLDER, "perfect_crystals", "bcc")
 	return parseAllInvSkOneFolder(outFolder)
 
 @registerFunctoToDict("fcc", MG_PERFECT_CRYSTALS_DATA)
 def _getInvSkDataPerfectHcpCrystalsMg():
-	outFolder = os.path.join(BASE_MG_DATA_FOLDER, "fcc")
+	outFolder = os.path.join(BASE_MG_DATA_FOLDER, "perfect_crystals", "fcc")
 	return parseAllInvSkOneFolder(outFolder)
 
 @registerFunctoToDict("hcp", ZR_PERFECT_CRYSTALS_DATA)
