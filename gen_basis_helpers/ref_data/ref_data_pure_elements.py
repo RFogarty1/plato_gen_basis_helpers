@@ -25,7 +25,7 @@ elementalDataMcWeda.Mg.modelFiles.tb1Model = platoPaths.getAbsolutePathForPlatoT
 elementalDataMcWeda.Mg.modelFiles.dft2Model = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Mg_models","three_body_2019") )
 elementalDataMcWeda.Mg.modelFiles.dftModel = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Mg_models","three_body_2019"), dtype="dft")
 
-elementalDataMcWeda.Mg.modelFiles.tb1Model = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models","three_body_2019") )
-elementalDataMcWeda.Mg.modelFiles.dft2Model = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models","three_body_2019") )
-elementalDataMcWeda.Mg.modelFiles.dftModel = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models","three_body_2019"), dtype="dft")
+elementalDataMcWeda.Zr.modelFiles.tb1Model = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models","three_body_2019") )
+elementalDataMcWeda.Zr.modelFiles.dft2Model = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models","three_body_2019") )
+elementalDataMcWeda.Zr.modelFiles.dftModel = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models","three_body_2019"), dtype="dft")
 
