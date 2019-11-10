@@ -219,12 +219,11 @@ def _getBccDosPlaneWaveComprGeomA():
 
 #Density og states as geom
 def getDosPlaneWaveGeom(structType:str):
-	if structType == "bcc":
-		return getPlaneWaveGeom("bcc")
 
 	structTypeToFunct = {"hcpExpt".lower(): getExptStructAsUCell,
 	                     "hcpCompr".lower(): _getHcpComprGeomForDos,
-	                     "bccCompr".lower(): _getBccComprGeomForDos}
+	                     "bccCompr".lower(): _getBccComprGeomForDos,
+	                     "bcc".lower(): _getBccEqmGeomFosDos}
 
 	return structTypeToFunct[structType.lower()]()
 
@@ -235,6 +234,10 @@ def _getHcpComprGeomForDos():
 
 def _getBccComprGeomForDos():
 	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_compr", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt592.castep")
+	return helpers.getUCellInBohrFromCastepOutFile(outFile)
+
+def _getBccEqmGeomFosDos():
+	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_eqm", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt842.castep")
 	return helpers.getUCellInBohrFromCastepOutFile(outFile)
 
 

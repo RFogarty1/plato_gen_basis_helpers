@@ -338,12 +338,11 @@ def _getBccDosPlaneWaveComprGeomA():
 
 
 def getDosPlaneWaveGeom(structType:str):
-	if structType == "bcc":
-		return getPlaneWaveGeom("bcc")
 
 	structTypeToFunct = {"hcpExpt".lower(): getExptStructAsUCell,
 	                     "hcpCompr".lower(): _getHcpComprGeomForDos,
-	                     "bccCompr".lower(): _getBccComprGeomForDos}
+	                     "bccCompr".lower(): _getBccComprGeomForDos,
+	                     "bcc": _getBccEqmGeomForDos}
 
 	return structTypeToFunct[structType.lower()]()
 
@@ -354,6 +353,10 @@ def _getHcpComprGeomForDos():
 
 def _getBccComprGeomForDos():
 	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_compr", "Zr_bcc_compr_spe.castep")
+	return helpers.getUCellInBohrFromCastepOutFile(outFile)
+
+def _getBccEqmGeomForDos():
+	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_eqm", "Zr_bcc_eqm_spe.castep")
 	return helpers.getUCellInBohrFromCastepOutFile(outFile)
 
 
