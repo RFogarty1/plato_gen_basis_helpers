@@ -231,6 +231,7 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 			shiftedData[:,0] = shiftedData[:,0] - self.eFermi
 			ourData = shiftedData
 
+		plotData = [ourData]
 
 		#self.data
 		if (self.refData is not None) and (inclRefData):
