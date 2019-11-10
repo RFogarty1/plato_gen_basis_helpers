@@ -269,7 +269,7 @@ class TestDosAnalyserComposite(unittest.TestCase):
 		fakeComponents = ["irrelevant"]
 		actObjs = self.testObj.getObjectsWithComponents(fakeComponents)
 		expObjs = ["fake_obj_a", "fake_obj_b","fake_obj_c"]
-		[x.getObjectsWithComponents.assert_called_once_with(fakeComponents, caseSensitive=True) for x in self.allAnalysers]
+		[x.getObjectsWithComponents.assert_called_once_with(fakeComponents, caseSensitive=True, partialMatch=False) for x in self.allAnalysers]
 		self.assertEqual(expObjs, actObjs)
 
 	def testAttachRefDataMultipleMatches(self):

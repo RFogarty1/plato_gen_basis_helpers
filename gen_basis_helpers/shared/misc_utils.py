@@ -46,10 +46,10 @@ class fragile(object):
 
 #Class decorator to apply a composite search method. We need a composite and non-composite version of this
 def getObjectsWithComponentsInstanceWrapper(isComposite=None):
-	""" Attach a function getObjectsWithComponents to an instance. Function searches through object
+	""" Attach a function getObjectsWithComponents to an instance INITIALIZER (sorry for misleading name). Function searches through object
 	
 	Args:
-		inpCls: Input instnace. This must have a .label attribute which returns a BaseLabel object (see shared). If isComposite the instance also needs to have a *.objs attribute which stores the leaf objects.
+		inpInit: Input instance. This must have a .label attribute which returns an iter of BaseLabel objects (see shared). If isComposite the instance also needs to have a *.objs attribute which stores the leaf objects.
 		 
 		isComposite (bool): True means decorate a composite class, False means decorate a leaf class
 			
@@ -79,29 +79,61 @@ def getObjectsWithComponentsInstanceWrapper(isComposite=None):
 	return clsDeco
 
 
-def _getObjectsWithComponentsForComposite(self, components, caseSensitive=True):
+def wrapInstanceWithGetObjectsWithComponentsSearch(instance, isComposite=None):
+	""" Attach a function getObjectsWithComponents to an instance. Function searches through object
+	
+	Args:
+		inpCls: Input instance. This must have a .label attribute which returns an iter of BaseLabel objects (see shared). If isComposite the instance also needs to have a *.objs attribute which stores the leaf objects.
+		 
+		isComposite (bool): True means decorate a composite class, False means decorate a leaf class
+			
+	Returns
+		The instance will have the "getObjectsWithComponents(self, components, caseSensitive=True)" function attached. Components
+		is an iter of strings used to identify the object. e.g ["hcp","methodA"]. The function returns a list of objects which have
+		all the requested components as part of their labels 
+			
+
+	"""
+
+	if isComposite is None:
+		raise ValueError("isComposite = {} is invalid. It must be True or False".format(isComposite))
+
+	if isComposite:
+		instance.getObjectsWithComponents = types.MethodType( _getObjectsWithComponentsForComposite, instance )
+	else:
+		instance.getObjectsWithComponents = types.MethodType( _getObjectsWithComponentsForNonComposites, instance )
+
+
+
+
+
+
+def _getObjectsWithComponentsForComposite(self, components, caseSensitive=True, partialMatch=False):
 	""" Returns objects which match the components
 	
 	Args:
 		components (str list): Strings which will be matched against BaseLabel (or inherited cls) components. Any object with 
 	all of these components present will be returned 
-		caseSensitive(bool): Whether we need to match the case of each component or not 
+		caseSensitive(bool): Whether we need to match the case of each component or not
+		partialMatch(bool): Whether we need to match the full components string or just part of it. For example, if true the component="hell" will return objects with component "hello", if False they wont 
 	Returns
 		objList (iter): List of output objects where labels match components requested. 
  
 	"""
 	outObjs = list()
 	for x in self.objs:
-		outObjs.extend( x.getObjectsWithComponents(components, caseSensitive=caseSensitive) )
+		outObjs.extend( x.getObjectsWithComponents(components, caseSensitive=caseSensitive, partialMatch=partialMatch) )
 	return outObjs
 
 
-def _getObjectsWithComponentsForNonComposites(self, components, caseSensitive=True):
+def _getObjectsWithComponentsForNonComposites(self, components, caseSensitive=True, partialMatch=False):
 	""" Returns analyser objects which match the components
 	
 	Args:
 		components (str list): Strings which will be matched against self.label.components (or inherited cls). 
-		caseSensitive(bool): Whether we need to match the case of each component or not 
+		caseSensitive(bool): Whether we need to match the case of each component or not
+		partialMatch(bool): Whether we need to match the full components string or just part of it. For example, if true the component="hell" will return objects with component "hello", if False they wont 
+ 
 	Returns
 		objList (iter): List of objects. Empty if object components dont match, else length 1 with reference to self. The iter is required
 		                since the same interface needs to be present for composite/non-composite objects
@@ -118,7 +150,7 @@ def _getObjectsWithComponentsForNonComposites(self, components, caseSensitive=Tr
 
 	objConsistentWithComponents = True
 	for x in inpComponents:
-		if x not in allComps:
+		if not _inpComponentInObjComponentList(x, allComps, partialMatch):
 			objConsistentWithComponents = False
 
 	if objConsistentWithComponents:
@@ -128,4 +160,16 @@ def _getObjectsWithComponentsForNonComposites(self, components, caseSensitive=Tr
 
 
 
- 
+def _inpComponentInObjComponentList(inpComponent, objComponents, partialMatchIsOk):
+
+	if not partialMatchIsOk:
+		if inpComponent in objComponents:
+			return True
+
+	else:
+		for oComp in objComponents:
+			if inpComponent in oComp: #is strA part of strB basically
+				return True
+
+	return False
+

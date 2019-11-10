@@ -16,7 +16,7 @@ import plato_pylib.shared.ucell_class as UCell
 from ase.atoms import Atoms
 import ase.build.bulk as aseBuilder
 
-import ase_conversions as tCode
+import gen_basis_helpers.shared.ase_conversions as tCode
 
 class TestForMgHcp(unittest.TestCase):
 
