@@ -354,6 +354,24 @@ def _getOptDict_dft2_mcweda4_pp_uniform():
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
+@registerMethodStrToObj("dft2_mcwedahop_mcwedaxtal_pp_fit_uniform")
+def createPlatoMethod_dft2_mcweda4_pp_uniform():
+    runCommFunct = _getRunCommPlatoDft2
+    optDict = _getOptDict_dft2_mcwedahop_mcwedaxtal_pp_fit_uniform()
+    getStrDictFromOptDict = getPlatoStrDictFromOptDict_tb1OrTb2
+    return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+
+def _getOptDict_dft2_mcwedahop_mcwedaxtal_pp_fit_uniform():
+    outOptDict = loadDefaultTb2OptDict()
+    modOptsDict = {"xtalxcmethod".lower(): 4,
+                  "hopxcmethod".lower(): 2,
+                  "excMbCorr".lower():1,
+                  "e0method":1,
+	              "addCorrectingPPFromBdt".lower():1}
+    outOptDict.update(modOptsDict)
+    return outOptDict
+
 @registerMethodStrToObj("dft2_mcwedahop_mcwedaxtal_pp_uniform_second_order")
 @registerMethodStrToObj("dft2_mcweda4_pp_uniform_second_order")
 def createPlatoMethod_dft2_mcweda4_pp_uniform_second_order():
