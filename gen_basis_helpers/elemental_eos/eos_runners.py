@@ -107,7 +107,7 @@ def _createWorkFlowFactoryFromElementInfoAndStructKeyAndMethodStr(elementInfo, s
 		modelFolder = elementInfo.modelFolders.dft2PlatoPath
 	elif methodStr.startswith("dft_"):
 		gridConv = currStructSetInfo.fftGridVals
-		modelFolder = elementInfo.modelFolders.dftModel
+		modelFolder = elementInfo.modelFolders.dftPlatoPath
 	elif methodStr.startswith("tb1_"):
 		gridConv = currStructSetInfo.dft2GridVals
 		modelFolder = elementInfo.modelFolders.tb1PlatoPath
