@@ -539,6 +539,7 @@ def _getOptDict_dft2_exacthop_mcweda_xtal_exacte0():
 	return outOptDict
 
 
+@registerMethodStrToObj("dft2_e1_2bxc_exacte0")
 @registerMethodStrToObj("dft2_2bodyhop_2bxtal_exacte0")
 def createPlatoMethod_():
 	runCommFunct = _getRunCommPlatoDft2

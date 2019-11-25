@@ -24,7 +24,7 @@ class EosEnergyDataPlotter(basePlotter.DataPlotterStandard):
 	@classmethod
 	def fromDefaultPlusKwargs(cls, **kwargs):
 		inpKwargs = dict()
-		inpKwargs["xlabel"] = "Volume ($a_0^3$ per atom)"
+		inpKwargs["xlabel"] = "Volume per atom ($a_0^3$)"
 		inpKwargs["sortXBeforePlot"] = True
 		inpKwargs.update(kwargs)
 		return cls(**inpKwargs)

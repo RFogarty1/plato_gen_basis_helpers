@@ -185,7 +185,7 @@ class GroupedMultiCrystEosForOneElement():
 
 
 	def _createDefaultDataPlotter(self):
-		kwargsDict = {"ylabel": "$\Delta$E per atom / eV",
+		kwargsDict = {"ylabel": "$\Delta$E per atom (eV)",
 		              "lineStyles": ["-","--"],
 		              "showTitle": True,
 		              "legend": True,
