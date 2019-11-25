@@ -1,2 +1,3 @@
 gen_basis_helpers/shared/config_vars.py
 __pycache__/
+ignore_folder/
