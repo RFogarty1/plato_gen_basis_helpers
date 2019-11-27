@@ -30,9 +30,10 @@ class Hcp0001Surface(baseSurface.BaseSurface):
 	def _checkLattAnglesConsistent(self):
 		errorTol = 0.1
 		expLattAngles = {"alpha":90.0, "beta":90.0, "gamma":120.0}
+		expAlternativeLattAngles = {"alpha":90.0, "beta":90.0, "gamma":60.0}
 		actLattAngles = self._bulkCell.lattAngles
 		for key in expLattAngles.keys():
-			if abs(expLattAngles[key] - actLattAngles[key]) > errorTol:
+			if (abs(expLattAngles[key] - actLattAngles[key]) > errorTol) and (abs(expAlternativeLattAngles[key] - actLattAngles[key]) > errorTol):
 				raise baseSurface.InvalidSurfaceError("Hcp surfaces need to be built from unit-cells ith angles of 90/90/120, but input has angles of {}".format(self._bulkCell.lattAngles))
 
 

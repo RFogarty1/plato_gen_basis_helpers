@@ -46,14 +46,14 @@ class TestCreateSurfaceRunner(unittest.TestCase):
 		self.energyAttr = "electronicCohesiveE"
 		self.createTestObj()
 		expEnergyPerAtom = self.energyCohesiveElectronic / self.nAtoms
-		actEnergyPerAtom = self.testObj.energiesPerAtom
+		actEnergyPerAtom = self.testObj.ePerAtom
 		self.assertAlmostEqual(expEnergyPerAtom, actEnergyPerAtom)
 
 	def testCorrectEnergyPerAtomTotalElectronic(self):
 		self.energyAttr = "electronicTotalE"
 		self.createTestObj()
 		expEnergyPerAtom = self.energyTotalElectronic / self.nAtoms
-		actEnergyPerAtom = self.testObj.energiesPerAtom
+		actEnergyPerAtom = self.testObj.ePerAtom
 		self.assertAlmostEqual(expEnergyPerAtom, actEnergyPerAtom)
 
 	def testGetRunComm(self):

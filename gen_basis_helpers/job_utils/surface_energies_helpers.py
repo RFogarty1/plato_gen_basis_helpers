@@ -3,6 +3,9 @@ import os
 
 import plato_fit_integrals.initialise.create_surf_energies_workflows as surfFlows
 
+
+
+
 class PlatoSurfRunner(surfFlows.SurfaceRunnerBase):
 
 	def __init__(self, calcObj, surfaceArea, energyAttr):
@@ -28,7 +31,7 @@ class PlatoSurfRunner(surfFlows.SurfaceRunnerBase):
 		return parsedFile["numbAtoms"]
 
 	@property
-	def energiesPerAtom(self):
+	def ePerAtom(self):
 		parsedFile = self._getParsedFile()
 		nAtoms = parsedFile["numbAtoms"]
 		totalEnergy = getattr( parsedFile["energies"], self.energyAttr )
