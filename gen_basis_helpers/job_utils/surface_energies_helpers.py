@@ -5,6 +5,9 @@ import plato_fit_integrals.initialise.create_surf_energies_workflows as surfFlow
 
 
 
+#TODO: Make this inherit from a more general class, and simply add the surfaceArea property
+
+
 
 class PlatoSurfRunner(surfFlows.SurfaceRunnerBase):
 
