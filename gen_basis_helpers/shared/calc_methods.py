@@ -723,6 +723,21 @@ def _getOptDict_dft2_exact_e1_pp_uniform_e0():
 	return outOptDict
 
 
+@registerMethodStrToObj("dft2_exact_e1_pp_uniform_second_order")
+def createPlatoMethod_dft2_exact_e1_pp_uniform_second_order():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_exact_e1_pp_uniform_second_order()
+	getStrDictFromOptDict = getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_exact_e1_pp_uniform_second_order():
+	outOptDict = loadDefaultTb2OptDict()
+	modOptsDict = {"excMbCorr".lower():3,
+				  "e0method":1}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
+
 #@registerMethodStrToObj("dft2_minimal_for_debuggingA")
 #def createPlatoMethod_dft2_minimal_for_debuggingA():
 #	runCommFunct = _getRunCommPlatoDft2
