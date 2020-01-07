@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import copy
 import types
 import unittest
 
@@ -34,6 +35,40 @@ class TestGetObjsWithComponentsWrapper(unittest.TestCase):
 		expNumbOutObjs = 0
 		actOutObjs = self.testObjLeaf.getObjectsWithComponents( [compSearch], partialMatch=False )
 		self.assertEqual ( expNumbOutObjs, len(actOutObjs) )
+
+
+
+class DudClass():
+	def __init__(self, **kwargs):
+		for x in kwargs.keys():
+			setattr(self, x, kwargs[x])
+
+class TestStandardComponentAttr(unittest.TestCase):
+
+	def setUp(self):
+		self.leafA = types.SimpleNamespace( testComp = ["testA"] )
+		self.leafB = types.SimpleNamespace( testComp = ["testB"] )
+		self.leafC = types.SimpleNamespace( testComp = ["testC"] )
+		self.createTestCompObjWithLeafsOnly()
+		self.createTestCompObjLeafsAndComp()
+
+	def createTestCompObjWithLeafsOnly(self):
+		setattr(DudClass, "testComp", tCode.StandardComponentDescriptor("testComp"))
+		self.testCompObjLeafsOnly = DudClass( objs=[self.leafA,self.leafB] )
+
+	def createTestCompObjLeafsAndComp(self):
+		self.createTestCompObjWithLeafsOnly()
+		self.testCompObjLeafAndComp = DudClass( objs = [copy.deepcopy(self.testCompObjLeafsOnly), self.leafC] )
+
+	def testAttrObjWithLeafsOnly(self):
+		expResult = ["testA","testB"]
+		actResult = getattr(self.testCompObjLeafsOnly,"testComp")
+		self.assertEqual(expResult, actResult)
+
+	def testAttrObjWithLeafAndComp(self):
+		expResult = ["testA","testB","testC"]
+		actResult = getattr(self.testCompObjLeafAndComp, "testComp")
+		self.assertEqual(expResult, actResult)
 
 if __name__ == '__main__':
 	unittest.main()

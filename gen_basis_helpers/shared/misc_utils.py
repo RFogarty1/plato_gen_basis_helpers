@@ -173,3 +173,18 @@ def _inpComponentInObjComponentList(inpComponent, objComponents, partialMatchIsO
 
 	return False
 
+
+class StandardComponentDescriptor(object):
+
+	def __init__(self,attrName):
+		self.attrName = attrName
+
+	def __get__(self, instance, owner):
+		outList = list()
+		for x in getattr(instance,"objs"):
+			outList.extend( getattr(x,self.attrName) )
+		return outList
+
+	def __set__(self, instance, value):
+		raise NotImplementedError()
+
