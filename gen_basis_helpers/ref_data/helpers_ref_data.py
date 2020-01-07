@@ -20,6 +20,15 @@ def getPerfectHcpMinimalUCell(element):
 	perfectHcpCell.setLattParams([1.0,1.0,idealCoverA])
 	return perfectHcpCell
 
+
+def getEmptyCubicBoxUCell(boxLength):
+	lattVects = [ [1.0, 0.0, 0.0],
+	              [0.0, 1.0, 0.0],
+	              [0.0, 0.0, 1.0] ]
+	outUCell = UCell.UnitCell.fromLattVects(lattVects)
+	outUCell.setLattParams( [boxLength, boxLength, boxLength] )
+	return outUCell
+
 def getUCellsFromCastepBulkModFolder(refFolder):
 	casOutFiles = getCastepOutPathsForFolder(refFolder)
 	parsedUCells = [parseCastep.parseCastepOutfile(x)["unitCell"] for x in casOutFiles]
