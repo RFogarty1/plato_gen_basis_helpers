@@ -31,6 +31,7 @@ dftModel = str(tb1Model)
 
 BASE_FOLDER = os.path.join( configVars.CASTEP_DB_PATH, "mg" )
 
+
 def createMgReferenceDataObj():
 	tb1ModAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(tb1Model)
 	dft2ModelAbs = modInp.getAbsolutePathForPlatoTightBindingDataSet(dft2Model)
@@ -300,63 +301,11 @@ def getPlaneWaveSurfEnergy(structKey):
 
 
 def _getSurfaceEnergyHcp0001():
-	BASE_FOLDER="/home/richard/work/papers/two_cent_tb/castep_db/castep_database/mg"
-	import os
-	import gen_basis_helpers.shared.surfaces as surf
-	import plato_pylib.parseOther.parse_castep_files as parseCastep
-	import plato_fit_integrals.initialise.create_surf_energies_workflows as surfFlow
-
 	refBaseFolder = os.path.join(BASE_FOLDER,"surface_energies", "hcp0001")
 	bulkModFile = os.path.join(refBaseFolder, "Mg_hcp_SPE_otf_10el_usp_PP_6pt06.castep")
 	surfFile = os.path.join(refBaseFolder, "Mg24_k1.castep")
 
-	#Parse both files and get energy and energy per atom from them. We can create a surf-energies object for each in helpers
-	#That simply returns this info. EZ
-	parsedBulkModFile = parseCastep.parseCastepOutfile(bulkModFile)
-	parsedSurfFile = parseCastep.parseCastepOutfile(surfFile)
-	surfUCell = parsedSurfFile["unitCell"]
-	surfUCell.convAngToBohr()
-	lenVac, nLayer = 0, 1 #Irrelevant for getting surface area
-
-	surfObj = surf.Hcp0001Surface( surfUCell, 1, 0 )
-	surfArea = surfObj.surfaceArea
-
-	#Create the objects for the workflow
-	surfEPerAtom = parsedSurfFile["energies"].electronicTotalE / parsedSurfFile["numbAtoms"]
-	bulkEPerAtom = parsedBulkModFile["energies"].electronicTotalE / parsedBulkModFile["numbAtoms"]
-	surfRunner = SurfaceRunnerForExtractingRefData(surfEPerAtom, parsedSurfFile["numbAtoms"], surfArea)
-	bulkRunner = SurfaceRunnerForExtractingRefData(bulkEPerAtom, parsedBulkModFile["numbAtoms"], surfArea)
-
-	#Run the workflow and extract the values
-	wFlow = surfFlow.SurfaceEnergiesWorkFlow(surfRunner,bulkRunner)
-	wFlow.run()
-
-	surfEnergy = wFlow.output.surfaceEnergy
-	return surfEnergy
+	return helpers.getCastepRefHcp0001SurfaceEnergyFromSurfAndBulkFilePaths(surfFile,bulkModFile)
 
 
-class SurfaceRunnerForExtractingRefData(surfFlow.SurfaceRunnerBase):
 
-	def __init__(self, ePerAtom, nAtoms, surfArea):
-		self._ePerAtom = ePerAtom
-		self._nAtoms = nAtoms
-		self._surfaceArea = surfArea
-
-	@property
-	def ePerAtom(self):
-		return self._ePerAtom
-
-	@property
-	def nAtoms(self):
-		return self._nAtoms
-
-	@property
-	def surfaceArea(self):
-		return self._surfaceArea
-
-	@property
-	def workFolder(self):
-		return None
-
-	def writeFiles(self):
-		pass

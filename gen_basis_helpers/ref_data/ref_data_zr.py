@@ -109,8 +109,8 @@ class ZrReferenceDataObj(refEleObjs.RefElementalDataBase):
 			x[1] -= zeroEnergy
 		return sepsVsEnergies
 
-
-
+	def getPlaneWaveSurfaceEnergy(self, structKey):
+		return getPlaneWaveSurfEnergy(structKey)
 
 
 def getExptStructAsUCell():
@@ -372,4 +372,13 @@ def getPlaneWaveDissocSepVsTotalE(inBohr=True):
 	return outList
 
 
+def getPlaneWaveSurfEnergy(structKey):
+	outDict = {"hcp0001": _getSurfaceEnergyHcp0001}
+	return outDict[structKey.lower()]()
 
+
+def _getSurfaceEnergyHcp0001():
+	refBaseFolder = os.path.join(BASE_FOLDER,"surface_energies", "hcp0001") 
+	bulkModFile = os.path.join(refBaseFolder, "Zr_hcp_expt.castep")
+	surfFile = os.path.join(refBaseFolder, "Zr24.castep")
+	return helpers.getCastepRefHcp0001SurfaceEnergyFromSurfAndBulkFilePaths(surfFile,bulkModFile)

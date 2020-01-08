@@ -7,6 +7,8 @@ import plato_pylib.parseOther.parse_castep_files as parseCastep
 import plato_pylib.shared.ucell_class as UCell
 import plato_pylib.utils.fit_eos as fitBMod
 
+import gen_basis_helpers.shared.surfaces as surf
+import plato_fit_integrals.initialise.create_surf_energies_workflows as surfFlow
 
 def getPerfectHcpMinimalUCell(element):
 	lattVects = [ [ 1.00000000, 0.00000000, 0.00000000],
@@ -118,3 +120,60 @@ def _getUCellFromCrystalMakerCastepOutFile(refFile):
 
 	return outUCell
 
+
+
+def getCastepRefHcp0001SurfaceEnergyFromSurfAndBulkFilePaths(surfPath, bulkPath):
+	bulkModFile = bulkPath
+	surfFile = surfPath
+
+	#Parse both files and get energy and energy per atom from them. We can create a surf-energies object for each 
+	#That simply returns this info 
+	parsedBulkModFile = parseCastep.parseCastepOutfile(bulkModFile)
+	parsedSurfFile = parseCastep.parseCastepOutfile(surfFile)
+	surfUCell = parsedSurfFile["unitCell"]
+	surfUCell.convAngToBohr()
+	lenVac, nLayer = 0, 1 #Irrelevant for getting surface area
+
+	surfObj = surf.Hcp0001Surface( surfUCell, nLayer, lenVac )
+	surfArea = surfObj.surfaceArea
+
+	#Create the objects for the workflow
+	surfEPerAtom = parsedSurfFile["energies"].electronicTotalE / parsedSurfFile["numbAtoms"]
+	bulkEPerAtom = parsedBulkModFile["energies"].electronicTotalE / parsedBulkModFile["numbAtoms"]
+	surfRunner = SurfaceRunnerForExtractingRefData(surfEPerAtom, parsedSurfFile["numbAtoms"], surfArea)
+	bulkRunner = SurfaceRunnerForExtractingRefData(bulkEPerAtom, parsedBulkModFile["numbAtoms"], surfArea)
+
+	#Run the workflow and extract the values
+	wFlow = surfFlow.SurfaceEnergiesWorkFlow(surfRunner,bulkRunner)
+	wFlow.run()
+
+	surfEnergy = wFlow.output.surfaceEnergy
+	return surfEnergy
+
+
+
+class SurfaceRunnerForExtractingRefData(surfFlow.SurfaceRunnerBase):
+
+	def __init__(self, ePerAtom, nAtoms, surfArea):
+		self._ePerAtom = ePerAtom
+		self._nAtoms = nAtoms
+		self._surfaceArea = surfArea
+
+	@property
+	def ePerAtom(self):
+		return self._ePerAtom
+
+	@property
+	def nAtoms(self):
+		return self._nAtoms
+
+	@property
+	def surfaceArea(self):
+		return self._surfaceArea
+
+	@property
+	def workFolder(self):
+		return None
+
+	def writeFiles(self):
+		pass
