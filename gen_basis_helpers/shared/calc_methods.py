@@ -299,6 +299,19 @@ def _getOptDict_dft2_2centxc_noxtal():
 	outOptDict.update(modOptsDict)
 	return outOptDict
 
+@registerMethodStrToObj("dft2_2bhopxc_xt_exact_pp_exact")
+def createPlatoMethod_dft2_2bhopxc_xt_exact_pp_exact():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_2bhopxc_xt_exact_pp_exact()
+	getStrDictFromOptDict = getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+def _getOptDict_dft2_2bhopxc_xt_exact_pp_exact():
+	outOptDict = loadDefaultTb2OptDict()
+	modOptsDict = {"hopxcmethod".lower(): 1}
+	outOptDict.update(modOptsDict)
+	return outOptDict
+
 
 @registerMethodStrToObj("dft2_mcwedahop_2bxtalxc_pp")
 @registerMethodStrToObj("dft2_2centxc_withxtal")
