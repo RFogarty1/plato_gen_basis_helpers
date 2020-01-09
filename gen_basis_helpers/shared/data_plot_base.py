@@ -169,6 +169,9 @@ class DataPlotterStandard(DataPlotterBase):
 	def __init__(self, **kwargs):
 		self.registeredKwargs.add("lineStyles")
 		self.registeredKwargs.add("lineColors")
+		self.registeredKwargs.add("lineMarkers")
+		self.registeredKwargs.add("lineMarkerSizes")
+
 		super().__init__(**kwargs)
 		
 
@@ -178,10 +181,15 @@ class DataPlotterStandard(DataPlotterBase):
 
 		self._changeLineStylesIfNeeded(outFig, **kwargs)
 		self._changeColorsIfNeeded(outFig, **kwargs)
+		self._changeLineMarkersIfNeeded(outFig, **kwargs)
+		self._changeLineMarkerSizesIfNeeded(outFig, **kwargs)
 
 		#Changes to lineStyles/lineColors means the legend needs remaking (if it was present)
-		if self.legend or kwargs.get("legend",False):
+		if kwargs.get("legend",False):
 			plt.legend()
+		if "legend" not in kwargs:
+			if self.legend:
+				plt.legend() 
 
 		return outFig
 
@@ -199,6 +207,19 @@ class DataPlotterStandard(DataPlotterBase):
 			inpLine.set_color(value)
 
 		self.changeLineProp(outFig, "lineColors", colorLineModFunct, **kwargs)
+
+	def _changeLineMarkersIfNeeded(self, outFig, **kwargs):
+		def lineMarkerModFunct(inpLine, value):
+			inpLine.set_marker(value)
+		
+		self.changeLineProp(outFig, "lineMarkers", lineMarkerModFunct, **kwargs)
+
+
+	def _changeLineMarkerSizesIfNeeded(self, outFig, **kwargs):
+		def lineMarkerSizeModFunct(inpLine,value):
+			inpLine.set_markersize(value)
+
+		self.changeLineProp(outFig, "lineMarkerSizes", lineMarkerSizeModFunct, **kwargs)
 
 	def changeLineProp(self, outFig, propName, propSetFunct, inclLegend=True,**kwargs):
 		""" Changes a property for each line in the plot based on the setter function

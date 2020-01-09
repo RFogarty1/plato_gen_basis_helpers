@@ -13,8 +13,6 @@ class DataPlotterDiagMatrixEles(basePlotter.DataPlotterStandard):
 
 	#Add extra Kwargs here
 	def __init__(self, **kwargs):
-		self.registeredKwargs.add("lineMarkers")
-		self.registeredKwargs.add("lineMarkerSizes")
 		self.registeredKwargs.add("sortXBeforePlot")
 		super().__init__(**kwargs)
 
@@ -58,8 +56,6 @@ class DataPlotterDiagMatrixEles(basePlotter.DataPlotterStandard):
 					setattr(self, prop, self._getDataSeriesBasedArgListInCorrectFormat(plotData, currVal))
 
 			outFig = super().createPlot(toPlot) #Important not to pass any Kwargs, the context manager has already translated them into attributes
-			self.changeLineProp(outFig, "lineMarkers", lambda inpLine,value:inpLine.set_marker(value))
-			self.changeLineProp(outFig, "lineMarkerSizes", lambda inpLine,value:inpLine.set_markersize(value))
 
 			if self.legend:
 				self.changeLegendEntriesToMethodOnly(outFig)
