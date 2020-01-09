@@ -29,3 +29,14 @@ elementalDataMcWeda.Zr.modelFiles.tb1Model = platoPaths.getAbsolutePathForPlatoT
 elementalDataMcWeda.Zr.modelFiles.dft2Model = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models","three_body_2019") )
 elementalDataMcWeda.Zr.modelFiles.dftModel = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models","three_body_2019"), dtype="dft")
 
+
+#Swap relevant data-sets to use LDA
+elementalDataLDA = SimpleNamespace(Mg=refMg.createMgReferenceDataObj(),
+                                   Zr=refZr.createZrReferenceDataObj())
+
+elementalDataLDA.Mg.modelFiles.tb1Model  = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Mg_models", "two_body_2019", "lda_version") )
+elementalDataLDA.Mg.modelFiles.dft2Model = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Mg_models", "two_body_2019", "lda_version") )
+
+elementalDataLDA.Zr.modelFiles.tb1Model  = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models", "two_body_2019", "lda_version") )
+elementalDataLDA.Zr.modelFiles.dft2Model = platoPaths.getAbsolutePathForPlatoTightBindingDataSet( os.path.join("Zr_models", "two_body_2019", "lda_version") )
+
