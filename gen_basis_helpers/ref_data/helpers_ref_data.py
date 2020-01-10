@@ -56,7 +56,17 @@ def getCastepOutPathsForFolder(refFolder):
 	return [os.path.join(refFolder,x) for x in os.listdir(refFolder) if x.endswith('.castep')]
 
 
+def getDefectEnergyFromCastepNoDefectAndDefectFiles(noDefectPath, defectPath):
+	parsedNoDefect = parseCastep.parseCastepOutfile(noDefectPath)
+	parsedDefect = parseCastep.parseCastepOutfile(defectPath)
 
+	nAtomsNoDefect, energyNoDefect = parsedNoDefect["numbAtoms"], parsedNoDefect["energies"].electronicTotalE
+	nAtomsDefect, energyDefect = parsedDefect["numbAtoms"], parsedDefect["energies"].electronicTotalE
+
+	ePerAtomNoDefect = energyNoDefect / nAtomsNoDefect
+	ePerAtomDefect = energyDefect / nAtomsDefect
+
+	return nAtomsDefect * (ePerAtomDefect - ePerAtomNoDefect)
 
 
 def getDimerSepFromCastepOutFile(inpFile,inBohr=True):

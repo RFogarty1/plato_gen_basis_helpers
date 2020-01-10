@@ -78,6 +78,9 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getSelfInterstitialPlaneWaveStruct(self, structType, interstitialType, relaxType, cellSize):
 		return getInterstitialPlaneWaveStruct(structType, interstitialType, relaxType, cellSize)
 
+	def getSelfInterstitialPlaneWaveFormationEnergy(self, structType, interstitialType, relaxType, cellSize):
+		return getInterstitialPlaneWaveFormationEnergy(structType, interstitialType, relaxType, cellSize)
+
 	def getVacancyPlaneWaveStruct(self, structType, relaxType, cellSize):
 		return getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
 
@@ -278,6 +281,35 @@ def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
 	refFile = os.path.join(BASE_FOLDER,"interstitial","relaxed","constant_p","octa","opt","hcp_octa_inter.geom")
 	outUCell = parseCastep.parseCastepGeomFile(refFile)[-1]["unitCell"]
 	return outUCell
+
+
+def getInterstitialPlaneWaveFormationEnergy(structType, interstitialType, relaxType, cellSize):
+
+	paramsToEnergyDict = {("hcp","tetrahedral","unrelaxed","3_3_2"):_getHcpPlaneWaveFormationEnergy_interTetraUnrelaxed332(),
+	                      ("hcp","octahedral" ,"unrelaxed","3_3_2"):_getHcpPlaneWaveFormationEnergy_interOctaUnrelaxed332(),
+	                      ("hcp","octahedral", "relaxed_constant_pressure","3_3_2"):_getHcpPlaneWaveFormationEnergy_interOctaRelaxedConstPressure332()}
+
+	return paramsToEnergyDict[(structType,interstitialType,relaxType,cellSize)] 
+
+def _getHcpPlaneWaveFormationEnergy_interTetraUnrelaxed332():
+	interstitFile = os.path.join(BASE_FOLDER, "interstitial", "unrelaxed", "hcp_tetra_inter.castep")
+	noInterFile = os.path.join(BASE_FOLDER, "interstitial", "no_inter", "no_inter.castep")
+	defectEnergy = helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(noInterFile, interstitFile)
+	return defectEnergy	
+	
+
+def _getHcpPlaneWaveFormationEnergy_interOctaUnrelaxed332():
+	interstitFile = os.path.join(BASE_FOLDER, "interstitial", "unrelaxed", "hcp_octa_inter.castep")
+	noInterFile = os.path.join(BASE_FOLDER, "interstitial", "no_inter", "no_inter.castep")
+	defectEnergy = helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(noInterFile, interstitFile)
+	return defectEnergy	
+
+
+def _getHcpPlaneWaveFormationEnergy_interOctaRelaxedConstPressure332():
+	interstitFile = os.path.join(BASE_FOLDER, "interstitial", "relaxed", "constant_p", "octa", "hcp_octa_inter.castep")
+	noInterFile = os.path.join(BASE_FOLDER, "interstitial", "no_inter", "no_inter.castep")
+	defectEnergy = helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(noInterFile, interstitFile)
+	return defectEnergy
 
 
 
