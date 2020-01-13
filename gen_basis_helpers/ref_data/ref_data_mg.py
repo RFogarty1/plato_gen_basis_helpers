@@ -4,6 +4,7 @@
 
 """ Provides access to reference structures and data for pure Mg """
 
+import itertools as it
 import os
 import math
 import sys
@@ -89,6 +90,23 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 
 	def getPlaneWaveDosGeom(self, structKey):
 		return getDosPlaneWaveGeom(structKey)
+
+	def getPlaneWaveAtomTotalEnergy(self):
+		inpFolder = os.path.join(BASE_FOLDER,"atom_calc")
+		inpFiles = helpers.getCastepOutPathsForFolder(inpFolder)
+		assert len(inpFiles)==1
+		outEnergy = parseCastep.parseCastepOutfile(inpFiles[0])["energies"].electronicTotalE
+		return outEnergy
+
+	def getPlaneWaveDissocSepVsEnergy(self, relativeE=True, inBohr=True):
+		if relativeE:
+			zeroEnergy = 2*self.getPlaneWaveAtomTotalEnergy()
+		else:
+			zeroEnergy = 0.0
+		sepsVsEnergies = getPlaneWaveDissocSepVsTotalE(inBohr=inBohr)
+		for x in sepsVsEnergies:
+			x[1] -= zeroEnergy
+		return sepsVsEnergies
 
 	def getPlaneWaveSurfaceEnergy(self, structKey):
 		return getPlaneWaveSurfEnergy(structKey)
@@ -226,6 +244,7 @@ def _getBccDosPlaneWaveComprGeomA():
 	return np.array(dosHelp.parseOptaDosDatFile(outFile)["dosdata"])
 
 
+
 #Density og states as geom
 def getDosPlaneWaveGeom(structType:str):
 
@@ -248,6 +267,20 @@ def _getBccComprGeomForDos():
 def _getBccEqmGeomFosDos():
 	outFile = os.path.join(BASE_FOLDER, "dos", "bcc_eqm", "Mg_bcc_opt_otf_10el_usp_PP_10_5pt842.castep")
 	return helpers.getUCellInBohrFromCastepOutFile(outFile)
+
+
+#Dissociation energy curves
+def getPlaneWaveDissocSepVsTotalE(inBohr=True):
+	outFolder = os.path.join(BASE_FOLDER,"dissoc_curve")
+	outFiles = helpers.getCastepOutPathsForFolder(outFolder)
+	outEnergies = [parseCastep.parseCastepOutfile(x)["energies"].electronicTotalE for x in outFiles]
+	outSeps = [helpers.getDimerSepFromCastepOutFile(x,inBohr=True) for x in outFiles]
+	outList = list()
+	for sep,e in it.zip_longest(outSeps,outEnergies):
+		outList.append( [sep,e] ) 
+
+	return outList
+
 
 
 #Structures to use for intersitials
