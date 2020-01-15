@@ -288,9 +288,10 @@ def getPlaneWaveDissocSepVsTotalE(inBohr=True):
 def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:"str, octahedral or tetrahedral",
                                    relaxType:"str, unrelaxed or relaxed", cellSize:"Str with dims, e.g 3_3_2"):
 
-	paramsToStructDict = {("hcp","tetrahedral","unrelaxed","3_3_2"):_getHcpPlaneWaveStruct_interTetraUnrelaxed332(),
-	                      ("hcp","octahedral" ,"unrelaxed","3_3_2"):_getHcpPlaneWaveStruct_interOctaUnrelaxed332(),
-	                      ("hcp","octahedral", "relaxed_constant_pressure","3_3_2"):_getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332()}
+	paramsToStructDict = {("hcp","tetrahedral","unrelaxed","3_3_2"): _getHcpPlaneWaveStruct_interTetraUnrelaxed332(),
+	                      ("hcp","octahedral" ,"unrelaxed","3_3_2"): _getHcpPlaneWaveStruct_interOctaUnrelaxed332(),
+	                      ("hcp","octahedral" , "relaxed_constant_pressure", "3_3_2"): _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332(),
+	                      ("hcp","tetrahedral", "relaxed_constant_pressure", "3_3_2"): _getHcpPlaneWaveStruct_interTetraRelaxedConstPressure332()}
 
 	return paramsToStructDict[(structType,interstitialType,relaxType,cellSize)]
 
@@ -316,11 +317,18 @@ def _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332():
 	return outUCell
 
 
+def _getHcpPlaneWaveStruct_interTetraRelaxedConstPressure332():
+	refFile = os.path.join(BASE_FOLDER,"interstitial", "relaxed", "constant_p", "tetra", "opt", "hcp_tetra_constant_p_inter.geom")
+	outUCell = parseCastep.parseCastepGeomFile(refFile)[-1]["unitCell"]
+	return outUCell
+
+
 def getInterstitialPlaneWaveFormationEnergy(structType, interstitialType, relaxType, cellSize):
 
 	paramsToEnergyDict = {("hcp","tetrahedral","unrelaxed","3_3_2"):_getHcpPlaneWaveFormationEnergy_interTetraUnrelaxed332(),
 	                      ("hcp","octahedral" ,"unrelaxed","3_3_2"):_getHcpPlaneWaveFormationEnergy_interOctaUnrelaxed332(),
-	                      ("hcp","octahedral", "relaxed_constant_pressure","3_3_2"):_getHcpPlaneWaveFormationEnergy_interOctaRelaxedConstPressure332()}
+	                      ("hcp","octahedral", "relaxed_constant_pressure","3_3_2"):_getHcpPlaneWaveFormationEnergy_interOctaRelaxedConstPressure332(),
+	                      ("hcp","tetrahedral", "relaxed_constant_pressure","3_3_2"):_getHcpPlaneWaveFormationEnergy_interTetraRelaxedConstPressure332()}
 
 	return paramsToEnergyDict[(structType,interstitialType,relaxType,cellSize)] 
 
@@ -344,6 +352,11 @@ def _getHcpPlaneWaveFormationEnergy_interOctaRelaxedConstPressure332():
 	defectEnergy = helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(noInterFile, interstitFile)
 	return defectEnergy
 
+def _getHcpPlaneWaveFormationEnergy_interTetraRelaxedConstPressure332():
+	interstitFile = os.path.join(BASE_FOLDER, "interstitial", "relaxed", "constant_p", "tetra", "hcp_tetra_constant_p_inter_spe.castep")
+	noInterFile = os.path.join(BASE_FOLDER, "interstitial", "no_inter", "no_inter.castep")
+	defectEnergy = helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(noInterFile, interstitFile)
+	return defectEnergy
 
 
 def getVacancyPlaneWaveStruct(structType, relaxType, cellSize):
