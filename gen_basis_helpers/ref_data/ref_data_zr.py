@@ -89,6 +89,10 @@ class ZrReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getVacancyPlaneWaveStruct(self, structType, relaxType, cellSize):
 		return getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
 
+	def getVacancyPlaneWaveEnergy(self, structType, relaxType, cellSize):
+		return getVacancyPlaneWaveEnergy(structType, relaxType, cellSize)
+
+
 	def getPlaneWaveDosData(self, structKey):
 		return getDosPlaneWaveData(structKey)
 
@@ -350,6 +354,17 @@ def getVacancyPlaneWaveStruct(structType, relaxType, cellSize):
 		raise NotImplementedError("Only unrelaxed vancancies are currently implemented")
 
 
+def getVacancyPlaneWaveEnergy(structType, relaxType, cellSize):
+	paramsToEnergyDict = {("hcp", "unrelaxed", "3_3_2"): _getVacancyEnergyHcpUnrelaxed332}
+	return paramsToEnergyDict[(structType, relaxType, cellSize)]()
+
+
+def _getVacancyEnergyHcpUnrelaxed332():
+	vacFilePath = os.path.join(BASE_FOLDER, "vacancy", "unrelaxed", "3_3_2", "Zr_hcp_unrelaxed_vacancy.castep" )
+	bulkFilePath = os.path.join(BASE_FOLDER, "interstitial", "no_inter", "Zr_hcp_no_inter.castep")
+	outEnergy = helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(bulkFilePath, vacFilePath)
+	return outEnergy
+
 
 def getDosPlaneWaveData(structType:str):
 
@@ -423,7 +438,7 @@ def getPlaneWaveSurfEnergy(structKey):
 
 
 def _getSurfaceEnergyHcp0001():
-	refBaseFolder = os.path.join(BASE_FOLDER,"surface_energies", "hcp0001") 
-	bulkModFile = os.path.join(refBaseFolder, "Zr_hcp_expt.castep")
+	refBaseFolder = os.path.join(BASE_FOLDER,"surface_energies", "hcp0001" )
+	bulkFilePath = os.path.join( BASE_FOLDER,"dos", "hcp_expt", "Zr_hcp_expt.castep" )
 	surfFile = os.path.join(refBaseFolder, "Zr24.castep")
-	return helpers.getCastepRefHcp0001SurfaceEnergyFromSurfAndBulkFilePaths(surfFile,bulkModFile)
+	return helpers.getCastepRefHcp0001SurfaceEnergyFromSurfAndBulkFilePaths(surfFile,bulkFilePath)

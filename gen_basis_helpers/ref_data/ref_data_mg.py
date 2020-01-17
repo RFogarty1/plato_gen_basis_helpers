@@ -85,6 +85,9 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getVacancyPlaneWaveStruct(self, structType, relaxType, cellSize):
 		return getVacancyPlaneWaveStruct(structType, relaxType, cellSize)
 
+	def getVacancyPlaneWaveEnergy(self, structType, relaxType, cellSize):
+		return getVacancyPlaneWaveEnergy(structType, relaxType, cellSize)
+
 	def getPlaneWaveDosData(self, structKey):
 		return getDosPlaneWave(structKey)
 
@@ -371,6 +374,17 @@ def getVacancyPlaneWaveStruct(structType, relaxType, cellSize):
 		raise NotImplementedError("Only unrelaxed vancancies are currently implemented")
 
 
+def getVacancyPlaneWaveEnergy(structType, relaxType, cellSize):
+	paramsToEnergyDict = {("hcp", "unrelaxed", "3_3_2"): _getVacancyEnergyHcpUnrelaxed332}
+	return paramsToEnergyDict[(structType, relaxType, cellSize)]()
+
+
+def _getVacancyEnergyHcpUnrelaxed332():
+	baseFolder = os.path.join(BASE_FOLDER, "vacancy", "unrelaxed", "3_3_2")
+	vacFilePath = os.path.join(baseFolder, "vacancy_500ev_8_8_6.castep" )
+	bulkFilePath = os.path.join(baseFolder, "novac_500ev_8_8_6.castep")
+	outEnergy = helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(bulkFilePath, vacFilePath)
+	return outEnergy
 
 def getPlaneWaveSurfEnergy(structKey):
 	outDict = {"hcp0001": _getSurfaceEnergyHcp0001}
