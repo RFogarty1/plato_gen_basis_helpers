@@ -44,6 +44,26 @@ class fragile(object):
         return error
 
 
+
+def getAssertAllLabelsUniqueUponCreationClassInitializerWrapper():
+	""" Attach a function that checks all self.label (list returned) elements are unique after object initiation. Use THIS function as a decorator for a class initializer
+	
+	Args:
+	 inpInit: Input instance. This must have a .label attribute which returns an iter of BaseLabel objects (see shared)
+			 
+	Returns
+		 If applied to initializer upon class creation (i.e. as a decorator) then this function will raise an AssertionError if the created object has any non-unique labels
+ 
+	"""
+
+	def clsDeco(inpInit):
+		def wrappedInit(instance, *args, **kwargs):
+			inpInit(instance,*args,**kwargs)
+			labels = instance.label
+			assert len(labels) == len( set(labels) ), "All labels on this composite object should be unique; but found {} labels with {} unique".format( len(labels), len( set(labels) ) )
+		return wrappedInit
+	return clsDeco #Gives us a decorator
+
 #Class decorator to apply a composite search method. We need a composite and non-composite version of this
 def getObjectsWithComponentsInstanceWrapper(isComposite=None):
 	""" Attach a function getObjectsWithComponents to an instance INITIALIZER (sorry for misleading name). Function searches through object

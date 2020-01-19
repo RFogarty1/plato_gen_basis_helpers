@@ -13,11 +13,17 @@ class BaseLabel():
 		raise NotImplementedError("")
 
 	def __eq__(self, other):
+		try:
+			if sorted(self.labelNames) != sorted(other.labelNames):
+				return False
+		except AttributeError: #Catches case where we compare label to diff type of object (e.g. integer)
+			return False
+
 		for attr in self.labelNames:
 			try:
 				if getattr(self,attr) != getattr(other,attr):
 					return False
-			except AttributeError: #If other is an inappropriate type (e.g an integer) this should trigger
+			except AttributeError: #If other is an inappropriate type (e.g an integer) this should trigger. I THINK THIS IS REDUNDANT
 				return False
 		return True
 

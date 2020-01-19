@@ -4,6 +4,7 @@ import copy
 import types
 import unittest
 
+import gen_basis_helpers.shared.label_objs as labelObjs
 import gen_basis_helpers.shared.misc_utils as tCode
 
 #Note: I'm pretty sure this is tested indirectly elsewhere 
@@ -69,6 +70,28 @@ class TestStandardComponentAttr(unittest.TestCase):
 		expResult = ["testA","testB","testC"]
 		actResult = getattr(self.testCompObjLeafAndComp, "testComp")
 		self.assertEqual(expResult, actResult)
+
+class DudClassForTestingUniqueLabelEnforcement():
+
+	@tCode.getAssertAllLabelsUniqueUponCreationClassInitializerWrapper()
+	def __init__(self, labelList):
+		self._labels = list(labelList)
+
+	@property
+	def label(self):
+		return self._labels
+
+class TestAssertUniqueLabelsForCompositeCreation(unittest.TestCase):
+
+	def setUp(self):
+		self.labelA = labelObjs.StandardLabel(eleKey="eleA",structKey="structA",methodKey="methB")
+#		self.labelB = labelObjs.StandardLabel(eleKey="eleB",structKey="structB",methodKey="methB")
+
+	def testCreatingCompositeWithEqualLabels(self):
+		copiedLabelA = copy.deepcopy(self.labelA)
+		with self.assertRaises(AssertionError):
+			DudClassForTestingUniqueLabelEnforcement([self.labelA, copiedLabelA])
+
 
 if __name__ == '__main__':
 	unittest.main()
