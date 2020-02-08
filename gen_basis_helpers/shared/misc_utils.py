@@ -57,12 +57,20 @@ def getAssertAllLabelsUniqueUponCreationClassInitializerWrapper():
 	"""
 
 	def clsDeco(inpInit):
+		@functools.wraps(inpInit)
 		def wrappedInit(instance, *args, **kwargs):
 			inpInit(instance,*args,**kwargs)
+			checkAllLabelsUniqueOnInstance(instance)
 			labels = instance.label
 			assert len(labels) == len( set(labels) ), "All labels on this composite object should be unique; but found {} labels with {} unique".format( len(labels), len( set(labels) ) )
 		return wrappedInit
 	return clsDeco #Gives us a decorator
+
+
+def checkAllLabelsUniqueOnInstance(instance):
+	labels = instance.label
+	assert len(labels) == len( set(labels) ), "All labels on this composite object should be unique; but found {} labels with {} unique".format( len(labels), len( set(labels) ) )
+
 
 #Class decorator to apply a composite search method. We need a composite and non-composite version of this
 def getObjectsWithComponentsInstanceWrapper(isComposite=None):
