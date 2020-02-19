@@ -370,14 +370,22 @@ def getVacancyPlaneWaveStruct(structType, relaxType, cellSize):
 		vacCell = supCell.superCellFromUCell(baseUCell, cellDims)
 		defects.makeVacancyUnitCell(vacCell)
 		return vacCell
+	elif relaxType == "novac":
+		return supCell.superCellFromUCell(baseUCell, cellDims)
+	elif relaxType == "relaxed_constant_pressure":
+		return _getVacancyHcpPlaneWaveStruct_relaxedConstantPressure()
 	else:
 		raise NotImplementedError("Only unrelaxed vancancies are currently implemented")
 
 
-def getVacancyPlaneWaveEnergy(structType, relaxType, cellSize):
-	paramsToEnergyDict = {("hcp", "unrelaxed", "3_3_2"): _getVacancyEnergyHcpUnrelaxed332}
-	return paramsToEnergyDict[(structType, relaxType, cellSize)]()
+def _getVacancyHcpPlaneWaveStruct_relaxedConstantPressure():
+	vacFilePath = os.path.join(BASE_FOLDER, "vacancy", "relaxed", "constant_p", "vacancy_opt_500ev_8_8_6.castep")
+	return helpers.getUCellInBohrFromCastepOutFile(vacFilePath)
 
+def getVacancyPlaneWaveEnergy(structType, relaxType, cellSize):
+	paramsToEnergyDict = {("hcp", "unrelaxed", "3_3_2"): _getVacancyEnergyHcpUnrelaxed332,
+	                      ("hcp", "relaxed_constant_pressure","3_3_2"): _getVacancyEnergyHcpRelaxedConstantPressure332}
+	return paramsToEnergyDict[(structType, relaxType, cellSize)]()
 
 def _getVacancyEnergyHcpUnrelaxed332():
 	baseFolder = os.path.join(BASE_FOLDER, "vacancy", "unrelaxed", "3_3_2")
@@ -385,6 +393,12 @@ def _getVacancyEnergyHcpUnrelaxed332():
 	bulkFilePath = os.path.join(baseFolder, "novac_500ev_8_8_6.castep")
 	outEnergy = helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(bulkFilePath, vacFilePath)
 	return outEnergy
+
+
+def _getVacancyEnergyHcpRelaxedConstantPressure332():
+	vacFilePath = os.path.join(BASE_FOLDER, "vacancy", "relaxed", "constant_p", "vacancy_opt_500ev_8_8_6.castep")
+	bulkFilePath = os.path.join(BASE_FOLDER, "interstitial", "no_inter", "no_inter.castep")
+	return helpers.getDefectEnergyFromCastepNoDefectAndDefectFiles(bulkFilePath, vacFilePath)
 
 def getPlaneWaveSurfEnergy(structKey):
 	outDict = {"hcp0001": _getSurfaceEnergyHcp0001}
