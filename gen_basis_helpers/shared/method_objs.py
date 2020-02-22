@@ -20,7 +20,6 @@ class CalcMethod(abc.ABC):
 		""" Number of cores to use for THIS calculation. """
 		pass
 
-
 	@property
 	@abc.abstractmethod
 	def runComm(self):
@@ -38,7 +37,16 @@ class CalcMethod(abc.ABC):
 
 			This means the keys will accesble as nameSpace.attrName. The return value of this function can
 			therefore be any class. I may add a few standard attribute names later (e.g. unitCell, energies)
+
+			The output should implement the method_objs.ParsedFile interface as much as possible
 		"""
 		pass
 
 
+
+class ParsedFile(abc.ABC):
+
+	@property
+	@abc.abstractmethod
+	def energies(self):
+		""" Should return a plato_pylib Energies object """

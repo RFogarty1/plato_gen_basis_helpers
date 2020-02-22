@@ -7,6 +7,7 @@ import plato_pylib.shared.ucell_class as UCell
 import gen_basis_helpers.cp2k.cp2k_file_helpers as tCode
 
 
+#TODO: Figure out why this test seems to run relatively slow compared to others
 class testModifyCp2kObj(unittest.TestCase):
 	""" Testing that we modify the CP2K objects correctly by looking at output strings """
 
