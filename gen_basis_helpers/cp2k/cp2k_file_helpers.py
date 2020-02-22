@@ -99,10 +99,10 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.MGRID.Rel_cutoff = "[eV] " + str(useDict["gridCutRel".lower()])
 
 	if useDict.get("basisfile") is not None:
-		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Basis_set_file_name = str( useDict["basisfile"] )
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Basis_set_file_name = useDict["basisfile"]
 
 	if useDict.get("potfile") is not None:
-		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Potential_file_name = str( useDict["potfile"] )
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Potential_file_name = useDict["potfile"]
 
 	if useDict.get("maxscf") is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Max_scf = str( useDict["maxscf"] )
@@ -110,6 +110,31 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 	if useDict.get("printMOs".lower()) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MO.Section_parameters = "ON"
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MO.Occupation_numbers = True
+
+
+def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
+	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work
+	
+	Args:
+		cp2kObj: (pycp2k CP2K object) Which holds all input settings for a CP2K calculation
+		uCell: (plato_pylib UnitCell object) Which defines the geometry
+		elementBasisInfo: (list of CP2KBasisObjBase objects) Each object defines the basis set/pseudopotential to use for one element type
+	
+	Returns
+		Nothing; modifies the cp2kObj object in place
+	
+	"""
+
+	addSubSysSectionCp2kObjFromUCell(cp2kObj, uCell, elementBasisInfo)
+	basisFileStrs = [x.basisFile for x in elementBasisInfo]
+	potFileStrs = list(set([x.potFile for x in elementBasisInfo])) #Should all be identical; CP2K cant support multiple PP files for one calculation
+
+	assert len(potFileStrs)==1, "Only 1 psuedopotential datafile allowed; this is a restriction within CP2K (not just this python code"
+
+	modDict = {"basisfile":basisFileStrs, "potfile":potFileStrs}
+	modCp2kObjBasedOnDict(cp2kObj,modDict)
+
+	return None
 
 def addSubSysSectionCp2kObjFromUCell(cp2kObj, uCell, elementBasisInfo:"obj list each with .element,.basis,.potential" , section="forceEval".lower()):
 	if section.lower() == "forceEval".lower():
