@@ -127,31 +127,44 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 		
 	def _createStandardInputForOneBasis(self, basisKeyDict, basisAlias):
 		#Figure out the type of grid-convergence we're using
-		gridConvTypes = [x.varyType for x in self._gridValsToUse]
-		assert all([x==gridConvTypes[0] for x in gridConvTypes]), "Grid-vals should all be for the same convergence type"
-		gridConvType = gridConvTypes[0]
-		gridVaryVals = [x.varyValCut for x in self._gridValsToUse]
+		gridVaryVals = self._getGridVaryVals()
+		gridConvType = self._getGridConvType()
 
-		#Get the pyCP2K object
-		baseObj = self._createBasicObject()
-		basisObjects = self._getBasisObjects(basisKeyDict)
-		
-		#Create the base cp2k object
-		pyCP2KHelp.modCp2kObjBasedOnDict(baseObj, {"kpts":self.kPts} )
-		pyCP2KHelp.addGeomAndBasisInfoToSimpleCP2KObj(baseObj, self.geom, basisObjects)
-		baseCP2KObj = baseCalcObjCP2K.CP2KCalcObj( baseObj )
-		baseCP2KObj.maxScf = self.maxScf
-		
-		#Create ALL the CP2K objects we need from the base object
+		#Create ALL the CP2K objects we need 
 		calcFolder = os.path.join(self.baseWorkfolder, basisAlias, gridConvType)
 		outLabel = labelHelp.StandardLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=basisAlias)
-		allCP2KObjs = self._getMultipleCP2KObjectsFromBaseObject( baseCP2KObj, calcFolder)
+		allCP2KObjs = self._getAllRequiredCP2KObjs( basisKeyDict, calcFolder)
 
 		#Create the input object
 		outWorkflow = wflowConv.GridConvergenceEnergyWorkflow(allCP2KObjs, gridVaryVals)
 		inputObj = calcRunners.StandardInputObj(outWorkflow, outLabel, mapFunction=self.workFlowToOutputObjMap)
 
 		return inputObj
+
+	def _getGridVaryVals(self):
+		gridConvTypes = [x.varyType for x in self._gridValsToUse]
+		assert all([x==gridConvTypes[0] for x in gridConvTypes]), "Grid-vals should all be for the same convergence type"
+		gridConvType = gridConvTypes[0]
+		gridVaryVals = [x.varyValCut for x in self._gridValsToUse]
+		return gridVaryVals
+
+	def _getGridConvType(self):
+		gridConvTypes = [x.varyType for x in self._gridValsToUse]
+		assert all([x==gridConvTypes[0] for x in gridConvTypes]), "Grid-vals should all be for the same convergence type"
+		gridConvType = gridConvTypes[0]
+		return gridConvType
+
+
+	def _createBaseCP2KObj(self, basisKeyDict):
+		basicObj = self._createBasicObject()
+		basisObjects = self._getBasisObjects(basisKeyDict)
+
+		pyCP2KHelp.modCp2kObjBasedOnDict(basicObj, {"kpts":self.kPts} )
+		pyCP2KHelp.addGeomAndBasisInfoToSimpleCP2KObj(basicObj, self.geom, basisObjects)
+		baseCP2KObj = baseCalcObjCP2K.CP2KCalcObj( basicObj )
+		baseCP2KObj.maxScf = self.maxScf
+		return baseCP2KObj	
+
 
 	
 	def _getBasisObjects(self, basisKeyDict):
@@ -161,10 +174,10 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 			outList.append( currBasisObj )
 		return outList
 	
-	def _getMultipleCP2KObjectsFromBaseObject(self,baseObject, startFolder):
+	def _getAllRequiredCP2KObjs(self, basisKeyDict, startFolder):
 		allObjs = list()
 		for gVals in self._gridValsToUse:
-			currObj = copy.deepcopy(baseObject)
+			currObj = self._createBaseCP2KObj(basisKeyDict) 
 			currObj.absGridCutoff = gVals.absCut
 			currObj.relGridCutoff = gVals.relCut
 			currObj.basePath = os.path.join(startFolder, gVals.toStr() )
