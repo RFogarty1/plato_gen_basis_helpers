@@ -51,19 +51,21 @@ class GridConvergenceEnergyWorkflow(ConvergerWorkflowTemplate):
 	""" Workflow for testing convergence of energy with respect to grid spacing for a structure """
 
 
-	def __init__(self, calcObjs, convVals, energyStr="electronicTotalE"):
+	def __init__(self, calcObjs, convVals, energyStr="electronicTotalE", ePerAtom=True):
 		""" Initializer for a workflow to check convergence of energy
 
 		Args:
 			calcObjs: (iter of CalcMethod objects) Each represents a calculation we need to carry out
 			convVals: (iter of numbers) List of values we're testing for convergence, for example a number representing the tightness of an integration grid. Note the order must correspond to the order of calcObjs
 			energyStr: (str, optional) The type of energy to request from plato_pylib Energies object. (options correspond to properties on that object)
+			ePerAtom: (Bool, optional) Whether to report energy per atom (instead of total). Default is True
 
 		"""
 		self.calcObjs = calcObjs
 		self.convVals = convVals
 		self.energyStr = energyStr
 		self.output = types.SimpleNamespace()
+		self.ePerAtom = bool(ePerAtom)
 
 		for x in self.calcObjs:
 			x.writeFile()
@@ -75,7 +77,12 @@ class GridConvergenceEnergyWorkflow(ConvergerWorkflowTemplate):
 
 	def run(self):
 		energies = [getattr(x.parsedFile.energies,self.energyStr) for x in self.calcObjs]
+		if self.ePerAtom:
+			nAtoms = [x.parsedFile.numbAtoms for x in self.calcObjs]
+			energies = [e/nAtoms for e,nAtoms in it.zip_longest(energies,nAtoms)]
+
 		outVals = [(conv,e) for conv,e in it.zip_longest(self.convVals,energies)]
 		self.output.convResults = outVals
+
 
 

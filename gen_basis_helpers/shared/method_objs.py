@@ -50,3 +50,11 @@ class ParsedFile(abc.ABC):
 	@abc.abstractmethod
 	def energies(self):
 		""" Should return a plato_pylib Energies object """
+
+	@property
+	@abc.abstractmethod
+	def numbAtoms(self):
+		""" The number of atoms in the calculation """
+
+
+

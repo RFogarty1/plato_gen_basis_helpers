@@ -67,20 +67,33 @@ class TestGridConvergenceWorkflow(unittest.TestCase):
 
 	def setUp(self):
 		self.convVals = [2,4,6]
-		self.energies = [1,2,3]
+		self.energies = [4,6,8]
+		self.ePerAtom = False
+		self.nAtoms = [2,2,2]
 		self.createTestObjects()
 
 	def createTestObjects(self):
 		energyObjs = [types.SimpleNamespace(electronicTotalE=x) for x in self.energies]
-		parsedFileVals = [types.SimpleNamespace(energies=x) for x in energyObjs]
+
+		parsedFileVals = [types.SimpleNamespace(energies=x,numbAtoms=n) for x,n in it.zip_longest(energyObjs,self.nAtoms)]
 		calcObjs = [mock.Mock() for x in parsedFileVals]
 		for cObj,pVal in it.zip_longest(calcObjs,parsedFileVals):
 			cObj.parsedFile = pVal
-		self.testObjA = tCode.GridConvergenceEnergyWorkflow(calcObjs, self.convVals)
+		self.testObjA = tCode.GridConvergenceEnergyWorkflow(calcObjs, self.convVals, ePerAtom=self.ePerAtom)
 
 	def testRunMethod(self):
 		self.testObjA.run()
 		expOutput = [(x,y) for x,y in it.zip_longest(self.convVals,self.energies)]
 		actOutput = self.testObjA.output.convResults
 		self.assertEqual(expOutput,actOutput)
+
+	def testRunMethodForEPerAtom(self):
+		self.ePerAtom=True
+		self.createTestObjects()
+		self.testObjA.run()
+		ePerAtom = [x/y for x,y in it.zip_longest(self.energies,self.nAtoms)]
+		expOutput = [(x,y) for x,y in it.zip_longest(self.convVals, ePerAtom)]
+		actOutput = self.testObjA.output.convResults
+		self.assertEqual(expOutput,actOutput)
+
 
