@@ -64,5 +64,27 @@ class TestCP2KMaxScfDescriptor(unittest.TestCase):
 		self.assertEqual(testMaxCycles, actMaxCycles)
 
 
+#TODO: These are getting sorta repetitive, can probably use inheritance or composition (supply function to test) to solve it
+class TestCP2KAddedMoDescriptor(unittest.TestCase):
+
+	def setUp(self):
+		self.pyCP2KObjA = methReg.createCP2KObjFromMethodStr("cp2k_test_object")
+		tCode.addAddedMOsDescriptorToCP2KCalcObjCLASS(DudCP2KObj)
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = DudCP2KObj( self.pyCP2KObjA )
+
+	def testGetterAndSetterConsistent(self):
+		origAddedMos = self.testObjA.addedMOs
+		testAddedMos = 8
+		self.assertNotEqual( testAddedMos,origAddedMos )
+		self.testObjA.addedMOs = testAddedMos
+		self.assertEqual( testAddedMos, self.testObjA.addedMOs )
+
+
+
+
+
 
 

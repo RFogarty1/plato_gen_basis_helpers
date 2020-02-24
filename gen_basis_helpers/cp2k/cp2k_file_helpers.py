@@ -107,6 +107,9 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 	if useDict.get("maxscf") is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Max_scf = str( useDict["maxscf"] )
 
+	if useDict.get("addedMOs".lower()) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Added_mos = str( useDict["addedMOs".lower()] )
+
 	if useDict.get("printMOs".lower()) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MO.Section_parameters = "ON"
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MO.Occupation_numbers = True

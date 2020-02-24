@@ -63,6 +63,10 @@ def addAbsGridDescriptorToCP2KCalcObjCLASS(inpCls, attrName="absGridCutoff"):
 def addMaxScfDescriptorToCP2KCalcObjCLASS(inpCls, attrName="maxScf"):
 	setattr(inpCls, attrName, MaxScfDescriptorCP2K(attrName) )
 
+def addAddedMOsDescriptorToCP2KCalcObjCLASS(inpCls, attrName="addedMOs"):
+	setattr(inpCls, attrName, AddedMOsDescriptorCP2K(attrName))
+
+
 #Defining an inpPath property for CP2KCalcObj
 #Note - it is VERY HARD to include a docsting on these (id need to return a special class with a repr well defined instead of a str from get, the docstirng will be accessed on the return class
 class InpPathDescriptorCP2K(object): 
@@ -110,7 +114,7 @@ class RelGridDescriptorCP2K():
 			
 	#Note this can only set in eV for now. Easiest modificatoin is probably to always convert units if others requested
 	def __set__(self, instance, value):
-		assert( len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1 )
+		assert len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1
 		modDict = {"gridCutRel":value}
 		pyCP2KHelpers.modCp2kObjBasedOnDict(instance.cp2kObj, modDict)
 
@@ -127,7 +131,7 @@ class AbsGridDescriptorCP2K():
 		return floatVal
 
 	def __set__(self, instance, value):
-		assert( len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1 )
+		assert len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1 
 		modDict = {"gridCutAbs":value}
 		pyCP2KHelpers.modCp2kObjBasedOnDict(instance.cp2kObj, modDict)
 
@@ -141,15 +145,29 @@ class MaxScfDescriptorCP2K():
 	def __init__(self, attrName):
 		self.name = attrName
 
-
 	def __get__(self, instance, owner):
 		strVal = instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Max_scf
 		outVal = int( strVal.strip().split()[-1] )
 		return outVal
 
 	def __set__(self, instance, value):
-		assert( len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1 )
+		assert len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1
 		modDict = {"maxscf":value}
+		pyCP2KHelpers.modCp2kObjBasedOnDict(instance.cp2kObj, modDict)
+
+
+
+class AddedMOsDescriptorCP2K():
+
+	def __init__(self, attrName):
+		self.name = attrName
+
+	def __get__(self, instance, owner):
+		return int( instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Added_mos )
+
+	def __set__(self, instance, value):
+		assert len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1
+		modDict = {"addedMOs".lower():value}
 		pyCP2KHelpers.modCp2kObjBasedOnDict(instance.cp2kObj, modDict)
 
 
