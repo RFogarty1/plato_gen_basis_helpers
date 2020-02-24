@@ -7,6 +7,8 @@ import plato_pylib.parseOther.parse_cp2k_files as parseCP2K
 from ..shared import method_objs as methodObjs
 from . import cp2k_file_helpers as pyCP2KHelpers
 
+
+#NOTE: Loads of descriptors are added below (at the bottom of the file)
 class CP2KCalcObj(methodObjs.CalcMethod):
 
 	def __init__(self, pycp2kObj, basePath=None):
@@ -169,5 +171,20 @@ class AddedMOsDescriptorCP2K():
 		assert len(instance.cp2kObj.CP2K_INPUT.FORCE_EVAL_list) == 1
 		modDict = {"addedMOs".lower():value}
 		pyCP2KHelpers.modCp2kObjBasedOnDict(instance.cp2kObj, modDict)
+
+
+
+#Add all the defined descriptors. At first the plan was only to add these when they were needed,
+#but testing just got too confusing and annoying that way
+addInpPathDescriptorToCP2KCalcObjCLASS(CP2KCalcObj)
+addQuickStepEpsDefDescriptorToCP2KCalcObjCLASS(CP2KCalcObj)
+addRelGridDescriptorToCP2KCalcObjCLASS(CP2KCalcObj)
+addAbsGridDescriptorToCP2KCalcObjCLASS(CP2KCalcObj)
+addMaxScfDescriptorToCP2KCalcObjCLASS(CP2KCalcObj)
+addAddedMOsDescriptorToCP2KCalcObjCLASS(CP2KCalcObj)
+
+
+
+
 
 
