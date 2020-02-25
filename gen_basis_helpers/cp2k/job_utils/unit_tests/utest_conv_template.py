@@ -17,15 +17,16 @@ class TestStandardConvergerCreatorTemplate(unittest.TestCase):
 		                                                               "label":None} )
 		self.createBasicObjFunct = lambda x:copy.deepcopy( self.initObject )
 		self.modCalcObjWithConvergenceParamsFunct = _stubModCalcObj
+		self.standardInpFromCalcObjs = lambda instance,calcObjs: calcObjs 
 		self.attrDict = {"label": self.labelToSet} 
 		self.createTestObj()
 
 	def createTestObj(self):
 		self.testObj = tCode.StandardConvergerStandardInputTemplate(self.convObjs, self.createBasicObjFunct,
-		                                             self.modCalcObjWithConvergenceParamsFunct, self.attrDict)
-	@mock.patch("gen_basis_helpers.cp2k.job_utils.converger_template.calcRunners.StandardInputObjComposite")
-	def testExpectedOutputObjsCreated(self, mockedStandardInpComposite):
-		mockedStandardInpComposite.side_effect = lambda x: x
+		                                             self.modCalcObjWithConvergenceParamsFunct, self.standardInpFromCalcObjs, self.attrDict)
+
+
+	def testExpectedOutputObjsCreatedA(self):
 
 		#Figure out what we're expecting
 		expLabels = [self.labelToSet for x in range(len(self.convObjs))]
@@ -46,7 +47,10 @@ class TestStandardConvergerCreatorTemplate(unittest.TestCase):
 def _stubModCalcObj(instance, calcObj, convObj):
 	calcObj.label = instance.label
 	calcObj.convParam = convObj
-	print("convObj = {}".format(convObj))
 
 	return calcObj
+
+def _stubConvCalcObjsToStandardInpObj (instance, calcObjs):
+	return None
+
 
