@@ -53,7 +53,7 @@ class StandardInputObj(BaseStandardInputObj):
 		"""
 		self.workflow = workflow
 		self._label = label
-		self._mapFunction = mapFunction
+		self._mapFunction = mapFunction 
 
 	@property
 	def runComms(self):
@@ -62,6 +62,16 @@ class StandardInputObj(BaseStandardInputObj):
 	@property
 	def label(self):
 		return [self._label]
+
+	@property
+	def mapFunction(self):
+		""" (f(inputObject), optional) Determines processing we carry out for the "data" we obtain in the output object. By default we just return workflow.output (i.e. the workflow itself determines the format). Note the workflow.run() needs to be done within this function. Effectively setting this variable is the same as overriding the createOutputObj function
+		"""
+		return [self._mapFunction] #Needs to be a list to make it work for composite
+
+	@mapFunction.setter
+	def mapFunction(self,val):
+		self._mapFunction = val
 
 	def createOutputObj(self):
 		#Hook to let user overwrite standard way and add extra processing or similar
@@ -110,6 +120,24 @@ class StandardInputObjComposite(BaseStandardInputObj):
 		for leaf in self.objs:
 			outputObjs.append( leaf.createOutputObj() )
 		return StandardOutputObjComposite(outputObjs)
+
+	@property
+	def mapFunction(self):
+		""" (f(inputObject), optional) Determines processing we carry out for the "data" we obtain in the output object. By default we just return workflow.output (i.e. the workflow itself determines the format). Note the workflow.run() needs to be done within this function. Effectively setting this variable is the same as overriding the createOutputObj function
+
+		Note: If Setting on a composite, you pass one function which is used for ALL leaf objects
+		"""
+
+		allMapFuncts = list()
+		for branch in self.objs:
+			allMapFuncts.extend( branch.mapFunction )
+		return allMapFuncts
+
+	@mapFunction.setter
+	def mapFunction(self,value):
+		for branch in self.objs:
+			branch.mapFunction = value
+
 
 class StandardOutputObjComposite(BaseStandardOutputObj):
 
