@@ -44,17 +44,20 @@ class CalcMethod(abc.ABC):
 
 
 
-class ParsedFile(abc.ABC):
+class ParsedFile():
 
 	@property
-	@abc.abstractmethod
 	def energies(self):
 		""" Should return a plato_pylib Energies object """
+		raise NotImplementedError("")
 
 	@property
-	@abc.abstractmethod
 	def numbAtoms(self):
 		""" The number of atoms in the calculation """
+		raise NotImplementedError("")
 
-
+	@property
+	def unitCell(self):
+		""" A plato_pylib UnitCell object; units should generally be in bohr """
+		raise NotImplementedError("")
 
