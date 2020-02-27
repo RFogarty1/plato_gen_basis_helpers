@@ -18,6 +18,10 @@ class CreatorWithResetableKwargsTemplate():
 		for key in self.registeredKwargs:
 			setattr(self,key,None)
 
+
+		#Hook to set any default values for attributes
+		self._setDefaultInitAttrs()
+
 		#Now set all arguments where keyword is valid
 		for key in kwargs:
 			if key in self.registeredKwargs:
@@ -64,7 +68,10 @@ class CreatorWithResetableKwargsTemplate():
 		"""
 		pass
 
-
+	def _setDefaultInitAttrs(self):
+		""" Hook - overiding is optional. This is used to explicitly set any attributes to default values upon initiatiation. Any values set here will be overwritten if the relevant kwarg is passed to the constructor
+		"""
+		pass
 
 
 

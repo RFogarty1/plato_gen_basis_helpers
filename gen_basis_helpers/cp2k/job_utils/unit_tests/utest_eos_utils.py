@@ -7,6 +7,7 @@ import unittest.mock as mock
 import gen_basis_helpers.cp2k.job_utils.eos_utils as tCode
 import gen_basis_helpers.shared.label_objs as labelHelp
 
+import gen_basis_helpers.cp2k.cp2k_creator as creatorCode
 
 class TestEosWorkflowCreator(unittest.TestCase):
 
@@ -106,4 +107,88 @@ class TestStructStrToParamMapper(unittest.TestCase):
 		actOutDict = self.testObjA.getKwargDictForStructStr(self.testStructStrA)
 		self.convDatabase.kptGridVals.getKptsPrimCell.assert_called_once_with(self.testStructStrA)
 		self.assertEqual(expOutDict, actOutDict)
+
+
+
+class TestStandardInputCreator(unittest.TestCase):
+
+	def setUp(self):
+		self.eleStr = "Mg"
+		self.basisStrDict = {"Mg":"fake_basis_str_mg", "H":"fake_basis_str_h"}
+		self.basisAlias = "fake_alias"
+		self.cp2kMethodStr = mock.Mock()
+		self.structStrParamMapper = mock.Mock()
+		self.structStrs = ["hcp","bcc"]
+		self.absGridConv = 500
+		self.relGridConv = 200
+		self.addedMOs = 20
+		self.workFolder = "fake/path/to/folder"
+		self.eosStr = "birch" #Not actually a valid value (i dont think) for the standard fit funct
+		self.maxFev = 200
+		self._regKwargs = set(creatorCode.CP2KCalcObjFactoryStandard.registeredKwargs)
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.CP2KEosStandardObjCreator(workFolder=self.workFolder, absGridCutoff=self.absGridConv,
+		                                                relGridCutoff=self.relGridConv, cp2kMethodStr=self.cp2kMethodStr,
+		                                                structStrs=self.structStrs, basisStrDict=self.basisStrDict,
+		                                                basisAlias=self.basisAlias, addedMOs=self.addedMOs,
+		                                                eosStr=self.eosStr, maxFunctEvals=self.maxFev, eleStr=self.eleStr,
+		                                                structStrParamMapper=self.structStrParamMapper)
+
+	@mock.patch("gen_basis_helpers.cp2k.job_utils.eos_utils.basReg")
+	def testCorrectCallsToBasisReg(self, mockedBasRegister):
+		mockedBasRegister.createCP2KBasisObjFromEleAndBasisStr.side_effect = lambda eleKey,basStr: eleKey
+		outBasisObjs = self.testObjA._getBasisObjects()
+
+		#Check for calls
+		for key,val in self.basisStrDict.items():
+			mockedBasRegister.createCP2KBasisObjFromEleAndBasisStr.assert_any_call(key, val)	
+
+		#Check for correct output
+		expBasisObjs = sorted([k for k in self.basisStrDict.keys()])
+		self.assertEqual( sorted(expBasisObjs), sorted(outBasisObjs) )
+
+	#This is an implementation detail at current, but will probably be a hook or similar if i abstract it
+	@mock.patch("gen_basis_helpers.cp2k.job_utils.eos_utils.cp2kCreator.CP2KCalcObjFactoryStandard")
+	@mock.patch("gen_basis_helpers.cp2k.job_utils.eos_utils.CP2KEosStandardObjCreator._getBasisObjects")
+	def testCorrectCreatorInitialised(self, mockedBasisGetter, mockedCreator):
+		fakeBasisObjs = ["fake_basis"]
+		fakeCreator = "fake_creator"
+		mockedCreator.registeredKwargs = self._regKwargs
+		mockedBasisGetter.side_effect = lambda : fakeBasisObjs
+		mockedCreator.side_effect = lambda **kwargs: fakeCreator
+
+		outCreator = self.testObjA._getCreatorObject()
+
+		expKwargDict = {"methodStr":self.cp2kMethodStr, "addedMOs":self.addedMOs, "basisObjs":fakeBasisObjs,
+		                "folderPath":self.workFolder, "absGridCutoff":self.absGridConv, "relGridCutoff":self.relGridConv}
+
+		mockedCreator.assert_called_once_with(**expKwargDict)	
+
+		self.assertEqual(fakeCreator,outCreator)
+
+	@mock.patch("gen_basis_helpers.cp2k.job_utils.eos_utils.eosFlow.StandardEosFitFunction")
+	def testFitFunctCorrectlyBuiltFromStandard(self, mockedFitClass):
+		self.testObjA._getFitFunction()
+		mockedFitClass.assert_called_with(eosStr=self.eosStr, maxFev=self.maxFev)
+
+	#Probably a pretty pointless test actually
+	@mock.patch("gen_basis_helpers.cp2k.job_utils.eos_utils.CP2KEosWorkflowCreator")
+	def testCreateWorkflowFromCreator(self, mockedWorkflowCreator):
+		expOutObj = "fake_workflow"
+		mockCreator, mockFitFunct = mock.Mock(), mock.Mock()
+		mockFactory = mock.Mock()
+		mockFactory.create.side_effect = lambda **kwargs: expOutObj
+		mockedWorkflowCreator.side_effect = lambda **kwargs : mockFactory
+		outObj = self.testObjA._createWorkflowFromCreatorAndFitFunct(mockCreator, mockFitFunct)
+		mockedWorkflowCreator.assert_called_with( calcObjCreator=mockCreator, structStrs=self.structStrs,structStrParamMapper=self.structStrParamMapper,
+		                                          eosFitFunction=mockFitFunct , eleKey=self.eleStr, methodKey=self.basisAlias)
+		self.assertEqual(expOutObj, outObj)
+
+	def testCreateLabelAsExpected(self):
+		expLabel = labelHelp.StandardLabel(eleKey=self.eleStr, structKey="eos", methodKey=self.basisAlias)
+		actLabel = self.testObjA._createLabel()
+		self.assertEqual(expLabel,actLabel)
+
 

@@ -17,8 +17,6 @@ class EosWorkflow(baseFlow.BaseLabelledWorkflow):
 			label: (StandardLabel object) Used to differentiate between workflows
 			eType: (Str) Type of energy we want; Corresponds to attributes on plato_pylib Energies object. Default is total electronic energy
 	
-		Raises:
-			Errors
 		"""
 
 		self._calcObjs = calcObjs #invisible to the composite workflows
@@ -58,7 +56,7 @@ class StandardEosFitFunction():
 		volumes: (float iter) Volume per atom values for structures used to calculate energy-volume curves. Units = bohr^3
 		energies: (float iter) Energy per atom values for structures used to calculated energy-volume curves. Units = eV
 	Returns
-		fitDict: A dictionary containing various parameters relating to the EoS fit. GPa used for bulk-modulus, bohr^3 per atom for bolume
+		fitDict: A dictionary containing various parameters relating to the EoS fit. GPa used for bulk-modulus, bohr^3 per atom for volume
 	
 	"""
 

@@ -49,6 +49,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("basisObjs")
 	registeredKwargs.add("folderPath")
 	registeredKwargs.add("fileName")
+	registeredKwargs.add("absGridCutoff")
+	registeredKwargs.add("relGridCutoff")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -139,7 +141,12 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if self.kPts is not None:
 			modDict["kpts"] = self.kPts
 		if self.addedMOs is not None:
-			modDict["addedMOs".lower()] = self.addedMOs	
+			modDict["addedMOs".lower()] = self.addedMOs
+		if self.absGridCutoff is not None:
+			modDict["gridCutAbs".lower()] = self.absGridCutoff
+		if self.relGridCutoff is not None:
+			modDict["gridCutRel".lower()] = self.relGridCutoff
+
 		fileHelpers.modCp2kObjBasedOnDict(pycp2kObj, modDict)
 
 	def _getPathToPassCalcObj(self):
