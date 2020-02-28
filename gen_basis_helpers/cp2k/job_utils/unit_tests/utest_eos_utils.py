@@ -1,6 +1,7 @@
 
 import os
 import itertools as it
+import types
 import unittest
 import unittest.mock as mock
 
@@ -192,5 +193,52 @@ class TestStandardInputCreator(unittest.TestCase):
 		expLabel = labelHelp.StandardLabel(eleKey=self.eleStr, structKey="eos", methodKey=self.basisAlias)
 		actLabel = self.testObjA._createLabel()
 		self.assertEqual(expLabel,actLabel)
+
+
+class TestStandardMapFunction(unittest.TestCase):
+
+	def setUp(self):
+		self.plotDataA = [ [1,2], [2,4] ] #Each represents a different structure but same method
+		self.plotDataB = [ [1,3], [2,6] ]
+		self.methStr = "methA"
+		self.eleKey, self.structKey = "Mg", "eos" #Dont actually matter here
+
+		self.v0ValsA = [20,30]
+		self.b0ValsA = [40,50]
+		self.e0ValsA = [4,6]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.MapEosWorkflowOutputToUsefulFormatStandard()
+		self.testOutputA = {"v0":self.v0ValsA[0], "b0":self.b0ValsA[0], "e0":self.e0ValsA[0],
+		                    "data":self.plotDataA, "fitData":None, "fitAtDataPoints":None}
+		self.testOutputB = {"v0":self.v0ValsA[1], "b0":self.b0ValsA[1], "e0":self.e0ValsA[1],
+		                    "data":self.plotDataB, "fitData":None, "fitAtDataPoints":None}
+		self.testTotalOutputAB = [types.SimpleNamespace(data=self.testOutputA), types.SimpleNamespace(data=self.testOutputB)] #workflows always return a list for outputs
+
+		labelA = labelHelp.StandardLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methStr)
+		testWorkflowA = types.SimpleNamespace(output=self.testTotalOutputAB, run=mock.Mock()) #We only need the .output and for run to be called
+		self.standardInpObjA = types.SimpleNamespace(workflow=testWorkflowA, label=[labelA])
+
+	def runMapFunctOnDataA(self):
+		return self.testObjA( self.standardInpObjA )
+
+	def testPlotDataMapsProperly(self):
+		expPlotOutput = [self.plotDataA, self.plotDataB]
+		actTotalOutput = self.runMapFunctOnDataA()
+		actPlotOutput = actTotalOutput.plotData
+		self.assertEqual(expPlotOutput, actPlotOutput)
+
+	def testTableDataMapsProperly(self):
+		deltaE0Vals = [x-min(self.e0ValsA) for x in self.e0ValsA]
+		expTableOutputA = [self.methStr, self.v0ValsA[0], self.b0ValsA[0], deltaE0Vals[0]]
+		expTableOutputB = [self.methStr, self.v0ValsA[1], self.b0ValsA[1], deltaE0Vals[1]]
+		expTableOutput = [expTableOutputA, expTableOutputB]
+		actTotalOutput = self.runMapFunctOnDataA()
+		actTableOutput = actTotalOutput.tableData
+		self.assertEqual(expTableOutput, actTableOutput)
+
+
 
 

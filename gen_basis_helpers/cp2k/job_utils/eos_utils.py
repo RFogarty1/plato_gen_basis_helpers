@@ -1,5 +1,6 @@
 
 import os
+import types
 
 from .. import basis_register as basReg
 from .. import method_register as methReg
@@ -9,6 +10,52 @@ from ...shared import creator_resetable_kwargs as baseCreator
 from ...shared import calc_runners as calcRunners
 from ...workflows import base_flow as baseFlow
 from ...workflows import eos_workflow as eosFlow
+
+
+
+class MapEosWorkflowOutputToUsefulFormatStandard():
+	""" Callable function used to convert EosWorkflow standard output format to a more useful form
+
+	"""
+
+	def __init__(self):
+		pass
+
+	def _getPlotData(self,stdInpObj):
+		allData = stdInpObj.workflow.output
+		outData = list()
+		for x in allData:
+			outData.append( x.data["data"] )
+		return outData
+
+	def _getAllData(self, stdInputObj):
+		return stdInputObj.workflow.output
+
+	def _getTableData(self, stdInputObj):
+		assert len(stdInputObj.label) == 1
+		methKeyAll = stdInputObj.label[0].methodKey
+		allData = stdInputObj.workflow.output
+
+		#Get basic data in correct format
+		dataList = list()
+		for x in allData:
+			v0, b0, e0 = x.data["v0"],x.data["b0"], x.data["e0"]
+			dataList.append( [methKeyAll, v0, b0, e0] )
+
+		#Convert data to delta E0
+		minE0 = min([x[-1] for x in dataList])
+		for x in dataList:
+			x[-1] -= minE0
+
+		return dataList
+
+	def __call__(self, stdInputObj):
+		stdInputObj.workflow.run()
+		outObj = types.SimpleNamespace( plotData=None, tableData=None, allData=None )
+		outObj.plotData = self._getPlotData(stdInputObj)
+		outObj.allData = self._getAllData(stdInputObj)
+		outObj.tableData = self._getTableData(stdInputObj)
+		return outObj
 
 class CP2KEosStandardObjCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 	""" Purpose of this is to create the StandardInput object for CP2K EoS calculations using minimal input """
