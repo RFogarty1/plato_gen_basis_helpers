@@ -1,4 +1,5 @@
 
+import copy
 import os
 import types
 
@@ -49,8 +50,19 @@ class MapEosWorkflowOutputToUsefulFormatStandard():
 	def _getPlotData(self,stdInpObj):
 		allData = stdInpObj.workflow.output
 		outData = list()
+		#Get data in basic format
 		for x in allData:
-			outData.append( x.data["data"] )
+			outData.append( copy.deepcopy(x.data["data"]) )
+
+		#Figure out a reference energy
+		allE0 = [x.data["e0"] for x in allData]
+		minE0 = min(allE0)
+
+		#Convert data to delta E0
+		for x in outData:
+			for row in range(len(x)):
+				x[row][1] -= minE0
+
 		return outData
 
 	def _getAllData(self, stdInputObj):

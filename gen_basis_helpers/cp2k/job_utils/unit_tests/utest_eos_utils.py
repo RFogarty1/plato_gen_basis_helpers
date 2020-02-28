@@ -1,4 +1,5 @@
 
+import copy
 import os
 import itertools as it
 import types
@@ -225,7 +226,14 @@ class TestStandardMapFunction(unittest.TestCase):
 		return self.testObjA( self.standardInpObjA )
 
 	def testPlotDataMapsProperly(self):
-		expPlotOutput = [self.plotDataA, self.plotDataB]
+		#Get plotData in terms of delta E
+		minE0 = min(self.e0ValsA)
+		expPlotOutput = copy.deepcopy([self.plotDataA, self.plotDataB])
+		for x in expPlotOutput:
+			for idx in range(len(x)):
+				x[idx][1] -= minE0
+			
+		#Test thats what the expected gives us
 		actTotalOutput = self.runMapFunctOnDataA()
 		actPlotOutput = actTotalOutput.plotData
 		self.assertEqual(expPlotOutput, actPlotOutput)
