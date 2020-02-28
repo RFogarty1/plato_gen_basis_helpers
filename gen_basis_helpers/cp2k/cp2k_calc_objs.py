@@ -44,7 +44,9 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 	@property
 	def parsedFile(self):
 		parsedDict = parseCP2K.parseCpout(self.outFilePath)
-		return types.SimpleNamespace(**parsedDict)
+		outObj = types.SimpleNamespace(**parsedDict)
+		outObj.unitCell.convAngToBohr()
+		return outObj
 
 #Optional descriptors that can be added
 def addInpPathDescriptorToCP2KCalcObjCLASS(inpCls):
