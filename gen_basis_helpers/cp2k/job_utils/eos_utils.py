@@ -1,4 +1,6 @@
 
+import os
+
 from .. import basis_register as basReg
 from .. import method_register as methReg
 from .. import cp2k_creator as cp2kCreator
@@ -101,10 +103,12 @@ class CP2KEosWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 
 	def _createCalcObjsSingleWorkflow(self, structStr):
 		geoms = self.structStrParamMapper.getGeomsForStructStr( structStr )
+		startFolder = self.calcObjCreator.folderPath
+		outFolder = os.path.join(startFolder, structStr)
 		extraKwargs = self.structStrParamMapper.getKwargDictForStructStr( structStr )
 		outObjs = list()
 		for x in geoms:
-			outObjs.append( self.calcObjCreator.create(geom=x, fileName=self._getFileNameFromGeom(x),
+			outObjs.append( self.calcObjCreator.create(geom=x, folderPath=outFolder, fileName=self._getFileNameFromGeom(x),
 			                                           **extraKwargs) )
 		return outObjs
 
@@ -182,5 +186,5 @@ class StructStrToParamMapper():
 		
 		"""
 		kPts = self.convDatabase.kptGridVals.getKptsPrimCell(structStr)
-		outDict = {"kpts":kPts}
+		outDict = {"kPts":kPts}
 		return outDict

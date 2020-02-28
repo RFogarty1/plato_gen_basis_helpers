@@ -24,6 +24,12 @@ class EosWorkflow(baseFlow.BaseLabelledWorkflow):
 		self._label = label
 		self._eType = eType
 
+		self._writeInpFiles()
+
+	def _writeInpFiles(self):
+		for x in self._calcObjs:
+			x.writeFile()
+
 	@property
 	def preRunShellComms(self):
 		outComms = list()

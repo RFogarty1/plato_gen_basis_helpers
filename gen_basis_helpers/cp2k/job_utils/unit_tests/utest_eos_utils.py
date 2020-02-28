@@ -1,5 +1,5 @@
 
-
+import os
 import itertools as it
 import unittest
 import unittest.mock as mock
@@ -21,6 +21,7 @@ class TestEosWorkflowCreator(unittest.TestCase):
 		self.structStrs = ["hcp","bcc"]
 		self.kPtVals = [ [20,20,12], [20,20,20] ]
 		self.eleKey, self.methodKey = "Mg", "some_method"
+		self.folderPath = "fake/path"
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -37,7 +38,7 @@ class TestEosWorkflowCreator(unittest.TestCase):
 		self.structStrParamMapper.getGeomsForStructStr.side_effect = lambda key: self.geomsA
 		self.structStrParamMapper.getKwargDictForStructStr.side_effect = getKwargsFunctA
 
-
+		self.calcObjCreator.folderPath = self.folderPath
 		self.testObjA = tCode.CP2KEosWorkflowCreator( calcObjCreator=self.calcObjCreator,
 		                                              structStrParamMapper=self.structStrParamMapper,
 		                                              eosFitFunction=self.eosFitFunction, eleKey=self.eleKey,
@@ -50,7 +51,8 @@ class TestEosWorkflowCreator(unittest.TestCase):
 
 		expKwargDicts = list()
 		for vol,geom in it.zip_longest(self.volList,self.geomsA):
-			expDict = {"geom": geom, "kpts":self.kPtVals[0], "fileName": "vol_{:.3f}".format(vol).replace(".","pt")}
+			expDict = {"geom": geom, "kpts":self.kPtVals[0], "fileName": "vol_{:.3f}".format(vol).replace(".","pt"),
+			           "folderPath":os.path.join(self.folderPath,testStructStr)}
 			expKwargDicts.append( expDict )
 
 		for kDict in expKwargDicts:
@@ -87,9 +89,9 @@ class TestStructStrToParamMapper(unittest.TestCase):
 		self.structDatabase = mock.Mock()
 		self.convDatabase = mock.Mock()
 		self.fakeGeomsA = ["geom_a","geom_b"]
-		self.modDictA = {"kpts":[20,20,12]}
+		self.modDictA = {"kPts":[20,20,12]}
 		self.structDatabase.getStructsForEos.side_effect = lambda x: self.fakeGeomsA
-		self.convDatabase.kptGridVals.getKptsPrimCell.side_effect = lambda x: self.modDictA["kpts"]
+		self.convDatabase.kptGridVals.getKptsPrimCell.side_effect = lambda x: self.modDictA["kPts"]
 		self.testStructStrA = "hcp"
 		self.createTestObjs()
 

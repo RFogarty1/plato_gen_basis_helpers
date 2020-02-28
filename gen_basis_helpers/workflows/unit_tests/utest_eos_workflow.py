@@ -34,9 +34,8 @@ class DudCalcObj(methodObjs.CalcMethod):
 		outStub = types.SimpleNamespace( energies=self._eObj, numbAtoms=self._numbAtoms, unitCell=uCell )
 		return outStub
 
-	@property
 	def writeFile(self):
-		raise NotImplementedError("")
+		pass
 
 class TestEosWorkflow(unittest.TestCase):
 
