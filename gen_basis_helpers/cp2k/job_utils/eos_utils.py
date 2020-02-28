@@ -12,6 +12,31 @@ from ...workflows import base_flow as baseFlow
 from ...workflows import eos_workflow as eosFlow
 
 
+def createStubStandardInputObjForPlanewaveData(database, structStrs, eosStr="murnaghan", eleKey="unknown"):
+	""" Gets the planewave data in a standard input object, in the same format that is produced after the cp2k functions are run.
+	
+	Args:
+		database: (RefElementalDataBase Object) Really just needs the getEosFitDict function though
+		structStrs: (iter of str) Each entry defines the type of structure, for example hcp,fcc,bcc	
+		eosStr: (str, optional) The equation of state to fit to, default="murnaghan"
+		eleKey: (str, optional) The element used. Used only to create the label of StandardInputObj 
+
+	Returns
+		outObj: (StandardInputObj object). This will have a workflow with .output already set, and run() set to do nothing. Map functions can easily be set the same way as normal
+	
+	"""
+	dudWorkflow = types.SimpleNamespace(run=lambda *args:None, output=None)
+	#Firstly get all the full fitDicts
+	outputs = list()
+	for x in structStrs:
+		fitDict = database.getEosFitDict(x, eos=eosStr)
+		outputs.append( types.SimpleNamespace(data=fitDict) )
+
+	dudWorkflow.output = outputs
+	
+	label=labelHelp.StandardLabel(eleKey=eleKey, methodKey="plane-wave", structKey="eos")
+	
+	return calcRunners.StandardInputObj(dudWorkflow, label)
 
 class MapEosWorkflowOutputToUsefulFormatStandard():
 	""" Callable function used to convert EosWorkflow standard output format to a more useful form

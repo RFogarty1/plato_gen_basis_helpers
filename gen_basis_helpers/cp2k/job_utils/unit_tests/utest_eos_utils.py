@@ -239,6 +239,36 @@ class TestStandardMapFunction(unittest.TestCase):
 		actTableOutput = actTotalOutput.tableData
 		self.assertEqual(expTableOutput, actTableOutput)
 
+class TestCreateStandardInputForPlanewaveData(unittest.TestCase):
+
+	def setUp(self):
+		self.structStrs = ["hcp", "bcc"]
+		self.database = mock.Mock()
+		self.database.getEosFitDict.side_effect = lambda *args,**kwargs: args[0] #Means return structStr
+		self.eleKey= "test_ele"
+		self.eosKey="eos_key"
+
+	def runTestCode(self):
+		return tCode.createStubStandardInputObjForPlanewaveData(self.database, self.structStrs,
+		                                                 eosStr=self.eosKey, eleKey=self.eleKey)
+	def testExpectedDatabaseCallsMade(self):
+		self.runTestCode()
+		for sStr in self.structStrs:
+			self.database.getEosFitDict.assert_any_call(sStr, eos=self.eosKey)
+
+	def testExpectedLabelProduced(self):
+		expLabel = labelHelp.StandardLabel(eleKey=self.eleKey, structKey="eos", methodKey="plane-wave")
+		outObj = self.runTestCode()
+		actLabel = outObj.label[0]
+		self.assertEqual(expLabel, actLabel)
+
+	def testExpectedOutputProduced(self):
+		expOutput = [[types.SimpleNamespace(data=x) for x in self.structStrs]] #Since the database is mocked to always return structStr from calls
+		inpObj = self.runTestCode()
+		outObj = inpObj.createOutputObj()
+		actOutput = outObj.data
+		self.assertEqual(expOutput, actOutput)
+
 
 
 

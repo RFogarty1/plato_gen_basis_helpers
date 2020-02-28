@@ -54,7 +54,7 @@ class RefElementalDataBase():
 		raise NotImplementedError
 
 
-	def getEosFitDict(self,key, eosModel="murnaghan"):
+	def getEosFitDict(self,key, eos="murnaghan"):
 		""" Get dictionary containing eos fit data. 
 		
 		Args:
