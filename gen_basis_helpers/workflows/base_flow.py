@@ -58,9 +58,13 @@ class StandardLabelledWorkflowComposite(BaseLabelledWorkflow):
 	label = misc.StandardComponentDescriptor("label")
 	workFolder = misc.StandardComponentDescriptor("workFolder")
 	preRunShellComms = misc.StandardComponentDescriptor("preRunShellComms")
+	output = misc.StandardComponentDescriptor("output")
 	def __init__(self, objs):
 		self.objs = objs
 
+	def run(self):
+		for x in self.objs:
+			x.run()
 
 
 
