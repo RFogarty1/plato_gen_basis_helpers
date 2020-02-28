@@ -171,11 +171,16 @@ class DataPlotterStandard(DataPlotterBase):
 		self.registeredKwargs.add("lineColors")
 		self.registeredKwargs.add("lineMarkers")
 		self.registeredKwargs.add("lineMarkerSizes")
+		self.registeredKwargs.add("mapPlotDataFunct")
 
 		super().__init__(**kwargs)
-		
+	
+		if self.mapPlotDataFunct is None:
+			self.mapPlotDataFunct = lambda x: x
+	
 
 	def createPlot(self, plotData, **kwargs):
+		plotData = self.mapPlotDataFunct(plotData)
 		outFig = super().createPlot(plotData, **kwargs)
 
 
