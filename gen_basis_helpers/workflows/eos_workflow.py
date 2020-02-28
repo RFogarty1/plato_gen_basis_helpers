@@ -48,9 +48,10 @@ class EosWorkflow(baseFlow.BaseLabelledWorkflow):
 	def run(self):
 		volumes, energies = list(), list()
 		for x in self._calcObjs:
-			currVol = x.parsedFile.unitCell.volume
+			currVol = x.parsedFile.unitCell.volume / x.parsedFile.numbAtoms
 			currEnergy = getattr(x.parsedFile.energies, self._eType)
 			ePerAtom = currEnergy / x.parsedFile.numbAtoms
+			volumes.append(currVol), energies.append(ePerAtom)
 		self.output = [types.SimpleNamespace( data=self._fitFunction(volumes,energies) )] #List to allow composite pattern use
 
 
