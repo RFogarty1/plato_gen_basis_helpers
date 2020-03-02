@@ -1,5 +1,7 @@
 
 import copy
+import itertools as it
+import types
 
 import numpy as np
 
@@ -8,6 +10,65 @@ import unittest.mock as mock
 
 import gen_basis_helpers.workflows.elastic_workflows as tCode
 
+
+class TestStressStrainWorkflow(unittest.TestCase):
+
+	def setUp(self):
+		self.strainValsA = [-2,-1,0,1,2]
+		self.calcEnergiesA = [x for x in range(len(self.strainValsA))]
+		self.volumesA = [x for x in range(1,len(self.strainValsA)+1)]
+		self.calcObjsA = [mock.Mock() for x in self.strainValsA]
+		self.strainObjA = mock.Mock()
+		self.eTypeA = "electronicTotalE" 
+		self.createTestObjects()
+
+	def createTestObjects(self):
+		self.runComms = ["runComm{}".format(x) for x in range(len(self.strainValsA))]
+		for obj,energy,volume in it.zip_longest(self.calcObjsA, self.calcEnergiesA,self.volumesA):
+			obj.parsedFile.energies.electronicTotalE = energy #Linked to value of self.eTypeA
+			obj.parsedFile.unitCell.volume = volume
+
+		self.testObjA = tCode.StressStrainWorkflow(self.calcObjsA, self.strainValsA, self.strainObjA, eType=self.eTypeA)
+
+	def testWriteFilesCalled(self):
+		for x in self.calcObjsA:
+			x.writeFile.assert_called_once_with()
+
+	def testRunGivesExpectedStrainVsEnergy(self):
+		expectedVals = [ [x,y] for x,y in it.zip_longest(self.strainValsA,self.calcEnergiesA) ]
+		self.testObjA.run()
+		actualVals = self.testObjA.output[0].strainVsEnergy
+		for expVals, actVals in it.zip_longest(expectedVals, actualVals):
+			self.assertAlmostEqual(expVals[0],actVals[0])
+			self.assertAlmostEqual(expVals[1],actVals[1])
+			self.assertTrue( len(expVals)==2 ), self.assertTrue( len(actVals)==2 )
+
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.StressStrainWorkflow._applyInpUnitsToGPaConversionFactor")
+	def testRunGivesExpectedStrainVsStress(self, applyConvFactorMock):
+		applyConvFactorMock.side_effect = lambda x: x
+		self.testObjA.run()
+		energiesPerVolume = [e/v for e,v in it.zip_longest(self.calcEnergiesA,self.volumesA)]
+		expectedVals = [ [x,y] for x,y in it.zip_longest(self.strainValsA,energiesPerVolume) ]
+		actualVals = self.testObjA.output[0].actVals
+		for expVals, actVals in it.zip_longest(expectedVals, actualVals):
+			self.assertAlmostEqual(expVals[0],actVals[0])
+			self.assertAlmostEqual(expVals[1],actVals[1])
+			self.assertTrue( len(expVals)==2 ), self.assertTrue( len(actVals)==2 )
+		self.assertTrue(applyConvFactorMock.called) 
+
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.elasticHelp.polyFitAndGetSecondDeriv")
+	def testCorrectArgsPassedToGetFitFunction(self, mockedFitter):
+		expFitFunct = "fake_function"
+		expSecondDeriv = "fake_second_deriv"
+
+		mockedFitter.side_effect = lambda *args: types.SimpleNamespace(getFittedValuesForXVals=expFitFunct,
+		                                                               secondDeriv=expSecondDeriv)
+		self.testObjA.run()
+		mockedFitter.assert_called_once_with( self.testObjA.output[0].actVals )
+		actFitFunct = self.testObjA.output[0].fitFunct
+		actSecondDeriv = self.testObjA.output[0].secondDeriv
+		self.assertEqual(expFitFunct, actFitFunct)
+		self.assertEqual(expSecondDeriv, actSecondDeriv)
 
 
 class TestStrainObject(unittest.TestCase):

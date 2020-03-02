@@ -1,9 +1,104 @@
 
 import itertools as it
+import types
 from . import base_flow as baseFlow
+from ..shared import unit_convs as unitConvs
 
 import plato_pylib.utils.elastic_consts as elasticHelp
 
+
+
+
+
+
+class StressStrainWorkflow(baseFlow.BaseLabelledWorkflow):
+	""" Workflow representing calculation of a single stress-strain curve
+	"""
+
+
+	def __init__(self, calcObjs, strainCoeffs, strain, label=None, eType="electronicTotalE"):
+		""" Initializer
+		
+		Args:
+			calcObjs: (iter of CalcMethod objects) Each of thes objects represents a single point energy calculation
+			strainCoeffs: (iter of float) Each represents the strain applied to the eqm. geom. Length should be the same as calcObjs, and the ordering of values should be linked
+			strain: (CrystalStrain object) This contains information on the unit-strain (i.e. the strain applied if strainCoeff=1.0)
+			eType: (Str) Type of energy we want; Corresponds to attributes on plato_pylib Energies object. Default is total electronic energy
+			
+	
+		"""
+		self.calcObjs = list(calcObjs)
+		self.strainCoeffs = list(strainCoeffs)
+		self.strain = strain
+		self.eType = eType
+		self._output = [ types.SimpleNamespace( **{k:None for k in self.namespaceAttrs[0]} ) ]
+
+		self._writeInpFiles()
+
+	def _writeInpFiles(self):
+		for x in self.calcObjs:
+			x.writeFile()
+
+	@property
+	def preRunShellComms(self):
+		outComms = list()
+		for x in self.calcObjs:
+			outComms.append( x.runComm ) #Each command is a single string
+		return outComms
+
+	@property
+	def namespaceAttrs(self):
+		return [["fitFunct","secondDeriv","actVals","strainVsEnergy"]]
+
+	@property
+	def output(self):
+		""" Iter of objects (length 1 for this leaf-class) representing the output of the StressStrainWorkflow
+
+		Attrs:
+			actVals: (nx2 iter) Calculated strain-stress values for strain values corresponding to self.strainCoeffs. Units should be GPa
+			strainVsEnergy: (nx2 iter) x values are self.strainCoeffs, y values are the total energies from the calculations. Units should be eV
+			fitFunct: (function, accepts iter of x-values) When given iter of x-values(strains) it returns the stresses expected from a quadratic fit to the strain vs stress curve nearby strain=0
+			secondDeriv: The second-derivate of the stress-strain curve; calculated by fitting an x**2 parabola near the zero-strain point
+
+		"""
+		return self._output
+
+	def run(self):
+		self._output[0].strainVsEnergy = self._getStrainVsEnergyFromCalcs()
+		self._output[0].actVals = self._getStrainVsStressFromCalcs()
+		fitObj = self._getFitObjFromStressStrain( self.output[0].actVals )
+		self._output[0].fitFunct = fitObj.getFittedValuesForXVals
+		self._output[0].secondDeriv = fitObj.secondDeriv
+
+	def _getStrainVsEnergyFromCalcs(self):
+		allEnergies = list()
+		for x in self.calcObjs:
+			allEnergies.append( getattr(x.parsedFile.energies,self.eType) )
+		minEnergy = min(allEnergies)
+		allEnergies = [x-minEnergy for x in allEnergies]
+		return [ [x,y] for x,y in it.zip_longest(self.strainCoeffs, allEnergies) ] #Need to conv to stress + get units
+
+	def _getStrainVsStressFromCalcs(self):
+		allStress = list()
+		for x in self.calcObjs:
+			parsedFile = x.parsedFile
+			energy = getattr(parsedFile.energies,self.eType)
+			volume = parsedFile.unitCell.volume
+			allStress.append( energy/volume )
+
+		allStress = [self._applyInpUnitsToGPaConversionFactor(x) for x in allStress]
+		strainVsStress = [ [x,y] for x,y in it.zip_longest(self.strainCoeffs, allStress) ]
+		return strainVsStress
+
+	def _applyInpUnitsToGPaConversionFactor(self, stressVal):
+		evToJoule = unitConvs.EV_TO_JOULE
+		bohrToMetre = unitConvs.BOHR_TO_METRE
+		pascalToGpa = unitConvs.PASCAL_TO_GPA
+		elasticConvFactor = (evToJoule / (bohrToMetre**3))*pascalToGpa
+		return stressVal*elasticConvFactor
+
+	def _getFitObjFromStressStrain(self, stressStrain):
+		return elasticHelp.polyFitAndGetSecondDeriv(stressStrain)
 
 class CrystalStrain():
 	"""Representation of a crystal strain (with unit strain parameter).
