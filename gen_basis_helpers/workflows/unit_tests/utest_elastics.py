@@ -1,5 +1,6 @@
 
 import copy
+import collections
 import itertools as it
 import types
 
@@ -9,6 +10,78 @@ import unittest
 import unittest.mock as mock
 
 import gen_basis_helpers.workflows.elastic_workflows as tCode
+
+
+
+class TestHcpElasticWorkflow(unittest.TestCase):
+
+	def setUp(self):
+		self.strainE3   = tCode.CrystalStrain([0,0,1,0,0,0])
+		self.strainE12  = tCode.CrystalStrain([1,1,0,0,0,0])
+		self.strainE123 = tCode.CrystalStrain([1,1,1,0,0,0])
+		self.strainE45  = tCode.CrystalStrain([0,0,0,2,2,0])
+		self.strainE6   = tCode.CrystalStrain([0,0,0,0,0,2])
+		self.secondDerivVals = [1,2,4,4,5]
+
+		self.allStrainsA = [ self.strainE3, self.strainE12, self.strainE123, self.strainE45, self.strainE6 ]
+		self.allRunCommsListA = [ list(), ["runCommB","runCommBB"], list(), ["runCommC"], ["runCommD"] ]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.mockFlowsA = [mock.Mock() for x in self.allStrainsA]
+
+		for wflow,strain,runComms,secondDeriv in it.zip_longest(self.mockFlowsA,self.allStrainsA,self.allRunCommsListA,self.secondDerivVals):
+			wflow.strain = strain
+			wflow.output = [types.SimpleNamespace(secondDeriv=secondDeriv)]
+			wflow.preRunShellComms = runComms
+		self.testObjA = tCode.HcpElasticConstantsWorkflow( self.mockFlowsA )
+
+
+	def testInitRaisesIfInputListTooLong(self):
+		self.allStrainsA.append(None)
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
+
+	def testInitRaisesIfOneStrainIsWrong(self):
+		self.allStrainsA[2] = tCode.CrystalStrain([1 for x in range(6)])
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
+
+	def testInitRaisesIfTwoStrainsAreTheSame(self):
+		self.allStrainsA[2] = self.allStrainsA[3]
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
+
+	def testInitAlwaysLeavesStressStrainInCorrectOrder(self):
+		orderA = copy.deepcopy( self.allStrainsA )
+		origObj = copy.deepcopy( self.testObjA )
+
+		self.allStrainsA = [ self.strainE123, self.strainE12, self.strainE45, self.strainE3, self.strainE6 ]
+		self.assertNotEqual( orderA, self.allStrainsA )
+		self.createTestObjs() 
+
+		oldStrainsOnObj = [x.strain for x in origObj.stressStrainFlows]
+		newStrainsOnObj = [x.strain for x in self.testObjA.stressStrainFlows]
+		self.assertEqual(newStrainsOnObj, oldStrainsOnObj)
+
+	def testExpPreRunCommsGenerated(self):
+		expPreRunComms = list()
+		for x in self.allRunCommsListA:
+			expPreRunComms.extend(x)
+		actRunComms = self.testObjA.preRunShellComms
+		self.assertEqual(expPreRunComms, actRunComms)
+
+	def testExpectedElasticConstantsGenerated(self):
+		expConstants = collections.OrderedDict([ ["11",1.75], ["12",-0.75], ["13",0.25],
+		                                         ["33",1], ["44",0.5] ])
+		self.testObjA.run()
+		actConstants = self.testObjA.output[0].elasticConsts
+
+
+		print("DEBUG\n\n\n\n")
+		print("actConstants = {}".format(actConstants))
+		for key in expConstants.keys():
+			self.assertAlmostEqual( expConstants[key], actConstants[key] )
 
 
 class TestStressStrainWorkflow(unittest.TestCase):
@@ -96,7 +169,7 @@ class TestStrainObject(unittest.TestCase):
 
 	def testEquality_equalObjsCompareEqual(self):
 		self.strainValsA = [x*0.1 for x in self.strainValsA] #Want non-integers
-		self.strainValsB = list(self.strainValsB)
+		self.strainValsB = list(self.strainValsA)
 		self.createTestObjs()
 		self.assertEqual( self.testObjA, self.testObjB )
 

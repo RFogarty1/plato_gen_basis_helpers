@@ -1,6 +1,10 @@
 
+import collections
 import itertools as it
 import types
+
+import numpy as np
+
 from . import base_flow as baseFlow
 from ..shared import unit_convs as unitConvs
 
@@ -8,6 +12,103 @@ import plato_pylib.utils.elastic_consts as elasticHelp
 
 
 
+
+class HcpElasticConstantsWorkflow(baseFlow.BaseLabelledWorkflow):
+	"""Workflow representing calculations used to get elastic constants for a hcp crystal
+
+	"""
+
+	def __init__(self, stressStrainFlows, label=None):
+		""" Initializer
+		
+		Args:
+			stressStrainFlows: (iter of 5 StressStrainWorkflow objects) Each of these objects needs to represent one required stress strain curves. In terms of the basis functions \eps_{1} to \eps_{6} we need:
+			                  a) \eps_{3}
+			                  b) \eps_{1} + \eps_{2}
+			                  c) \eps_{1} + \eps_{2} + \eps_{3}
+			                  d) 2( \eps_{4} + \eps_{5} )
+			                  e) 2( \eps_{6} )
+
+		Raises:
+			ValueError: If not all strains are correct (including if the number of stress/strains is wrong) 
+		"""
+		self.stressStrainFlows = self._getStrainFlowInOrderFromInputList( stressStrainFlows )
+
+		self._output = [ types.SimpleNamespace( **{k:None for k in self.namespaceAttrs[0]} ) ]
+
+	def _getStrainFlowInOrderFromInputList(self, inpList):
+		if len(inpList) != 5:
+			raise ValueError("Need 5 strains to calculate Hcp elastic constants but {} given".format(len(inpList)))
+
+		expStrains = [ [0,0,1,0,0,0], #This actually defines the ordering aswell
+		               [1,1,0,0,0,0],
+		               [1,1,1,0,0,0],
+		               [0,0,0,2,2,0],
+		               [0,0,0,0,0,2] ]
+
+		expStrainObjs = [CrystalStrain(x) for x in expStrains]
+		outList = list()
+		for x in inpList:
+			currObj = x.strain
+			if any([currObj==expObj for expObj in expStrainObjs]):
+				outList.append(x)
+			else:
+				raise ValueError("{} is an invalid strain for HcpElasticConstantsWorkflow".format(currObj.toStr()))
+
+		#Make sure all strains are different
+		allStrainObjs = [x.strain for x in inpList]
+		for idx,strain in enumerate(allStrainObjs):
+			otherStrains = [x for idxB,x in enumerate(allStrainObjs) if idxB!=idx]
+			if any([x==strain for x in otherStrains]):
+				raise ValueError("Duplicate strains found")
+
+		#Make sure the strains are always in the correct order
+		orderedOutList = list()
+		for expObj in expStrainObjs:
+			for currObj in outList:
+				if expObj==currObj.strain:
+					orderedOutList.append(currObj)
+
+		return orderedOutList
+
+	@property
+	def namespaceAttrs(self):
+		return [["elasticConsts","stressStrainData"]]
+
+	@property
+	def preRunShellComms(self):
+		outList = list()
+		for x in self.stressStrainFlows:
+			outList.extend( x.preRunShellComms )
+		return outList
+
+	@property
+	def output(self):
+		""" Iter of objects (length 1 for this leaf-class) representing the output of the HcpElasticConstantsWorkflow
+		
+		Attrs:
+			elasticConsts: (OrderedDict) Keys are elastic constant labels (11,12,33,44 corresponding to c_{11}, c_{12} etc.) and values are calculated elastic constants
+			stressStrainData: (iter) Each entry is the .output of one of the stress-strain workflows used. The initializer of this class gives the strains used in the same order as output here
+				
+		"""
+		return self._output
+
+
+	def run(self):
+		self.output[0].elasticConsts = self._getElasticDict()
+		self.output[0].stressStrainData = [x.output[0] for x in self.stressStrainFlows]
+
+	def _getElasticDict(self):
+		secondDerivs = [x.output[0].secondDeriv for x in self.stressStrainFlows]
+		keyOrder = ["11","12","13","33","44"]
+		coeffMatrix = np.array([ [0, 0,0,1,0],
+		                         [2, 2,0,0,0],
+		                         [2, 2,4,1,0],
+		                         [0, 0,0,0,8],
+		                         [2,-2,0,0,0] ])
+		elasticVals = np.linalg.inv(coeffMatrix) @ np.array(secondDerivs)
+
+		return collections.OrderedDict( [[key,elastic] for key,elastic in it.zip_longest(keyOrder,elasticVals)] )
 
 
 
@@ -32,7 +133,6 @@ class StressStrainWorkflow(baseFlow.BaseLabelledWorkflow):
 		self.strain = strain
 		self.eType = eType
 		self._output = [ types.SimpleNamespace( **{k:None for k in self.namespaceAttrs[0]} ) ]
-
 		self._writeInpFiles()
 
 	def _writeInpFiles(self):
@@ -129,7 +229,7 @@ class CrystalStrain():
 	def __eq__(self,other):
 		if isinstance(other, CrystalStrain): 
 			eqTol = max(self._eqTol, other._eqTol) #We want to use the loosest equality definition.
-			diffs = [x-y for x,y in it.zip_longest(self.strainVals, other.strainVals)]
+			diffs = [abs(x-y) for x,y in it.zip_longest(self.strainVals, other.strainVals)]
 			if all([x<eqTol for x in diffs]):
 				return True
 			else:
