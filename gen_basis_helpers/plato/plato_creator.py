@@ -6,18 +6,45 @@ import plato_pylib.plato.mod_plato_inp_files as modPlatoInp
 import plato_pylib.plato.parse_plato_out_files as parsePlatoOut
 
 from ..shared import method_objs as baseObjs
-
+from ..shared import calc_methods as calcMeth
 
 
 class PlatoCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
 
 	registeredKwargs = set(baseObjs.CalcMethodFactoryBase.registeredKwargs)
+	registeredKwargs.add("methodStr")
+	registeredKwargs.add("dataSet") #Plato relative path
+	registeredKwargs.add("gridVals") #Format varies based on methodStr; for dft fft grid is used, fot dft2 atom centred is used
 
+	#Key function
 	def _createFromSelf(self):
-		raise NotImplementedError("")
+		startObj = self._getMethodObj()
+		self._modifyMethodObj(startObj)
+		outStrDict = self._getStrDictFromMethodObj(startObj)
+		runCommFunct = startObj.runCommFunction
+		outBasePath = os.path.join(self.workFolder, self.fileName)
+		return PlatoCalcObj(outBasePath, outStrDict, runCommFunct)
+
+	#If not set here they default to None; These defaults will always be overriden if the explicit kwarg is passed to init (or create) to set them
+	def _setDefaultInitAttrs(self):
+		self.fileName = "plato_file.in"
 
 
-#TypeError: Can't instantiate abstract class PlatoCalcObj with abstract methods nCores, outFilePath, parsedFile, runComm, writeFile
+	#Not the type of object we actually want in the end; wrong interface and incomplete
+	def _getMethodObj(self):
+		return calcMeth.createPlatoMethodObj(self.methodStr)
+
+	def _modifyMethodObj(self, methObj):
+		if self.kPts is not None:
+			methObj.kpts = self.kPts
+		if self.gridVals is not None:
+			methObj.integGrid = self.gridVals
+		if self.dataSet is not None:
+			methObj.dataSet = self.dataSet
+
+	def _getStrDictFromMethodObj(self, methObj):
+		return methObj.getStrDictWithStruct(self.geom)
+
 
 class PlatoCalcObj(baseObjs.CalcMethod):
 	""" Plato version of the CalcMethod interface. This object is used to encapsulate the writing/running/parsing of plato jobs (similar to the Calculator in ASE)

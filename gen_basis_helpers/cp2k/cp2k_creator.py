@@ -10,7 +10,7 @@ from . import cp2k_calc_objs as calcObjs
 from ..shared import data_plot_base as dPlotBase
 
 
-
+#Should really inherit from CalcMethodFactoryBase, but slightly annoying to refactor it
 class BaseCP2KCalcObjFactory():
 
 	def create(self, **kwargs):
