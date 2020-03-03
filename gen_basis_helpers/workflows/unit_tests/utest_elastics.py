@@ -92,7 +92,7 @@ class TestStressStrainWorkflowFactory(unittest.TestCase):
 		expReturnVal = self.strainValues
 		mockedGeomStrainGetter.side_effect = fakeGetterFunct
 		actReturnVal = self.testObjA._getGeomList()
-		mockedGeomStrainGetter.assert_called_once_with(self.baseGeom, self.strainValues, [self.strain])
+		mockedGeomStrainGetter.assert_called_once_with(self.baseGeom, self.strainValues, [self.strain.strainMatrix])
 		self.assertEqual(expReturnVal,actReturnVal)	
 
 	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.StressStrainWorkflow")

@@ -1,5 +1,6 @@
 
 import os
+import pathlib
 import types
 
 import plato_pylib.plato.mod_plato_inp_files as modPlatoInp
@@ -83,6 +84,8 @@ class PlatoCalcObj(baseObjs.CalcMethod):
 
 	def writeFile(self):
 		inpFilePath = self._getInpFilePath()
+		inpFolder = os.path.split(inpFilePath)[0]
+		pathlib.Path(inpFolder).mkdir(parents=True,exist_ok=True)
 		modPlatoInp.writePlatoOutFileFromDict(inpFilePath,self.strDict)
 
 	def _getInpFilePath(self):

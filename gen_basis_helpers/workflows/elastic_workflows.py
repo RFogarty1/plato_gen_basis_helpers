@@ -50,15 +50,6 @@ class HcpElasticWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 		return outFlows	
 
 
-	def _getStressStrainFlowForOneStrain(self, strain):
-		outGeoms = _getStrainedGeomListForOneStrain(strain)
-		outObjs = [self.creator.create(x) for x in outGeoms] #These only differ by their geometries....fileNames need setting too though
-
-	def _getStrainedGeomListForOneStrain(self, strain):
-		allStructs = elasticHelp.getStrainedUnitCellStructsForUnitStrainVects(self.baseGeom, self.strainValues, [strain])
-		assert len(allStructs)==1, "Sorry, looks like i made a mistake with understanding an interface"
-		return allStructs[0]
-
 
 class StressStrainWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 	"""Factory for creating StressStrainWorkflow objects
@@ -82,7 +73,7 @@ class StressStrainWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate
 
 
 	def _getGeomList(self):
-		allStructs = elasticHelp.getStrainedUnitCellStructsForUnitStrainVects(self.baseGeom, self.strainValues, [self.strain])
+		allStructs = elasticHelp.getStrainedUnitCellStructsForUnitStrainVects(self.baseGeom, self.strainValues, [self.strain.strainMatrix])
 		assert len(allStructs)==1, "Sorry, looks like i made a mistake with understanding an interface"
 		return allStructs[0]
 
