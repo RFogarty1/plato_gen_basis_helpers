@@ -1,5 +1,7 @@
 import abc
 
+from . import creator_resetable_kwargs as baseCreator
+
 #TODO: These actually have an optDict property, which is pretty important (though doesnt have to be a property, usually just attr)This should be clearer on the interface definition (i.e. here)
 class CalcMethod(abc.ABC):
 
@@ -60,4 +62,15 @@ class ParsedFile():
 	def unitCell(self):
 		""" A plato_pylib UnitCell object; units should generally be in bohr """
 		raise NotImplementedError("")
+
+
+
+class CalcMethodFactoryBase(baseCreator.CreatorWithResetableKwargsTemplate):
+
+	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs) #Will probably always be empty
+	registeredKwargs.add("workFolder")
+	registeredKwargs.add("fileName")
+	registeredKwargs.add("kPts")
+	registeredKwargs.add("geom")
+
 
