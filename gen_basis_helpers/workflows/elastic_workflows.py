@@ -7,9 +7,22 @@ import numpy as np
 
 from . import base_flow as baseFlow
 from ..shared import unit_convs as unitConvs
+from ..shared import creator_resetable_kwargs as baseCreator
 
 import plato_pylib.utils.elastic_consts as elasticHelp
 
+
+class HcpElasticWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate):
+	""" Factory for creating HcpElasticConstantWorkflow objects
+	"""
+	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs)
+	registeredKwargs.add("baseGeom")
+	registeredKwargs.add("strainValues")
+	registeredKwargs.add("structType") #Used to get the strains we need
+	registeredKwargs.add("creator")
+
+	def _createFromSelf(self):
+		raise NotImplementedError("")
 
 
 
@@ -40,13 +53,8 @@ class HcpElasticConstantsWorkflow(baseFlow.BaseLabelledWorkflow):
 		if len(inpList) != 5:
 			raise ValueError("Need 5 strains to calculate Hcp elastic constants but {} given".format(len(inpList)))
 
-		expStrains = [ [0,0,1,0,0,0], #This actually defines the ordering aswell
-		               [1,1,0,0,0,0],
-		               [1,1,1,0,0,0],
-		               [0,0,0,2,2,0],
-		               [0,0,0,0,0,2] ]
+		expStrainObjs = getRequiredStrainObjsForStructType("hcp") #This actually defines the ordering aswell. Unit-tests (at time of writing) will catch if the order changes though (i.e. will fail if the order of strains in this list changes)
 
-		expStrainObjs = [CrystalStrain(x) for x in expStrains]
 		outList = list()
 		for x in inpList:
 			currObj = x.strain
@@ -249,6 +257,22 @@ class CrystalStrain():
 		outIndices = [idx for idx,x in enumerate(self.strainVals,1) if idx-1 in nonZeroIndices]
 		return "+".join(["{}eps{}".format(coeff,idx) for idx,coeff in it.zip_longest(outIndices,outCoeffs)])
 
+
+def getRequiredStrainObjsForStructType(structKey):
+	keyToFunctDict = {"hcp": _getHcpStrainObjects}
+	return keyToFunctDict[structKey]()
+
+
+
+def _getHcpStrainObjects():
+	expStrains = [ [0,0,1,0,0,0], 
+	               [1,1,0,0,0,0],
+	               [1,1,1,0,0,0],
+	               [0,0,0,2,2,0],
+	               [0,0,0,0,0,2] ]
+
+	expStrainObjs = [CrystalStrain(x) for x in expStrains]
+	return expStrainObjs
 
 
 def _getUnitStrainMatrix(matrixNumb:int):
