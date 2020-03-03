@@ -1,6 +1,7 @@
 
 import copy
 import collections
+import os
 import itertools as it
 import types
 
@@ -10,6 +11,102 @@ import unittest
 import unittest.mock as mock
 
 import gen_basis_helpers.workflows.elastic_workflows as tCode
+
+
+
+class TestHcpElasticWorkflowFactory(unittest.TestCase):
+
+	def setUp(self):
+		self.baseGeom = mock.Mock()
+		self.strainValues = [-2,-1,0,1,2]
+		self.creator = mock.Mock()
+		self.workFolder = "fake/folder"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.HcpElasticWorkflowCreator(baseGeom=self.baseGeom, strainValues=self.strainValues,
+		                                                creator=self.creator, workFolder=self.workFolder)
+
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.HcpElasticConstantsWorkflow")
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.getRequiredStrainObjsForStructType")
+	def testCorrectCallForStrainMatrices(self, mockedStrainMatrixGetter, mockedHcpFlow):
+		self.testObjA.create()
+		mockedStrainMatrixGetter.assert_called_once_with("hcp")
+
+
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.StressStrainWorkflowCreator")
+	def testBaseFactoryObject(self, mockedStressStrainFactory):
+		fakeFactory = "fake_factory"
+		mockedStressStrainFactory.side_effect = lambda *args,**kwargs: "fake_factory"
+		actFactory = self.testObjA._stressStrainBaseFactory
+		mockedStressStrainFactory.assert_called_once_with(baseGeom=self.baseGeom, creator=self.creator, strainValues=self.strainValues)
+		self.assertEqual(fakeFactory,actFactory)
+
+
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.HcpElasticConstantsWorkflow")
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.HcpElasticWorkflowCreator._getUnitStrainMatrices")
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.HcpElasticWorkflowCreator._stressStrainBaseFactory",new_callable=mock.PropertyMock)
+	def testExpectedCallsToStressStrainFactory(self, mockedBaseFactory, mockedUStrain, mockedHcpFlow):
+		baseFactory = mock.Mock()
+		fakeStrains = [mock.Mock(), mock.Mock()]
+		mockedBaseFactory.return_value = baseFactory
+		mockedUStrain.side_effect = lambda: fakeStrains
+
+		expWorkFolders = [os.path.join(self.workFolder, "strain_{}".format(x)) for x in range(len(fakeStrains))]
+		expStrains = fakeStrains
+		self.testObjA.create()
+
+		for strain,workFolder in it.zip_longest(fakeStrains,expWorkFolders):
+			baseFactory.create.assert_any_call(strain=strain, workFolder=workFolder)
+
+
+
+class TestStressStrainWorkflowFactory(unittest.TestCase):
+
+	def setUp(self):
+		self.baseGeom = mock.Mock()
+		self.strainValues = [-2,-1,0,1,2]
+		self.strain = mock.Mock()
+		self.creator = mock.Mock()
+		self.workFolder = "fake/folder/path"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.StressStrainWorkflowCreator(baseGeom=self.baseGeom, strainValues=self.strainValues,
+		                                                  workFolder=self.workFolder, creator=self.creator, strain=self.strain)
+
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.StressStrainWorkflowCreator._getGeomList")
+	def testCreatorCalledWithCorrectArgs(self, mockedGeomGetter):
+		self.createTestObjs()
+		expGeoms = self.strainValues
+		expFolders = [self.workFolder for x in self.strainValues]
+		expFileNames = ["strain_{:.3f}".format(x).replace(".","pt").replace("-","m") for x in self.strainValues]
+		mockedGeomGetter.side_effect = lambda: expGeoms
+		self.testObjA.create()
+		for folderName, fileName, geom in it.zip_longest(expFolders, expFileNames, expGeoms):
+			self.creator.create.assert_any_call(workFolder=folderName, fileName=fileName, geom=geom)
+
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.elasticHelp.getStrainedUnitCellStructsForUnitStrainVects")
+	def testCorrectStrainedGeomsWithMock(self, mockedGeomStrainGetter):
+		fakeGetterFunct = lambda uCell, sParams, uStrainMatices: [ sParams ]
+		expReturnVal = self.strainValues
+		mockedGeomStrainGetter.side_effect = fakeGetterFunct
+		actReturnVal = self.testObjA._getGeomList()
+		mockedGeomStrainGetter.assert_called_once_with(self.baseGeom, self.strainValues, [self.strain])
+		self.assertEqual(expReturnVal,actReturnVal)	
+
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.StressStrainWorkflow")
+	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.StressStrainWorkflowCreator._getGeomList")
+	def testExpectedArgsPassedToStressStrainFlows(self, mockedGetGeoms, mockedFlow):
+		expWorkflow = "fake_workflow"
+		mockedFlow.side_effect = lambda *args, **kwargs: expWorkflow
+		fakeGeoms = [2*x for x in self.strainValues]
+		self.creator.create.side_effect = lambda geom=None,**kwargs: geom #Bounce back geom so we can test we pass the calcObjs it creates
+		mockedGetGeoms.side_effect = lambda: fakeGeoms
+		expCalcObjs = fakeGeoms
+		actWorkflow = self.testObjA.create()
+		mockedFlow.assert_called_once_with(expCalcObjs, self.strainValues, self.strain)
+		self.assertEqual(expWorkflow, actWorkflow)	
 
 
 

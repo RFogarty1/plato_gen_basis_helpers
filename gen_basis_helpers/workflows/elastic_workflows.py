@@ -1,5 +1,6 @@
 
 import collections
+import os
 import itertools as it
 import types
 
@@ -12,18 +13,83 @@ from ..shared import creator_resetable_kwargs as baseCreator
 import plato_pylib.utils.elastic_consts as elasticHelp
 
 
+#TODO: Add some properties to document these registered kwargs
 class HcpElasticWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 	""" Factory for creating HcpElasticConstantWorkflow objects
 	"""
 	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs)
 	registeredKwargs.add("baseGeom")
 	registeredKwargs.add("strainValues")
-	registeredKwargs.add("structType") #Used to get the strains we need
 	registeredKwargs.add("creator")
+	registeredKwargs.add("workFolder")
 
 	def _createFromSelf(self):
-		raise NotImplementedError("")
+		unitStrainMatrices = self._getUnitStrainMatrices()
+		stressStrainFlows = self._getStressStrainFlowsFromStrains(unitStrainMatrices)
+		outWorkFlow = HcpElasticConstantsWorkflow(stressStrainFlows)
+		return outWorkFlow
 
+	def _getUnitStrainMatrices(self):
+		return getRequiredStrainObjsForStructType("hcp")
+
+
+	#Just lacks workFolder and strain
+	@property
+	def _stressStrainBaseFactory(self):
+		return StressStrainWorkflowCreator(strainValues=self.strainValues, baseGeom=self.baseGeom, creator=self.creator)
+
+
+	def _getStressStrainFlowsFromStrains(self, strains):
+		baseFactory = self._stressStrainBaseFactory
+		outFlows = list()
+		for idx,strain in enumerate(strains):
+			workFolder = os.path.join(self.workFolder,"strain_{}".format(idx))
+			currFlow = baseFactory.create(workFolder=workFolder, strain=strain)
+			outFlows.append(currFlow)
+
+		return outFlows	
+
+
+	def _getStressStrainFlowForOneStrain(self, strain):
+		outGeoms = _getStrainedGeomListForOneStrain(strain)
+		outObjs = [self.creator.create(x) for x in outGeoms] #These only differ by their geometries....fileNames need setting too though
+
+	def _getStrainedGeomListForOneStrain(self, strain):
+		allStructs = elasticHelp.getStrainedUnitCellStructsForUnitStrainVects(self.baseGeom, self.strainValues, [strain])
+		assert len(allStructs)==1, "Sorry, looks like i made a mistake with understanding an interface"
+		return allStructs[0]
+
+
+class StressStrainWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate):
+	"""Factory for creating StressStrainWorkflow objects
+
+	"""
+	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs)
+	registeredKwargs.add("strain")
+	registeredKwargs.add("strainValues")
+	registeredKwargs.add("baseGeom")
+	registeredKwargs.add("creator")
+	registeredKwargs.add("workFolder")
+
+	def _createFromSelf(self):
+		allGeoms = self._getGeomList()
+		allFileNames = self._getFileNameList()
+		calcObjs = list()
+		for geom,fileName in it.zip_longest(allGeoms,allFileNames):
+			calcObjs.append( self.creator.create(fileName=fileName, geom=geom, workFolder=self.workFolder) )
+
+		return StressStrainWorkflow(calcObjs, self.strainValues, self.strain)
+
+
+	def _getGeomList(self):
+		allStructs = elasticHelp.getStrainedUnitCellStructsForUnitStrainVects(self.baseGeom, self.strainValues, [self.strain])
+		assert len(allStructs)==1, "Sorry, looks like i made a mistake with understanding an interface"
+		return allStructs[0]
+
+	def _getFileNameList(self):
+		outNames = list()
+		nameFmt = "strain_{:.3f}"
+		return [nameFmt.format(x).replace("-","m").replace(".","pt") for x in self.strainValues]
 
 
 class HcpElasticConstantsWorkflow(baseFlow.BaseLabelledWorkflow):
