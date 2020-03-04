@@ -105,7 +105,7 @@ class MapElasticflowOutputToUsefulFormatStandard():
 		minCoeff = min(allStrainVals)
 		maxCoeff = max(allStrainVals)
 		step = 0.001
-		return np.arange(minCoeff, maxCoeff, step)
+		return np.arange(minCoeff-step, maxCoeff+step, step)
 
 	def __call__(self, stdInputObj):
 		stdInputObj.workflow.run()
