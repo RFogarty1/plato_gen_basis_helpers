@@ -87,6 +87,7 @@ class StandardInputObj(BaseStandardInputObj):
 
 class StandardOutputObj(BaseStandardOutputObj):
 
+	@misc.getObjectsWithComponentsInstanceWrapper(isComposite=False)
 	def __init__(self, data, label):
 		""" Initailizer to create a Standard Output object
 		
@@ -144,6 +145,7 @@ class StandardOutputObjComposite(BaseStandardOutputObj):
 	data = misc.StandardComponentDescriptor("data")
 	label = misc.StandardComponentDescriptor("label")
 
+	@misc.getObjectsWithComponentsInstanceWrapper(isComposite=True)
 	def __init__(self, objs):
 		self.objs = list(objs)
 
