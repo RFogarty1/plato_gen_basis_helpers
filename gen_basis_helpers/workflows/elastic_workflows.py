@@ -160,6 +160,8 @@ class HcpElasticConstantsWorkflow(baseFlow.BaseLabelledWorkflow):
 
 
 	def run(self):
+		for x in self.stressStrainFlows:
+			x.run()
 		self.output[0].elasticConsts = self._getElasticDict()
 		self.output[0].stressStrainData = [x.output[0] for x in self.stressStrainFlows]
 
@@ -244,11 +246,12 @@ class StressStrainWorkflow(baseFlow.BaseLabelledWorkflow):
 		return [ [x,y] for x,y in it.zip_longest(self.strainCoeffs, allEnergies) ] #Need to conv to stress + get units
 
 	def _getStrainVsStressFromCalcs(self):
+		strainVsEnergy = self._getStrainVsEnergyFromCalcs() #Delta E units used
 		allStress = list()
-		for x in self.calcObjs:
+		for idx,x in enumerate(self.calcObjs):
 			parsedFile = x.parsedFile
-			energy = getattr(parsedFile.energies,self.eType)
 			volume = parsedFile.unitCell.volume
+			energy = strainVsEnergy[idx][1]
 			allStress.append( energy/volume )
 
 		allStress = [self._applyInpUnitsToGPaConversionFactor(x) for x in allStress]
