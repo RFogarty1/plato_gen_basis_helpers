@@ -1,5 +1,9 @@
 
 import os
+import itertools as it
+import types
+
+from collections import OrderedDict
 
 import unittest
 import unittest.mock as mock
@@ -52,5 +56,96 @@ class TestStandardInputFactory(unittest.TestCase):
 		mockedStandardInput.assert_called_once_with(expWorkflow, expLabel)
 	
 		self.assertEqual(expFinalObject, actFinalObject)
+
+
+
+class TestMapElasticToUsefulFormatHcpCase(unittest.TestCase):
+
+	def setUp(self):
+		self.structStr = "hcp"
+
+		self.fitFunctXVals = [-2,1,0,1,2]
+		self.elasticConstants = [x for x in range(1,6)]
+		self.eleKey = "fake_ele_key"
+		self.methodKey = "fake_method_key"
+		self.structKey = "fake_struct_key"
+		self.expHeadings = ["method","c11","c12","c13","c33","c44"]
+		self.actPlotData = [mock.Mock() for x in self.elasticConstants]
+		self.fitVals = [mock.Mock() for x in self.elasticConstants]
+		self.strainObjs = [mock.Mock() for x in self.elasticConstants] #One strain per elastic obviously
+		self.runMethod = mock.Mock()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		labelA = labelHelp.StandardLabel(eleKey=self.eleKey,structKey=self.structKey,methodKey=self.methodKey)
+		elasticStrs = ["c11","c12","c13","c33","c44"]
+		elasticsInCorrectFormat = OrderedDict( [(strLabel,y) for strLabel,y in it.zip_longest(elasticStrs,self.elasticConstants)] )
+		stressStrainData = [mock.Mock() for x in self.elasticConstants]
+		self.testObjA = tCode.MapElasticflowOutputToUsefulFormatStandard(self.structStr, fitStrainVals=self.fitFunctXVals)
+		self.testOutputA = types.SimpleNamespace(**{"elasticConsts":elasticsInCorrectFormat,"stressStrainData":stressStrainData,
+		                                            "strains":self.strainObjs})
+		testWorkflowA = types.SimpleNamespace(output=[self.testOutputA], run=self.runMethod)
+		self.standardInpObjA = types.SimpleNamespace(workflow=testWorkflowA, label=[labelA])
+
+		#Need to mock the fitFunction to retunr an iterable
+		for idx,x in enumerate(self.standardInpObjA.workflow.output[0].stressStrainData):
+			x.fitFunct.side_effect = lambda *args,**kwargs: [self.fitVals[idx]] #Just needs to be iterable
+
+		#Also need to mock the actData to return self.actPlotData
+		for idx,x in enumerate(self.standardInpObjA.workflow.output[0].stressStrainData):
+			x.actVals = self.actPlotData[idx] #Mahybe sohuld be an iter or something?
+
+	def runMapFunctOnDataA(self):
+		return self.testObjA( self.standardInpObjA )
+
+	def testCanOnlyCreateForHcpForNow(self):
+		self.structStr = "some_fake_struct"
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
+	
+	def testRunMethodIsCalled(self):
+		self.runMapFunctOnDataA()
+		self.runMethod.assert_called_once_with()
+
+	def testExpTableDataPresent(self):
+		outputObj = self.runMapFunctOnDataA()
+		expTableData = [self.methodKey] + ["{:.2f}".format(x) for x in self.elasticConstants]
+		actTableData = outputObj.tableData
+		self.assertEqual(expTableData,actTableData)
+
+	def testStrainStrsAsExpected(self):
+		outputObj = self.runMapFunctOnDataA()
+		expStrainStrs = [x.toStr() for x in self.strainObjs]
+		actStrainStrs = outputObj.strainStrs
+		self.assertEqual(expStrainStrs, actStrainStrs)
+
+	def testCorrectValsPassedToFitVals(self):
+		for x in self.standardInpObjA.workflow.output[0].stressStrainData:
+			x.fitFunct.side_effect = lambda *args,**kwargs: [mock.Mock()] #Just needs to be iterable
+
+		#Modify fit function mock to support iteration
+		self.runMapFunctOnDataA()
+		for x in self.standardInpObjA.workflow.output[0].stressStrainData:
+			x.fitFunct.assert_called_once_with(self.fitFunctXVals)
+
+
+
+	@unittest.skip("")
+	def testExpectedFitStrainValsGeneratedAsDefault(self):
+		self.fitFunctXVals = None
+		self.standardInpObjA.workflow.strainValues = self.fitFunctXVals
+		self.createTestObjs()
+		self.runMapFunctOnDataA()
+
+
+	@unittest.skip("Couldnt get to work properly; so sorta abandoning for now")
+	def testExpectedPlotData(self):
+		expFitData = [[[x,y]] for x,y in it.zip_longest(self.fitFunctXVals,self.fitVals)]
+		expPlotData = [ [actData, fitData] for actData, fitData in it.zip_longest(self.actPlotData,expFitData) ]
+		actOutput = self.runMapFunctOnDataA()
+		actPlotData = actOutput.plotData
+		self.assertEqual(expPlotData, actPlotData)
+
+
 
 

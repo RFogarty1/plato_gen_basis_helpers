@@ -164,6 +164,7 @@ class HcpElasticConstantsWorkflow(baseFlow.BaseLabelledWorkflow):
 			x.run()
 		self.output[0].elasticConsts = self._getElasticDict()
 		self.output[0].stressStrainData = [x.output[0] for x in self.stressStrainFlows]
+		self.output[0].strains = getRequiredStrainObjsForStructType("hcp")
 
 	def _getElasticDict(self):
 		secondDerivs = [x.output[0].secondDeriv for x in self.stressStrainFlows]

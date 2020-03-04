@@ -40,7 +40,7 @@ def createStubStandardInputObjForPlanewaveData(database, structStrs, eosStr="mur
 	return calcRunners.StandardInputObj(dudWorkflow, label)
 
 class MapEosWorkflowOutputToUsefulFormatStandard():
-	""" Callable function used to convert EosWorkflow standard output format to a more useful form
+	""" Callable class used to convert EosWorkflow standard output format to a more useful form
 
 	"""
 
