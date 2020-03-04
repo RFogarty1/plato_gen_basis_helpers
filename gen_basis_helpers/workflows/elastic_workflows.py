@@ -22,6 +22,7 @@ class HcpElasticWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 	registeredKwargs.add("strainValues")
 	registeredKwargs.add("creator")
 	registeredKwargs.add("workFolder")
+	registeredKwargs.add("eType")
 
 	def _createFromSelf(self):
 		unitStrainMatrices = self._getUnitStrainMatrices()
@@ -36,7 +37,7 @@ class HcpElasticWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 	#Just lacks workFolder and strain
 	@property
 	def _stressStrainBaseFactory(self):
-		return StressStrainWorkflowCreator(strainValues=self.strainValues, baseGeom=self.baseGeom, creator=self.creator)
+		return StressStrainWorkflowCreator(strainValues=self.strainValues, baseGeom=self.baseGeom, creator=self.creator, eType=self.eType)
 
 
 	def _getStressStrainFlowsFromStrains(self, strains):
@@ -61,6 +62,7 @@ class StressStrainWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate
 	registeredKwargs.add("baseGeom")
 	registeredKwargs.add("creator")
 	registeredKwargs.add("workFolder")
+	registeredKwargs.add("eType")
 
 	def _createFromSelf(self):
 		allGeoms = self._getGeomList()
@@ -69,7 +71,7 @@ class StressStrainWorkflowCreator(baseCreator.CreatorWithResetableKwargsTemplate
 		for geom,fileName in it.zip_longest(allGeoms,allFileNames):
 			calcObjs.append( self.creator.create(fileName=fileName, geom=geom, workFolder=self.workFolder) )
 
-		return StressStrainWorkflow(calcObjs, self.strainValues, self.strain)
+		return StressStrainWorkflow(calcObjs, self.strainValues, self.strain, eType=self.eType)
 
 
 	def _getGeomList(self):
@@ -192,14 +194,14 @@ class StressStrainWorkflow(baseFlow.BaseLabelledWorkflow):
 			calcObjs: (iter of CalcMethod objects) Each of thes objects represents a single point energy calculation
 			strainCoeffs: (iter of float) Each represents the strain applied to the eqm. geom. Length should be the same as calcObjs, and the ordering of values should be linked
 			strain: (CrystalStrain object) This contains information on the unit-strain (i.e. the strain applied if strainCoeff=1.0)
-			eType: (Str) Type of energy we want; Corresponds to attributes on plato_pylib Energies object. Default is total electronic energy
+			eType: (Str) Type of energy we want; Corresponds to attributes on plato_pylib Energies object. Default is total electronic energy ("electronicTotalE")
 			
 	
 		"""
 		self.calcObjs = list(calcObjs)
 		self.strainCoeffs = list(strainCoeffs)
 		self.strain = strain
-		self.eType = eType
+		self.eType = "electronicTotalE" if eType is None else eType
 		self._output = [ types.SimpleNamespace( **{k:None for k in self.namespaceAttrs[0]} ) ]
 		self._writeInpFiles()
 

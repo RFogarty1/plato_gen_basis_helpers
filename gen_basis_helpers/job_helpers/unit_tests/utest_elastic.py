@@ -19,6 +19,7 @@ class TestStandardInputFactory(unittest.TestCase):
 		self.baseGeom = mock.Mock()
 		self.creator = mock.Mock()
 		self.eleKey, self.structKey, self.methodKey = mock.Mock(), mock.Mock(), mock.Mock()
+		self.eType = None
 		self.strainValues = mock.Mock()
 		self.createTestObjs()
 
@@ -26,12 +27,12 @@ class TestStandardInputFactory(unittest.TestCase):
 		self.testObjA = tCode.HcpElasticStandardInputCreator(baseGeom=self.baseGeom, creator=self.creator,
 		                                                     strainValues=self.strainValues, eleKey=self.eleKey,
 		                                                     structKey=self.structKey, methodKey=self.methodKey,
-		                                                     baseWorkFolder=self.baseWorkFolder)
+		                                                     baseWorkFolder=self.baseWorkFolder, eType=self.eType)
 
 	@mock.patch("gen_basis_helpers.job_helpers.elastic_constants.elasticFlow.HcpElasticWorkflowCreator")
 	def testExpectedArgsPassedToWorkflowFactory(self, mockedWorkFlowFactory):
 		expArgDict = {"baseGeom":self.baseGeom, "strainValues":self.strainValues,
-		              "creator":self.creator}
+		              "creator":self.creator, "eType":self.eType}
 		expArgDict["workFolder"] = os.path.join(self.baseWorkFolder, self.extToWorkFolder)
 
 		self.testObjA.create()

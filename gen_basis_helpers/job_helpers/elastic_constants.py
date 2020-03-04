@@ -24,6 +24,7 @@ class HcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargsTempl
 	registeredKwargs.add("strainValues")
 	registeredKwargs.add("baseWorkFolder")
 	registeredKwargs.add("extToWorkFolder")
+	registeredKwargs.add("eType")
 
 	def _createFromSelf(self):
 		workFlow = self._createWorkFlow()
@@ -33,7 +34,7 @@ class HcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargsTempl
 	def _createWorkFlow(self):
 		factory = elasticFlow.HcpElasticWorkflowCreator(baseGeom=self.baseGeom, creator=self.creator,
 		                                                        strainValues=self.strainValues,
-		                                                        workFolder=self._outFolder)
+		                                                        workFolder=self._outFolder, eType=self.eType)
 		return factory.create()
 
 	def _createLabel(self):

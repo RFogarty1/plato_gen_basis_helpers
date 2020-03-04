@@ -20,12 +20,13 @@ class TestHcpElasticWorkflowFactory(unittest.TestCase):
 		self.baseGeom = mock.Mock()
 		self.strainValues = [-2,-1,0,1,2]
 		self.creator = mock.Mock()
+		self.eType = None
 		self.workFolder = "fake/folder"
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		self.testObjA = tCode.HcpElasticWorkflowCreator(baseGeom=self.baseGeom, strainValues=self.strainValues,
-		                                                creator=self.creator, workFolder=self.workFolder)
+		                                                creator=self.creator, workFolder=self.workFolder, eType=self.eType)
 
 	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.HcpElasticConstantsWorkflow")
 	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.getRequiredStrainObjsForStructType")
@@ -39,7 +40,7 @@ class TestHcpElasticWorkflowFactory(unittest.TestCase):
 		fakeFactory = "fake_factory"
 		mockedStressStrainFactory.side_effect = lambda *args,**kwargs: "fake_factory"
 		actFactory = self.testObjA._stressStrainBaseFactory
-		mockedStressStrainFactory.assert_called_once_with(baseGeom=self.baseGeom, creator=self.creator, strainValues=self.strainValues)
+		mockedStressStrainFactory.assert_called_once_with(baseGeom=self.baseGeom, creator=self.creator, strainValues=self.strainValues, eType=self.eType)
 		self.assertEqual(fakeFactory,actFactory)
 
 
@@ -68,12 +69,13 @@ class TestStressStrainWorkflowFactory(unittest.TestCase):
 		self.strainValues = [-2,-1,0,1,2]
 		self.strain = mock.Mock()
 		self.creator = mock.Mock()
+		self.eType = None
 		self.workFolder = "fake/folder/path"
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		self.testObjA = tCode.StressStrainWorkflowCreator(baseGeom=self.baseGeom, strainValues=self.strainValues,
-		                                                  workFolder=self.workFolder, creator=self.creator, strain=self.strain)
+		                                                  workFolder=self.workFolder, creator=self.creator, strain=self.strain, eType=self.eType)
 
 	@mock.patch("gen_basis_helpers.workflows.elastic_workflows.StressStrainWorkflowCreator._getGeomList")
 	def testCreatorCalledWithCorrectArgs(self, mockedGeomGetter):
@@ -105,7 +107,7 @@ class TestStressStrainWorkflowFactory(unittest.TestCase):
 		mockedGetGeoms.side_effect = lambda: fakeGeoms
 		expCalcObjs = fakeGeoms
 		actWorkflow = self.testObjA.create()
-		mockedFlow.assert_called_once_with(expCalcObjs, self.strainValues, self.strain)
+		mockedFlow.assert_called_once_with(expCalcObjs, self.strainValues, self.strain, eType=self.eType)
 		self.assertEqual(expWorkflow, actWorkflow)	
 
 

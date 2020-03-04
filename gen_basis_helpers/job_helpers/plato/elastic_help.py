@@ -18,6 +18,7 @@ class PlatoHcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargs
 	registeredKwargs.add("eleDatabase")
 	registeredKwargs.add("baseWorkFolder")
 	registeredKwargs.add("strainValues")
+	registeredKwargs.add("eType")
 
 	def _createFromSelf(self):
 		kwargDict = dict()
@@ -26,6 +27,7 @@ class PlatoHcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargs
 		kwargDict["strainValues"] = self.strainValues
 		kwargDict["eleKey"], kwargDict["methodKey"], kwargDict["structKey"] = [getattr(self,x) for x in ["eleKey","methodKey","structKey"]]
 		kwargDict["creator"] = self._getCreatorWithoutGeom()
+		kwargDict["eType"] = self.eType
 		factory = elasHelp.HcpElasticStandardInputCreator(**kwargDict)
 		return factory.create()
 
