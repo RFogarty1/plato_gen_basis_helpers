@@ -2,7 +2,6 @@ import abc
 
 from . import creator_resetable_kwargs as baseCreator
 
-#TODO: These actually have an optDict property, which is pretty important (though doesnt have to be a property, usually just attr)This should be clearer on the interface definition (i.e. here)
 class CalcMethod(abc.ABC):
 
 	@abc.abstractmethod
