@@ -15,7 +15,7 @@ class RefConvergenceDatabase():
 class IntegGridConvergencePureElements():
 	""" Class for holding integration grid convergence to use for pure elements in various structs """
 
-	def getPrimCellDftGrid(structKey):
+	def getPrimCellDftFFTGrid(structKey):
 		""" Get stored value of grid for primitive cell for dft plato program
 		
 		Args:

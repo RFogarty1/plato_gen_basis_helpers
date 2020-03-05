@@ -37,7 +37,7 @@ class PlatoHcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargs
 
 		#1) Get the integration grid spacing
 		if self.methodKey.startswith("dft_"):
-			gridVals = convDatabase.integGridVals.getPrimCellDftGrid(self.structKey)
+			gridVals = convDatabase.integGridVals.getPrimCellDftFFTGrid(self.structKey)
 		#tb1 doesnt need a grid, but it doenst hurt it
 		elif self.methodKey.startswith("dft2_") or self.methodKey.startswith("tb1_"):
 			gridVals = convDatabase.integGridVals.getPrimCellDft2AngularGrid(self.structKey)
