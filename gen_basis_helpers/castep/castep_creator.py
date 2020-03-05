@@ -3,8 +3,73 @@ import os
 import types
 
 from ..shared import method_objs as baseObjs
+from . import method_register as methodReg
 
 import plato_pylib.parseOther.parse_castep_files as parseCastep
+
+
+
+class CastepCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
+
+	registeredKwargs = set(baseObjs.CalcMethodFactoryBase.registeredKwargs)
+
+	registeredKwargs.add("methodStr")
+	registeredKwargs.add("pseudoPotDict") #{eleKey: name_of_pseudopotential}
+	registeredKwargs.add("symmetryGenerate")
+	registeredKwargs.add("cutoffEnergy")
+
+	#Key function
+	def _createFromSelf(self):
+		paramDict = self.paramFileDict
+		cellDict = self.cellFileDict
+		basePath = self.basePath
+		outObj = CastepCalcObj(basePath, paramDict, cellDict)
+		return outObj
+
+	def _createParamFileDict(self):
+		outDict = methodReg.createParamDictFromMethodStr(self.methodStr)
+		outDict["cut_off_energy"] = str(self.cutoffEnergy)
+		return outDict
+
+	def _createCellFileDict(self):
+		outDict = dict()
+		outDict.update( parseCastep.getCellGeomDictSectionFromUCell(self.geom) )
+		self._updateDictWithPseudoPotStr(outDict)
+		outDict["kpoint_mp_grid"] = " ".join([str(x) for x in self.kPts])
+		if self.symmetryGenerate:
+			outDict["symmetry_generate"] = ""
+		return outDict
+
+	def _updateDictWithPseudoPotStr(self,inpDict):
+		if self.pseudoPotDict is None:
+			return None #Castep can generate OTF pseudopotentials for all atoms in this case
+		outList = list()
+		for key,val in self.pseudoPotDict.items():
+			currStr = "{} {}".format(key.capitalize(),val)
+			outList.append(currStr)
+		outList = sorted(outList)
+		specPotVal = "\n".join(outList) + "\n"
+		inpDict.update({"species_pot":specPotVal})
+
+
+	@property
+	def paramFileDict(self):
+		""" Read-only dict that gets written to the .param file. Note modiying the returned dict has no effect on what gets written out
+		"""
+		return self._createParamFileDict()
+
+	@property
+	def cellFileDict(self):
+		""" Read-only dict that gets written to the .cell file. Note that modifying the returned dict has no effect on what gets written out
+		"""
+		return self._createCellFileDict()
+
+	@property
+	def basePath(self):
+		""" Read-only path to the base file (can be with or without extension; doesnt matter)
+		"""
+		return os.path.join(self.workFolder,self.fileName)
+
 
 class CastepCalcObj(baseObjs.CalcMethod):
 
