@@ -46,7 +46,7 @@ class TestCastepCreator(unittest.TestCase):
 		mockedParser.getCellGeomDictSectionFromUCell.side_effect = lambda x, **kwargs: { "lattice_cart"  : expLattCart,
 		                                                                                 "positions_frac": expPosFract }
 
-		expSpeciesPot = "{} {}\n{} {}\n".format("Mg", self.mgPot, "Zr", self.zrPot) #Alphabetical force to make it easier to test
+		expSpeciesPot = "{} {}\n{} {}".format("Mg", self.mgPot, "Zr", self.zrPot) #Alphabetical force to make it easier to test
 		expDict = {"kpoint_mp_grid":"{} {} {}".format(*self.kPts),
 		           "lattice_cart":expLattCart,
 		           "positions_frac":expPosFract,

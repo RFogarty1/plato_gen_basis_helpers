@@ -26,7 +26,7 @@ def _createTestCastepParamDict():
 	outDict["fix_occupancy"] = "false" #false means treat as metal; true means treat as insulator
 	outDict["run_time"] = "259100" #Maximum number of seconds to run the job for; it should exit cleanly after this
 	outDict["smearing_width"] = "0.0136 eV"
-	outDict["max_history_length"] = "20"
+	outDict["mix_history_length"] = "20"
 	outDict["calculate_stress"] = "false"
 	outDict["charge"] = "0"
 	outDict["num_dump_cycles"] = "0"

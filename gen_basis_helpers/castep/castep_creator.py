@@ -1,5 +1,6 @@
 
 import os
+import pathlib
 import types
 
 from ..shared import method_objs as baseObjs
@@ -48,7 +49,7 @@ class CastepCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
 			currStr = "{} {}".format(key.capitalize(),val)
 			outList.append(currStr)
 		outList = sorted(outList)
-		specPotVal = "\n".join(outList) + "\n"
+		specPotVal = "\n".join(outList)
 		inpDict.update({"species_pot":specPotVal})
 
 
@@ -87,6 +88,8 @@ class CastepCalcObj(baseObjs.CalcMethod):
 		self.cellFileDict = cellFileDict
 
 	def writeFile(self):
+		outDir = os.path.dirname(self.basePath)
+		pathlib.Path(outDir).mkdir(parents=True,exist_ok=True)
 		cellPath, paramPath = self.basePath+".cell", self.basePath+".param"
 		parseCastep.writeCastepParamFileFromDict(paramPath,self.paramFileDict)
 		parseCastep.writeCastepCellFileFromTokens(cellPath, self.cellFileDict)
