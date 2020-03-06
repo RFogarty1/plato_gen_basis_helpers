@@ -1,40 +1,18 @@
 
 """ Module is meant to be VERY specific to plato. """
 
-import os
-
 from .. import elastic_constants as elasHelp
 from ...plato import plato_creator as platoCreator
-from ...shared import creator_resetable_kwargs as baseCreator
 
+class PlatoHcpElasticStandardInputCreator(elasHelp.CodeSpecificStandardInputCreatorTemplate):
 
-class PlatoHcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargsTemplate):
-
-	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs)
-	registeredKwargs.add("eleKey")
-	registeredKwargs.add("methodKey")
-	registeredKwargs.add("structKey")
+	registeredKwargs = set(elasHelp.CodeSpecificStandardInputCreatorTemplate.registeredKwargs)
 	registeredKwargs.add("convDatabase")
-	registeredKwargs.add("eleDatabase")
-	registeredKwargs.add("baseWorkFolder")
-	registeredKwargs.add("strainValues")
-	registeredKwargs.add("eType")
 
-	def _createFromSelf(self):
-		kwargDict = dict()
-		kwargDict["baseWorkFolder"], kwargDict["extToWorkFolder"] = self._getBaseAndExtPaths()
-		kwargDict["baseGeom"] = getattr(self.eleDatabase, self.eleKey.capitalize()).getPlaneWaveGeom(self.structKey)
-		kwargDict["strainValues"] = self.strainValues
-		kwargDict["eleKey"], kwargDict["methodKey"], kwargDict["structKey"] = [getattr(self,x) for x in ["eleKey","methodKey","structKey"]]
-		kwargDict["creator"] = self._getCreatorWithoutGeom()
-		kwargDict["eType"] = self.eType
-		factory = elasHelp.HcpElasticStandardInputCreator(**kwargDict)
-		return factory.create()
 
 	def _getCreatorWithoutGeom(self):
 		convDatabase = getattr(self.convDatabase,self.eleKey.capitalize())
 		
-
 		#1) Get the integration grid spacing
 		if self.methodKey.startswith("dft_"):
 			gridVals = convDatabase.integGridVals.getPrimCellDftFFTGrid(self.structKey)
@@ -55,11 +33,6 @@ class PlatoHcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargs
 
 		return factory
 
-	def _getBaseAndExtPaths(self):
-		extPath = os.path.join("elastic",self.eleKey,"hcp",self.methodKey)
-		return self.baseWorkFolder, extPath
-
-
 	#Setting some properties purely for documentation reasons
 	@property
 	def convDatabase(self):
@@ -70,14 +43,5 @@ class PlatoHcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargs
 	def convDatabase(self,val):
 		self._convDatabase = val
 
-	@property
-	def eleDatabase(self):
-		""" RefElementalDataBase object """
-		return self._eleDatabase
-
-
-	@eleDatabase.setter
-	def eleDatabase(self,val):
-		self._eleDatabase = val	
 	
 

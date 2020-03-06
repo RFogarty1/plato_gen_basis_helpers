@@ -10,7 +10,7 @@ class TestHcpInputCreator(unittest.TestCase):
 	def setUp(self):
 		self.eleStr = "Mg"
 		self.methodStr = "dft2_some_method" #The methodStr actually tells me what grid to take so....
-		self.structStr = "some_struct"
+		self.structStr = "hcp"
 		self.convDatabase = mock.Mock()
 		self.eleDatabase = mock.Mock()
 		self.strainValues = [-1,0,1,2]

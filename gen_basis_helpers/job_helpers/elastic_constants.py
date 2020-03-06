@@ -10,6 +10,51 @@ from ..shared import calc_runners as calcRunners
 from ..shared import label_objs as labelHelp
 from ..workflows import elastic_workflows as elasticFlow
 
+#Note:Aspects of this tested within the plato version; since this was originally abstracted from that
+class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableKwargsTemplate):
+
+	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs)
+	registeredKwargs.add("eleKey")
+	registeredKwargs.add("methodKey")
+	registeredKwargs.add("structKey")
+	registeredKwargs.add("baseWorkFolder")
+	registeredKwargs.add("strainValues")
+	registeredKwargs.add("eType")
+	registeredKwargs.add("eleDatabase")
+
+
+	def _getBaseAndExtPaths(self):
+		extPath = os.path.join("elastic",self.eleKey,self.structKey,self.methodKey)
+		return self.baseWorkFolder, extPath
+
+	def _createFromSelf(self):
+		kwargDict = dict()
+		kwargDict["baseWorkFolder"], kwargDict["extToWorkFolder"] = self._getBaseAndExtPaths()
+		kwargDict["baseGeom"] = getattr(self.eleDatabase, self.eleKey.capitalize()).getPlaneWaveGeom(self.structKey)
+		kwargDict["strainValues"] = self.strainValues
+		kwargDict["eleKey"], kwargDict["methodKey"], kwargDict["structKey"] = [getattr(self,x) for x in ["eleKey","methodKey","structKey"]]
+		kwargDict["creator"] = self._getCreatorWithoutGeom()
+		kwargDict["eType"] = self.eType
+		factory = HcpElasticStandardInputCreator(**kwargDict)
+		return factory.create()
+
+	#This function needs to be overwritten when inheriting
+	def _getCreatorWithoutGeom(self):
+		raise NotImplementedError("")
+
+	@property
+	def eleDatabase(self):
+		""" RefElementalDataBase object """
+		return self._eleDatabase
+
+
+	@eleDatabase.setter
+	def eleDatabase(self,val):
+		self._eleDatabase = val	
+
+
+
+
 class HcpElasticStandardInputCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 	""" Class for creating standard input objects for calculating Hcp elastic constants
 
