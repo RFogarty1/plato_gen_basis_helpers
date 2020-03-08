@@ -69,7 +69,8 @@ class DataPlotterBase():
 	registeredKwargs.add("show")
 	registeredKwargs.add("legend")
 	registeredKwargs.add("dataLabels")
-
+	registeredKwargs.add("axHandle") #If none we create a new figure; else we just plot on the provided axis handle
+	registeredKwargs.add("data")
 
 	def __init__(self, **kwargs):
 		for key in self.registeredKwargs:
@@ -92,7 +93,8 @@ class DataPlotterBase():
 		return outDict
 
 
-	def createPlot(self, plotData, **kwargs):
+
+	def createPlot(self, plotData=None, **kwargs):
 		""" Takes data in plotData argument and creates a plot 
 		
 		Args:
@@ -103,12 +105,19 @@ class DataPlotterBase():
 		"""
 
 		with temporarilySetDataPlotterRegisteredAttrs(self,kwargs):
-	
-			toPlot = [np.array(x) for x in plotData]
-	
-			outFig = plt.figure()
-			outFig.add_subplot(111)
-	
+
+			if plotData is not None:	
+				toPlot = [np.array(x) for x in plotData]
+			else:
+				toPlot = [np.array(x) for x in self.data]
+
+			if self.axHandle is None:
+				outFig = plt.figure()
+				outFig.add_subplot(111)
+			else:
+				outFig = None
+				plt.sca(self.axHandle)	
+
 			plotFunct = self._getPlotFunction()
 
 
@@ -179,7 +188,7 @@ class DataPlotterStandard(DataPlotterBase):
 			self.mapPlotDataFunct = lambda x: x
 	
 
-	def createPlot(self, plotData, **kwargs):
+	def createPlot(self, plotData=None, **kwargs):
 		plotData = self.mapPlotDataFunct(plotData)
 		outFig = super().createPlot(plotData, **kwargs)
 
@@ -196,8 +205,7 @@ class DataPlotterStandard(DataPlotterBase):
 			if self.legend:
 				plt.legend() 
 
-		return outFig
-
+		return outFig 
 
 	#TODO: Refactor to remove duplication with the change line colors function
 	def _changeLineStylesIfNeeded(self, outFig, **kwargs):
