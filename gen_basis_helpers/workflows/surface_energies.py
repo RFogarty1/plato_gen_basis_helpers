@@ -22,12 +22,23 @@ class SurfaceEnergyWorkflow(baseFlow.BaseLabelledWorkflow):
 		self.surfaceAreaFromUnitCell = surfaceAreaFromUnitCell
 		self.output = [types.SimpleNamespace()]
 
+		self._writeInpFiles()
+
+	def _writeInpFiles(self):
+		for x in [self.bulkCalcObj,self.surfCalcObj]:
+			x.writeFile()
+
 	def run(self):
 		parsedFile = self.surfCalcObj.parsedFile
 		numbSurfaceAtoms = parsedFile.numbAtoms
 		uCell = parsedFile.unitCell
 		surfaceArea = self.surfaceAreaFromUnitCell(uCell)
 		self.output[0].surfaceEnergy = (numbSurfaceAtoms/(2*surfaceArea)) * (self._energyPerAtomSurface - self._energyPerAtomBulk)
+
+	@property
+	def preRunShellComms(self):
+		return [self.bulkCalcObj.runComm,self.surfCalcObj.runComm]
+
 
 	@property
 	def namespaceAttrs(self):
