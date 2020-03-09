@@ -31,7 +31,7 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 		self.applyNLayersToBulk = False
 
 	def _createFromSelf(self):
-		bulkCalcObj = self._getBulKCalcObj()
+		bulkCalcObj = self._getBulkCalcObj()
 		surfCalcObj = self._getSurfaceCalcObj()
 		surfAreaFromUnitCellFunct = surfFlow.SurfaceAreaFromUnitCellFunct(self._getSurfaceObjClass())
 		workflow = surfFlow.SurfaceEnergyWorkflow(surfCalcObj,bulkCalcObj,surfAreaFromUnitCellFunct)
@@ -72,7 +72,7 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 
 	@property
 	def _bulkCell(self):
-		baseBulkCell = supCell.superCellFromUCell( self.baseGeom, self.cellDims )
+		baseBulkCell = self._bulkCellNoSurfaceLayers
 		if self.applyNLayersToBulk:
 			surfClass = self._getSurfaceObjClass() #TODO: Need to switch this to a factory soon, to unify interface between diff surfaces
 			lenVac = 0.0
@@ -83,10 +83,15 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 
 	@property
 	def _surfaceCell(self):
-		bulkCell = self._bulkCell
+		bulkCell = self._bulkCellNoSurfaceLayers
 		surfClass = self._getSurfaceObjClass() #TODO: Need to switch this to a factory soon, to unify interface between diff surfaces
 		surfUCell = surfClass(bulkCell,self.nLayers,self.lenVac).unitCell
 		return surfUCell
+
+	@property
+	def _bulkCellNoSurfaceLayers(self):
+		return supCell.superCellFromUCell( self.baseGeom, self.cellDims )
+
 
 	@property
 	def _surfKPts(self):

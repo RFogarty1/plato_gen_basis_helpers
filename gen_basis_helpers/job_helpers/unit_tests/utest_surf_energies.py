@@ -58,7 +58,7 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 			self.testObjA._getSurfaceObjClass()
 
 	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.CodeSpecificStandardInputCreatorTemplate._getSurfaceObjClass")
-	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.CodeSpecificStandardInputCreatorTemplate._bulkCell",new_callable=mock.PropertyMock)
+	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.CodeSpecificStandardInputCreatorTemplate._bulkCellNoSurfaceLayers",new_callable=mock.PropertyMock)
 	def testCreatesSurfaceUnitCell(self, mockedBulkGetter, mockedSurfClassGetter):
 		mockSurfClass = mock.Mock()
 		expBaseCell = mock.Mock()
