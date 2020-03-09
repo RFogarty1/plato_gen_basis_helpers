@@ -166,7 +166,8 @@ class TestStandardInputCreator(unittest.TestCase):
 		outCreator = self.testObjA._getCreatorObject()
 
 		expKwargDict = {"methodStr":self.cp2kMethodStr, "addedMOs":self.addedMOs, "basisObjs":fakeBasisObjs,
-		                "folderPath":self.workFolder, "absGridCutoff":self.absGridConv, "relGridCutoff":self.relGridConv}
+		                "folderPath":self.workFolder, "absGridCutoff":self.absGridConv, "relGridCutoff":self.relGridConv,
+		                "workFolder":self.workFolder} #workFolder and folderPath are aliases for the same thing
 
 		mockedCreator.assert_called_once_with(**expKwargDict)	
 

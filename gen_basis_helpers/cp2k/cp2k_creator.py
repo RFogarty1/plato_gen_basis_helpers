@@ -1,6 +1,7 @@
 
 """ Purpose of this module is to make it simpler to create CP2KCalcObj objects """
 
+import contextlib
 import os
 
 from . import method_register as methRegister
@@ -47,7 +48,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("addedMOs")
 	registeredKwargs.add("geom")
 	registeredKwargs.add("basisObjs")
-	registeredKwargs.add("folderPath")
+	registeredKwargs.add("workFolder")
+	registeredKwargs.add("folderPath") #DEPRECATED KWARG. workFolder should be used instead to be concsistent with CalcMethodFactoryBase
 	registeredKwargs.add("fileName")
 	registeredKwargs.add("absGridCutoff")
 	registeredKwargs.add("relGridCutoff")
@@ -76,6 +78,17 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 				setattr(self,key,kwargs[key])
 			else:
 				raise KeyError("{} is an invalid keyword.\n Available kwargs are {}".format(key , self.registeredKwargs))
+
+		#Do a check for workFolder/folderPath. If one is None but the other is not then we need to NOT depend on arbitrarily argument ordering
+		outKwargs = {k:v for k,v in kwargs.items()}
+		outKwargs["workFolder"] = outKwargs.get("workFolder", None)
+		outKwargs["folderPath"] = outKwargs.get("folderPath", None)
+		if (outKwargs["workFolder"] is None) and (outKwargs["folderPath"] is not None):
+			self.workFolder = outKwargs["folderPath"]
+		elif (outKwargs["workFolder"] is not None) and (outKwargs["folderPath"] is None):
+			self.workFolder = outKwargs["workFolder"]
+		else:
+			pass #If both are None, then obviously do nothing
 
 
 	@property
@@ -114,6 +127,16 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	def basisObjs(self,val):
 		self._basisObj = val
 
+
+	#These need properties so that the old "folderPath" kwarg and the new "workFolder" kwargs are linked
+	@property
+	def folderPath(self):
+		""" Now just an alias for workFolder; which is the attr whcih SHOULD actually be set """
+		return self.workFolder #The new kwarg
+
+	@folderPath.setter
+	def folderPath(self,val):
+		self.workFolder = val
 
 	def _ensureReqArgsAllSet(self):
 		for key in self.requiredArgsToBeSet:

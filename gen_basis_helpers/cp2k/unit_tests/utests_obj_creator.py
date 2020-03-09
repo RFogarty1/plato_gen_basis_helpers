@@ -18,11 +18,12 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.methodStr = "cp2k_test_object"
 		self.createTestObjs()
 
+	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
 	def createTestObjs(self):
 		self.testCreatorObjA = tCode.CP2KCalcObjFactoryStandard(methodStr=self.methodStr, kPts=self.kPts,
 		                                                        addedMOs=self.addedMOs, geom=self.geom,
 		                                                        basisObjs=self.basisObj, folderPath=self.workFolder,
-		                                                        fileName=self.fileName)
+		                                                        fileName=self.fileName, workFolder=None)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -75,11 +76,33 @@ class TestStandardCreationObj(unittest.TestCase):
 
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.calcObjs.os.path.abspath")
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
-	def testOutputFileSetProperly(self, mockedFileHelpers, absPathMock):
+	def testOutputFileSetProperlyBySettingFolderPath(self, mockedFileHelpers, absPathMock):
 		absPathMock.side_effect = lambda x: x
 		outObj = self.testCreatorObjA.create()
 		expBasePath = os.path.join( self.workFolder, self.fileName ) #NOTE: This should be path WITHOUT the file extension
 		actBasePath = outObj.basePath
 		self.assertEqual(expBasePath, actBasePath)
 
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.calcObjs.os.path.abspath")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
+	def testOutputFileSetProperlyBySettingWorkfolder(self, mockedFileHelpers, absPathMock):
+		absPathMock.side_effect = lambda x: x
+		testFolderPath = "fake_folder_b"
+		self.assertNotEqual(testFolderPath, self.testCreatorObjA.folderPath)
+		self.testCreatorObjA.workFolder = testFolderPath
+		outObj = self.testCreatorObjA.create()
+		expBasePath = os.path.join( testFolderPath, self.fileName)
+		actBasePath = outObj.basePath
+		self.assertEqual(expBasePath, actBasePath)
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.calcObjs.os.path.abspath")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
+	def testOutputFileSetProperlyBySettingWorkfolderAtCreateTime(self, mockedFileHelpers, absPathMock):
+		absPathMock.side_effect = lambda x: x
+		testFolderPath = "fake_folder_b"
+		self.assertNotEqual(testFolderPath, self.testCreatorObjA.folderPath)
+		outObj = self.testCreatorObjA.create(workFolder=testFolderPath) 
+		expBasePath = os.path.join( testFolderPath, self.fileName)
+		actBasePath = outObj.basePath
+		self.assertEqual(expBasePath, actBasePath)
 
