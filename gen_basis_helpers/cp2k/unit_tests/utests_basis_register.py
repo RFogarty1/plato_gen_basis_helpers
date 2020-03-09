@@ -1,4 +1,6 @@
 
+
+import itertools as it
 import unittest
 import unittest.mock as mock
 
@@ -22,5 +24,15 @@ class TestRegisteringBasisStrs(unittest.TestCase):
 		expObj.element = "Mg"
 		actObj = tCode.createCP2KBasisObjFromEleAndBasisStr("Mg", "utests-basis")
 		self.assertEqual(expObj,actObj)
+
+	@mock.patch("gen_basis_helpers.cp2k.basis_register.createCP2KBasisObjFromEleAndBasisStr")
+	def testCreateFromStrDictMakesExpectedCalls(self, mockedBasisObjGetter):
+		testEleKeys =   ["Mg",      "H"]
+		testBasisKeys = ["basis_a","basis_b"]
+		testDict = {k:v for k,v in it.zip_longest(testEleKeys, testBasisKeys)}
+		tCode.createCP2KBasisObjsFromStrDict(testDict)
+		for k,v in testDict.items():
+			mockedBasisObjGetter.assert_any_call(k,v)
+
 
 

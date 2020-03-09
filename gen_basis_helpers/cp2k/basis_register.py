@@ -42,6 +42,26 @@ def registerCP2KBasisCreatorToMethodStr(creator, basisStr, overwrite=False):
 
 
 
+
+def createCP2KBasisObjsFromStrDict(strDict):
+	""" Creates an iter of CP2KBasis objects for a dictionary input 
+	
+	Args:
+		strDict:(dict) keys are element strs (e.g. "H","Mg") while values are keys to specific basis set/pseudopot. combination
+			
+	Returns
+		basisObjs: (iter of CP2KBasisObjStandard) Each entry represents the basis-set information for one element
+	
+	Raises:
+		KeyError: If any values in strDict arent valid basis set identifiers. See getRegisteredCP2KObjCreatorStrings for available options
+	"""
+	outList = list()
+	for key in strDict.keys():
+		currBasisObj = createCP2KBasisObjFromEleAndBasisStr(key, strDict[key])
+		outList.append( currBasisObj )
+	return outList
+
+
 def createCP2KBasisObjFromEleAndBasisStr(eleStr, basisStr):
 	""" Creates a CP2KBasis object when given an element symbol and string represnting basis set/pseudopot to use. See getRegisteredCP2KObjCreatorStrings for available options
 	
@@ -59,4 +79,6 @@ def createCP2KBasisObjFromEleAndBasisStr(eleStr, basisStr):
 	outObj.element = eleStr.capitalize()
 
 	return outObj
+
+
 
