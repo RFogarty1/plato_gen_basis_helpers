@@ -8,19 +8,24 @@ from . import multi_plotters_base as baseObjs
 class RectangularPlotGrid(baseObjs.MultiPlotGridBase):
 	""" Class representing a rectangular grid of plots
 	"""
-	def __init__(self, nCols, nPlots):
+	def __init__(self, nCols, nPlots, figSize=None):
 		""" Initializer
 		
 		Args:
 			nCols: (int) Number of columns per row
 			nPlots: (int) Total number of plots required
+			figSize: (tuple, 2 element) Argument passed to plt.figure determining its size
 		"""
 		self.nCols = nCols
 		self.nPlots = nPlots
+		self.figSize = figSize
 
 
 	def create(self):
-		outFig = plt.figure(constrained_layout=True)
+		if self.figSize is not None:
+			outFig = plt.figure(constrained_layout=True, figsize=self.figSize)
+		else:
+			outFig = plt.figure(constrained_layout=True)
 		gridSpec = outFig.add_gridspec(*self.dims)
 		outAxes = self._addSubPlotsToFigure(outFig,gridSpec)
 		return (outFig,outAxes)
@@ -29,10 +34,14 @@ class RectangularPlotGrid(baseObjs.MultiPlotGridBase):
 	def _addSubPlotsToFigure(self, figHandle, gridSpec):
 		allAxes = list()
 		nRows, nCols = self.dims
+		nPlotted = 0
 		for rIdx in range(nRows):
 			for cIdx in range(nCols):
+				if (nPlotted == self.nPlots):
+					break
 				currAxis = figHandle.add_subplot(gridSpec[rIdx,cIdx])
 				allAxes.append(currAxis)
+				nPlotted += 1
 		return allAxes
 
 	@property

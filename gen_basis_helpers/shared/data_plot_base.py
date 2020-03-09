@@ -234,28 +234,29 @@ class DataPlotterStandard(DataPlotterBase):
 
 		self.changeLineProp(outFig, "lineMarkerSizes", lineMarkerSizeModFunct, **kwargs)
 
-	def changeLineProp(self, outFig, propName, propSetFunct, inclLegend=True,**kwargs):
+	def changeLineProp(self, outFig, propName, propSetFunct, inclLegend=True, **kwargs):
 		""" Changes a property for each line in the plot based on the setter function
 		
 		Args:
-			outFig: Plot of interest (assumed to have 1 axis)
+			outFig: Plot of interest (assumed to have 1 axis). This is ONLY used as a method of obtaining the axis of interest, using outFig.get_axes()[0]. If self.axHandle is set then it is used in preference to outFig[Using self.axHandle is RECOMMENDED]. 
 			propName: Name of property as stored on dataPlotter (e.g. lineStyles). Used to extract values we want to set lines to
 			propSetFunct: Function with interface (inpLine, value). Used to set individual lines to individual values (e.g. the style of 1 line)
 			kwargs: Values to temporarily set on object (must be registered Kwargs) 
 				 
 		"""
 		with misc.fragile(temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
+			axHandle = kwargs.get("axHandle",None) if kwargs.get("axHandle",None) is not None else outFig.get_axes()[0]
 			usedProp = getattr(self,propName)
 			if usedProp is None:
 				raise misc.fragile.Break
-			dataLines = outFig.get_axes()[0].get_lines()
+			dataLines = axHandle.get_lines()
 			linePropVals = it.cycle( usedProp )
 			for idx, (handle, propVal) in enumerate( zip(dataLines,linePropVals) ):
 				propSetFunct(handle,propVal)
 
 			#Need to modify the property for the line in the legend(assuming one is present)
 			if self.legend and inclLegend:
-				legLineHandles = outFig.get_axes()[0].get_legend().get_lines()
+				legLineHandles = axHandle.get_legend().get_lines()
 				propSetFunct( legLineHandles[idx], propVal )
 
 
