@@ -53,8 +53,21 @@ class SurfaceAreaFromUnitCellFunct():
 	#Create surface from surfObjClass with with vacuum and [1,1,1] dimensions
 	#Then its trivial to get the surface area from it	
 	def __init__(self,surfObjClass):
-		raise NotImplementedError("")
+		""" Initializer
+		
+		Args:
+			surfObjClass: (BaseSurface class, NOT INSTANCE) This has the ability to map a unitCell into a surface object. This will likely need to include any rotations required such that the surface is along the z-dir (though at time of writing only the hcp0001 class is implemented, and this doesnt require any rotating)
+		
+		Note the callable function takes a plato_pylib unitCell object as its sole argument.
+
+		I'm also assuming the surface object initialiser has the signature (self,bulkUCell,nLaters,lenVac)
+		
+		"""
+		self.surfClass = surfObjClass
 
 
 	def __call__(self, uCellObj):
-		raise NotImplementedError("")
+		nLayers, lenVac = 1,0
+		surfaceObj = self.surfClass(uCellObj, nLayers, lenVac)
+		return surfaceObj.surfaceArea
+
