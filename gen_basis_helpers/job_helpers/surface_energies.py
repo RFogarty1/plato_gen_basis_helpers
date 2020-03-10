@@ -1,4 +1,5 @@
 
+import types
 
 import plato_pylib.utils.supercell as supCell
 
@@ -58,7 +59,6 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 		outCreator.fileName = "bulk_cell_for_n{}".format(self.nLayers)
 		return outCreator.create()
 
-
 	def _getSurfaceObjClass(self):
 		if self.surfType == "hcp0001":
 			return surfGetterHelp.Hcp0001Surface
@@ -112,3 +112,25 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	def applyNLayersToBulk(self,val):
 		self._applyNLayersToBulk = val if val is not None else False
 
+
+
+class MapSurfaceEnergiesToStandardFormat():
+	"""Callable class used to transform surface energy workflow output into more useful format
+
+	"""
+
+	def __init__(self):
+		pass
+
+	def _getTableData(self,stdInputObj):
+		assert len(stdInputObj.label)==1
+		assert len(stdInputObj.workflow.output)==1
+		methKey = stdInputObj.label[0].methodKey
+		surfEnergy = "{:.4f}".format(stdInputObj.workflow.output[0].surfaceEnergy)
+		return [methKey, surfEnergy]
+
+	def __call__(self, stdInputObj):
+		stdInputObj.workflow.run()
+		output = types.SimpleNamespace(tableData=None)
+		output.tableData = self._getTableData(stdInputObj)
+		return output

@@ -1,11 +1,15 @@
 
 import os
+import types
 
 import unittest
 import unittest.mock as mock
 
 import gen_basis_helpers.job_helpers.surface_energies as tCode
 import gen_basis_helpers.shared.label_objs as labelHelp
+import gen_basis_helpers.shared.calc_runners as calcRunners
+
+
 
 class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 
@@ -90,3 +94,34 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 		self.assertEqual(expLabel,actLabel)
 
 
+
+
+class TestMapFunction(unittest.TestCase):
+
+	def setUp(self):
+		self.surfEnergy = 20
+		self.methodStr = "methA"
+		self.eleKey = "ele"
+		self.structKey = "hcp0001"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testFunctA = tCode.MapSurfaceEnergiesToStandardFormat()
+		self.testWorkflowA = mock.Mock()
+		self.testWorkflowA.output = [types.SimpleNamespace(surfaceEnergy=self.surfEnergy)]
+		testLabelA = labelHelp.StandardLabel( eleKey=self.eleKey, methodKey=self.methodStr, structKey=self.structKey )
+		self.standardInpObjA = calcRunners.StandardInputObj(self.testWorkflowA, testLabelA) #Dont need to set map funct
+
+	def runTestFunct(self):
+		return self.testFunctA(self.standardInpObjA)
+
+	def testRunMethodCalled(self):
+		self.runTestFunct()
+		self.testWorkflowA.run.assert_called_once_with()
+
+	def testTableDataOutput(self):
+		self.runTestFunct()
+		expTableData = [self.methodStr, "{:.4f}".format(self.surfEnergy)]
+		actOutput = self.testFunctA(self.standardInpObjA)
+		actTableData = actOutput.tableData
+		self.assertEqual(expTableData,actTableData)
