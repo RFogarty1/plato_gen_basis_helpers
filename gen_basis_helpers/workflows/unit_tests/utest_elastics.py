@@ -177,8 +177,6 @@ class TestHcpElasticWorkflow(unittest.TestCase):
 		actConstants = self.testObjA.output[0].elasticConsts
 
 
-		print("DEBUG\n\n\n\n")
-		print("actConstants = {}".format(actConstants))
 		for key in expConstants.keys():
 			self.assertAlmostEqual( expConstants[key], actConstants[key] )
 
