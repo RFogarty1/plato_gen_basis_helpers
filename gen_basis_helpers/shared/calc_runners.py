@@ -42,6 +42,7 @@ class BaseStandardOutputObj():
 
 class StandardInputObj(BaseStandardInputObj):
 
+	@misc.getObjectsWithComponentsInstanceWrapper(isComposite=False)
 	def __init__(self, workflow, label, mapFunction=None):
 		""" Initializer to create a Standard Input Object
 		
@@ -113,6 +114,7 @@ class StandardInputObjComposite(BaseStandardInputObj):
 	runComms = misc.StandardComponentDescriptor("runComms")
 	label = misc.StandardComponentDescriptor("label")
 
+	@misc.getObjectsWithComponentsInstanceWrapper(isComposite=True)
 	def __init__(self, objs):
 		self.objs = list(objs)
 
