@@ -50,3 +50,11 @@ class TestSurfaceEnergyWorkflow(unittest.TestCase):
 		expVal = -(1/3)
 		actVal = self.testObjA.output[0].surfaceEnergy
 		self.assertAlmostEqual(expVal,actVal)
+
+	def testRunGivesExpectedEPerAtomVals(self):
+		self.testObjA.run()
+		expSurfEPerAtom, expBulkEPerAtom = self.surfEnergy/self.surfNumbAtoms, self.bulkEnergy/self.bulkNumbAtoms
+		actSurfEPerAtom, actBulkEPerAtom = self.testObjA.output[0].surfEPerAtom, self.testObjA.output[0].bulkEPerAtom
+		self.assertAlmostEqual(expSurfEPerAtom, actSurfEPerAtom)
+		self.assertAlmostEqual(expBulkEPerAtom, actBulkEPerAtom)
+

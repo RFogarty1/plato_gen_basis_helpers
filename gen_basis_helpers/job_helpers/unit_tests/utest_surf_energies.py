@@ -100,6 +100,8 @@ class TestMapFunction(unittest.TestCase):
 
 	def setUp(self):
 		self.surfEnergy = 20
+		self.ePerAtomSurf = 12
+		self.ePerAtomBulk = 13
 		self.methodStr = "methA"
 		self.eleKey = "ele"
 		self.structKey = "hcp0001"
@@ -108,7 +110,8 @@ class TestMapFunction(unittest.TestCase):
 	def createTestObjs(self):
 		self.testFunctA = tCode.MapSurfaceEnergiesToStandardFormat()
 		self.testWorkflowA = mock.Mock()
-		self.testWorkflowA.output = [types.SimpleNamespace(surfaceEnergy=self.surfEnergy)]
+		self.testWorkflowA.output = [types.SimpleNamespace(surfaceEnergy=self.surfEnergy,surfEPerAtom=self.ePerAtomSurf,
+		                                                   bulkEPerAtom=self.ePerAtomBulk)]
 		testLabelA = labelHelp.StandardLabel( eleKey=self.eleKey, methodKey=self.methodStr, structKey=self.structKey )
 		self.standardInpObjA = calcRunners.StandardInputObj(self.testWorkflowA, testLabelA) #Dont need to set map funct
 
@@ -125,3 +128,14 @@ class TestMapFunction(unittest.TestCase):
 		actOutput = self.testFunctA(self.standardInpObjA)
 		actTableData = actOutput.tableData
 		self.assertEqual(expTableData,actTableData)
+
+	def testTableWithEPerAtomOutput(self):
+		self.runTestFunct()
+		expTableData = [self.methodStr, "{:.4f}".format(self.surfEnergy),
+		                "{:.3g}".format(self.ePerAtomBulk), "{:.3g}".format(self.ePerAtomSurf)]
+		actOutput = self.testFunctA(self.standardInpObjA)
+		actTableData = actOutput.tableWithEPerAtomVals
+		self.assertEqual(expTableData, actTableData)
+
+
+

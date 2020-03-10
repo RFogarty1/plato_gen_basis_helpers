@@ -34,6 +34,8 @@ class SurfaceEnergyWorkflow(baseFlow.BaseLabelledWorkflow):
 		uCell = parsedFile.unitCell
 		surfaceArea = self.surfaceAreaFromUnitCell(uCell)
 		self.output[0].surfaceEnergy = (numbSurfaceAtoms/(2*surfaceArea)) * (self._energyPerAtomSurface - self._energyPerAtomBulk)
+		self.output[0].surfEPerAtom = self._energyPerAtomSurface
+		self.output[0].bulkEPerAtom = self._energyPerAtomBulk
 
 	@property
 	def preRunShellComms(self):
@@ -42,7 +44,7 @@ class SurfaceEnergyWorkflow(baseFlow.BaseLabelledWorkflow):
 
 	@property
 	def namespaceAttrs(self):
-		return [ ["surfaceEnergy"] ]	
+		return [ ["surfaceEnergy","surfEPerAtom","bulkEPerAtom"] ]	
 	
 	@property
 	def _energyPerAtomBulk(self):

@@ -119,8 +119,8 @@ class MapSurfaceEnergiesToStandardFormat():
 
 	"""
 
-	def __init__(self):
-		pass
+	def __init__(self, ePerAtomFmtStr="{:.3g}"):
+		self.ePerAtomFmtStr = ePerAtomFmtStr
 
 	def _getTableData(self,stdInputObj):
 		assert len(stdInputObj.label)==1
@@ -129,8 +129,25 @@ class MapSurfaceEnergiesToStandardFormat():
 		surfEnergy = "{:.4f}".format(stdInputObj.workflow.output[0].surfaceEnergy)
 		return [methKey, surfEnergy]
 
+	def _getTableDataWithEPerAtom(self,stdInputObj):
+		outTable = self._getTableData(stdInputObj)
+		ePerAtomBulk = stdInputObj.workflow.output[0].bulkEPerAtom
+		ePerAtomSurf = stdInputObj.workflow.output[0].surfEPerAtom
+		outTable += [self.ePerAtomFmtStr.format(x) for x in [ePerAtomBulk,ePerAtomSurf]]  
+		return outTable	
+
+
+	def _getTableHeadings(self):
+		return ["Basis Set", "Surface Energy $eV a_{0}^{-2}$"]
+
+	def _getTableWithEPerAtomHeadings(self):
+		return ["Basis Set", "Surface Energy $eV a_{0}^{-2}$", "E per atom (bulk, eV)", "E per atom (surface, eV)",]
+
 	def __call__(self, stdInputObj):
 		stdInputObj.workflow.run()
 		output = types.SimpleNamespace(tableData=None)
 		output.tableData = self._getTableData(stdInputObj)
+		output.tableHeaders = self._getTableHeadings()
+		output.tableWithEPerAtomVals = self._getTableDataWithEPerAtom(stdInputObj)
+		output.tableHeadersWithEPerAtom = self._getTableWithEPerAtomHeadings()
 		return output
