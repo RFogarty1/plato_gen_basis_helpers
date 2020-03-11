@@ -1,10 +1,12 @@
 
 import os
+import types
 import unittest
 import unittest.mock as mock
 
 import gen_basis_helpers.job_helpers.self_defects as tCode
 
+import gen_basis_helpers.shared.calc_runners as calcRunners
 import gen_basis_helpers.shared.label_objs as labelHelp
 
 class TestSelfDefectsFactory(unittest.TestCase):
@@ -79,4 +81,36 @@ class TestSelfDefectsFactory(unittest.TestCase):
 		mockedStandardInput.assert_called_once_with(expWorkflow, expLabel)
 
 
+class TestMapFunction(unittest.TestCase):
+
+	def setUp(self):
+		self.eleKey = "fake_ele"
+		self.structKey = "fake_struct"
+		self.methodKey = "fake_method"
+		self.defectEnergyA = 20
+		self.ePerAtomDefectA = 30
+		self.ePerAtomBulkA = 40
+		self.createTestObjs()
+
+	def createTestObjs(self):
+
+		labelA = labelHelp.StandardLabel( eleKey=self.eleKey, methodKey=self.methodKey, structKey=self.structKey )
+		outputObj = types.SimpleNamespace(defectE=self.defectEnergyA,bulkEPerAtom=self.ePerAtomBulkA,
+		                                       defectEPerAtom=self.ePerAtomDefectA, run=mock.Mock())
+		self.workflowA = types.SimpleNamespace( output=[outputObj], run=mock.Mock() )
+		self.testObjA = tCode.MapSelfDefectWorkflowOutputToUsefulFormatStandard()
+		self.standardInpObjA = calcRunners.StandardInputObj( self.workflowA, labelA )
+
+	def runTestFunct(self):
+		return self.testObjA( self.standardInpObjA )
+
+	def testRunMethodIsCalled(self):
+		self.runTestFunct()
+		self.workflowA.run.assert_called_once_with()
+
+	def testExpTableDataGivenIncludingEPerAtoms(self):
+		expData = [self.methodKey] + ["{:.2f}".format(x) for x in [self.defectEnergyA, self.ePerAtomBulkA, self.ePerAtomDefectA]]
+		actOutput = self.runTestFunct()
+		actData = actOutput.tableWithEPerAtomVals
+		self.assertEqual(expData, actData)
 

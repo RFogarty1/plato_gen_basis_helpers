@@ -1,5 +1,6 @@
 
 import os
+import types
 
 from ..shared import calc_runners as calcRunners
 from ..shared import creator_resetable_kwargs as baseCreator
@@ -58,3 +59,49 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	@property
 	def outFolder(self):
 		return os.path.join(self.baseWorkFolder, self.eleKey, self.structKey, self.methodKey)
+
+
+
+class MapSelfDefectWorkflowOutputToUsefulFormatStandard():
+	"""Callable class used to transform SelfPointDefectWorkflow output into a better format for tabulating
+
+		The callable interface takes a non-composite StandardInput object as the sole argument
+	"""
+
+	def __init__(self, defectEFormat="{:.2f}", ePerAtomFmtStr="{:.2f}"):
+		self.defectEFormat = defectEFormat
+		self.ePerAtomFmtStr = ePerAtomFmtStr
+
+	def _getTableData(self, stdInputObj):
+		methKey = stdInputObj.label[0].methodKey
+		defectE = self.defectEFormat.format(stdInputObj.workflow.output[0].defectE)
+		return [methKey, defectE]
+
+	def _getTableDataWithEPerAtom(self,stdInputObj):
+		outTable = self._getTableData(stdInputObj)
+		ePerAtomBulk = stdInputObj.workflow.output[0].bulkEPerAtom
+		ePerAtomDefect = stdInputObj.workflow.output[0].defectEPerAtom
+		outTable += [self.ePerAtomFmtStr.format(x) for x in [ePerAtomBulk,ePerAtomDefect]]  
+		return outTable	
+
+	def _getTableHeadings(self):
+		return ["Basis Set", "Defect Energy (eV)"]
+
+	def _getTableWithEPerAtomHeadings(self):
+		return ["Basis Set", "Defect Energy (eV)", "E per atom (bulk, eV)", "E per atom (defect, eV)",]
+
+	def __call__(self, stdInputObj):
+		stdInputObj.workflow.run()
+		assert len(stdInputObj.workflow.output)==1
+		assert len(stdInputObj.label)==1
+		output = types.SimpleNamespace(tableData=None, tableWithEPerAtomVals=None,
+		                               tableHeaders=None, tableHeadersWithEPerAtom=None)
+
+		output.tableData = self._getTableData(stdInputObj)
+		output.tableHeaders = self._getTableHeadings()
+		output.tableWithEPerAtomVals = self._getTableDataWithEPerAtom(stdInputObj)
+		output.tableHeadersWithEPerAtom = self._getTableWithEPerAtomHeadings()
+		return output
+
+
+
