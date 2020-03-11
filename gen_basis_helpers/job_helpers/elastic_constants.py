@@ -103,18 +103,20 @@ class MapElasticflowOutputToUsefulFormatStandard():
 
 	"""
 
-	def __init__(self, structStr, fitStrainVals=None):
+	def __init__(self, structStr, fitStrainVals=None, tableFmt=None):
 		allowedStructStrs = ["hcp"]
 		if structStr != "hcp":
 			raise ValueError("{} is currently an invalid structure type for this mapping function; valid values are {}".format(structStr, allowedStructStrs))
 		self.structStr = structStr
+
+		self.tableFmt = "{:.2f}" if tableFmt is None else tableFmt
 
 		self.fitStrainVals = fitStrainVals if fitStrainVals is not None else None #None just means figure out the default at runtime
 
 
 	def _getTableData(self, stdInputObj):
 		assert len(stdInputObj.label)==1
-		elastics = ["{:.2f}".format(x) for x in stdInputObj.workflow.output[0].elasticConsts.values()]
+		elastics = [self.tableFmt.format(x) for x in stdInputObj.workflow.output[0].elasticConsts.values()]
 		total = [stdInputObj.label[0].methodKey] + elastics
 		return total
 
