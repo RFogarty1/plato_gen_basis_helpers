@@ -189,6 +189,8 @@ class DataPlotterStandard(DataPlotterBase):
 	
 
 	def createPlot(self, plotData=None, **kwargs):
+		if plotData is None:
+			plotData = self.data
 		plotData = self.mapPlotDataFunct(plotData)
 		outFig = super().createPlot(plotData, **kwargs)
 
