@@ -15,7 +15,7 @@ class DataPlotterDos(basePlotter.DataPlotterStandard):
 	def fromDefaultPlusKwargs(cls, **kwargs):
 		inpKwargs = dict()
 		inpKwargs["plotFunct"] = "plot"
-		inpKwargs["xlabel"] = "Energy / eV"
+		inpKwargs["xlabel"] = "Energy (eV)"
 		inpKwargs["ylabel"] = "Density of States"
 		inpKwargs["showTitle"] = True
 		inpKwargs["titleStr"] = "Default Title"
