@@ -119,14 +119,15 @@ class MapSurfaceEnergiesToStandardFormat():
 
 	"""
 
-	def __init__(self, ePerAtomFmtStr="{:.3g}"):
+	def __init__(self, ePerAtomFmtStr="{:.3g}", surfEnergyFmtStr="{:.4f}"):
 		self.ePerAtomFmtStr = ePerAtomFmtStr
+		self.surfEnergyFmtStr = surfEnergyFmtStr
 
 	def _getTableData(self,stdInputObj):
 		assert len(stdInputObj.label)==1
 		assert len(stdInputObj.workflow.output)==1
 		methKey = stdInputObj.label[0].methodKey
-		surfEnergy = "{:.4f}".format(stdInputObj.workflow.output[0].surfaceEnergy)
+		surfEnergy = self.surfEnergyFmtStr.format(stdInputObj.workflow.output[0].surfaceEnergy)
 		return [methKey, surfEnergy]
 
 	def _getTableDataWithEPerAtom(self,stdInputObj):
