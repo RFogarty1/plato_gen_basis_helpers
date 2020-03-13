@@ -29,6 +29,31 @@ def _getMgRc7pt0Plus12pt0SPBasisObj():
 	                             potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
 
 
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-spd-2z-rc7pt0-r05pt5-plus-diffuse-rc8pt0-sp-1".lower())
+def _getMgRc7pt0PlusDiffuse8pt0SPBasisObj():
+	return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-2z-rc7pt0-r05pt5-plus-diffuse-rc8pt0-sp-1",
+	                             potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-spd-2z-rc7pt0-r05pt5-plus-diffuse-rc8pt5-sp-1".lower())
+def _getMgRc7pt0PlusDiffuse8pt5SPBasisObj():
+	return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-2z-rc7pt0-r05pt5-plus-diffuse-rc8pt5-sp-1",
+	                             potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-spd-2z-rc7pt0-r05pt5-plus-diffuse-rc9pt0-sp-1".lower())
+def _getMgRc7pt0PlusDiffuse9pt0SPBasisObj():
+	return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-2z-rc7pt0-r05pt5-plus-diffuse-rc9pt0-sp-1",
+	                             potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-spd-2z-rc7pt0-r05pt5-plus-diffuse-rc10pt0-sp-1".lower())
+def _getMgRc7pt0PlusDiffuse10pt0SPBasisObj():
+	return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-2z-rc7pt0-r05pt5-plus-diffuse-rc10pt0-sp-1",
+	                             potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
+
+
+
+
+
 
 @basRegister.decoRegisterCP2KBasisCreatorToMethodStr("GTH-PBE-q2-spd-2z-rc7pt5-r06pt0-1".lower())
 def _getMgRc7pt5BasisObj():
