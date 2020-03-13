@@ -1,4 +1,5 @@
 
+import contextlib
 import itertools as it
 import functools
 import types
@@ -215,4 +216,27 @@ class StandardComponentDescriptor(object):
 
 	def __set__(self, instance, value):
 		raise NotImplementedError()
+
+
+@contextlib.contextmanager
+def temporarilySetInstanceAttrs(instance, modKwargDict):
+	origAttrs = dict()
+	for key in modKwargDict:
+		origAttrs[key] = getattr(instance,key)
+
+	for key in modKwargDict:
+		setattr(instance,key,modKwargDict[key])
+
+	try:
+		yield
+	finally:
+		for key in origAttrs:
+			setattr(instance,key,origAttrs[key])	
+	
+
+
+
+
+
+
 

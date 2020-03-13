@@ -93,6 +93,36 @@ class TestAssertUniqueLabelsForCompositeCreation(unittest.TestCase):
 			DudClassForTestingUniqueLabelEnforcement([self.labelA, copiedLabelA])
 
 
+
+class TestTemporarilySetInstanceAttrs(unittest.TestCase):
+
+	def setUp(self):
+		self.testAttrA = "random_val_a"
+		self.testAttrB = "random_val_b"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testInstanceA = types.SimpleNamespace(testAttrA=self.testAttrA, testAttrB=self.testAttrB)
+
+	def testArgsAreSetWithinManagerThenReset(self):
+		newAttrAVal = "new_attr_a_val"
+		self.assertNotEqual(newAttrAVal, self.testInstanceA.testAttrA)
+		self.assertEqual(self.testAttrA,self.testInstanceA.testAttrA)
+		kwargDict = {"testAttrA":newAttrAVal}
+		with tCode.temporarilySetInstanceAttrs(self.testInstanceA, kwargDict):
+			self.assertEqual(newAttrAVal, self.testInstanceA.testAttrA)
+		self.assertEqual(self.testAttrA, self.testInstanceA.testAttrA)
+
+	#Probably NEVER end up changin behavior even as kwarg-option. It would be very tough to figure out
+	#what to set the attr to afterwards
+	def testDynamicAttrSettingRaisesAttribErrorByDefault(self):
+		fakeKey = "fakeKey"
+		with self.assertRaises(AttributeError):
+			with tCode.temporarilySetInstanceAttrs(self.testInstanceA,{fakeKey:None}):
+				pass
+
+
+
 if __name__ == '__main__':
 	unittest.main()
 
