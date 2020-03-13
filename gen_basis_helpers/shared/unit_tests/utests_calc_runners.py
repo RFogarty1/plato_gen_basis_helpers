@@ -53,3 +53,11 @@ class TestStandardInputObj(unittest.TestCase):
 		self.testObjA.createOutputObj()
 		mockedOutputClass.assert_called_with(fakeOutput, self.testLabelA)
 
+	@mock.patch("gen_basis_helpers.shared.calc_runners.StandardOutputObj")
+	def testCreateOutputObjWithMapFunctionSetThroughCreate(self, mockedOutputClass):
+		fakeOutput = types.SimpleNamespace(convVals=[(2*x,y) for x,y in self.output.convVals])
+		mapFunction = lambda x: fakeOutput
+		self.testObjA.createOutputObj(mapFunction=mapFunction)
+		mockedOutputClass.assert_called_with(fakeOutput,self.testLabelA)
+
+

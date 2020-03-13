@@ -74,7 +74,23 @@ class StandardInputObj(BaseStandardInputObj):
 	def mapFunction(self,val):
 		self._mapFunction = val
 
-	def createOutputObj(self):
+	def createOutputObj(self, mapFunction=None):
+		""" Function to create an output object after runComms have been executed. The output object should implement the BaseStandardOutputObj interface
+		
+		Args:
+			mapFunction: If not None, then this overrides the self.mapFunction attribute 
+
+		"""
+		if mapFunction is not None:
+			kwargDict = {"mapFunction":mapFunction}
+		else:
+			kwargDict = dict()
+
+		with misc.temporarilySetInstanceAttrs(self,kwargDict):
+			return self._createOutputObjFromSelf()
+
+
+	def _createOutputObjFromSelf(self):
 		#Hook to let user overwrite standard way and add extra processing or similar
 		if self._mapFunction is not None:
 			output = self._mapFunction(self)
@@ -118,10 +134,10 @@ class StandardInputObjComposite(BaseStandardInputObj):
 	def __init__(self, objs):
 		self.objs = list(objs)
 
-	def createOutputObj(self):
+	def createOutputObj(self, mapFunction=None):
 		outputObjs = list()
 		for leaf in self.objs:
-			outputObjs.append( leaf.createOutputObj() )
+			outputObjs.append( leaf.createOutputObj(mapFunction=mapFunction) )
 		return StandardOutputObjComposite(outputObjs)
 
 	@property
