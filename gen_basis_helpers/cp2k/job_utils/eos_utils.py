@@ -44,8 +44,8 @@ class MapEosWorkflowOutputToUsefulFormatStandard():
 
 	"""
 
-	def __init__(self):
-		pass
+	def __init__(self, deltaE=True):
+		self.deltaE = deltaE
 
 	def _getPlotData(self,stdInpObj):
 		allData = stdInpObj.workflow.output
@@ -59,9 +59,10 @@ class MapEosWorkflowOutputToUsefulFormatStandard():
 		minE0 = min(allE0)
 
 		#Convert data to delta E0
-		for x in outData:
-			for row in range(len(x)):
-				x[row][1] -= minE0
+		if self.deltaE:
+			for x in outData:
+				for row in range(len(x)):
+					x[row][1] -= minE0
 
 		return outData
 
@@ -80,9 +81,10 @@ class MapEosWorkflowOutputToUsefulFormatStandard():
 			dataList.append( [methKeyAll, v0, b0, e0] )
 
 		#Convert data to delta E0
-		minE0 = min([x[-1] for x in dataList])
-		for x in dataList:
-			x[-1] -= minE0
+		if self.deltaE:
+			minE0 = min([x[-1] for x in dataList])
+			for x in dataList:
+				x[-1] -= minE0
 
 		return dataList
 

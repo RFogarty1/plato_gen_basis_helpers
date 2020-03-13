@@ -202,6 +202,7 @@ class TestStandardMapFunction(unittest.TestCase):
 	def setUp(self):
 		self.plotDataA = [ [1,2], [2,4] ] #Each represents a different structure but same method
 		self.plotDataB = [ [1,3], [2,6] ]
+		self.deltaE = True
 		self.methStr = "methA"
 		self.eleKey, self.structKey = "Mg", "eos" #Dont actually matter here
 
@@ -212,7 +213,7 @@ class TestStandardMapFunction(unittest.TestCase):
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		self.testObjA = tCode.MapEosWorkflowOutputToUsefulFormatStandard()
+		self.testObjA = tCode.MapEosWorkflowOutputToUsefulFormatStandard(deltaE=self.deltaE)
 		self.testOutputA = {"v0":self.v0ValsA[0], "b0":self.b0ValsA[0], "e0":self.e0ValsA[0],
 		                    "data":self.plotDataA, "fitData":None, "fitAtDataPoints":None}
 		self.testOutputB = {"v0":self.v0ValsA[1], "b0":self.b0ValsA[1], "e0":self.e0ValsA[1],
@@ -238,6 +239,15 @@ class TestStandardMapFunction(unittest.TestCase):
 		actTotalOutput = self.runMapFunctOnDataA()
 		actPlotOutput = actTotalOutput.plotData
 		self.assertEqual(expPlotOutput, actPlotOutput)
+
+	def testPlotDataMapsProperlyWithoutDeltaE(self):
+		self.deltaE = False
+		self.createTestObjs()
+		expPlotOutput = copy.deepcopy([self.plotDataA, self.plotDataB])
+		actTotalOutput = self.runMapFunctOnDataA()
+		actPlotOutput = actTotalOutput.plotData
+		self.assertEqual(expPlotOutput, actPlotOutput)
+
 
 	def testTableDataMapsProperly(self):
 		deltaE0Vals = [x-min(self.e0ValsA) for x in self.e0ValsA]
