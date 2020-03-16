@@ -32,6 +32,8 @@ def combineTwoGauPrims(gPrimA,gPrimB):
 
 	return GauPrim(gamma, coeffProd*prefactor,newPosVect)
 
+#Now duplicated in the shared/. The version in shared should be used; this version will be made to simply
+#inherit from it later (not removing since its needed for backwards compat.)
 class GauPrim():
 	def __init__(self,a,c,pos):
 		self.a = a
