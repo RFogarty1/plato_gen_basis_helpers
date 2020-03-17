@@ -96,11 +96,12 @@ def _getBasisFunctObjFromExponentSet(expSet, convNormToRawGaussians=True):
 	allNVals = 1 #Expect a higher level function to clean this up
 
 	allBasisFuncts = list()
-	for coeffs, lVal in it.zip_longest(expSet.coeffs,expSet.lVals):
+	for idx,lVal in enumerate(expSet.lVals):
+		startCoeffs = [x[idx] for x in expSet.coeffs] 
 		if convNormToRawGaussians:
-			normCoeffs = [coeff*calcNormConstantForCP2KOnePrimitive(exponent,lVal) for exponent,coeff in it.zip_longest(allExponents,coeffs)]
+			normCoeffs = [coeff*calcNormConstantForCP2KOnePrimitive(exponent,lVal) for exponent,coeff in it.zip_longest(allExponents,startCoeffs)]
 		else:
-			normCoeffs = coeffs
+			normCoeffs = startCoeffs
 		currPrims = [gaussians.GauPrim.fromExpAndCoeffOnly(a,c) for a,c in it.zip_longest(allExponents,normCoeffs)]
 		gauFunct = gaussians.GauPrimComposite(currPrims)
 		currBasisFunct = basObjs.GauSumOrbitalBasisFunction(allNVals, lVal, gauFunct)

@@ -76,8 +76,8 @@ class TestSingleExponentSetToCP2KBasis(unittest.TestCase):
 
 	def setUp(self):
 		self.exponentsA = [1,2]
-		self.coeffsA = [ [1,2], [3,4] ]
-		self.lValsA = [0,1]
+		self.coeffsA = [ [1,2,3], [3,4,5] ] #1st entry is for 1st exponent, second is for second exponent
+		self.lValsA = [0,1,2]
 		self.nValA = 3 #Irrelevant except for creating the test object
 		self.convNormToRawGaussians = False
 		self.createTestObjs()
@@ -94,20 +94,27 @@ class TestSingleExponentSetToCP2KBasis(unittest.TestCase):
 
 		#Manually define the gaussians we expect
 		gauPrimAA = gauHelp.GauPrim.fromExpAndCoeffOnly(self.exponentsA[0], self.coeffsA[0][0])
-		gauPrimAB = gauHelp.GauPrim.fromExpAndCoeffOnly(self.exponentsA[1], self.coeffsA[0][1])
+		gauPrimAB = gauHelp.GauPrim.fromExpAndCoeffOnly(self.exponentsA[1], self.coeffsA[1][0])
 		gauCompA = gauHelp.GauPrimComposite([gauPrimAA,gauPrimAB])
 
-		gauPrimBA = gauHelp.GauPrim.fromExpAndCoeffOnly(self.exponentsA[0], self.coeffsA[1][0])
+		gauPrimBA = gauHelp.GauPrim.fromExpAndCoeffOnly(self.exponentsA[0], self.coeffsA[0][1])
 		gauPrimBB = gauHelp.GauPrim.fromExpAndCoeffOnly(self.exponentsA[1], self.coeffsA[1][1])
 		gauCompB = gauHelp.GauPrimComposite([gauPrimBA,gauPrimBB])
 
+		gauPrimCA = gauHelp.GauPrim.fromExpAndCoeffOnly(self.exponentsA[0], self.coeffsA[0][2])
+		gauPrimCB = gauHelp.GauPrim.fromExpAndCoeffOnly(self.exponentsA[1], self.coeffsA[1][2])
+		gauCompC = gauHelp.GauPrimComposite([gauPrimCA,gauPrimCB])
+
+
 		self._runTestFunctOnExpSetA()
 
-		expCallArgs = [(expNValAll, self.lValsA[0], gauCompA), (expNValAll, self.lValsA[1], gauCompB)]
+		expCallArgs = [(expNValAll, self.lValsA[0], gauCompA), (expNValAll, self.lValsA[1], gauCompB),
+		               (expNValAll, self.lValsA[2], gauCompC)]
 		actCallArgs = [args for args,kwargs in mockedBasisFunctClass.call_args_list]
 
 		self.assertEqual(expCallArgs,actCallArgs)
 
+	#Doesnt include all the expected calls but....
 	@mock.patch("gen_basis_helpers.job_helpers.cp2k.parse_basis_help.calcNormConstantForCP2KOnePrimitive")
 	def testExpectedCallsToCalcNormConstants(self, mockedNormFunct):
 		callAA = [ self.exponentsA[0], self.lValsA[0] ]
