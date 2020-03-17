@@ -109,7 +109,10 @@ class DataPlotterBase():
 			if plotData is not None:	
 				toPlot = [np.array(x) for x in plotData]
 			else:
-				toPlot = [np.array(x) for x in self.data]
+				if self.data is not None:
+					toPlot = [np.array(x) for x in self.data]
+				else:
+					toPlot = list()
 
 			if self.axHandle is None:
 				outFig = plt.figure()
