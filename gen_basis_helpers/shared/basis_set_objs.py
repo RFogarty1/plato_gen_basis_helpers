@@ -122,6 +122,10 @@ class GauSumOrbitalBasisFunction(OrbitalBasisFunctionBase):
 	def nVal(self):
 		return self._nVal
 
+	@nVal.setter
+	def nVal(self,val):
+		self._nVal = nVal
+
 	@property
 	def lVal(self):
 		return self._lVal
