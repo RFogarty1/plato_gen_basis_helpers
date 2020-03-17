@@ -2,8 +2,6 @@
 import itertools as it
 import math
 
-import copy #TODO: Should be able to remove this
-
 """ Defining the standard gaussian primitive and composite classes """
 
 #Added a base class mainly for the doc-strings
@@ -53,6 +51,13 @@ class GauPrimComposite(GauPrimBase):
 	def c(self,val):
 		raise NotImplementedError("")
 
+	@property
+	def leaves(self):
+		outLeaves = list()
+		for x in self.objs:
+			outLeaves.extend(x.leaves)
+		return outLeaves
+
 	def evalFunctAtDists(self, distances):
 		return self._sumOverLeafResults("evalFunctAtDists",distances)
 
@@ -70,9 +75,21 @@ class GauPrimComposite(GauPrimBase):
 				sumVals += currVals
 		return sumVals
 
-#TODO:Make sure exponent and coeff cant be set (since i dont want to implement it)
+	def __eq__(self, other):
+
+		if len(self.leaves) != len(other.leaves):
+			return False
+
+		for leafA, leafB in zip(self.leaves,other.leaves):
+			if leafA != leafB:
+				return False
+
+		return True
+
+
 class GauPrim(GauPrimBase):
 	def __init__(self,a,c,pos):
+		self._eqTol = 1e-6
 		self.a = a
 		self.c = c
 		self.pos = pos
@@ -84,6 +101,11 @@ class GauPrim(GauPrimBase):
 	@classmethod
 	def fromExpAndCoeffOnly(cls, exponent, coeff):
 		return cls(exponent, coeff, [0,0,0])
+
+	@property
+	def leaves(self):
+		""" Returns all leaves (nodes) of composite object. Also implemented on non-composite to allow composite/non-composite to be compatable """
+		return [self]
 
 	def evalFunctAtPos(self,pos):
 		rVal = _getDistanceTwoPos(self.pos,pos)
@@ -99,6 +121,30 @@ class GauPrim(GauPrimBase):
 		return self.c*(math.sqrt( math.pi/self.a )**3)
 
 
+	def __eq__(self, other):
+
+		if len(other.leaves) != 1:
+			return False #Must be a composite with multiple primitives; which menas it CANT be equal
+
+		floatAttrs = ["a","c"]
+		listAttrs = ["pos"]
+		otherLeaf = other.leaves[0] 
+
+		eqTol = min(self._eqTol, otherLeaf._eqTol)
+
+		for currAttr in floatAttrs:
+			if abs( getattr(self,currAttr) - getattr(otherLeaf,currAttr) ) > eqTol:
+				return False
+
+		for currAttr in listAttrs:
+			selfList, otherList = getattr(self,currAttr), getattr(otherLeaf,currAttr)
+			if len(selfList) != len(otherList):
+				return False
+			for x,y in zip(selfList,otherList):
+				if abs(x-y) > eqTol:
+					return False
+
+		return True
 
 def _getDistanceTwoPos(posA,posB):
 	diff = [x-y for x,y in it.zip_longest(posA,posB)]
