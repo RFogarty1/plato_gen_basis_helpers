@@ -69,7 +69,7 @@ class CreatorWithResetableKwargsTemplate():
 		pass
 
 	def _setDefaultInitAttrs(self):
-		""" Hook - overiding is optional. This is used to explicitly set any attributes to default values upon initiatiation. Any values set here will be overwritten if the relevant kwarg is passed to the constructor
+		""" Hook - overiding is optional. This is used to explicitly set any attributes to default values upon initiatiation. Any values set here will be overwritten if the relevant kwarg is passed to the constructor (including if you explicitly pass None with the kwarg)
 		"""
 		pass
 
