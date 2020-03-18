@@ -53,6 +53,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("fileName")
 	registeredKwargs.add("absGridCutoff")
 	registeredKwargs.add("relGridCutoff")
+	registeredKwargs.add("printAOMullikenPop")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -169,6 +170,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["gridCutAbs".lower()] = self.absGridCutoff
 		if self.relGridCutoff is not None:
 			modDict["gridCutRel".lower()] = self.relGridCutoff
+		if self.printAOMullikenPop:
+			modDict["printAOMullikenPop".lower()] = True
+
 
 		fileHelpers.modCp2kObjBasedOnDict(pycp2kObj, modDict)
 

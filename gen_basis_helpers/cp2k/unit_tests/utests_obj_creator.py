@@ -16,6 +16,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.workFolder = "fake_folder"
 		self.fileName = "fake_file_name"
 		self.methodStr = "cp2k_test_object"
+		self.printAOMullikenPop = False
 		self.createTestObjs()
 
 	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
@@ -23,7 +24,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.testCreatorObjA = tCode.CP2KCalcObjFactoryStandard(methodStr=self.methodStr, kPts=self.kPts,
 		                                                        addedMOs=self.addedMOs, geom=self.geom,
 		                                                        basisObjs=self.basisObj, folderPath=self.workFolder,
-		                                                        fileName=self.fileName, workFolder=None)
+		                                                        fileName=self.fileName, workFolder=None, printAOMullikenPop=self.printAOMullikenPop)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -72,6 +73,16 @@ class TestStandardCreationObj(unittest.TestCase):
 		args,kwargs = mockFileHelpers.addGeomAndBasisInfoToSimpleCP2KObj.call_args
 		self.assertEqual(self.geom,args[1])
 		self.assertEqual(self.basisObj,args[2]) 
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
+	def testPrintMullikenPopsPassedToFileHlpers(self, mockMethReg, mockFileHelpers):
+		expRelevantArgDict = {"printAOMullikenPop".lower():True}
+		self.testCreatorObjA.create(printAOMullikenPop=True)
+		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
+		actRelevantArgDict = {k.lower():args[1][k] for k in expRelevantArgDict.keys()}
+		self.assertEqual(expRelevantArgDict, actRelevantArgDict)
+
 
 
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.calcObjs.os.path.abspath")
