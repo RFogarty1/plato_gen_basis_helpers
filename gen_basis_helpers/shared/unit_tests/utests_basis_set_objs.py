@@ -27,8 +27,8 @@ class TestGauSumOrbitalBasisFunction(unittest.TestCase):
 	def testCorrectValsForPureRadial(self):
 		self.gauFunct.evalFunctAtDists.side_effect = lambda x: x
 		testXVals = [1,2]
-		expVals = [2.04665341589298, 8.18661366357191]
-		actVals = self.testObjA.getRadialValsAtDists(testXVals, pureRadial=True)
+		expVals = [1, 4]
+		actVals = self.testObjA.getRadialValsAtDists(testXVals, multByRl=True)
 		for exp,act in it.zip_longest(expVals,actVals):
 			self.assertAlmostEqual(exp,act)
 

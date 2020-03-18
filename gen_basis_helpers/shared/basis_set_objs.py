@@ -114,20 +114,21 @@ class GauSumOrbitalBasisFunction(OrbitalBasisFunctionBase):
 		self._lVal = lVal
 		self.gauFunct = gauFunct
 
-	def getRadialValsAtDists(self, xVals, pureRadial=False):
+	def getRadialValsAtDists(self, xVals, multByRl=False):
 		""" Get the radial part of the basis function at distances given in xVals
 		
 		Args:
 			xVals: (float iter) List of distances from origin (i.e. from the atom centre)
-			pureRadial: (Bool, default=False) Whether to multiply the result by r^{l}(sqrt(4pi/(2l+1))). This should give the true radial distribution of the orbital; we actually represent the "radial" part in a way where some angular momenta terms are incorporated for convenience.
+			multByRl: (Bool, default=False) Whether to multiply the result by r^{l}. This should give the true radial distribution of the orbital; we actually represent the "radial" part in a way where some angular momenta terms are incorporated for convenience. Setting to True gives the same as the values in the plato *.bas files
 	 
 		Returns
 			radialVals: (float iter) Radial values of the wavefunction
 		"""
 		outYVals = self.gauFunct.evalFunctAtDists(xVals)
-		if pureRadial:
+		if multByRl:
 			lVal = self.lVal
-			normFactor = math.sqrt( (4*math.pi) / ((2*lVal)+1) )
+#			normFactor = math.sqrt( (4*math.pi) / ((2*lVal)+1) )
+			normFactor = 1.0
 			for idx,val in enumerate(outYVals):
 				outYVals[idx] *= (xVals[idx]**lVal)*normFactor
 
