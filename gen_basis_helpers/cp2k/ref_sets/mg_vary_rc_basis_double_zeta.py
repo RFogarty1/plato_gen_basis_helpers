@@ -94,6 +94,18 @@ def _getMgRc7pt5BasisObj_s2z_pd1z_a():
     return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-1z-s-2z-rc7pt5-r06pt0-1",
                                  potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
 
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-q2-spd-1z-s-2z-rc7pt5-r06pt0-plus-s-diffuse-8pt0".lower())
+def _getMgRc7pt5BasisObj_ssspd_diffuse():
+    return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-1z-s-2z-rc7pt5-r06pt0-plus-diffuse-s-8pt0",
+                                 potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-q2-spd-1z-s-2z-rc7pt5-r06pt0-plus-s-ucl".lower())
+def _getMgRc7pt5BasisObj_ssspd_molopt():
+    return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-1z-s-2z-rc7pt5-r06pt0-plus-ucl-s-1",
+                                 potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
+
 
 @basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-spd-2z-rc7pt5-r06pt0-plus-molopt-sp-1".lower())
 def _getMgRc7pt5PlusMoloptSPBasisObj():
@@ -124,6 +136,20 @@ def _getMgRc8pt0BasisObj_sp2z_d1z_b():
 def _getMgRc8pt0BasisObj_s2z_pd1z_a():
     return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-1z-s-2z-rc8pt0-r06pt5-1",
                                  potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
+
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-q2-spd-1z-s-2z-rc8pt0-r06pt5-plus-s-diffuse-8pt0".lower())
+def _getMgRc8pt0BasisObj_ssspd_diffuse():
+    return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-1z-s-2z-rc8pt0-r06pt5-plus-diffuse-s-8pt0",
+                                 potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-q2-spd-1z-s-2z-rc8pt0-r06pt5-plus-s-ucl".lower())
+def _getMgRc8pt0BasisObj_ssspd_molopt():
+    return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="spd-1z-s-2z-rc8pt0-r06pt5-plus-ucl-s-1",
+                                 potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
 
 
 @basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-spd-2z-rc8pt0-r06pt5-plus-molopt-sp-1".lower())
