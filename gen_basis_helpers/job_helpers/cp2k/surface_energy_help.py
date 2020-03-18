@@ -16,13 +16,15 @@ class SurfaceEnergyStandardInputCreator(surfEHelp.CodeSpecificStandardInputCreat
 	registeredKwargs.add("basisObjs") #Iter of basis objects
 	registeredKwargs.add("cp2kMethodStr")
 	registeredKwargs.add("relGridCutoff")
-
+	registeredKwargs.add("extraCreatorKwargDict")
 
 	#This is the important function; i.e. the one that gets called by higher level code
 	def _createCalcObjCreator(self):
 		kwargDict = { "addedMOs":self.addedMOs, "basisObjs":self.basisObjs, "methodStr":self.cp2kMethodStr,
 		              "absGridCutoff":self.absGridCutoff, "relGridCutoff":self.relGridCutoff,
 		              "workFolder":self._folderPath }
+		if self.extraCreatorKwargDict is not None:
+			kwargDict.update( self.extraCreatorKwargDict )
 		outCreator = cp2kCreatorHelp.CP2KCalcObjFactoryStandard(**kwargDict)
 		return outCreator
 
