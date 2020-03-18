@@ -1,4 +1,5 @@
 
+import itertools as it
 import unittest
 import unittest.mock as mock
 
@@ -8,7 +9,7 @@ class TestGauSumOrbitalBasisFunction(unittest.TestCase):
 
 	def setUp(self):
 		self.nVal = 2
-		self.lVal = 4
+		self.lVal = 1
 		self.gauFunct = mock.Mock()
 		self.createTestObjs()
 
@@ -22,6 +23,15 @@ class TestGauSumOrbitalBasisFunction(unittest.TestCase):
 		actOutVals = self.testObjA.getRadialValsAtDists(testDistances)
 		self.gauFunct.evalFunctAtDists.assert_called_once_with(testDistances)
 		self.assertEqual(fakeOutVals,actOutVals)
+
+	def testCorrectValsForPureRadial(self):
+		self.gauFunct.evalFunctAtDists.side_effect = lambda x: x
+		testXVals = [1,2]
+		expVals = [2.04665341589298, 8.18661366357191]
+		actVals = self.testObjA.getRadialValsAtDists(testXVals, pureRadial=True)
+		for exp,act in it.zip_longest(expVals,actVals):
+			self.assertAlmostEqual(exp,act)
+
 
 
 class TestOrbitalBasisSetStandard(unittest.TestCase):
