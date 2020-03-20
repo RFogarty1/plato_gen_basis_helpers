@@ -2,6 +2,7 @@
 #Code to help create calculations for converging total energy with respect to some property (for example, plane-wave cutoff or the k-points used)
 import copy
 import itertools as it
+import types
 
 from ..shared import calc_runners as calcRunners
 from ..shared import label_objs as labelHelp
@@ -106,3 +107,43 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	@mapConvValToNumber.setter
 	def mapConvValToNumber(self, val):
 		self._mapConvValToNumber = val
+
+
+
+
+
+class MapConvergersWorkflowToUsefulFormatStandard():
+	""" Callable class used to map the output from a total energy convergence workflow, assuming its part of a StandardInput object, to a more convenient format """
+
+	def __init__(self, deltaE=True):
+		""" Initializer
+		
+		Args:
+			deltaE: (bool) If True then convert the output energies into relative values. The reference is taken as the last value by default( presuming that convVals is passed in order of least to most converged)
+				 
+		"""
+		self.deltaE=deltaE
+
+	def _getStdOutData(self, stdInpObj):
+		xVals = [x[0] for x in stdInpObj.workflow.output.convResults]		
+		yVals = [x[1] for x in stdInpObj.workflow.output.convResults]
+		deltaYVals = [y-yVals[-1] for y in yVals] #Assuming that we want it relative to the LAST (most converged) valu
+		if self.deltaE:
+			return [[x,y] for x,y in it.zip_longest(xVals, deltaYVals)]
+		else:
+			return [[x,y] for x,y in it.zip_longest(xVals, yVals)]
+
+	def __call__(self, stdInpObj):
+		stdInpObj.workflow.run()
+		outObj = types.SimpleNamespace(outData=None)
+		outObj.outData = self._getStdOutData(stdInpObj)
+		return outObj
+
+
+
+
+
+
+
+
+

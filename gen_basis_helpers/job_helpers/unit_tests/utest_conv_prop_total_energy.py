@@ -1,6 +1,7 @@
 
-
+import itertools as it
 import os
+import types
 import unittest
 import unittest.mock as mock
 
@@ -92,4 +93,53 @@ class TestEnergyConvergenceTemplate(unittest.TestCase):
 		mockedCalcObjs.side_effect = lambda *args, **kwargs: expCalcObjs
 		self.testObjA.create()
 		mockedGridConvFlow.assert_called_once_with( expCalcObjs, self.convVals )
-		
+
+
+class TestMapFunction(unittest.TestCase):
+
+	def setUp(self):
+		self.xVals = [1,2,3]
+		self.yVals = [5,6,7]
+		self.deltaE = True
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.MapConvergersWorkflowToUsefulFormatStandard(deltaE=self.deltaE)
+
+		self.workflowA = mock.Mock()
+		self.workflowA.output = types.SimpleNamespace(convResults=[(x,y) for x,y in it.zip_longest(self.xVals,self.yVals)])
+		self.stdInpA = mock.Mock()
+		self.stdInpA.workflow = self.workflowA
+
+
+	def _runFunctOnWorkflow(self):
+		return self.testObjA(self.stdInpA)
+
+	def testRunMethodIsCalled(self):
+		self._runFunctOnWorkflow()
+		self.workflowA.run.assert_called_once_with()
+
+	def testDeltaEGivesExpectedResults(self):
+		expYVals = [y-self.yVals[-1] for y in self.yVals]
+		actOutput = self._runFunctOnWorkflow()
+		actYVals = [vals[1] for vals in actOutput.outData]
+		for exp,act in it.zip_longest(expYVals,actYVals):
+			self.assertAlmostEqual(exp,act)
+
+
+	def testDeltaEOffGivesExpectedResults(self):
+		self.deltaE=False
+		self.createTestObjs()
+		expOutputVals = [(x,y) for x,y in it.zip_longest(self.xVals, self.yVals)]
+		actOutput = self._runFunctOnWorkflow()
+		actOutputVals = actOutput.outData
+		for exp, act in it.zip_longest(expOutputVals, actOutputVals):
+			for e,a in it.zip_longest(exp,act):
+				self.assertAlmostEqual(e,a)
+
+
+
+
+
+
+	
