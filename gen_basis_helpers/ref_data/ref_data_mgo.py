@@ -12,7 +12,7 @@ class MgOReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def __init__(self):
 		pass
 
-	def getExpGeom(self,key="rocksalt"):
+	def getExptGeom(self,key="rocksalt"):
 		return _getExptRockSaltStruct()
 
 
