@@ -43,7 +43,9 @@ def _getRockSaltModUCellsStandard():
 	aVals = [4.00, 4.04, 4.08, 4.12, 4.16, 4.20, 4.22,
 	         4.24, 4.28, 4.32, 4.36, 4.40, 4.44]
 
-	uCells = [_createMgORocksaltStructFromLattParam(a) for x in aVals]
+	uCells = [_createMgORocksaltStructFromLattParam(a) for a in aVals]
+	for x in uCells:
+		x.convAngToBohr()
 	return uCells
 
 
@@ -57,11 +59,12 @@ def _createMgORocksaltStructFromLattParam(a):
 		 outCell: (plato_pylib UnitCell) Contains the PRIMITIVE cell (2 atoms)
  
 	"""
+
 	cellVecs = [ [0.0  , 0.5*a, 0.5*a],
 	             [0.5*a, 0.0  , 0.5*a],
 	             [0.5*a, 0.5*a, 0.0  ] ]
 
-	fractPos = [ [0.0, 0.0, 0.0,"Mg"], [0.7071067811865475,0.0,0.0,"O"] ]
+	fractPos = [ [0.0, 0.0, 0.0,"Mg"], [0.5,0.5,0.5,"O"] ]
 	return uCell.UnitCell.fromLattVects(cellVecs, fractCoords=fractPos)
 
 
