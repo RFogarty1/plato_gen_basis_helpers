@@ -1,6 +1,14 @@
 
+
+import os
+from ..shared import config_vars as configVars
 from . import ref_elemental_objs as refEleObjs
+from . import helpers_ref_data as helpers
 import plato_pylib.shared.ucell_class as uCell
+
+
+BASE_FOLDER = os.path.join( configVars.CASTEP_DB_PATH, "mg_o" )
+
 
 def createMgOReferenceDataObj():
 	return MgOReferenceDataObj()
@@ -19,6 +27,8 @@ class MgOReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getStructsForEos(self, structKey):
 		return _getUCellsForBulkModCalcsStandard(structKey)
 
+	def getEosFitDict(self,key,eos="murnaghan"):
+		return getPlaneWaveEosFitDict(key,eos=eos)
 
 
 
@@ -68,3 +78,13 @@ def _createMgORocksaltStructFromLattParam(a):
 	return uCell.UnitCell.fromLattVects(cellVecs, fractCoords=fractPos)
 
 
+
+#EoS data
+
+def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
+	structTypeToFunct = {"rocksalt": _getPlaneWaveEosDictRocksalt}
+	return structTypeToFunct[structType](eos)
+
+def _getPlaneWaveEosDictRocksalt(eos):
+	outFolder = os.path.join(BASE_FOLDER,"eos","rocksalt")
+	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
