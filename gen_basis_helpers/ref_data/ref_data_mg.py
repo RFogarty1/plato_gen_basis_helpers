@@ -94,7 +94,14 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getPlaneWaveDosGeom(self, structKey):
 		return getDosPlaneWaveGeom(structKey)
 
-	def getPlaneWaveAtomTotalEnergy(self):
+	def getPlaneWaveAtomTotalEnergy(self, charge=0):
+		if charge==0:
+			return _getMgAtomPlaneWaveTotalEnergy()
+		elif charge==2:
+			return _getMg2PlusIonPlaneWaveTotalEnergy()
+		else:
+			raise ValueError("charge = {} is an invalid value".format(charge))
+
 		inpFolder = os.path.join(BASE_FOLDER,"atom_calc")
 		inpFiles = helpers.getCastepOutPathsForFolder(inpFolder)
 		assert len(inpFiles)==1
@@ -113,6 +120,22 @@ class MgReferenceDataObj(refEleObjs.RefElementalDataBase):
 
 	def getPlaneWaveSurfaceEnergy(self, structKey):
 		return getPlaneWaveSurfEnergy(structKey)
+
+
+#Plane-wave reference atom energies
+def _getMgAtomPlaneWaveTotalEnergy():
+	inpFolder = os.path.join(BASE_FOLDER,"atom_calc")
+	inpFiles = helpers.getCastepOutPathsForFolder(inpFolder)
+	assert len(inpFiles)==1
+	outEnergy = parseCastep.parseCastepOutfile(inpFiles[0])["energies"].electronicTotalE
+	return outEnergy
+
+def _getMg2PlusIonPlaneWaveTotalEnergy():
+	inpFolder = os.path.join(BASE_FOLDER,"atom_calc","ion_calcs")
+	inpFiles = helpers.getCastepOutPathsForFolder(inpFolder)
+	assert len(inpFiles)==1
+	outEnergy = parseCastep.parseCastepOutfile(inpFiles[0])["energies"].electronicTotalE
+	return outEnergy
 
 
 # Experimental Structure

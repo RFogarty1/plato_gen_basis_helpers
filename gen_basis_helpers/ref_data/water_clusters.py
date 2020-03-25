@@ -1,13 +1,24 @@
 
+import os
+
 import itertools as it
+import plato_pylib.parseOther.parse_castep_files as parseCastep
+
 from . import base_objs as baseObjs
 from . import helpers_ref_data as helpers
-from ..shared import unit_convs as uConv
+
+from ..shared import config_vars as configVars
 from ..shared import label_objs as labelObjs
 from ..shared import misc_utils as misc
+from ..shared import unit_convs as uConv
+
+
 
 ALL_WATER_CLUSTER_KEYS = set()
 WATER_CLUSTERS_FUNCTION_GETTER_DICT = dict()
+
+CASTEP_DB_BASE_FOLDER = os.path.join( configVars.CASTEP_DB_PATH, "h2o" )
+
 
 #Key should be a tuple (geomMethod, energiesMethod, numbWater)
 def _registerKeyToWaterClusterDict(key):
@@ -91,6 +102,17 @@ def _getAllWaterClusterTypeStrs(numbWater:int):
 
 	return None
 
+
+@_registerKeyToWaterClusterDict( ("castep-pbe", "castep-pbe", 1) )
+def _createWaterMonomerCastep():
+	structName = "monomer"
+	outPath = os.path.join(CASTEP_DB_BASE_FOLDER, "monomer", "geom", "h2o_monomer_opt.castep")
+	geom = helpers.getUCellInBohrFromCastepOutFile(outPath)
+	label = labelObjs.StandardLabel(eleKey="h20", methodKey="castep", structKey="monomer")
+	parsedFile = parseCastep.parseCastepOutfile(outPath)
+	outEnergy = parsedFile["energies"].electronicTotalE
+	nMolecules = 1
+	return WaterClusterData(label, geom, nMolecules, outEnergy)
 
 @_registerKeyToWaterClusterDict( ("ccsd", "pbe-plane-wave", 1) )
 def _createWaterClusterDataMonomer_ccsdGeoms_planeWaveEnergies():
