@@ -118,6 +118,10 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 		if useDict["printAOMullikenPop".lower()]:
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MULLIKEN.Section_parameters = "ON"
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MULLIKEN.Print_gop = True
+	
+	if useDict.get("charge") is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Charge = useDict["charge"]
+
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work

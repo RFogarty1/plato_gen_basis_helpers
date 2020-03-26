@@ -83,6 +83,14 @@ class TestStandardCreationObj(unittest.TestCase):
 		actRelevantArgDict = {k.lower():args[1][k] for k in expRelevantArgDict.keys()}
 		self.assertEqual(expRelevantArgDict, actRelevantArgDict)
 
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
+	def testChagePassedToFileHelpers(self, mockMethReg, mockFileHelpers):
+		expRelevantArgDict = {"charge".lower():2}
+		self.testCreatorObjA.create(charge=2)
+		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
+		actRelevantArgDict = {k.lower():args[1][k] for k in expRelevantArgDict.keys()}
+		self.assertEqual(expRelevantArgDict, actRelevantArgDict)
 
 
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.calcObjs.os.path.abspath")
