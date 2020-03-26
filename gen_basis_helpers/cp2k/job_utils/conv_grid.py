@@ -84,7 +84,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 
 	def __init__(self, geom=None, kPts=None, maxScf=None, cp2kMethodStr=None,
 				basisKeyDicts=None, basisAliases=None, workFolder=None, workFlowToOutputObjMap=None,
-				eleKey=None, structKey=None):
+				eleKey=None, structKey=None, charge=None):
 		""" Initializer for class used to create the standardinput object for grid-convergence calculations
 		
 		Args:
@@ -98,6 +98,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 			eleKey: (str) Simply used to label the element(or chemical compound) we're looking at. Must be set, but its value likely wont matter
 			structKey: (str) Just used to label the structure. If your only looking at 1 structure (likely) then it doesnt really matter what you set this to (but it MUST be set)
 			workFlowToOutputObjMap: (function, f(workflow)). Takes the gridConvergence workflow and extract data you want in the format you want. If this is left blank then standardOutput.data will simply be workflow.output. Setting to the mapWorkflowOutputToArray function means the output data will be an nx2 array of convergence values vs delta Energy values (relative to energy of the most converged case)
+			charge: (int) The charge on the system (default=0)
 
 		Note:
 			The createStandardInput function is whats actually used to get a StandardInput object
@@ -113,6 +114,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 		self.baseWorkfolder = workFolder
 		self.eleKey = eleKey
 		self.structKey = structKey
+		self.charge = charge
 	
 		self.workFlowToOutputObjMap = workFlowToOutputObjMap
 	
@@ -159,7 +161,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 		basicObj = self._createBasicObject()
 		basisObjects = self._getBasisObjects(basisKeyDict)
 
-		pyCP2KHelp.modCp2kObjBasedOnDict(basicObj, {"kpts":self.kPts} )
+		pyCP2KHelp.modCp2kObjBasedOnDict(basicObj, {"kpts":self.kPts, "charge":self.charge} )
 		pyCP2KHelp.addGeomAndBasisInfoToSimpleCP2KObj(basicObj, self.geom, basisObjects)
 		baseCP2KObj = baseCalcObjCP2K.CP2KCalcObj( basicObj )
 		baseCP2KObj.maxScf = self.maxScf
