@@ -2,19 +2,15 @@
 import os
 import types
 
+from . import standard_template_obj as stdTemplate
+
 from ..shared import calc_runners as calcRunners
-from ..shared import creator_resetable_kwargs as baseCreator
-from ..shared import label_objs as labelHelp
 from ..workflows import self_point_defects as defectFlow
 
-class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableKwargsTemplate):
+class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorTemplateBase):
 
-	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs)
+	registeredKwargs = set(stdTemplate.StandardInputCreatorTemplateBase.registeredKwargs)
 
-	registeredKwargs.add("baseWorkFolder")
-	registeredKwargs.add("eleKey")
-	registeredKwargs.add("methodKey")
-	registeredKwargs.add("structKey")
 	registeredKwargs.add("bulkGeom")
 	registeredKwargs.add("kPtsBulk")
 	registeredKwargs.add("defectGeom")
@@ -23,10 +19,8 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	def _createFromSelf(self):
 		bulkObj = self._getBulkCreator().create()
 		defectObj = self._getDefectCreator().create()
-		labelObj = labelHelp.StandardLabel(eleKey=self.eleKey, methodKey=self.methodKey,
-		                                   structKey=self.structKey)
 		workflow = defectFlow.SelfPointDefectWorkflow(defectObj,bulkObj)
-		return calcRunners.StandardInputObj(workflow, labelObj)
+		return calcRunners.StandardInputObj(workflow, self.label)
 
 	# This should be overwritten by code-specific versions
 	def _createCalcObjCreatorBulk(self):
@@ -38,7 +32,6 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 		""" Return a CalcMethodFactoryBase instance with no kPts or geom present
 		"""
 		raise NotImplementedError("")
-
 
 	def _getDefectCreator(self):
 		outCreator = self._createCalcObjCreatorDefect()
@@ -55,11 +48,6 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 		outCreator.kPts = self.kPtsBulk
 		outCreator.geom = self.bulkGeom
 		return outCreator
-
-	@property
-	def outFolder(self):
-		return os.path.join(self.baseWorkFolder, self.eleKey, self.structKey, self.methodKey)
-
 
 
 class MapSelfDefectWorkflowOutputToUsefulFormatStandard():
