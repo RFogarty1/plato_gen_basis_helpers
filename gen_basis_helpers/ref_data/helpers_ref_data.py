@@ -55,6 +55,10 @@ def _getEosDictFromFilePaths(filePaths,eos):
 def getCastepOutPathsForFolder(refFolder):
 	return [os.path.join(refFolder,x) for x in os.listdir(refFolder) if x.endswith('.castep')]
 
+def getEnergyFromCastepOutFile(outFile, eType="electronicTotalE"):
+	parsedFile = parseCastep.parseCastepOutfile(outFile)
+	return getattr(parsedFile["energies"],eType)
+
 
 def getDefectEnergyFromCastepNoDefectAndDefectFiles(noDefectPath, defectPath):
 	parsedNoDefect = parseCastep.parseCastepOutfile(noDefectPath)
