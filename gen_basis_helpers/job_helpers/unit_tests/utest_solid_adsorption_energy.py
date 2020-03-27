@@ -24,7 +24,7 @@ class TestSolidAdsorptionStandardInputCreatorTemplate(unittest.TestCase):
 		self.gasPhaseReactantStoichiometries = [1,2]
 		self.gasPhaseProductStoichiometries = [2]
 
-		self.expOutFolder = os.path.join(self.baseWorkFolder, self.eleKey, self.methodKey, self.structKey)
+		self.expOutFolder = os.path.join(self.baseWorkFolder, self.eleKey, self.structKey, self.methodKey)
 		self.createTestObjs()
 
 	def createTestObjs(self):

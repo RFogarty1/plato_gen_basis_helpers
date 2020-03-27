@@ -1,19 +1,15 @@
 
 import os
-from ..shared import creator_resetable_kwargs as baseCreator
-from ..shared import label_objs as labelHelp
 from ..shared import calc_runners as calcRunners
 from ..workflows import total_energies as totEnergyFlow
 from ..workflows import reaction_energies as reactFlow
 
-class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableKwargsTemplate):
+from . import standard_template_obj as stdObj
 
-	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs)
+class CodeSpecificStandardInputCreatorTemplate(stdObj.StandardInputCreatorTemplateBase):
 
-	registeredKwargs.add("baseWorkFolder")
-	registeredKwargs.add("eleKey")
-	registeredKwargs.add("methodKey")
-	registeredKwargs.add("structKey")
+	registeredKwargs = set(stdObj.StandardInputCreatorTemplateBase.registeredKwargs)
+
 	registeredKwargs.add("bulkWithAdsorbedGeom")
 	registeredKwargs.add("bulkWithoutAdsorbedGeom")
 	registeredKwargs.add("gasPhaseReactantGeoms")
@@ -23,9 +19,8 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	registeredKwargs.add("kPtsBulk")
 
 	def _createFromSelf(self):
-		outLabel = labelHelp.StandardLabel(eleKey=self.eleKey, methodKey=self.methodKey, structKey=self.structKey)
 		outWorkflow = self._getReactionWorkflow()
-		outObj = calcRunners.StandardInputObj( outWorkflow, outLabel )
+		outObj = calcRunners.StandardInputObj( outWorkflow, self.label )
 		return outObj
 
 	#Code-specific; please overwrite.
@@ -142,9 +137,4 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	@gasPhaseProductStoichiometries.setter
 	def gasPhaseProductStoichiometries(self,val):
 		self._gasPhaseProductStoichiometries = val
-
-	#This is the folder we run all calculations in.
-	@property
-	def outFolder(self):
-		return os.path.join(self.baseWorkFolder, self.eleKey, self.methodKey, self.structKey)
 
