@@ -161,7 +161,8 @@ def _getMgExptHcpAsUCell():
 def getPlaneWaveGeom(structType:str):
 	structTypeToFunct = {"hcp":_getMgPlaneWaveHcpGeomAsUCell,
 	                     "bcc": _getMgPlaneWaveBCCGeomAsUCell,
-	                     "fcc": _getMgPlaneWaveFCCGeomAsUCell}
+	                     "fcc": _getMgPlaneWaveFCCGeomAsUCell,
+	                     "atom":_getMgAtomGeomAsUCell}
 	return structTypeToFunct[structType.lower()]()
 
 
@@ -180,6 +181,16 @@ def _getMgPlaneWaveFCCGeomAsUCell():
 	refPath = os.path.join(BASE_FOLDER,"opt_geoms", "fcc", "Mg_fcc_opt_otf_10el_usp_PP.geom")
 	initUCell = parseCastep.parseCastepGeomFile(refPath)[-1]["unitCell"]
 	return initUCell
+
+#Single atom geom used to get plane-wave atomic energy
+def _getMgAtomGeomAsUCell():
+	inpFolder = os.path.join(BASE_FOLDER,"atom_calc")
+	inpFiles = helpers.getCastepOutPathsForFolder(inpFolder)
+	assert len(inpFiles)==1
+	outCell = parseCastep.parseCastepOutfile(inpFiles[0])["unitCell"]
+	outCell.convAngToBohr()
+	return outCell
+
 
 
 # Structures to use for bulk mod calculations (to be consistent)
