@@ -51,6 +51,14 @@ class TestTotalEnergyGroupWorkflow(unittest.TestCase):
 		self.assertTrue( len(self.testObjA.output)==1 )
 		self.assertAlmostEqual(expEnergy,actEnergy)
 
+	def testComponentEnergies(self):
+		self.testObjA.run()
+		expEnergies = [e*w for e,w in it.zip_longest(self.energiesA,self.testWeightsA)]
+		actEnergies = self.testObjA.output[0].componentEnergies
+		for exp,act in it.zip_longest(expEnergies,actEnergies):
+			self.assertAlmostEqual(exp,act)
+
+
 class TestTotalEnergyWorkflow(unittest.TestCase):
 
 	def setUp(self):
@@ -90,3 +98,8 @@ class TestTotalEnergyWorkflow(unittest.TestCase):
 		actEnergy = self.testObjA.output[0].energy
 		self.assertAlmostEqual(expEnergy, actEnergy)
 
+	def testComponentEnergiesForTotalEnergy(self):
+		self.testObjA.run()
+		expEnergies = [self.outEnergy]
+		actEnergies = self.testObjA.output[0].componentEnergies
+		self.assertEqual(expEnergies,actEnergies)

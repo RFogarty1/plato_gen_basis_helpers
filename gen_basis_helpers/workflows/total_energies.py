@@ -11,7 +11,7 @@ class TotalEnergyWorkflowBase(baseFlow.BaseLabelledWorkflow):
 	"""
 	@property	
 	def namespaceAttrs(self):
-		return ["energy"]
+		return ["energy", "componentEnergies"]
 
 	@property
 	def output(self):
@@ -56,10 +56,11 @@ class TotalEnergyGroupWorkflow(TotalEnergyWorkflowBase):
 			x.run()
 
 		assert [len(x.output)==1 for x in self.totEnergyFlows]
-		energies = [x.output[0].energy for x in self.totEnergyFlows] 
-		weightedEnergy = sum([e*w for e,w in it.zip_longest(energies,self.weights)])
+		energies = [x.output[0].energy for x in self.totEnergyFlows]
+		componentEnergies = [e*w for e,w in it.zip_longest(energies,self.weights)]
+		weightedEnergy = sum(componentEnergies)
 		self._output.energy = weightedEnergy
-
+		self._output.componentEnergies = componentEnergies
 
 	@property
 	def output(self):
@@ -103,7 +104,10 @@ class TotalEnergyWorkflow(TotalEnergyWorkflowBase):
 		parsedFile = self.calcObj.parsedFile
 		totalEnergy = getattr(parsedFile.energies, self.eType)
 		if self.ePerAtom:
-			self._output.energy = totalEnergy / parsedFile.numbAtoms
+			outEnergy = totalEnergy / parsedFile.numbAtoms
 		else:
-			self._output.energy = totalEnergy
+			outEnergy = totalEnergy
 
+		#Component energy is really mainly for composite workflows, but needed here to keep the interface the same
+		self._output.energy = outEnergy
+		self._output.componentEnergies = [outEnergy]

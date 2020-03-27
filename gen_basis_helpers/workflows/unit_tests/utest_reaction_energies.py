@@ -22,13 +22,15 @@ class TestReactionEnergyWorkflows(unittest.TestCase):
 		self.reactants.preRunShellComms = self.runCommsReactants
 		self.products.preRunShellComms = self.runCommsProducts 
 
-		outputReactant = types.SimpleNamespace(energy=self.reactantEnergy) 
-		outputProduct = types.SimpleNamespace(energy=self.productEnergy)
+		self.reactantComponents = [self.reactantEnergy+2, self.reactantEnergy-2]
+		self.productComponents = [self.productEnergy]
+
+		outputReactant = types.SimpleNamespace(energy=self.reactantEnergy, componentEnergies=self.reactantComponents) 
+		outputProduct = types.SimpleNamespace(energy=self.productEnergy, componentEnergies=self.productComponents)
 		self.reactants.output = [outputReactant]
 		self.products.output = [outputProduct]
 
 		self.testObjA = tCode.ReactionEnergyWorkflow(self.reactants, self.products)
-
 
 	def testRunComms(self):
 		expComms = self.runCommsReactants + self.runCommsProducts
@@ -46,3 +48,9 @@ class TestReactionEnergyWorkflows(unittest.TestCase):
 		actEnergy = self.testObjA.output[0].energy
 		self.assertAlmostEqual(expEnergy,actEnergy)
 		self.assertTrue( len(self.testObjA.output)==1 )
+
+	def testExpReactantAndProductContribs(self):
+		self.testObjA.run()
+		self.assertEqual( self.reactantComponents, self.testObjA.output[0].reactantEnergies )
+		self.assertEqual( self.productComponents, self.testObjA.output[0].productEnergies )
+

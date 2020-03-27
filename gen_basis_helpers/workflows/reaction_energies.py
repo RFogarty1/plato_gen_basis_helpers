@@ -35,11 +35,15 @@ class ReactionEnergyWorkflow(baseFlow.BaseLabelledWorkflow):
 		reactionEnergy = self.productWorkflow.output[0].energy - self.reactantWorkflow.output[0].energy
 		self._output.energy = reactionEnergy
 
+		#Record the (stoichiometry weighted) contributions from individual reactants and products
+		self._output.reactantEnergies = self.reactantWorkflow.output[0].componentEnergies
+		self._output.productEnergies = self.productWorkflow.output[0].componentEnergies
+
 	@property
 	def output(self):
 		return [self._output]
 
 	@property	
 	def namespaceAttrs(self):
-		return ["energy"]
+		return ["energy", "reactantEnergies", "productEnergies"]
 
