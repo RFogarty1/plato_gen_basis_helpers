@@ -16,6 +16,8 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	registeredKwargs.add("reactantStoichiometries")
 	registeredKwargs.add("productStoichiometries")
 	registeredKwargs.add("baseCreator")
+	registeredKwargs.add("reactantCharges")
+	registeredKwargs.add("productCharges")
 
 	def _createFromSelf(self):
 		workflow = self._getReactionEnergyWorkflow()
@@ -25,7 +27,7 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	def _getBaseCreator(self):
 		""" Creates a CalcMethodFactoryBase with settings that are shared (e.g. cutoff energy) between all calculations. This part generally needs to be overwritten by subclasses. Note that many of these paramters (e.g. k-points) will be overwritten during the create() method	
 		"""
-		if baseCreator is not None:
+		if self.baseCreator is not None:
 			return copy.deepcopy(self.baseCreator)
 		else:
 			raise ValueError("baseCreator attribute not set")
@@ -51,6 +53,7 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		startCreators = self._getCreatorsForSetOfGeoms(self.reactantGeoms)
 		for idx,creator in enumerate(startCreators):
 			creator.fileName = "reactant_{}".format(idx)
+			creator.charge = self.reactantCharges[idx]
 		outObjs = [x.create() for x in startCreators]
 		return outObjs
 
@@ -58,6 +61,7 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		startCreators = self._getCreatorsForSetOfGeoms(self.productGeoms)
 		for idx,creator in enumerate(startCreators):
 			creator.fileName = "product_{}".format(idx)
+			creator.charge = self.productCharges[idx]
 		outObjs = [x.create() for x in startCreators]
 		return outObjs
 

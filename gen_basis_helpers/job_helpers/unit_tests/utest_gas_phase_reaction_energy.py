@@ -12,12 +12,14 @@ class TestCreateStandardInputForGasPhaseReactionEnergy(unittest.TestCase):
 		self.baseWorkFolder = "fake_folder"
 		self.reactantGeoms = [mock.Mock(), mock.Mock()]
 		self.reactantStoichiometries = [x for x in range(len(self.reactantGeoms))]
+		self.reactantCharges = [2 for x in range(len(self.reactantGeoms))]
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		kwargDict = {"baseWorkFolder":self.baseWorkFolder,
 		             "reactantGeoms":self.reactantGeoms,
-		              "reactantStoichiometries":self.reactantStoichiometries}
+		              "reactantStoichiometries":self.reactantStoichiometries,
+		             "reactantCharges":self.reactantCharges}
 		self.testObjA = tCode.CodeSpecificStandardInputCreatorTemplate(**kwargDict)
 
 	@mock.patch("gen_basis_helpers.job_helpers.gas_phase_reaction_energy.CodeSpecificStandardInputCreatorTemplate.outFolder", new_callable=mock.PropertyMock)
@@ -47,16 +49,19 @@ class TestCreateStandardInputForGasPhaseReactionEnergy(unittest.TestCase):
 	def testExpectedReactantCreators(self, mockedCreatorsForGeomSet):
 		expCreators = [mock.Mock() for x in range(len(self.reactantGeoms))]
 		expFileNames = ["reactant_{}".format(x) for x in range(len(self.reactantGeoms))]
+		expCharges = self.reactantCharges
 		mockedCreatorsForGeomSet.side_effect = lambda *args,**kwargs: expCreators
 
 		outCalcObjs = self.testObjA._getReactantCalcObjs()
 		actFileNames = [x.fileName for x in expCreators]
+		actCharges = [x.charge for x in expCreators]
 
 		mockedCreatorsForGeomSet.assert_called_once_with(self.reactantGeoms)
 		for x in expCreators:
 			x.create.assert_called_once_with()
 
 		self.assertEqual(expFileNames,actFileNames)
+		self.assertEqual(expCharges,actCharges)
 
 	@mock.patch("gen_basis_helpers.job_helpers.gas_phase_reaction_energy.CodeSpecificStandardInputCreatorTemplate._getReactantCalcObjs")
 	@mock.patch("gen_basis_helpers.job_helpers.gas_phase_reaction_energy.totEnergyFlow.TotalEnergyGroupWorkflow")
