@@ -117,7 +117,8 @@ class MapGasPhaseReactionEnergyWorkflowToUsefulFormatStandard():
 	   The callable interface takes a non-composite StandardInput object as the sole argument
 	"""
 
-	def __init__(self, reactEnergyFmt="{:.3f}"):
+	def __init__(self, reactEnergyFmt="{:.3f}", reactantEnergyFmt="{:.3f}",
+	             productEnergyFmt="{:.3f}"):
 		""" Initializer
 		
 		Args:
@@ -125,23 +126,44 @@ class MapGasPhaseReactionEnergyWorkflowToUsefulFormatStandard():
 				 
 		"""
 		self.reactEnergyFmt = reactEnergyFmt
+		self.reactantEnergyFmt = reactantEnergyFmt
+		self.productEnergyFmt = productEnergyFmt
 
 
 	def _getSimpleTableHeadings(self):
 		return ["Method", "Reaction Energy (eV)"]
 
-	def _getSimpleTableData(self,stdInputObj):
+	def _getSimpleTableData(self, stdInputObj):
 		methodLabel = stdInputObj.label[0].methodKey
 		reactEnergy = stdInputObj.workflow.output[0].energy
 		return [methodLabel, self.reactEnergyFmt.format(reactEnergy)]
 
+	def _getTableWithEnergyBreakdownsData(self, stdInputObj):
+		outData = self._getSimpleTableData(stdInputObj)
+		reactantEnergies = stdInputObj.workflow.output[0].reactantEnergies
+		productEnergies = stdInputObj.workflow.output[0].productEnergies
+		outData += [self.reactantEnergyFmt.format(x) for x in reactantEnergies]
+		outData += [self.productEnergyFmt.format(x) for x in productEnergies] 
+		return outData
+
+	def _getTableWithEnergyBreakdownsHeadings(self, stdInputObj):
+		outHeadings = self._getSimpleTableHeadings()
+		numbReactants = len( stdInputObj.workflow.output[0].reactantEnergies )
+		numbProducts = len( stdInputObj.workflow.output[0].productEnergies )
+		outHeadings += ["Reactant {} Energy (eV)".format(x+1) for x in range(numbReactants)]
+		outHeadings += ["Product {} Energy (eV)".format(x+1) for x in range(numbProducts)]
+		return outHeadings
 
 	def __call__(self, stdInputObj):
 		stdInputObj.workflow.run()
 		assert len(stdInputObj.workflow.output)==1
 		assert len(stdInputObj.label)==1
-		output = types.SimpleNamespace(tableData=None, tableDataHeadings=None)
+		output = types.SimpleNamespace(tableData=None, tableHeadings=None,
+		                               tableWithBreakdownData=None, tableWithBreakdownHeadings=None)
 		output.tableData = self._getSimpleTableData(stdInputObj)
-		output.tableDataHeadings = self._getSimpleTableHeadings()
+		output.tableHeadings = self._getSimpleTableHeadings()
+		output.tableWithBreakdownData = self._getTableWithEnergyBreakdownsData(stdInputObj)
+		output.tableWithBreakdownHeadings = self._getTableWithEnergyBreakdownsHeadings(stdInputObj)
+
 		return output
 

@@ -131,14 +131,22 @@ class TestMapFunction(unittest.TestCase):
 		self.methodKey = "fake_method"
 		self.reactEnergyA = 40
 		self.reactEnergyFmt = "{:4f}"
+		self.reactantEnergyFmt = "{:.5f}"
+		self.productEnergyFmt = "{:.2f}"
 		self.createTestObjs()
 
 	def createTestObjs(self):
+		self.reactantEnergiesA = [20,10]
+		self.productEnergiesA = [ self.reactEnergyA + sum(self.reactantEnergiesA) ]
+
 		labelA = labelHelp.StandardLabel( eleKey=self.eleKey, methodKey=self.methodKey, structKey=self.structKey )
-		outputObj = types.SimpleNamespace( energy=self.reactEnergyA )
+		outputObj = types.SimpleNamespace( energy=self.reactEnergyA, reactantEnergies=self.reactantEnergiesA,
+		                                   productEnergies=self.productEnergiesA )
 
 		self.workflowA = types.SimpleNamespace( output=[outputObj], run=mock.Mock() )
-		self.testObjA = tCode.MapGasPhaseReactionEnergyWorkflowToUsefulFormatStandard(reactEnergyFmt=self.reactEnergyFmt)
+
+		testObjKwargs = {"reactEnergyFmt":self.reactEnergyFmt, "reactantEnergyFmt":self.reactantEnergyFmt, "productEnergyFmt":self.productEnergyFmt}
+		self.testObjA = tCode.MapGasPhaseReactionEnergyWorkflowToUsefulFormatStandard(**testObjKwargs)
 		self.standardInpObjA = calcRunners.StandardInputObj( self.workflowA, labelA )
 
 	def _runTestFunct(self):
@@ -149,14 +157,21 @@ class TestMapFunction(unittest.TestCase):
 		self.workflowA.run.assert_called_once_with()
 
 	def testExpectedSimpleTableData(self):
-		self._runTestFunct()
 		expData = [self.methodKey] + [self.reactEnergyFmt.format(self.reactEnergyA)]
 		actData = self._runTestFunct().tableData
 		self.assertEqual(expData,actData)
 
+	def testExpectedTableWithComponentsData(self):
+		expData = ( [self.methodKey] + [self.reactEnergyFmt.format(self.reactEnergyA)] +
+		            [self.reactantEnergyFmt.format(x) for x in self.reactantEnergiesA] +
+		            [self.productEnergyFmt.format(x) for x in self.productEnergiesA] )
+		actData = self._runTestFunct().tableWithBreakdownData
+		self.assertEqual(expData,actData)
 
-
-
-
+	def testExpectedTableHeadingsForBreakdownTable(self):
+		expHeadings = ( ["Method", "Reaction Energy (eV)"] + ["Reactant {} Energy (eV)".format(x+1) for x in range(len(self.reactantEnergiesA))] +
+		                ["Product {} Energy (eV)".format(x+1) for x in range(len(self.productEnergiesA))] )
+		actHeadings = self._runTestFunct().tableWithBreakdownHeadings
+		self.assertEqual(expHeadings, actHeadings)
 
 
