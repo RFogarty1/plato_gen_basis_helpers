@@ -1,9 +1,13 @@
 
 import itertools as it
+import types
 import unittest
 import unittest.mock as mock
 
 import gen_basis_helpers.job_helpers.gas_phase_reaction_energy as tCode
+
+import gen_basis_helpers.shared.calc_runners as calcRunners
+import gen_basis_helpers.shared.label_objs as labelHelp
 
 class TestCreateStandardInputForGasPhaseReactionEnergy(unittest.TestCase):
 
@@ -117,6 +121,38 @@ class TestCreateStandardInputForGasPhaseReactionEnergy(unittest.TestCase):
 
 
 
+
+
+class TestMapFunction(unittest.TestCase):
+
+	def setUp(self):
+		self.eleKey = "fake_ele"
+		self.structKey = "fake_struct"
+		self.methodKey = "fake_method"
+		self.reactEnergyA = 40
+		self.reactEnergyFmt = "{:4f}"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		labelA = labelHelp.StandardLabel( eleKey=self.eleKey, methodKey=self.methodKey, structKey=self.structKey )
+		outputObj = types.SimpleNamespace( energy=self.reactEnergyA )
+
+		self.workflowA = types.SimpleNamespace( output=[outputObj], run=mock.Mock() )
+		self.testObjA = tCode.MapGasPhaseReactionEnergyWorkflowToUsefulFormatStandard(reactEnergyFmt=self.reactEnergyFmt)
+		self.standardInpObjA = calcRunners.StandardInputObj( self.workflowA, labelA )
+
+	def _runTestFunct(self):
+		return self.testObjA( self.standardInpObjA )
+
+	def testRunMethodCalled(self):
+		self._runTestFunct()
+		self.workflowA.run.assert_called_once()
+
+	def testExpectedSimpleTableData(self):
+		self._runTestFunct()
+		expData = [self.methodKey] + [self.reactEnergyFmt.format(self.reactEnergyA)]
+		actData = self._runTestFunct().tableData
+		self.assertEqual(expData,actData)
 
 
 

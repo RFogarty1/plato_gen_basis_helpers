@@ -1,6 +1,7 @@
 
 
 import copy
+import types
 from . import standard_template_obj as stdTemplate
 
 from ..shared import calc_runners as calcRunners
@@ -107,4 +108,39 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	@baseCreator.setter
 	def baseCreator(self,val):
 		self._baseCreator = val
+
+
+
+class MapGasPhaseReactionEnergyWorkflowToUsefulFormatStandard():
+	"""Callable class used to transform ReactionEnergyWorkflow output into a better format for tabulating
+
+	   The callable interface takes a non-composite StandardInput object as the sole argument
+	"""
+
+	def __init__(self, reactEnergyFmt="{:.3f}"):
+		""" Initializer
+		
+		Args:
+			reactEnergyFmt: (str,optional) Format str used for the total reaction energy format
+				 
+		"""
+		self.reactEnergyFmt = reactEnergyFmt
+
+
+	def _getSimpleTableHeadings(self):
+		return ["Method", "Reaction Energy (eV)"]
+
+	def _getSimpleTableData(self,stdInputObj):
+		methodLabel = stdInputObj.label[0].methodKey
+		reactEnergy = stdInputObj.workflow.output[0].energy
+		return [methodLabel, self.reactEnergyFmt.format(reactEnergy)]
+
+
+	def __call__(self, stdInputObj):
+		stdInputObj.workflow.run()
+		assert len(stdInputObj.workflow.output)==1
+		assert len(stdInputObj.label)==1
+		output = types.SimpleNamespace(tableData=None, tableDataHeadings=None)
+		output.tableData = self._getSimpleTableData(stdInputObj)
+		return output
 
