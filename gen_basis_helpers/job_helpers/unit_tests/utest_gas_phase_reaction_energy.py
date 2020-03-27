@@ -146,7 +146,7 @@ class TestMapFunction(unittest.TestCase):
 
 	def testRunMethodCalled(self):
 		self._runTestFunct()
-		self.workflowA.run.assert_called_once()
+		self.workflowA.run.assert_called_once_with()
 
 	def testExpectedSimpleTableData(self):
 		self._runTestFunct()

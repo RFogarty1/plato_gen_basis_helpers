@@ -142,5 +142,6 @@ class MapGasPhaseReactionEnergyWorkflowToUsefulFormatStandard():
 		assert len(stdInputObj.label)==1
 		output = types.SimpleNamespace(tableData=None, tableDataHeadings=None)
 		output.tableData = self._getSimpleTableData(stdInputObj)
+		output.tableDataHeadings = self._getSimpleTableHeadings()
 		return output
 
