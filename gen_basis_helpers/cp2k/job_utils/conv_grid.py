@@ -84,7 +84,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 
 	def __init__(self, geom=None, kPts=None, maxScf=None, cp2kMethodStr=None,
 				basisKeyDicts=None, basisAliases=None, workFolder=None, workFlowToOutputObjMap=None,
-				eleKey=None, structKey=None, charge=None):
+				eleKey=None, structKey=None, charge=None, addedMOs=None):
 		""" Initializer for class used to create the standardinput object for grid-convergence calculations
 		
 		Args:
@@ -99,6 +99,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 			structKey: (str) Just used to label the structure. If your only looking at 1 structure (likely) then it doesnt really matter what you set this to (but it MUST be set)
 			workFlowToOutputObjMap: (function, f(workflow)). Takes the gridConvergence workflow and extract data you want in the format you want. If this is left blank then standardOutput.data will simply be workflow.output. Setting to the mapWorkflowOutputToArray function means the output data will be an nx2 array of convergence values vs delta Energy values (relative to energy of the most converged case)
 			charge: (int) The charge on the system (default=0)
+			addedMOs: (int) The number of added MOs (for metal calculations, where smearing is used and some MOs above fermi energy have partial occupancies)
 
 		Note:
 			The createStandardInput function is whats actually used to get a StandardInput object
@@ -115,6 +116,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 		self.eleKey = eleKey
 		self.structKey = structKey
 		self.charge = charge
+		self.addedMOs = addedMOs
 	
 		self.workFlowToOutputObjMap = workFlowToOutputObjMap
 	
@@ -183,6 +185,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 			currObj.absGridCutoff = gVals.absCut
 			currObj.relGridCutoff = gVals.relCut
 			currObj.basePath = os.path.join(startFolder, gVals.toStr() )
+			currObj.addedMOs = self.addedMOs
 			allObjs.append(currObj)
 		return allObjs
 	
