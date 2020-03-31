@@ -54,3 +54,39 @@ class TestReactionEnergyWorkflows(unittest.TestCase):
 		self.assertEqual( self.reactantComponents, self.testObjA.output[0].reactantEnergies )
 		self.assertEqual( self.productComponents, self.testObjA.output[0].productEnergies )
 
+
+class TestCreateWorkflowFromEnergiesAndStoichiometries(unittest.TestCase):
+
+	def setUp(self):
+		self.reactantEnergyA = 5
+		self.reactantEnergyB = -3
+		self.productEnergyA = 4
+		self.reactantStoicA = 2
+		self.reactantStoicB = 3
+		self.productStoicA = 3
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.reactantEnergiesA =[self.reactantEnergyA, self.reactantEnergyB] 
+		self.productEnergiesA = [self.productEnergyA]
+		self.reactantStoicsA = [self.reactantStoicA, self.reactantStoicB]
+		self.productStoicsA = [self.productStoicA]
+		self.testObjA = self._runFunction()
+
+	def _runFunction(self):
+		inpArgs = (self.reactantEnergiesA, self.reactantStoicsA, self.productEnergiesA, self.productStoicsA)
+		return tCode.createReactionEnergyWorkflowFromEnergiesAndStoics( *inpArgs )
+
+	def testExpectedReactionEnergyGiven(self):
+		self.testObjA.run()
+		expReactEnergy =( (self.productStoicA*self.productEnergyA) - 
+		                 ( (self.reactantStoicA*self.reactantEnergyA) + (self.reactantStoicB*self.reactantEnergyB) ) )
+		actReactEnergy = self.testObjA.output[0].energy
+		self.assertAlmostEqual(expReactEnergy, actReactEnergy)
+
+	def testAssertRaisedIfStoicsAndEnergiesDiffLengths(self):
+		self.reactantStoicsA.append(5)
+		self.assertTrue( len(self.reactantEnergiesA) != len(self.reactantStoicsA) )
+		with self.assertRaises(AssertionError):
+			self._runFunction()
+
