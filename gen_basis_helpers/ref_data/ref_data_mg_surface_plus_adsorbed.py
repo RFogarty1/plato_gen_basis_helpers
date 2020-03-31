@@ -1,6 +1,6 @@
 
 
-
+import functools
 import os
 
 import plato_pylib.parseOther.parse_qe_files as parseQE
@@ -39,7 +39,7 @@ class RegistrationKey():
 	def __hash__(self):
 		return hash( tuple([getattr(self,x) for x in self.attrNames]) )
 
-
+@functools.singledispatch
 def getPlaneWaveSingleAdsorbateGeom(surface, adsorbate, site, cellDims, surfRelax=True, adsorbRelax=True):
 	""" Returns plane-wave DFT optimised geometry for Mg + an asorbate molecule
 	
@@ -58,7 +58,12 @@ def getPlaneWaveSingleAdsorbateGeom(surface, adsorbate, site, cellDims, surfRela
 	regKey = RegistrationKey( surfaceKey=surface.lower(), adsorbateKey=adsorbate.lower(), siteKey=site.lower(), cellDims=cellDims, surfRelax=surfRelax, adsorbRelax=adsorbRelax ) 
 	return _SURFACE_PLUS_SINGLE_ADSORBATE_GEOM_DICT[regKey]()
 
+@getPlaneWaveSingleAdsorbateGeom.register(RegistrationKey)
+def _(regKey):
+    return _SURFACE_PLUS_SINGLE_ADSORBATE_GEOM_DICT[regKey]()
 
+
+@functools.singledispatch
 def getPlaneWaveAdsorptionSingleAdsorbateTotalEnergy(surface, adsorbate, site, cellDims, surfRelax=True, adsorbRelax=True):
 	""" Returns plane-wave DFT energy of Mg + an adsorbate molecule. This is the TOTAL ENERGY of one structure, NOT an adsorption energy
 	
@@ -78,7 +83,9 @@ def getPlaneWaveAdsorptionSingleAdsorbateTotalEnergy(surface, adsorbate, site, c
 	regKey = RegistrationKey( surfaceKey=surface.lower(), adsorbateKey=adsorbate.lower(), siteKey=site.lower(), cellDims=cellDims, surfRelax=surfRelax, adsorbRelax=adsorbRelax ) 
 	return _SURFACE_PLUS_SINGLE_ADSORBATE_ENERGY_DICT[regKey]()
 
-
+@getPlaneWaveAdsorptionSingleAdsorbateTotalEnergy.register(RegistrationKey)
+def _(regKey):
+	return _SURFACE_PLUS_SINGLE_ADSORBATE_ENERGY_DICT[regKey]()
 
 # Mg with hydrogen adsorbed
 @registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="H".lower(), siteKey="octahedral", cellDims=[2,2,4]))
