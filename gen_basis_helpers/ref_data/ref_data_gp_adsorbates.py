@@ -57,3 +57,27 @@ def _getH2Energy():
 	filePath = os.path.join(BASE_FOLDER,"h2","hydrogen.out")
 	return parseQE.parseQuantumEspressoOutfile(filePath)["energies"].electronicTotalE 
 
+
+@registerGeomDeco("hydroxyl")
+def _():
+	filePath = os.path.join(BASE_FOLDER,"hydroxyl", "hydroxyl.out")
+	return parseQE.parseQuantumEspressoOutfile(filePath)["unitCell"] 
+
+@registerTotalEnergyDeco("hydroxyl")
+def _():
+	filePath = os.path.join(BASE_FOLDER,"hydroxyl", "hydroxyl.out")
+	return parseQE.parseQuantumEspressoOutfile(filePath)["energies"].electronicTotalE 
+
+
+@registerGeomDeco("h2o")
+def _():
+	filePath = os.path.join(BASE_FOLDER,"h2o", "water.out")
+	return parseQE.parseQuantumEspressoOutfile(filePath)["unitCell"] 
+
+@registerTotalEnergyDeco("h2o")
+def _():
+	filePath = os.path.join(BASE_FOLDER,"h2o", "water.out")
+	return parseQE.parseQuantumEspressoOutfile(filePath)["energies"].electronicTotalE 
+
+
+
