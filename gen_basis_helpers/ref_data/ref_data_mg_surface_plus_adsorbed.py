@@ -55,7 +55,7 @@ def getPlaneWaveSingleAdsorbateGeom(surface, adsorbate, site, cellDims, surfRela
 	Returns
 		 outEnergy: (float) Total electronic energy of the full system
 	"""
-	regKey = RegistrationKey( surfaceKey=surface.lower(), adsorbateKey=adsorbate.lower(), siteKey=site.lower(), cellDims=cellDims, surfRelax=surfRelax, adsorbRelax=adsorbRelax ) 
+	regKey = RegistrationKey( surfaceKey=surface, adsorbateKey=adsorbate, siteKey=site, cellDims=cellDims, surfRelax=surfRelax, adsorbRelax=adsorbRelax ) 
 	return _SURFACE_PLUS_SINGLE_ADSORBATE_GEOM_DICT[regKey]()
 
 @getPlaneWaveSingleAdsorbateGeom.register(RegistrationKey)
@@ -80,7 +80,7 @@ def getPlaneWaveAdsorptionSingleAdsorbateTotalEnergy(surface, adsorbate, site, c
 	Returns
 		 outGeom: (plato_pylib UnitCell object) Total electronic energy of the full system
 	"""
-	regKey = RegistrationKey( surfaceKey=surface.lower(), adsorbateKey=adsorbate.lower(), siteKey=site.lower(), cellDims=cellDims, surfRelax=surfRelax, adsorbRelax=adsorbRelax ) 
+	regKey = RegistrationKey( surfaceKey=surface, adsorbateKey=adsorbate, siteKey=site, cellDims=cellDims, surfRelax=surfRelax, adsorbRelax=adsorbRelax ) 
 	return _SURFACE_PLUS_SINGLE_ADSORBATE_ENERGY_DICT[regKey]()
 
 @getPlaneWaveAdsorptionSingleAdsorbateTotalEnergy.register(RegistrationKey)
