@@ -24,8 +24,8 @@ class RegistrationKey():
 	def __init__(self, *,surfaceKey, adsorbateKey, siteKey, cellDims, surfRelax=True, adsorbRelax=True):
 		self.attrNames = ["surfaceKey", "adsorbateKey", "siteKey", "cellDims", "surfRelax", "adsorbRelax"]
 		self.surfaceKey = surfaceKey.lower()
-		self.adsorbateKey = adsorbateKey.lower()
-		self.siteKey = siteKey.lower()
+		self.adsorbateKey = adsorbateKey.lower() if adsorbateKey is not None else adsorbateKey
+		self.siteKey = siteKey.lower() if siteKey is not None else siteKey
 		self.cellDims = tuple(cellDims) #Needs to be hashable (lists arent hashable)
 		self.surfRelax = surfRelax
 		self.adsorbRelax = adsorbRelax
@@ -118,23 +118,50 @@ def _getEnergyHcp0001HOctahedral_224():
 # Mg with OH adsorbed (0.25 and 1.0 coverage)
 @registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4]))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_1.out")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_1.out")
 	return parseQE.parseQuantumEspressoOutfile(outPath)["unitCell"]
 
 @registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4]))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_1.out")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_1.out")
 	return parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
 
 
-@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4]))
+@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75-fcc-hollow", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4]))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_4.out")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_4.out")
 	return parseQE.parseQuantumEspressoOutfile(outPath)["unitCell"]
 
 
 @registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4]))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_4.out")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_4.out")
 	return parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
+
+
+
+#Mg reference surfaces (not neccesarily blank)
+@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey=None, siteKey=None, cellDims=[2,2,4]))
+def _():
+	outPath = os.path.join(BASE_FOLDER, "plain_surfaces", "hcp0001", "cell_2_2_4", "Mg_pureslab.out")
+	return parseQE.parseQuantumEspressoOutfile(outPath)["unitCell"]
+
+@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey=None, siteKey=None, cellDims=[2,2,4]))
+def _():
+	outPath = os.path.join(BASE_FOLDER, "plain_surfaces", "hcp0001", "cell_2_2_4", "Mg_pureslab.out")
+	return parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
+
+
+@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75-fcc-hollow", adsorbateKey=None, siteKey=None, cellDims=[2,2,4]))
+def _():
+	outPath = os.path.join(BASE_FOLDER, "plain_surfaces", "hcp0001", "cell_2_2_4", "with_adsorbed", "hydroxyl_fcc_hollow","Mg_hydroxyl_3.out")
+	return parseQE.parseQuantumEspressoOutfile(outPath)["unitCell"]
+
+@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75-fcc-hollow", adsorbateKey=None, siteKey=None, cellDims=[2,2,4]))
+def _():
+	outPath = os.path.join(BASE_FOLDER, "plain_surfaces", "hcp0001", "cell_2_2_4", "with_adsorbed", "hydroxyl_fcc_hollow","Mg_hydroxyl_3.out")
+	return parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
+
+
+
 
