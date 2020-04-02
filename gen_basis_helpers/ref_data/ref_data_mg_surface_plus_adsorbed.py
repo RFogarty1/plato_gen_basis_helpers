@@ -133,7 +133,7 @@ def _():
 	return parseQE.parseQuantumEspressoOutfile(outPath)["unitCell"]
 
 
-@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4]))
+@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75-fcc-hollow", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4]))
 def _():
 	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_4.out")
 	return parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
