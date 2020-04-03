@@ -30,6 +30,8 @@ class MgOReferenceDataObj(refEleObjs.RefElementalDataBase):
 	def getEosFitDict(self,key,eos="murnaghan"):
 		return getPlaneWaveEosFitDict(key,eos=eos)
 
+	def getPlaneWaveSurfaceEnergy(self, structKey):
+		return getPlaneWaveSurfEnergy(structKey)
 
 
 def _getExptRockSaltStruct():
@@ -80,7 +82,6 @@ def _createMgORocksaltStructFromLattParam(a):
 
 
 #EoS data
-
 def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
 	structTypeToFunct = {"rocksalt": _getPlaneWaveEosDictRocksalt}
 	return structTypeToFunct[structType](eos)
@@ -88,3 +89,16 @@ def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
 def _getPlaneWaveEosDictRocksalt(eos):
 	outFolder = os.path.join(BASE_FOLDER,"eos","rocksalt")
 	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
+
+def getPlaneWaveSurfEnergy(structKey):
+	outDict = {"rocksalt001": _getSurfaceEnergyRocksalt001}
+	return outDict[structKey.lower()]()
+
+def _getSurfaceEnergyRocksalt001():
+	refBaseFolder = os.path.join(BASE_FOLDER, "surface_energies", "rocksalt_001")
+	bulkFile = os.path.join(refBaseFolder, "bulk_calc", "conv_val_1100pt000.castep")
+	surfFile = os.path.join(refBaseFolder, "surface_calc", "conv_val_1100pt000.castep")
+	return helpers.getCastepRefRocksalt001SurfacEnergyFromSurfAndBulkFilePaths(surfFile,bulkFile)
+
+
+

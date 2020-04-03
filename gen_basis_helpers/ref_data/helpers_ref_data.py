@@ -135,8 +135,14 @@ def _getUCellFromCrystalMakerCastepOutFile(refFile):
 	return outUCell
 
 
-
 def getCastepRefHcp0001SurfaceEnergyFromSurfAndBulkFilePaths(surfPath, bulkPath):
+	return getCastepSurfaceEnergyFromSurfAndBulkFilePaths(surfPath, bulkPath, surf.Hcp0001Surface)
+
+def getCastepRefRocksalt001SurfacEnergyFromSurfAndBulkFilePaths(surfPath, bulkPath):
+	return getCastepSurfaceEnergyFromSurfAndBulkFilePaths(surfPath, bulkPath, surf.Rocksalt001Surface)
+
+
+def getCastepSurfaceEnergyFromSurfAndBulkFilePaths(surfPath, bulkPath, surfClass):
 	bulkModFile = bulkPath
 	surfFile = surfPath
 
@@ -148,7 +154,7 @@ def getCastepRefHcp0001SurfaceEnergyFromSurfAndBulkFilePaths(surfPath, bulkPath)
 	surfUCell.convAngToBohr()
 	lenVac, nLayer = 0, 1 #Irrelevant for getting surface area
 
-	surfObj = surf.Hcp0001Surface( surfUCell, nLayer, lenVac )
+	surfObj = surfClass( surfUCell, nLayer, lenVac )
 	surfArea = surfObj.surfaceArea
 
 	#Create the objects for the workflow
