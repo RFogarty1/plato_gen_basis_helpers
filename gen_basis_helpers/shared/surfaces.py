@@ -72,6 +72,15 @@ class Hcp0001Surface(baseSurface.BaseSurface):
 class Rocksalt001Surface(baseSurface.BaseSurface):
 
 	def __init__(self, singleLayerCell, nLayers, lenVac):
+		""" Initialiser
+		
+		Args:
+			singleLayerCell: A plato_pylib UnitCell object representing a single layer of the surface. This can be built from the primitive cell by using getSingleLayerRocksalt001FromPrimitiveCell; extra space can be added in x and y directions by passing the relevant supercell
+			nLayers: The number of surface layers to use. Note each layer is two atoms deep
+			lenvac: The amount of vacuum required between surface images
+		
+		"""
+
 		self._singleLayerCell = singleLayerCell
 		self._nLayers = nLayers
 		self._lenVac = lenVac
