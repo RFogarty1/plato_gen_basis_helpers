@@ -6,6 +6,7 @@ import unittest
 import unittest.mock as mock
 
 import gen_basis_helpers.job_helpers.surface_energies as tCode
+import gen_basis_helpers.shared.surfaces as surfHelp
 import gen_basis_helpers.shared.label_objs as labelHelp
 import gen_basis_helpers.shared.calc_runners as calcRunners
 
@@ -93,6 +94,19 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 		actLabel = self.testObjA.label
 		self.assertEqual(expLabel,actLabel)
 
+	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.surfGetterHelp")
+	def testGetSurfaceObjClassReturnsExpectedForStr(self, mockSurfaceModule):
+		expRetVal = mock.Mock()
+		mockSurfaceModule.Hcp0001Surface = expRetVal
+		actRetVal = self.testObjA._getSurfaceObjClass()
+		self.assertEqual(expRetVal, actRetVal)
+
+	def testGetSurfaceObjClassReturnedExpectedForCls(self):
+		self.surfType = surfHelp.Hcp0001Surface
+		self.createTestObjs()
+		expRetVal = self.surfType #We expect the class to be returned here (NOT an instance)
+		actRetVal = self.testObjA._getSurfaceObjClass()
+		self.assertEqual(expRetVal,actRetVal)
 
 
 

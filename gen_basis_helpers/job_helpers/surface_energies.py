@@ -7,6 +7,7 @@ from ..shared import label_objs as labelHelp
 
 from ..shared import calc_runners as calcRunners
 from ..shared import creator_resetable_kwargs as baseCreator
+from ..shared import base_surface as baseSurf
 from ..shared import surfaces as surfGetterHelp
 from ..shared import label_objs as labelHelp
 
@@ -60,7 +61,20 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 		return outCreator.create()
 
 	def _getSurfaceObjClass(self):
-		if self.surfType == "hcp0001":
+		if isinstance(self.surfType, str):
+			return self._getSurfaceObjClassFromStr(self.surfType)
+
+		#cant use isinstance to compare classes; have to initialiase actual objects while bypassing __init__ to avoid passing the args
+		tempObj = self.surfType.__new__(self.surfType)
+
+		if isinstance(tempObj, baseSurf.BaseSurface):
+			return self.surfType
+		else:
+			raise ValueError("{} is an invalid type".format( type(self.surfType) ))
+
+
+	def _getSurfaceObjClassFromStr(self, inpStr):
+		if inpStr == "hcp0001":
 			return surfGetterHelp.Hcp0001Surface
 		else:
 			raise ValueError("{} is an invalid surface type".format(self.surfType))
