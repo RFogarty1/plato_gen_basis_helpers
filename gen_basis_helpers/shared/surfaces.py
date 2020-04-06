@@ -129,10 +129,11 @@ def getSingleLayerRocksalt001FromPrimitiveCell(primCell):
 	
 	#From here onwards i assume primCell is in the correct format
 	inpLattParam = primCell.lattParams["a"]
+	lattParam = primCell.lattParams["a"] * (1/math.sqrt(0.5))
 	_tempA = 1/math.sqrt(2) #if a unit vector is halfway between x/y axes, then each component hsa this value
 	lattVects = [ [_tempA*inpLattParam,     _tempA*inpLattParam, 0],
 	              [-1*_tempA*inpLattParam, _tempA*inpLattParam, 0],
-	              [0.0                   , 0.0,                inpLattParam] ]
+	              [0.0                   , 0.0,                lattParam] ]
 	eleA, eleB = [x[-1] for x in primCell.fractCoords]
 	fractCoords = [ [0.0,0.0,0.0,eleA], [0.0,0.0,0.5,eleB], [0.5,0.5,0.0,eleB], [0.5,0.5,0.5,eleA] ]
 

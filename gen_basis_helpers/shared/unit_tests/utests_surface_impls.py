@@ -101,9 +101,10 @@ class TestBuildRocksalt001SingleLayerFromPrimitive(unittest.TestCase):
 	@mock.patch("gen_basis_helpers.shared.surfaces.uCell.UnitCell")
 	def testExpectedUCellCallForTestCellA(self, mockedUCellClass):
 		expFractCoords = [ [0,0,0,self.eleA], [0,0,0.5,self.eleB], [0.5,0.5,0,self.eleB], [0.5,0.5,0.5,self.eleA] ]
-		expLattVects = [ [ (1/math.sqrt(2))*self.a   , (1/math.sqrt(2))*self.b, 0.0   ],
-		                 [ -1*(1/math.sqrt(2))*self.a, (1/math.sqrt(2))*self.b, 0.0   ],
-		                 [ 0                         , 0                      , self.c] ]
+		expLattParamAlongZ = (1/math.sqrt(0.5))*self.a #2x as many atoms along z, hence this increases
+		expLattVects = [ [ (1/math.sqrt(2))*self.a   , (1/math.sqrt(2))*self.a, 0.0   ],
+		                 [ -1*(1/math.sqrt(2))*self.a, (1/math.sqrt(2))*self.a, 0.0   ],
+		                 [ 0                         , 0                      , expLattParamAlongZ] ]
 
 		mockOutput = mock.Mock()
 		mockedUCellClass.fromLattVects.side_effect = [mockOutput]
