@@ -113,6 +113,11 @@ def _getMgRc7pt5PlusMoloptSPBasisObj():
 	                             potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
 
 
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-q2-ssp-rc7pt5-r06pt0".lower())
+def _():
+    return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="ssp-rc7pt5-r06pt0-1",
+                                 potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
 
 
 #Rc = 8.0 basis set
