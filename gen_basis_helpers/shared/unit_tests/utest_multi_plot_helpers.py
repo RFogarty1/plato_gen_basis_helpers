@@ -12,13 +12,14 @@ class TestCreateSimpleMultiPlot(unittest.TestCase):
 		self.plotFactoryA = mock.Mock()
 		self.plotFactoryB = mock.Mock()
 		self.nCols = 4
+		self.multiPlotterKwargDict = None
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		self.plotFactories = [self.plotFactoryA, self.plotFactoryB]
 
 	def runFunct(self):
-		return tCode.createSimpleMultiPlot(self.plotFactories, nCols=self.nCols)
+		return tCode.createSimpleMultiPlot(self.plotFactories, nCols=self.nCols, multiPlotterKwargDict=self.multiPlotterKwargDict)
 
 
 
@@ -40,6 +41,17 @@ class TestCreateSimpleMultiPlot(unittest.TestCase):
 		expGrid.create.side_effect = lambda *args,**kwargs: mock.Mock(), mock.Mock() 
 		self.runFunct()
 		mockedStdPlotter.assert_called_once_with(expFactories,expGrid)
+
+	@mock.patch("gen_basis_helpers.shared.multi_plot_helpers.multiGrids.RectangularPlotGrid")
+	@mock.patch("gen_basis_helpers.shared.multi_plot_helpers.mPlotHelp.MultiPlotterStandard")
+	def testKwargsPassedToMultiPlotter(self, mockedStdPlotter, mockedGridCreator):
+		self.multiPlotterKwargDict = {"annotateGraphs":True}
+		expKwargs = self.multiPlotterKwargDict
+		self.runFunct()
+		actArgs,actKwargs = mockedStdPlotter.call_args
+		for key in expKwargs:
+			self.assertEqual( expKwargs[key], actKwargs[key] )
+
 
 
 
