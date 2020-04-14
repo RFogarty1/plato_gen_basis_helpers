@@ -249,6 +249,7 @@ class DataPlotterStandard(DataPlotterBase):
 			kwargs: Values to temporarily set on object (must be registered Kwargs) 
 				 
 		"""
+		#NOTE: The way axHandle is got, through kwargs rather thab self causes problems for inherited classes. TODO: Sort this
 		with misc.fragile(temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
 			axHandle = kwargs.get("axHandle",None) if kwargs.get("axHandle",None) is not None else outFig.get_axes()[0]
 			usedProp = getattr(self,propName)

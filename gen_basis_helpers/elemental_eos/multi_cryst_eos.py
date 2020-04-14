@@ -1,6 +1,7 @@
 
 ''' Purpose of these objects are to hold data on the eos fits to multiple crystal structures '''
 
+import copy
 from collections import OrderedDict
 import numpy as np 
 
@@ -219,7 +220,7 @@ class GroupedMultiCrystEosForOneElement():
 			outTableDict[key][-1] = "{:.3f}".format( float(outTableDict[key][-1]) - minE )
 		return outTableDict
 	
-	def createPlots(self, refStr=None, structOrder=None, deltaE0=True, methodStr=None):
+	def createPlots(self, refStr=None, structOrder=None, deltaE0=True, methodStr=None, factory=False):
 		if refStr is None:
 			pass
 		else:
@@ -236,11 +237,11 @@ class GroupedMultiCrystEosForOneElement():
 			if refStr is None:
 				refMethod = methodStr
 			if methodStr in methods:
-				currFig = self._createPlotOneMethod(methodStr,refStr=refMethod, structOrder=structOrder,deltaE0=deltaE0)
+				currFig = self._createPlotOneMethod(methodStr,refStr=refMethod, structOrder=structOrder,deltaE0=deltaE0,factory=factory)
 				allPlots.append(currFig)
 		return allPlots
 	
-	def _createPlotOneMethod(self, methodLabel,refStr=None, structOrder=None, deltaE0=True):
+	def _createPlotOneMethod(self, methodLabel,refStr=None, structOrder=None, deltaE0=True, factory=False):
 		plotDataDict = self._getPlotDataDictOneMethod(methodLabel,deltaE0=deltaE0)
 		refDataDict = self._getPlotDataDictOneMethod(refStr,deltaE0=deltaE0) if refStr is not None else copy.deepcopy(plotDataDict)
 		plotData, refData = list(), list()
@@ -254,9 +255,16 @@ class GroupedMultiCrystEosForOneElement():
 		title = self.elementLabel.replace("_"," ") + " " + methodLabel.replace("_"," ")
 		structLabels = [x.replace("_"," ") for x in structOrder]
 
-
-		currFig = self.dataPlotter.createPlot([refData,plotData], titleStr=title, dataLabels=structLabels)
-		return currFig
+		outDataPlotter = copy.deepcopy(self.dataPlotter)
+		outDataPlotter.titleStr=title
+		outDataPlotter.dataLabels = structLabels
+		outDataPlotter.data = [refData,plotData]
+		if factory:
+			return outDataPlotter
+		else:
+#            currFig = self.dataPlotter.createPlot()
+			currFig = self.dataPlotter.createPlot([refData,plotData], titleStr=title, dataLabels=structLabels)
+			return currFig
 	
 	def _getPlotDataDictOneMethod(self,methodLabel,deltaE0=True):
 		#Step 1 = get the object for this method

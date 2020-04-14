@@ -31,7 +31,7 @@ class EosEnergyDataPlotter(basePlotter.DataPlotterStandard):
 
 
 	#NOTE: Almost a total duplicate of DataPlotterDiagMatrixEles
-	def createPlot(self, plotData, **kwargs):
+	def createPlot(self, plotData=None, **kwargs):
 		""" Takes data in plotData argument and creates a plot 
 		
 		Args:
@@ -41,7 +41,14 @@ class EosEnergyDataPlotter(basePlotter.DataPlotterStandard):
 		Returns
 			Handle to the overall figure
 		"""
-		toPlot = self._getDataFormattedForSuperPlotter(plotData)
+		if plotData is not None:	
+			toPlot = self._getDataFormattedForSuperPlotter(plotData)
+		else:
+			if self.data is not None:
+				plotData = self.data
+				toPlot = self._getDataFormattedForSuperPlotter(self.data)
+			else:
+				raise ValueError("No plot data given")
 
 		with misc.fragile(basePlotter.temporarilySetDataPlotterRegisteredAttrs(self,kwargs)):
 
@@ -55,17 +62,16 @@ class EosEnergyDataPlotter(basePlotter.DataPlotterStandard):
 				if currVal is not None:
 					setattr(self, prop, self._getDataSeriesBasedArgListInCorrectFormat(plotData, currVal))
 
-
-			outFig = super().createPlot(toPlot)
-			self.changeLineProp(outFig, "lineMarkers", lambda inpLine,value:inpLine.set_marker(value))
-			self.changeLineProp(outFig, "lineMarkerSizes", lambda inpLine,value:inpLine.set_markersize(value), inclLegend=False)
-			self.changeLineProp(outFig, "lineMarkerFillStyles", lambda inpLine,value:inpLine.set_fillstyle(value), inclLegend=False)
+			outFig = super().createPlot(toPlot, axHandle=self.axHandle)
+			self.changeLineProp(outFig, "lineMarkers", lambda inpLine,value:inpLine.set_marker(value), axHandle=self.axHandle)
+			self.changeLineProp(outFig, "lineMarkerSizes", lambda inpLine,value:inpLine.set_markersize(value), inclLegend=False, axHandle=self.axHandle)
+			self.changeLineProp(outFig, "lineMarkerFillStyles", lambda inpLine,value:inpLine.set_fillstyle(value), inclLegend=False, axHandle=self.axHandle)
 
 
 			if self.legend:
-				currAx = outFig.get_axes()[0]
+				currAx = self.axHandle if self.axHandle is not None else outFig.get_axes()[0]
 				currAx.legend()
-				self.changeLegendEntriesToMethodOnly(outFig)
+				self.changeLegendEntriesToMethodOnly(currAx)
 
 
 		return outFig
@@ -114,10 +120,10 @@ class EosEnergyDataPlotter(basePlotter.DataPlotterStandard):
 
 
 	#DUPLICATED FROM DataPlotterDiagMatrixEles
-	def changeLegendEntriesToMethodOnly(self, outFig):
-		currLegend = outFig.get_axes()[0].get_legend()
+	def changeLegendEntriesToMethodOnly(self, outAx):
+		currLegend = outAx.get_legend()
 		usefulLines, usefulText = list(), list()
-		currAx = outFig.get_axes()[0]
+		currAx = outAx
 
 		#We grab the first instance of a new method
 		for handle,textObj in it.zip_longest(currAx.get_lines(), currLegend.texts):
