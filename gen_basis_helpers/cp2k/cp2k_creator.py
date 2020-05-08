@@ -55,6 +55,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("relGridCutoff")
 	registeredKwargs.add("printAOMullikenPop")
 	registeredKwargs.add("charge")
+	registeredKwargs.add("runType")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -176,6 +177,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if self.charge is not None:
 			modDict["charge"] = self.charge
 
+		runTypeModDict = self._getModDictBasedOnRunType()
+		modDict.update(runTypeModDict)
 
 		fileHelpers.modCp2kObjBasedOnDict(pycp2kObj, modDict)
 
@@ -193,4 +196,14 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 
 		else:
 			raise AssertionError("Not sure why, but something went wrong with figuring out a file path")
+
+
+	def _getModDictBasedOnRunType(self):
+		outDict = dict()
+		runStr = self.runType if self.runType is not None else "None" #Need to be able to apply .lower() to it
+
+		if runStr.lower() == "geomOpt".lower():
+			outDict["runType".lower()] = "cell_opt" #Later, may need to pass geo_opt (or similar) if constraints set a certain way
+
+		return outDict
 

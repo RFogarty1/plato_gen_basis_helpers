@@ -16,6 +16,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.workFolder = "fake_folder"
 		self.fileName = "fake_file_name"
 		self.methodStr = "cp2k_test_object"
+		self.runType = None
 		self.printAOMullikenPop = False
 		self.createTestObjs()
 
@@ -24,7 +25,8 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.testCreatorObjA = tCode.CP2KCalcObjFactoryStandard(methodStr=self.methodStr, kPts=self.kPts,
 		                                                        addedMOs=self.addedMOs, geom=self.geom,
 		                                                        basisObjs=self.basisObj, folderPath=self.workFolder,
-		                                                        fileName=self.fileName, workFolder=None, printAOMullikenPop=self.printAOMullikenPop)
+		                                                        fileName=self.fileName, workFolder=None, printAOMullikenPop=self.printAOMullikenPop,
+		                                                        runType=self.runType)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -124,4 +126,16 @@ class TestStandardCreationObj(unittest.TestCase):
 		expBasePath = os.path.join( testFolderPath, self.fileName)
 		actBasePath = outObj.basePath
 		self.assertEqual(expBasePath, actBasePath)
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
+	def testCellOptPassedToFileHelpers(self, mockMethReg, mockFileHelpers):
+		self.runType = "geomOpt"
+		self.createTestObjs()
+		expArgDict = {"runtype":"cell_opt"}
+		self.testCreatorObjA.create()
+		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
+		actArgDict = {k.lower():args[1][k] for k in expArgDict.keys()}
+		self.assertEqual(expArgDict, actArgDict)
+
 
