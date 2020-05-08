@@ -122,6 +122,11 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 	if useDict.get("charge") is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Charge = useDict["charge"]
 
+	if useDict.get("runType".lower()) is not None:
+		cp2kObj.CP2K_INPUT.GLOBAL.Run_type = useDict["runtype"].upper()
+		if useDict["runtype"].lower() == "cell_opt":
+			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].Stress_tensor = "analytical".upper()
+
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work
