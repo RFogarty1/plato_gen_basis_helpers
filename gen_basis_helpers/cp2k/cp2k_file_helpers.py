@@ -127,6 +127,14 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 		if useDict["runtype"].lower() == "cell_opt":
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].Stress_tensor = "analytical".upper()
 
+	if useDict.get("geo_constrain_cell_angles") is not None:
+		angleConstraints = useDict["geo_constrain_cell_angles"]
+		if all(angleConstraints):
+			cp2kObj.CP2K_INPUT.MOTION.CELL_OPT.Keep_angles = True
+		elif not any(angleConstraints): #All False
+			pass
+		else:
+			raise ValueError("Constraining angles to {} is not currently supported".format(angleConstraints))
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work

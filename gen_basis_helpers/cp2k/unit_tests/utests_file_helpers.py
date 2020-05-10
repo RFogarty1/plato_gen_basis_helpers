@@ -79,7 +79,7 @@ class testModifyCp2kObj(unittest.TestCase):
 		self.assertEqual( sorted(expStr), sorted(actStr) )
 
 	def testCellOpt(self):
-		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, {"runType":"cell_opt"})
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, {"runType":"cell_opt", "geo_constrain_cell_angles":[True,True,True]})
 		expStr = _loadExpectedOutputCellOptA()
 		actStr = self.startCP2KObj.get_input_string()
 		self.assertEqual( sorted(expStr), sorted(actStr) )
@@ -124,4 +124,6 @@ def _loadExpectedOutputCellOptA():
 	outStr = _getDefObjInputStr()
 	outStr = outStr.replace("RUN_TYPE ENERGY", "RUN_TYPE CELL_OPT")
 	outStr = outStr.replace("&FORCE_EVAL\n", "&FORCE_EVAL\n  STRESS_TENSOR ANALYTICAL\n")
+	constraintStr = "&MOTION\n  &CELL_OPT\n    KEEP_ANGLES TRUE\n  &END CELL_OPT\n&END MOTION\n"
+	outStr = constraintStr + outStr
 	return outStr

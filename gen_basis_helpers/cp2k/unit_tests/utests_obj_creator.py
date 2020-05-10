@@ -6,6 +6,8 @@ import unittest.mock as mock
 
 import gen_basis_helpers.cp2k.cp2k_creator as tCode
 
+import gen_basis_helpers.shared.geom_constraints as geomConstr
+
 class TestStandardCreationObj(unittest.TestCase):
 
 	def setUp(self):
@@ -139,3 +141,45 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.assertEqual(expArgDict, actArgDict)
 
 
+
+#TODO: Probably test atomic positions and cell constraints separately
+class TestModDictBasedOnGeomConstraints(unittest.TestCase):
+
+
+	def runTestFunct(self):
+		return tCode.getCP2KModDictBasedOnGeomConstraints(self.testConstrObj)
+
+	def testNoConstraintsPresent(self):
+		expDict = {"runType".lower():"cell_opt"} #Full optimisation, all variables free
+		self.testConstrObj = geomConstr.GeomConstraints.initWithNoConstraints()
+		actDict = self.runTestFunct()
+		self.assertEqual(expDict, actDict)
+
+	def testCellAnglesConstrained(self):
+		self.testConstrObj = geomConstr.GeomConstraints.initWithNoConstraints()
+		self.testConstrObj.cellConstraints.anglesToFix = [True,True,True]
+		expDict = {"runtype".lower():"cell_opt",
+		           "geo_constrain_cell_angles": [True,True,True]}
+		actDict = self.runTestFunct()
+		self.assertEqual(expDict,actDict)
+
+	def testFullCellConstraintsPresent(self):
+		allCellConstraints = [True,True,True]
+		cellConstraints = geomConstr.CellConstraints(allCellConstraints, allCellConstraints)
+		atomicPosConstraints=  geomConstr.AtomicPositionConstraints.initWithNoConstraints()
+		self.testConstrObj = geomConstr.GeomConstraints(atomicPosConstraints, cellConstraints)
+		expDict = {"runtype":"geo_opt"}
+		actDict = self.runTestFunct()
+		self.assertEqual(expDict,actDict)
+
+	#TODO: Implement ability to actually fix lattice parameters independent of angles
+	def testRaisesWhenOnlyLattParamsFixed(self):
+		cellConstrs = geomConstr.CellConstraints.initWithNoConstraints()
+		cellConstrs.lattParamsToFix = [True,True,True]
+		atomicPosConstraints = geomConstr.AtomicPositionConstraints.initWithNoConstraints()
+		self.testConstrObj = geomConstr.GeomConstraints(atomicPosConstraints,cellConstrs)
+		with self.assertRaises(ValueError):
+			self.runTestFunct()
+
+		
+	

@@ -56,6 +56,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("printAOMullikenPop")
 	registeredKwargs.add("charge")
 	registeredKwargs.add("runType")
+	registeredKwargs.add("geomConstraints")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -203,7 +204,35 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		runStr = self.runType if self.runType is not None else "None" #Need to be able to apply .lower() to it
 
 		if runStr.lower() == "geomOpt".lower():
-			outDict["runType".lower()] = "cell_opt" #Later, may need to pass geo_opt (or similar) if constraints set a certain way
+			if self.geomConstraints is None:
+				outDict["runType".lower()] = "cell_opt" #Later, may need to pass geo_opt (or similar) if constraints set a certain way
+			else:
+				geomOptDict = getCP2KModDictBasedOnGeomConstraints(self.geomConstraints)
+				outDict.update(geomOptDict)
 
 		return outDict
+
+
+def getCP2KModDictBasedOnGeomConstraints(geomConstraints):
+	outDict = dict()
+	if geomConstraints.constraintsPresent is False:
+		outDict["runtype"] = "cell_opt"
+		return outDict
+
+	outDict = _getModDictBasedOnCellConstraints(geomConstraints.cellConstraints)
+
+	if outDict == dict():
+		raise ValueError("Cant handle geomConstraints object")
+	return outDict
+
+def _getModDictBasedOnCellConstraints(cellConstraints):
+	outDict = dict()
+	if all(cellConstraints.anglesToFix) and all(cellConstraints.lattParamsToFix):
+		outDict["runtype"] = "geo_opt"
+		return outDict
+
+	if all(cellConstraints.anglesToFix):
+		outDict["geo_constrain_cell_angles"] = [True,True,True] #Constrain all angles case
+		outDict["runtype"] = "cell_opt"
+	return outDict
 
