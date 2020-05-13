@@ -8,6 +8,34 @@ import plato_pylib.utils.supercell as supCell
 import gen_basis_helpers.shared.base_surface as baseSurface
 
 
+
+class GenericSurface(baseSurface.BaseSurface):
+
+	def __init__(self, singleLayerCell, nLayers, lenVac):
+		""" Initialiser
+		
+		Args:
+			singleLayerCell: A plato_pylib UnitCell object representing a single layer of the surface. 
+			nLayers: The number of surface layers to use (1 layer = 1 singleLayerCell)
+			lenvac: The amount of vacuum required between surface images
+	
+		"""
+
+		self._singleLayerCell = singleLayerCell
+		self._nLayers = nLayers
+		self._lenVac = lenVac
+	
+	@property
+	def unitCell(self):
+		superCell = supCell.superCellFromUCell(self._singleLayerCell, [1,1,self._nLayers])
+		addVacuumToUnitCellAlongC(superCell, self._lenVac)
+		return superCell
+
+	@property
+	def surfaceArea(self):
+		return (self._singleLayerCell.volume / self._singleLayerCell.lattParams["c"])
+
+
 class Hcp0001Surface(baseSurface.BaseSurface):
 
 	def __init__(self, bulkUCell, nLayers, lenVac):
@@ -69,7 +97,11 @@ class Hcp0001Surface(baseSurface.BaseSurface):
 		return area*2 #The cell surface is made of two of these trigangles (its a parallelogram in general)
 
 
-class Rocksalt001Surface(baseSurface.BaseSurface):
+
+
+
+
+class Rocksalt001Surface(GenericSurface):
 
 	def __init__(self, singleLayerCell, nLayers, lenVac):
 		""" Initialiser
@@ -80,21 +112,7 @@ class Rocksalt001Surface(baseSurface.BaseSurface):
 			lenvac: The amount of vacuum required between surface images
 		
 		"""
-
-		self._singleLayerCell = singleLayerCell
-		self._nLayers = nLayers
-		self._lenVac = lenVac
-	
-	@property
-	def unitCell(self):
-		superCell = supCell.superCellFromUCell(self._singleLayerCell, [1,1,self._nLayers])
-		addVacuumToUnitCellAlongC(superCell, self._lenVac)
-		return superCell
-
-	@property
-	def surfaceArea(self):
-		return (self._singleLayerCell.volume / self._singleLayerCell.lattParams["c"])
-
+		super().__init__(singleLayerCell, nLayers, lenVac)
 
 
 def addVacuumToUnitCellAlongC(inpCell, lenVac):
