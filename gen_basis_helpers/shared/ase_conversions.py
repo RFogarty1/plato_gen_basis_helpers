@@ -13,7 +13,5 @@ def getAseAtomsObjFromPylibUCell(inpUCell):
 	lattVects = inpUCell.lattVects
 	pbcs = True
 	outObj = Atoms(scaled_positions=scaledPositions, symbols=symbols, cell=lattVects, pbc=pbcs) 
-
-	print("outObj = {}".format(outObj))
 	return outObj
 

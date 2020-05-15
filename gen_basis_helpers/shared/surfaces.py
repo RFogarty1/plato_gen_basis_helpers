@@ -1,6 +1,10 @@
 
 import copy
+import itertools as it
 import math
+
+
+import numpy as np
 
 import plato_pylib.shared.ucell_class as uCell
 import plato_pylib.utils.supercell as supCell
@@ -119,6 +123,8 @@ def addVacuumToUnitCellAlongC(inpCell, lenVac):
 	#Need to add the vacuum, half at top and half at bottom
 	lattParams = copy.deepcopy( inpCell.lattParams )
 	lattParams["c"] += lenVac
+	startLattVects = copy.deepcopy( inpCell.lattVects )
+
 	cartCoords = copy.deepcopy(inpCell.cartCoords)
 
 	for row in cartCoords:
@@ -128,6 +134,55 @@ def addVacuumToUnitCellAlongC(inpCell, lenVac):
 	inpCell.cartCoords = cartCoords
 
 
+def getSingleLayerHcp1010FromPrimitiveCell(primCell):
+	_checkInpCellIsHcpPrimitive(primCell)
+
+	lattVectTransformMatrix = np.array( [ [0,0,1], [0,1,0], [-1,0,0] ] )
+	outCell = copy.deepcopy(primCell)
+	outCell.putCAlongZ = True
+	finalLattVects = lattVectTransformMatrix.dot(outCell.lattVects)
+	outCell.lattVects = finalLattVects
+
+	fractCoords = _getResultFromTransformMatrixToFractCoordsInclAtomicSymbols(outCell.fractCoords, lattVectTransformMatrix)
+	outCell.fractCoords = fractCoords
+	_centreCFractCoordsForInpCell(outCell)
+	return outCell
+
+
+def _getResultFromTransformMatrixToFractCoordsInclAtomicSymbols(inpFractCoords, transformMatrix):
+	coordPart = np.array( [x[:3] for x in inpFractCoords] )
+	atomListPart = [x[-1] for x in inpFractCoords]
+
+	outList = list()
+	for row,atomSymb in zip(coordPart,atomListPart):
+		currCoords = (transformMatrix.dot(row)).tolist()
+		currCoords += [atomSymb]
+		outList.append(currCoords)
+	
+	return outList
+
+
+def _centreCFractCoordsForInpCell(inpCell):
+	fractCoords =  inpCell.fractCoords
+	zComps = [x[2] for x in fractCoords]
+	highestVal, lowestVal = max(zComps), min(zComps)
+	distFromTop, distFromBottom = 1-highestVal, lowestVal
+	shiftValue = 0.5*(distFromTop - distFromBottom)
+	outZComps = [x+shiftValue for x in zComps]
+	for x in fractCoords:
+		x[2] += shiftValue
+	inpCell.fractCoords = fractCoords
+
+
+def _checkInpCellIsHcpPrimitive(inpCell):
+	a,b,c = inpCell.getLattParamsList()
+	alpha, beta, gamma = inpCell.getLattAnglesList()
+	assert abs(a-b) < 1e-4
+	assert abs(c-b) > 1e-4
+	assert len(inpCell.fractCoords) == 2
+	assert abs(alpha-90) < 1e-1
+	assert abs(beta-90) < 1e-1 
+	assert abs(gamma-120) < 1e-1
 
 def getSingleLayerRocksalt001FromPrimitiveCell(primCell):
 	""" Description of function

@@ -10,6 +10,7 @@ import unittest.mock as mock
 
 import numpy as np
 import plato_pylib.shared.ucell_class as UCell
+import plato_pylib.utils.supercell as supCell
 
 import gen_basis_helpers.shared.surfaces as tCode
 
@@ -183,6 +184,150 @@ class TestRocksalt001Surface(unittest.TestCase):
 		expSurfArea = self.singleLayerCellA.volume / self.a #Surface area is independent of nLayers and lenVacuum
 		actSurfArea = self.testObjA.surfaceArea
 		self.assertAlmostEqual(expSurfArea, actSurfArea)
+
+class TestHcp1010FromPrimCell(unittest.TestCase):
+
+	def setUp(self):
+		self.inpFractCoords = [ [0.0,0.0,0.0],
+		                        [1/3, 2/3, 0.5] ]
+		self.inpAtoms = ["Mg" for x in self.inpFractCoords]
+
+		self.lattParams = [5.0, 5.0, 7.5]
+		self.lattAngles = [90.0, 90.0, 120.0]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		fractCoords = [ x+[y] for x,y in it.zip_longest(self.inpFractCoords, self.inpAtoms) ] 
+		self.testUCellA = UCell.UnitCell(lattAngles=self.lattAngles, lattParams = self.lattParams)
+		self.testUCellA.fractCoords = fractCoords
+
+	@mock.patch("gen_basis_helpers.shared.surfaces._centreCFractCoordsForInpCell")
+	def testExpectedSingleLayer(self, mockedCentreFractCoords):
+		a,b,c = self.lattParams
+		expLattParams = [c,b,a]
+		expLattAngles = [60,90,90]
+		expFractCoords = copy.deepcopy(self.inpFractCoords)
+		expFractCoords[1][0], expFractCoords[1][2] = self.inpFractCoords[1][2], -1*self.inpFractCoords[1][0]
+		expUCell = UCell.UnitCell(lattParams=expLattParams, lattAngles=expLattAngles, fractCoords=expFractCoords, elementList=self.inpAtoms)
+		actUCell = tCode.getSingleLayerHcp1010FromPrimitiveCell(self.testUCellA)
+		self.assertEqual(expUCell,actUCell)
+		mockedCentreFractCoords.assert_called_once_with(actUCell)
+
+
+	def testRaisesIfABLattParamsNotEqual(self):
+		self.lattParams[0] = 4
+		self.lattParams[1] = 3
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			tCode.getSingleLayerHcp1010FromPrimitiveCell(self.testUCellA)
+
+	def testRaisesIfNumbAtomsNotEqualToTwo(self):
+		self.inpFractCoords = [ [ 0.0,0.0,0.0 ] ]
+		self.inpAtoms = ["Mg"]
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			tCode.getSingleLayerHcp1010FromPrimitiveCell(self.testUCellA)
+
+	def testRaisesIfAnglesAll90(self):
+		self.lattAngles = [90,90,90]
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			tCode.getSingleLayerHcp1010FromPrimitiveCell(self.testUCellA)
+
+
+
+class TestAddingVacuumRegion(unittest.TestCase):
+
+	def setUp(self):
+		self.lenVac = 20
+		self.lattParams = [7.5,5.0,5.0]
+		self.lattAngles = [60,90,90]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testCellA = UCell.UnitCell( lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.testCellA.fractCoords = [[0,0,0,"Mg"]]
+
+#putCAlongZ=True
+
+	def testExpectedDistanceBetweenAtomsForCubicCell(self):
+		self.lattParams = [5.0,5.0,5.0]
+		self.lattAngles = [90,90,90]
+		self.createTestObjs()
+		self._checkExpectedDistanceBetweenImages()
+
+	def testExpectedDistanceBetweenAtomsForHexagonalCell(self):
+		self._checkExpectedDistanceBetweenImages()
+
+	def _checkExpectedDistanceBetweenImages(self):
+		noVacSupercell = supCell.superCellFromUCell( self.testCellA, [1,1,2] )
+		noVacDist = self._getDistTwoPoints(noVacSupercell.cartCoords[0][:3] ,noVacSupercell.cartCoords[1][:3])
+		expDistance = self.lenVac + noVacDist
+		tCode.addVacuumToUnitCellAlongC(self.testCellA,self.lenVac)
+		doubleCell = supCell.superCellFromUCell( self.testCellA, [1,1,2] )
+		posA, posB = doubleCell.cartCoords[0][:3], doubleCell.cartCoords[1][:3]
+		actDistance = self._getDistTwoPoints(posA,posB)
+		self.assertAlmostEqual(expDistance,actDistance) 
+
+	def _getDistTwoPoints(self, pointA, pointB):
+		return math.sqrt( sum( [x**2 for x in [b-a for b,a in it.zip_longest(pointA,pointB)]] ) )
+
+
+class TestCentreFractCoordsAlongC(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [2,2,2]
+		self.lattAngles = [90,90,90]
+		self.fractCoords = [ [0.5,0.5,0.3],
+		                     [0.6,0.6,0.5] ]
+		self.atomList = ["Mg" for x in self.fractCoords]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testCellA = UCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles,
+		                                fractCoords=self.fractCoords, elementList=self.atomList)
+
+	def testForSimpleSetA(self):
+		expCoords = [0.4, 0.6]
+		self._testExpMatchesAct(expCoords)
+
+	def testForFractCoordsAboveOne(self):
+		self.fractCoords[0][-1] = 1.3
+		self.createTestObjs()
+		expCoords = [0.9,0.1]
+		self._testExpMatchesAct(expCoords)
+
+	def testForFractCoordsBelowZero(self):
+		self.fractCoords[0][-1] = -0.4
+		self.createTestObjs()
+		expCoords = [0.05,0.95]
+		self._testExpMatchesAct(expCoords)
+
+	def testForBothAboveOne(self):
+		self.fractCoords[0][-1] = 1.4
+		self.fractCoords[1][-1] = 1.5
+		self.createTestObjs()
+		expCoords = [0.45, 0.55]
+		self._testExpMatchesAct(expCoords)
+
+	def testForBothBelowZero(self):
+		self.fractCoords[0][-1] = -0.5
+		self.fractCoords[1][-1] = -0.6
+		self.createTestObjs()
+		expCoords = [0.55,0.45]
+		self._testExpMatchesAct(expCoords)
+
+	def _testExpMatchesAct(self, expCoords):
+		tCode._centreCFractCoordsForInpCell(self.testCellA)
+		actCoords = self._getZFractValsFromUnitCell(self.testCellA)
+		for exp,act in it.zip_longest(expCoords,actCoords):
+			self.assertAlmostEqual(exp,act)
+
+	def _getZFractValsFromUnitCell(self, inpCell):
+		fractCoords = inpCell.fractCoords
+		zCoords = [x[2] for x in fractCoords]
+		return zCoords
+
 
 
 if __name__ == '__main__':
