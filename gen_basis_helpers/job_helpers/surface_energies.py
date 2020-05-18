@@ -4,19 +4,19 @@ import types
 
 import plato_pylib.utils.supercell as supCell
 
+from . import standard_template_obj as stdTemplate
+
 from ..shared import label_objs as labelHelp
 
 from ..shared import calc_runners as calcRunners
-from ..shared import creator_resetable_kwargs as baseCreator
 from ..shared import base_surface as baseSurf
 from ..shared import surfaces as surfGetterHelp
 from ..shared import label_objs as labelHelp
 
 from ..workflows import surface_energies as surfFlow
 
-class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableKwargsTemplate):
-
-	registeredKwargs = set(baseCreator.CreatorWithResetableKwargsTemplate.registeredKwargs)
+class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorTemplateBase):
+	registeredKwargs = set(stdTemplate.StandardInputCreatorTemplateBase.registeredKwargs)
 	registeredKwargs.add("baseGeom")
 	registeredKwargs.add("cellDims")
 	registeredKwargs.add("surfType")
@@ -57,6 +57,8 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 		outCreator.geom = self._surfaceCell
 		outCreator.kPts = self._surfKPts
 		outCreator.fileName = self._surfFileName
+		if outCreator.workFolder is None:
+			outCreator.workFolder = self.outFolder
 		return outCreator.create()
 
 	def _getBulkCalcObj(self):
@@ -67,6 +69,8 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 		outCreator.geom = self._bulkCell
 		outCreator.kPts = self.kPts
 		outCreator.fileName = "bulk_cell_for_n{}".format(self.nLayers)
+		if outCreator.workFolder is None:
+			outCreator.workFolder = self.outFolder
 		return outCreator.create()
 
 	def _getSurfaceObjClass(self):
