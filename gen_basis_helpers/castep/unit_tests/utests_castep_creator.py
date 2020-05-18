@@ -4,6 +4,8 @@ import os
 import unittest
 import unittest.mock as mock
 
+
+import gen_basis_helpers.shared.geom_constraints as geomConstraints
 import gen_basis_helpers.castep.castep_creator as tCode
 
 
@@ -82,8 +84,73 @@ class TestCastepCreator(unittest.TestCase):
 		mockedCalcObj.assert_called_once_with(expBasePath,expParamDict,expCellDict)
 		self.assertEqual(expCalcObj,actCalcObj)
 
+	def testGeomOptPassedToParamDict(self):
+		""" Check that setting runType as a geometry optimisation works """
+		self.testObjA.runType = "geomOpt" #Case insensitive
+		expParamDictKeyVals = {"task":"GeometryOptimization".lower()}
+		actParamDict = self.testObjA.paramFileDict
+		for key in expParamDictKeyVals.keys():
+			self.assertEqual( expParamDictKeyVals[key], actParamDict[key] )
 
 
+	@mock.patch("gen_basis_helpers.castep.castep_creator.parseCastep")
+	@mock.patch("gen_basis_helpers.castep.castep_creator.getCellConstraintsStrFromGeomConstraintsObj")
+	@mock.patch("gen_basis_helpers.shared.geom_constraints.GeomConstraints")
+	def testLackOfCellConstraintsPassedToCellDict(self, mockedGeomConstraints, mockedGetConstraintsStr, mockedParser):
+		""" Check that by default we have no cell constraints """
+		expConstraintsObj, expConstraintsStr = mock.Mock(), mock.Mock()
+		mockedGeomConstraints.initWithNoConstraints.side_effect = [expConstraintsObj]
+		mockedGetConstraintsStr.side_effect = [expConstraintsStr]
+		expCellDictKeyVals = {"cell_constraints":expConstraintsStr}
+
+		actCellDict = self.testObjA.cellFileDict
+		mockedGetConstraintsStr.assert_called_once_with(expConstraintsObj)
+		for key in expCellDictKeyVals.keys():
+			self.assertEqual( expCellDictKeyVals[key], actCellDict[key] )
+
+
+
+
+class TestGetCellConstraintsFromObj(unittest.TestCase):
+
+	def setUp(self):
+		self.anglesToFix = [False, False, False]
+		self.lattParamsToFix = [False,False,False]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellConstrA = geomConstraints.CellConstraints(self.anglesToFix, self.lattParamsToFix)
+		self.atomicPosConstraints = mock.Mock()
+		self.testObjA = geomConstraints.GeomConstraints(self.atomicPosConstraints,self.cellConstrA)
+
+	def _testExpectedStrGiven(self, expStr):
+		actStr = tCode.getCellConstraintsStrFromGeomConstraintsObj(self.testObjA)
+		self.assertEqual(expStr,actStr)
+
+	def testNoConstraintsCase(self):
+		expStr = "1 2 3\n4 5 6"
+		self._testExpectedStrGiven(expStr)
+		
+	def testAllConstrainedCase(self):
+		self.anglesToFix = [True,True,True]
+		self.lattParamsToFix = [True,True,True]
+		self.createTestObjs()
+		expStr = "0 0 0\n0 0 0"
+		self._testExpectedStrGiven(expStr)
+
+	def testTwoParamsConstrainedCase(self):
+		self.lattParamsToFix[0] = True
+		self.lattParamsToFix[2] = True
+		self.createTestObjs()
+		expStr = "0 1 0\n2 3 4"
+		self._testExpectedStrGiven(expStr)
+
+	def testAllAnglesConstrainedCase(self):
+		self.anglesToFix = [True, True, True]
+		self.createTestObjs()
+		expStr = "1 2 3\n0 0 0"
+		self._testExpectedStrGiven(expStr)
+		
 
 class TestCastepCalcObj(unittest.TestCase):
 
