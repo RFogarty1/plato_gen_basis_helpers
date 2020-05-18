@@ -151,16 +151,48 @@ class MapSurfaceEnergiesToStandardFormat():
 
 	"""
 
-	def __init__(self, ePerAtomFmtStr="{:.3g}", surfEnergyFmtStr="{:.4f}"):
+	def __init__(self, xVal="methodStr", xLabel="Basis Set", xValFmt="{}", ePerAtomFmtStr="{:.3g}", surfEnergyFmtStr="{:.4f}"):
+		""" Initializer
+		
+		Args:
+			xVal (str): What to use as the independent variable; options are "methodStr", "lenVac" or "nLayers"
+			xLabel (str): What to call the x value in output tables
+			xValFmt (str): Format string for reporting xVal (only really needs altering if using lenVac)
+			ePerAtomFmtStr (str): Format string for reporting energy for atom
+			surfEnergyFmtStr (str): Format string for reporting surface energy
+				 
+		"""
+		self.xVal = xVal
+		self.xLabel = xLabel
+		self.xValFmt = xValFmt
 		self.ePerAtomFmtStr = ePerAtomFmtStr
 		self.surfEnergyFmtStr = surfEnergyFmtStr
+		self._checkInputArgsValid()
+
+	def _checkInputArgsValid(self):
+		validXVals = [x.lower() for x in ["methodStr", "lenVac", "nLayers"]]
+		if self.xVal.lower() not in validXVals:
+			raise AttributeError("{} is an invalid value for xVal".format(self.xVal))
 
 	def _getTableData(self,stdInputObj):
 		assert len(stdInputObj.label)==1
 		assert len(stdInputObj.workflow.output)==1
-		methKey = stdInputObj.label[0].methodKey
+		xKey = self._getXValFromStdInpObj(stdInputObj)
 		surfEnergy = self.surfEnergyFmtStr.format(stdInputObj.workflow.output[0].surfaceEnergy)
-		return [methKey, surfEnergy]
+		return [self.xValFmt.format(xKey), surfEnergy]
+
+
+	def _getXValFromStdInpObj(self, stdInputObj):
+		if self.xVal.lower() == "methodstr":
+			outVal = stdInputObj.label[0].methodKey
+		elif self.xVal.lower() == "lenvac":
+			outVal = stdInputObj.workflow.output[0].extraInfo.lenVac
+		elif self.xVal.lower() == "nlayers":
+			outVal = stdInputObj.workflow.output[0].extraInfo.nLayers
+		else:
+			raise ValueError("self.xVal={} is an invalid value".format(self.xVal))
+
+		return outVal
 
 	def _getTableDataWithEPerAtom(self,stdInputObj):
 		outTable = self._getTableData(stdInputObj)
@@ -171,10 +203,10 @@ class MapSurfaceEnergiesToStandardFormat():
 
 
 	def _getTableHeadings(self):
-		return ["Basis Set", "Surface Energy $eV a_{0}^{-2}$"]
+		return [self.xLabel, "Surface Energy $eV a_{0}^{-2}$"]
 
 	def _getTableWithEPerAtomHeadings(self):
-		return ["Basis Set", "Surface Energy $eV a_{0}^{-2}$", "E per atom (bulk, eV)", "E per atom (surface, eV)",]
+		return [self.xLabel, "Surface Energy $eV a_{0}^{-2}$", "E per atom (bulk, eV)", "E per atom (surface, eV)",]
 
 	def __call__(self, stdInputObj):
 		stdInputObj.workflow.run()
@@ -184,3 +216,5 @@ class MapSurfaceEnergiesToStandardFormat():
 		output.tableWithEPerAtomVals = self._getTableDataWithEPerAtom(stdInputObj)
 		output.tableHeadersWithEPerAtom = self._getTableWithEPerAtomHeadings()
 		return output
+
+

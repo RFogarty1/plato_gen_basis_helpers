@@ -121,18 +121,27 @@ class TestMapFunction(unittest.TestCase):
 		self.surfEnergy = 20
 		self.ePerAtomSurf = 12
 		self.ePerAtomBulk = 13
+		self.nLayers = 4
+		self.lenVac = 15
 		self.methodStr = "methA"
 		self.eleKey = "ele"
 		self.structKey = "hcp0001"
+		self.xVal = "methodStr"
+		self.xLabel = "Basis Set"
+		self.surfEnergyFmtStr = "{:.4f}"
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		self.testFunctA = tCode.MapSurfaceEnergiesToStandardFormat()
+		extraInfoObj = types.SimpleNamespace(nLayers=self.nLayers, lenVac=self.lenVac, surfEnergyFmtStr=self.surfEnergyFmtStr)
 		self.testWorkflowA = mock.Mock()
 		self.testWorkflowA.output = [types.SimpleNamespace(surfaceEnergy=self.surfEnergy,surfEPerAtom=self.ePerAtomSurf,
-		                                                   bulkEPerAtom=self.ePerAtomBulk)]
+		                                                   bulkEPerAtom=self.ePerAtomBulk, extraInfo=extraInfoObj)]
 		testLabelA = labelHelp.StandardLabel( eleKey=self.eleKey, methodKey=self.methodStr, structKey=self.structKey )
 		self.standardInpObjA = calcRunners.StandardInputObj(self.testWorkflowA, testLabelA) #Dont need to set map funct
+
+
+		self.testFunctA = tCode.MapSurfaceEnergiesToStandardFormat(xVal=self.xVal, xLabel=self.xLabel)
+
 
 	def runTestFunct(self):
 		return self.testFunctA(self.standardInpObjA)
@@ -142,11 +151,8 @@ class TestMapFunction(unittest.TestCase):
 		self.testWorkflowA.run.assert_called_once_with()
 
 	def testTableDataOutput(self):
-		self.runTestFunct()
 		expTableData = [self.methodStr, "{:.4f}".format(self.surfEnergy)]
-		actOutput = self.testFunctA(self.standardInpObjA)
-		actTableData = actOutput.tableData
-		self.assertEqual(expTableData,actTableData)
+		self._compareTableDataWithExpected(expTableData)
 
 	def testTableWithEPerAtomOutput(self):
 		self.runTestFunct()
@@ -156,5 +162,29 @@ class TestMapFunction(unittest.TestCase):
 		actTableData = actOutput.tableWithEPerAtomVals
 		self.assertEqual(expTableData, actTableData)
 
+	def testRaisesWithInvalidXVal(self):
+		self.xVal = "invalidStr"
+		with self.assertRaises(AttributeError):
+			self.createTestObjs()
 
+	def testXLabelInTableHeadings(self):
+		self.xLabel = "Test label"
+		self.createTestObjs()
+		headingsA = self.testFunctA._getTableHeadings()
+		headingsB = self.testFunctA._getTableWithEPerAtomHeadings()
+		actLabels = [headingsA[0], headingsB[0]]
+		for actLabel in actLabels:
+			self.assertEqual(self.xLabel, actLabel)
 
+	def testExpectedTableDataOutputForNLayers(self):
+		self.xVal = "nLayers"
+		expTableData = ["{}".format(self.nLayers), self.surfEnergyFmtStr.format(self.surfEnergy)]
+		self.createTestObjs()
+		self._compareTableDataWithExpected(expTableData)
+
+	def _compareTableDataWithExpected(self, expTableData):
+		actOutput = self.testFunctA(self.standardInpObjA)
+		actTableData = actOutput.tableData
+		self.assertEqual(expTableData,actTableData)
+
+		
