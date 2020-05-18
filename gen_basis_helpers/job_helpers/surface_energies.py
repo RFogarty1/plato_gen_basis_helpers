@@ -29,6 +29,7 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	registeredKwargs.add("structKey")
 	registeredKwargs.add("applyNLayersToBulk")
 	registeredKwargs.add("baseCreator")
+	registeredKwargs.add("stubBulkCalcObj")
 
 	def _setDefaultInitAttrs(self):
 		self.applyNLayersToBulk = False
@@ -58,6 +59,9 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 		return outCreator.create()
 
 	def _getBulkCalcObj(self):
+		if self.stubBulkCalcObj is not None:
+			return self.stubBulkCalcObj
+
 		outCreator = self._createCalcObjCreator()
 		outCreator.geom = self._bulkCell
 		outCreator.kPts = self.kPts

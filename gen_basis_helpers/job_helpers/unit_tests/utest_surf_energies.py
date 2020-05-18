@@ -108,6 +108,11 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 		actRetVal = self.testObjA._getSurfaceObjClass()
 		self.assertEqual(expRetVal,actRetVal)
 
+	def testPassingStubCalcObjWorks(self):
+		self.createTestObjs()
+		expBulkCalcObj = mock.Mock()
+		self.testObjA.stubBulkCalcObj = expBulkCalcObj
+		self.assertEqual(expBulkCalcObj, self.testObjA._getBulkCalcObj())
 
 
 class TestMapFunction(unittest.TestCase):
