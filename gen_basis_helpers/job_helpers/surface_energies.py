@@ -33,6 +33,7 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 
 	def _setDefaultInitAttrs(self):
 		self.applyNLayersToBulk = False
+		self.cellDims = [1,1,1]
 
 	def _createFromSelf(self):
 		bulkCalcObj = self._getBulkCalcObj()
