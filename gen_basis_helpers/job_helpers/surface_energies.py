@@ -40,6 +40,7 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		surfCalcObj = self._getSurfaceCalcObj()
 		surfAreaFromUnitCellFunct = surfFlow.SurfaceAreaFromUnitCellFunct(self._getSurfaceObjClass())
 		workflow = surfFlow.SurfaceEnergyWorkflow(surfCalcObj,bulkCalcObj,surfAreaFromUnitCellFunct)
+		self._addInfoToWorkflowOutput(workflow)
 		label = self.label
 		return calcRunners.StandardInputObj(workflow,label)
 
@@ -50,6 +51,10 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		if self.baseCreator is not None:
 			return copy.deepcopy(self.baseCreator)
 		raise ValueError("baseCreator attribute not set")
+
+	def _addInfoToWorkflowOutput(self,workflow):
+		extraInfo = types.SimpleNamespace(lenVac=self.lenVac,nLayers=self.nLayers)
+		workflow.output[0].extraInfo = extraInfo
 
 
 	def _getSurfaceCalcObj(self):
