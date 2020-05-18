@@ -1,4 +1,5 @@
 
+import copy
 import types
 
 import plato_pylib.utils.supercell as supCell
@@ -27,7 +28,7 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	registeredKwargs.add("methodKey")
 	registeredKwargs.add("structKey")
 	registeredKwargs.add("applyNLayersToBulk")
-
+	registeredKwargs.add("baseCreator")
 
 	def _setDefaultInitAttrs(self):
 		self.applyNLayersToBulk = False
@@ -44,7 +45,10 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	def _createCalcObjCreator(self):
 		""" Return a CalcMethodFactoryBase instance with no kPts or geom present
 		"""
-		raise NotImplementedError("")
+		if self.baseCreator is not None:
+			return copy.deepcopy(self.baseCreator)
+		raise ValueError("baseCreator attribute not set")
+
 
 	def _getSurfaceCalcObj(self):
 		outCreator = self._createCalcObjCreator() #No geometry included
