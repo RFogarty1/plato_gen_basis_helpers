@@ -49,7 +49,7 @@ class TestMultiAxisPlotterStandard(unittest.TestCase):
 		self.testObjA.create()
 		self.plotterA.createPlot.assert_called_once_with(axHandle=expAx)
 
-	@mock.patch("gen_basis_helpers.shared.multi_axis_plotter.MultiAxisPlotterStandard._getTheSecondIndependentAxis")
+	@mock.patch("gen_basis_helpers.shared.multi_axis_plotter.MultiAxisPlotterStandard._getSecondYIndependentAxis")
 	@mock.patch("gen_basis_helpers.shared.multi_axis_plotter.MultiAxisPlotterStandard._getAxisHandleAndOutFigHandle")
 	def testExpCallToSecondPlotFactory(self, mockedGetAxAndFigure, mockedGetSecondAx):
 		expFig, expAx = mock.Mock(), mock.Mock()
@@ -57,7 +57,6 @@ class TestMultiAxisPlotterStandard(unittest.TestCase):
 		mockedGetSecondAx.side_effect = lambda arg: expSecondAxis
 		mockedGetAxAndFigure.side_effect = lambda : [expAx, expFig]
 		self.testObjA.create()
-		mockedGetSecondAx.assert_called_once_with(expAx)
 		self.plotterB.createPlot.assert_called_once_with(axHandle=expSecondAxis)
 
 

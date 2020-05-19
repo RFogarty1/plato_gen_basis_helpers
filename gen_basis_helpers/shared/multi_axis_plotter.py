@@ -14,6 +14,15 @@ class MultiAxisPlotterStandard():
 		"""
 		self.plotFactories = plotFactories
 
+	#This is pretty much purely so this works with multi-plot code
+	def createPlot(self, axHandle=None):
+		startAxHandle = self.plotFactories[0].axHandle
+		if axHandle is not None:
+			self.plotFactories[0].axHandle = axHandle
+		output = self.create()
+		self.plotFactories[0].axHandle = startAxHandle
+		return output
+
 	def create(self):
 		""" Create the single plot with two independent sets of axes
 		
@@ -27,9 +36,10 @@ class MultiAxisPlotterStandard():
 
 		axHandle, outFig = self._getAxisHandleAndOutFigHandle()
 		self.plotFactories[0].createPlot(axHandle=axHandle)
-		secondAxis = self._getTheSecondIndependentAxis(axHandle)
-		self.plotFactories[1].createPlot(axHandle=secondAxis)
-
+		secondAxis = self._getSecondXIndependentAxis(axHandle)
+		thirdAxis = self._getSecondYIndependentAxis(secondAxis)
+		self.plotFactories[1].createPlot(axHandle=thirdAxis)
+		self._ensureYLabelStillPresentOnSecondAxis(secondAxis)
 		return outFig
 
 	def _getAxisHandleAndOutFigHandle(self):
@@ -41,9 +51,18 @@ class MultiAxisPlotterStandard():
 			outAx = self.plotFactories[0].axHandle	
 		return outAx, outFig
 
-	def _getTheSecondIndependentAxis(self, inpAxis):
-		return inpAxis.twinx().twiny()
+	def _getSecondXIndependentAxis(self, inpAxis):
+		return inpAxis.twinx()
 
+	def _getSecondYIndependentAxis(self,inpAxis):
+		return inpAxis.twiny()
+
+	def _ensureYLabelStillPresentOnSecondAxis(self,inpAxis):
+		if self.plotFactories[1].ylabel is None:
+			return None
+
+		if inpAxis.get_ylabel() == "":
+			inpAxis.set_ylabel(self.plotFactories[1].ylabel)
 
 
 
