@@ -183,6 +183,8 @@ class DataPlotterStandard(DataPlotterBase):
 		self.registeredKwargs.add("lineColors")
 		self.registeredKwargs.add("lineMarkers")
 		self.registeredKwargs.add("lineMarkerSizes")
+		self.registeredKwargs.add("removeXTicks")
+		self.registeredKwargs.add("removeYTicks")
 		self.registeredKwargs.add("mapPlotDataFunct")
 
 		super().__init__(**kwargs)
@@ -202,6 +204,12 @@ class DataPlotterStandard(DataPlotterBase):
 		self._changeColorsIfNeeded(outFig, **kwargs)
 		self._changeLineMarkersIfNeeded(outFig, **kwargs)
 		self._changeLineMarkerSizesIfNeeded(outFig, **kwargs)
+
+		if self.removeYTicks:
+			plt.yticks([])
+
+		if self.removeXTicks:
+			plt.xticks([])
 
 		#Changes to lineStyles/lineColors means the legend needs remaking (if it was present)
 		if kwargs.get("legend",False):
