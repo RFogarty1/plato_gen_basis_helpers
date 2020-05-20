@@ -37,8 +37,10 @@ class GenericSurface(baseSurface.BaseSurface):
 
 	@property
 	def surfaceArea(self):
-		return (self._singleLayerCell.volume / self._singleLayerCell.lattParams["c"])
-
+		gamma = self._singleLayerCell.lattAngles["gamma"]
+		a,b,c = self._singleLayerCell.getLattParamsList()
+		area = a*b*math.sin(math.radians(gamma)) #Area of a parralelogram: A=bh; h=a sin(theta)
+		return area
 
 class Hcp0001Surface(baseSurface.BaseSurface):
 

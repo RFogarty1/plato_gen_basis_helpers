@@ -235,6 +235,30 @@ class TestHcp1010FromPrimCell(unittest.TestCase):
 			tCode.getSingleLayerHcp1010FromPrimitiveCell(self.testUCellA)
 
 
+class TestGenericSurface(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [6,4,20]
+		self.lattAngles = [60, 90, 90]
+		self.nLayers = 1
+		self.lenVac = 5
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.uCellA = UCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.surfA = tCode.GenericSurface(self.uCellA, self.nLayers, self.lenVac)
+
+	def testExpectedAreaForSquareLikeSurface(self):
+		expArea = self.lattParams[0]*self.lattParams[1] #Since gamma is 90 degrees, these simply form a square in this case
+		actArea = self.surfA.surfaceArea
+		self.assertAlmostEqual(expArea,actArea)
+
+	def testExpectedAreaForParralelogramSurface(self):
+		self.lattAngles = [90,90,60]
+		self.createTestObjs()
+		expArea = self.uCellA.volume/self.lattParams[-1] #This works only when c is 90 degrees to both a and b
+		actArea = self.surfA.surfaceArea
+		self.assertAlmostEqual(expArea,actArea)
 
 class TestAddingVacuumRegion(unittest.TestCase):
 
