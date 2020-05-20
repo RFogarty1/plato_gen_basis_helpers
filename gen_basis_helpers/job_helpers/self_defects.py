@@ -1,4 +1,5 @@
 
+import copy
 import os
 import types
 
@@ -15,6 +16,9 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	registeredKwargs.add("kPtsBulk")
 	registeredKwargs.add("defectGeom")
 	registeredKwargs.add("kPtsDefect")
+	registeredKwargs.add("baseCreatorBulk")
+	registeredKwargs.add("baseCreatorDefect")
+
 
 	def _createFromSelf(self):
 		bulkObj = self._getBulkCreator().create()
@@ -26,12 +30,19 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	def _createCalcObjCreatorBulk(self):
 		""" Return a CalcMethodFactoryBase instance with no kPts or geom present
 		"""
-		raise NotImplementedError("")
+		if self.baseCreatorBulk is not None:
+			return copy.deepcopy(self.baseCreatorBulk)
+		else:
+			raise ValueError("baseCreatorBulk not set")
 
 	def _createCalcObjCreatorDefect(self):
 		""" Return a CalcMethodFactoryBase instance with no kPts or geom present
 		"""
-		raise NotImplementedError("")
+		if self.baseCreatorDefect is not None:
+			return copy.deepcopy(self.baseCreatorDefect)
+		else:
+			raise ValueError("baseCreatorDefect not set")
+
 
 	def _getDefectCreator(self):
 		outCreator = self._createCalcObjCreatorDefect()
