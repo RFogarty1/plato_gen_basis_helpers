@@ -240,12 +240,15 @@ class TestGenericSurface(unittest.TestCase):
 	def setUp(self):
 		self.lattParams = [6,4,20]
 		self.lattAngles = [60, 90, 90]
+		self.fractCoords = [[0.0,0.0,0.0]]
+		self.eleList = ["Mg"]
 		self.nLayers = 1
 		self.lenVac = 5
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		self.uCellA = UCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.uCellA = UCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles,
+		                             fractCoords=self.fractCoords, elementList=self.eleList)
 		self.surfA = tCode.GenericSurface(self.uCellA, self.nLayers, self.lenVac)
 
 	def testExpectedAreaForSquareLikeSurface(self):
@@ -259,6 +262,23 @@ class TestGenericSurface(unittest.TestCase):
 		expArea = self.uCellA.volume/self.lattParams[-1] #This works only when c is 90 degrees to both a and b
 		actArea = self.surfA.surfaceArea
 		self.assertAlmostEqual(expArea,actArea)
+
+	@mock.patch("gen_basis_helpers.shared.surfaces.addVacuumToUnitCellAlongC")
+	def testExpectedAmountOfVacuumAdded_nonCubicCell(self, mockedAddVacAlongC):
+		expAlongC = self.lenVac / math.cos(math.radians( abs(self.lattAngles[0]-90)) )
+		outObj = self.surfA.unitCell
+		actAlongC = mockedAddVacAlongC.call_args.args[1]
+		self.assertAlmostEqual(expAlongC,actAlongC)	
+
+	@mock.patch("gen_basis_helpers.shared.surfaces.addVacuumToUnitCellAlongC")
+	def testExpectedAmountOfVacuumAdded_cubicCell(self, mockedAddVacAlongC):
+		expAlongC = self.lenVac 
+		self.lattAngles = [90,90,90]
+		self.createTestObjs()
+		outObj = self.surfA.unitCell
+		actAlongC = mockedAddVacAlongC.call_args.args[1]
+		self.assertAlmostEqual(expAlongC,actAlongC)	
+
 
 class TestAddingVacuumRegion(unittest.TestCase):
 

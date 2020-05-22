@@ -19,7 +19,7 @@ class GenericSurface(baseSurface.BaseSurface):
 		""" Initialiser
 		
 		Args:
-			singleLayerCell: A plato_pylib UnitCell object representing a single layer of the surface. 
+			singleLayerCell: A plato_pylib UnitCell object representing a single layer of the surface. The surface needs to be defined along the ab axes
 			nLayers: The number of surface layers to use (1 layer = 1 singleLayerCell)
 			lenvac: The amount of vacuum required between surface images
 	
@@ -32,8 +32,20 @@ class GenericSurface(baseSurface.BaseSurface):
 	@property
 	def unitCell(self):
 		superCell = supCell.superCellFromUCell(self._singleLayerCell, [1,1,self._nLayers])
-		addVacuumToUnitCellAlongC(superCell, self._lenVac)
+		vacToAdd = self._getAmountOfVacuumToAddAlongC()
+		addVacuumToUnitCellAlongC(superCell, vacToAdd)
 		return superCell
+
+	#When alpha or beta do not equal 90 degrees, we need to add a larger amount of vacuum to get the same
+	#separation between surface planes
+	def _getAmountOfVacuumToAddAlongC(self):
+		lattVects = self._singleLayerCell.lattVects
+		surfPlaneEquation = ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1],normaliseCoeffs=True)
+		unitSurfaceNormal = surfPlaneEquation.coeffs[:3]
+		unitCVector = [x/self._singleLayerCell.lattParams["c"] for x in lattVects[2]]
+		componentAlongC = np.dot( np.array(unitSurfaceNormal), np.array(unitCVector) )
+		vacToAdd = self._lenVac/componentAlongC
+		return vacToAdd	
 
 	@property
 	def surfaceArea(self):
