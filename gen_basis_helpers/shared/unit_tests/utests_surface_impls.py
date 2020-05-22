@@ -269,14 +269,16 @@ class TestGenericSurface(unittest.TestCase):
 		self.lattAngles = [90,90,90]
 		self.createTestObjs()
 		outObj = self.surfA.unitCell
-		actAlongC = mockedAddVacAlongC.call_args.args[1]
+		actArgs, actKwargs = mockedAddVacAlongC.call_args
+		actAlongC = actArgs[1]
 		self.assertAlmostEqual(expAlongC,actAlongC)	
 
 	@mock.patch("gen_basis_helpers.shared.surfaces.addVacuumToUnitCellAlongC")
 	def testExpectedAmountOfVacuumAdded_nonCubicCell(self, mockedAddVacAlongC):
 		expAlongC = self.lenVac / math.cos(math.radians( abs(self.lattAngles[0]-90)) )
 		outObj = self.surfA.unitCell
-		actAlongC = mockedAddVacAlongC.call_args.args[1]
+		actArgs, actKwargs = mockedAddVacAlongC.call_args
+		actAlongC = actArgs[1]
 		self.assertAlmostEqual(expAlongC,actAlongC)	
 
 
