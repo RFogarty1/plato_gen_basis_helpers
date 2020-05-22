@@ -123,6 +123,7 @@ class TestMapFunction(unittest.TestCase):
 		self.ePerAtomBulk = 13
 		self.nLayers = 4
 		self.lenVac = 15
+		self.lenAbsoluteVac = 4
 		self.methodStr = "methA"
 		self.eleKey = "ele"
 		self.structKey = "hcp0001"
@@ -132,7 +133,7 @@ class TestMapFunction(unittest.TestCase):
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		extraInfoObj = types.SimpleNamespace(nLayers=self.nLayers, lenVac=self.lenVac, surfEnergyFmtStr=self.surfEnergyFmtStr)
+		extraInfoObj = types.SimpleNamespace(nLayers=self.nLayers, lenVac=self.lenVac, lenAbsoluteVac=self.lenAbsoluteVac)
 		self.testWorkflowA = mock.Mock()
 		self.testWorkflowA.output = [types.SimpleNamespace(surfaceEnergy=self.surfEnergy,surfEPerAtom=self.ePerAtomSurf,
 		                                                   bulkEPerAtom=self.ePerAtomBulk, extraInfo=extraInfoObj)]
@@ -180,6 +181,12 @@ class TestMapFunction(unittest.TestCase):
 		self.xVal = "nLayers"
 		expTableData = ["{}".format(self.nLayers), self.surfEnergyFmtStr.format(self.surfEnergy)]
 		self.createTestObjs()
+		self._compareTableDataWithExpected(expTableData)
+
+	def testExpectedTableDataOutputForLenAbsoluteVac(self):
+		self.xVal = "lenAbsoluteVac"
+		self.createTestObjs()
+		expTableData = ["{}".format(self.lenAbsoluteVac), self.surfEnergyFmtStr.format(self.surfEnergy)]
 		self._compareTableDataWithExpected(expTableData)
 
 	def _compareTableDataWithExpected(self, expTableData):

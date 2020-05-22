@@ -27,3 +27,11 @@ class BaseSurface():
 		""" Length of the vacuum region above/below the surface. Units are the same as lattParams/vectors
 		"""
 		raise NotImplementedError()
+
+	@property
+	def lenAbsoluteVacuum(self):
+		""" Length of vacuum between surface planes in two periodic images (bottom plane in one cell and top plane in another). Put another way, this is the minimum interaction distance between atoms in different cells along c.
+		"""
+		raise NotImplementedError()
+
+

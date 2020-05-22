@@ -44,6 +44,13 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		label = self.label
 		return calcRunners.StandardInputObj(workflow,label)
 
+
+	def _getAbsoluteVacuumLength(self):
+		bulkCell = self._bulkCellNoSurfaceLayers
+		surfClass = self._getSurfaceObjClass() #TODO: Need to switch this to a factory soon, to unify interface between diff surfaces
+		return surfClass.lenAbsoluteVacuum
+
+
 	# This should be overwritten by code-specific versions
 	def _createCalcObjCreator(self):
 		""" Return a CalcMethodFactoryBase instance with no kPts or geom present
@@ -53,9 +60,8 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		raise ValueError("baseCreator attribute not set")
 
 	def _addInfoToWorkflowOutput(self,workflow):
-		extraInfo = types.SimpleNamespace(lenVac=self.lenVac,nLayers=self.nLayers)
+		extraInfo = types.SimpleNamespace(lenVac=self.lenVac,nLayers=self.nLayers, lenAbsoluteVacuum=self._getAbsoluteVacuumLength() )
 		workflow.output[0].extraInfo = extraInfo
-
 
 	def _getSurfaceCalcObj(self):
 		outCreator = self._createCalcObjCreator() #No geometry included
@@ -155,7 +161,7 @@ class MapSurfaceEnergiesToStandardFormat():
 		""" Initializer
 		
 		Args:
-			xVal (str): What to use as the independent variable; options are "methodStr", "lenVac" or "nLayers"
+			xVal (str): What to use as the independent variable; options are "methodStr", "lenVac" or "nLayers" or "lenAbsoluteVac"
 			xLabel (str): What to call the x value in output tables
 			xValFmt (str): Format string for reporting xVal (only really needs altering if using lenVac)
 			ePerAtomFmtStr (str): Format string for reporting energy for atom
@@ -170,7 +176,7 @@ class MapSurfaceEnergiesToStandardFormat():
 		self._checkInputArgsValid()
 
 	def _checkInputArgsValid(self):
-		validXVals = [x.lower() for x in ["methodStr", "lenVac", "nLayers"]]
+		validXVals = [x.lower() for x in ["methodStr", "lenVac", "nLayers", "lenAbsoluteVac"]]
 		if self.xVal.lower() not in validXVals:
 			raise AttributeError("{} is an invalid value for xVal".format(self.xVal))
 
@@ -189,6 +195,8 @@ class MapSurfaceEnergiesToStandardFormat():
 			outVal = stdInputObj.workflow.output[0].extraInfo.lenVac
 		elif self.xVal.lower() == "nlayers":
 			outVal = stdInputObj.workflow.output[0].extraInfo.nLayers
+		elif self.xVal.lower() == "lenAbsoluteVac".lower():
+			outVal = stdInputObj.workflow.output[0].extraInfo.lenAbsoluteVac
 		else:
 			raise ValueError("self.xVal={} is an invalid value".format(self.xVal))
 
