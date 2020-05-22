@@ -104,65 +104,35 @@ class GenericSurface(baseSurface.BaseSurface):
 		area = a*b*math.sin(math.radians(gamma)) #Area of a parralelogram: A=bh; h=a sin(theta)
 		return area
 
-class Hcp0001Surface(baseSurface.BaseSurface):
+class Hcp0001Surface(GenericSurface):
 
-	def __init__(self, bulkUCell, nLayers, lenVac):
-		""" Initialiser for Hcp001Surface object
+
+	def __init__(self, singleLayerCell, nLayers, lenVac=None, lenAbsoluteVacuum=None):
+		""" Initialiser
 		
 		Args:
-			bulkUCell: A plato_pylib UnitCell object representing the bulk structure. This should be whats needed
+			singleLayerCell:  A plato_pylib UnitCell object representing the bulk structure. This should be whats needed
 			           to reperesent a single layer, so supercells with [n,m,1] dimensions should be used
-			nLayers: The number of surface layers to use
-			lenvac: The amount of vacuum required between surface images
-		
-		Raises:
-			InvalidSurfaceError(ValueError): If the angles are wrong for the hcp surface 
+			nLayers: The number of surface layers to use (1 layer = 1 singleLayerCell)
+			EXACTLY ONE of these following parameters needs to be set to something other than None
+			lenvac: (float, optional-ish) The amount of vacuum TO ADD between surface images
+			lenAbsoluteVacuum: (float, optional-ish) The amount of vacuum between surfaces along the surface normal vector (i.e. the minimum distance betweeen surface planes when applying periodic boundary conditions)
+	
 		"""
-		self._bulkCell = bulkUCell
-		self._nLayers = nLayers
-		self._lenVac = lenVac
 
+		self._singleLayerCell = singleLayerCell
+		self._nLayers = nLayers
+		self._setLenVacFromInitializerInputArgs(lenVac, lenAbsoluteVacuum)
 		self._checkLattAnglesConsistent()
 
 	def _checkLattAnglesConsistent(self):
 		errorTol = 0.1
 		expLattAngles = {"alpha":90.0, "beta":90.0, "gamma":120.0}
 		expAlternativeLattAngles = {"alpha":90.0, "beta":90.0, "gamma":60.0}
-		actLattAngles = self._bulkCell.lattAngles
+		actLattAngles = self._singleLayerCell.lattAngles
 		for key in expLattAngles.keys():
 			if (abs(expLattAngles[key] - actLattAngles[key]) > errorTol) and (abs(expAlternativeLattAngles[key] - actLattAngles[key]) > errorTol):
-				raise baseSurface.InvalidSurfaceError("Hcp surfaces need to be built from unit-cells ith angles of 90/90/120, but input has angles of {}".format(self._bulkCell.lattAngles))
-
-
-	@property
-	def unitCell(self):
-		startCell = copy.deepcopy( self._bulkCell )
-		outBulkCell = supCell.superCellFromUCell(self._bulkCell,[1,1,self._nLayers]) 
-		addVacuumToUnitCellAlongC(outBulkCell, self._lenVac)
-		return outBulkCell
-
-	@property
-	def surfaceArea(self):
-		methA = self._calcSurfaceAreaUsingVolumeDivByC()
-		methB = self._calcSurfaceAreaUsingTrig()
-		allowedDiff = 0.01*max([methA,methB])
-		assert abs(methB-methA) < allowedDiff, "Varying estimated for surface area, methA={}, methB={}".format(methA,methB)
-		return self._calcSurfaceAreaUsingTrig()
-
-	def _calcSurfaceAreaUsingVolumeDivByC(self):
-		return (self._bulkCell.volume / self._bulkCell.lattParams["c"])
-
-	def _calcSurfaceAreaUsingTrig(self):
-		#latt params a/b define two sides of a triangle, with an angle of 120 between them. Hence cosine rule can be used to get
-		#other info needed to get us a surface area
-		lattParams = self._bulkCell.lattParams
-		baseSqr = (lattParams["a"]**2) + (lattParams["b"]**2) - (2*lattParams["a"]*lattParams["b"]*math.cos(math.radians(120)))
-		base = math.sqrt(baseSqr)
-		#Use herons formula to get the area of a triangle from 3 sides
-		p = (lattParams["a"] + lattParams["b"] + base) / 2
-		areaSqr = p*(p-lattParams["a"])*(p-lattParams["b"])*(p-base)
-		area = math.sqrt(areaSqr)
-		return area*2 #The cell surface is made of two of these trigangles (its a parallelogram in general)
+				raise baseSurface.InvalidSurfaceError("Hcp surfaces need to be built from unit-cells ith angles of 90/90/120, but input has angles of {}".format(self._singleLayerCell.lattAngles))
 
 
 
@@ -171,16 +141,18 @@ class Hcp0001Surface(baseSurface.BaseSurface):
 
 class Rocksalt001Surface(GenericSurface):
 
-	def __init__(self, singleLayerCell, nLayers, lenVac):
+	def __init__(self, singleLayerCell, nLayers, lenVac=None, lenAbsoluteVacuum=None):
 		""" Initialiser
 		
 		Args:
 			singleLayerCell: A plato_pylib UnitCell object representing a single layer of the surface. This can be built from the primitive cell by using getSingleLayerRocksalt001FromPrimitiveCell; extra space can be added in x and y directions by passing the relevant supercell
 			nLayers: The number of surface layers to use. Note each layer is two atoms deep
-			lenvac: The amount of vacuum required between surface images
+			lenvac: (float, optional-ish) The amount of vacuum TO ADD between surface images
+			lenAbsoluteVacuum: (float, optional-ish) The amount of vacuum between surfaces along the surface normal vector (i.e. the minimum distance betweeen surface planes when applying periodic boundary conditions)
+
 		
 		"""
-		super().__init__(singleLayerCell, nLayers, lenVac)
+		super().__init__(singleLayerCell, nLayers, lenVac=lenVac, lenAbsoluteVacuum=lenAbsoluteVacuum)
 
 
 def addVacuumToUnitCellAlongC(inpCell, lenVac):
