@@ -15,19 +15,36 @@ import gen_basis_helpers.shared.base_surface as baseSurface
 
 class GenericSurface(baseSurface.BaseSurface):
 
-	def __init__(self, singleLayerCell, nLayers, lenVac):
+	def __init__(self, singleLayerCell, nLayers, lenVac=None, lenAbsoluteVacuum=None):
 		""" Initialiser
 		
 		Args:
 			singleLayerCell: A plato_pylib UnitCell object representing a single layer of the surface. The surface needs to be defined along the ab axes
 			nLayers: The number of surface layers to use (1 layer = 1 singleLayerCell)
-			lenvac: The amount of vacuum required between surface images
+			EXACTLY ONE of these following parameters needs to be set to something other than None
+			lenvac: (float, optional-ish) The amount of vacuum TO ADD between surface images
+			lenAbsoluteVacuum: (float, optional-ish) The amount of vacuum between surfaces along the surface normal vector (i.e. the minimum distance betweeen surface planes when applying periodic boundary conditions)
 	
 		"""
 
 		self._singleLayerCell = singleLayerCell
 		self._nLayers = nLayers
-		self._lenVac = lenVac
+		self._setLenVacFromInitializerInputArgs(lenVac, lenAbsoluteVacuum)
+
+	def _setLenVacFromInitializerInputArgs(self, lenVac, lenAbsoluteVacuum):
+		if (lenVac is None) and (lenAbsoluteVacuum is None):
+			raise AttributeError("lenVac or lenAbsoluteVacuum need setting")
+
+		if (lenVac is not None) and (lenAbsoluteVacuum is not None):
+			raise AttributeError("Only ONE of lenVac and lenAbsoluteVacuum can be set; not both")
+
+		if lenVac is not None:
+			self._lenVac = lenVac
+		elif lenAbsoluteVacuum is not None:
+			self._lenVac = 0 #Needs to be defined as SOMETHING for the setter to work properly
+			self.lenAbsoluteVacuum = lenAbsoluteVacuum 
+		else:
+			raise ValueError("Error: Code hit a section it never should")
 	
 	@property
 	def unitCell(self):
@@ -35,6 +52,39 @@ class GenericSurface(baseSurface.BaseSurface):
 		vacToAdd = self._getAmountOfVacuumToAddAlongC()
 		addVacuumToUnitCellAlongC(superCell, vacToAdd)
 		return superCell
+
+	@property
+	def lenAbsoluteVacuum(self):
+		""" Length of vacuum between surface planes in two periodic images (bottom plane in one cell and top plane in another). Put another way, this is the minimum interaction distance between atoms in different cells along c.
+		"""
+		lattVects = self._singleLayerCell.lattVects
+		abPlaneEquation = ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1],normaliseCoeffs=True)
+
+		#Find the plane-equations for the top plane
+		allDVals = list()
+		for x in self._singleLayerCell.cartCoords:
+			allDVals.append( abPlaneEquation.calcDForInpXyz(x[:3]) )
+		maxD = max(allDVals)
+		topPlaneEquation = ThreeDimPlaneEquation( *(abPlaneEquation.coeffs[:3] + [maxD]) )
+
+		#Find a position lying in the bottom plane for our single cell
+		unused, bottomAtomIndex = min( (idx,val) for val,idx in enumerate(allDVals) ) #Any atom in this plane is fine
+		bottomAtomPosition = self._singleLayerCell.cartCoords[bottomAtomIndex][:3]
+		bottomPositionInCellAbove = [x1+x2 for x1,x2 in it.zip_longest(bottomAtomPosition,lattVects[2])]
+
+		#Get the vacuum sepataion when we dont add any ADDITIONAL vacuum on
+		outSepNoAdditionalVacuum = topPlaneEquation.getDistanceOfPointFromPlane(bottomPositionInCellAbove)
+
+		#Get the vacuum separation
+		outVacSep = outSepNoAdditionalVacuum + self._lenVac 
+
+		return outVacSep
+
+	@lenAbsoluteVacuum.setter
+	def lenAbsoluteVacuum(self,val):
+		currVal = self.lenAbsoluteVacuum
+		diff = val-currVal
+		self._lenVac += diff
 
 	#When alpha or beta do not equal 90 degrees, we need to add a larger amount of vacuum to get the same
 	#separation between surface planes

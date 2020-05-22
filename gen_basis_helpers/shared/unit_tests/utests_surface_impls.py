@@ -264,13 +264,6 @@ class TestGenericSurface(unittest.TestCase):
 		self.assertAlmostEqual(expArea,actArea)
 
 	@mock.patch("gen_basis_helpers.shared.surfaces.addVacuumToUnitCellAlongC")
-	def testExpectedAmountOfVacuumAdded_nonCubicCell(self, mockedAddVacAlongC):
-		expAlongC = self.lenVac / math.cos(math.radians( abs(self.lattAngles[0]-90)) )
-		outObj = self.surfA.unitCell
-		actAlongC = mockedAddVacAlongC.call_args.args[1]
-		self.assertAlmostEqual(expAlongC,actAlongC)	
-
-	@mock.patch("gen_basis_helpers.shared.surfaces.addVacuumToUnitCellAlongC")
 	def testExpectedAmountOfVacuumAdded_cubicCell(self, mockedAddVacAlongC):
 		expAlongC = self.lenVac 
 		self.lattAngles = [90,90,90]
@@ -278,6 +271,101 @@ class TestGenericSurface(unittest.TestCase):
 		outObj = self.surfA.unitCell
 		actAlongC = mockedAddVacAlongC.call_args.args[1]
 		self.assertAlmostEqual(expAlongC,actAlongC)	
+
+	@mock.patch("gen_basis_helpers.shared.surfaces.addVacuumToUnitCellAlongC")
+	def testExpectedAmountOfVacuumAdded_nonCubicCell(self, mockedAddVacAlongC):
+		expAlongC = self.lenVac / math.cos(math.radians( abs(self.lattAngles[0]-90)) )
+		outObj = self.surfA.unitCell
+		actAlongC = mockedAddVacAlongC.call_args.args[1]
+		self.assertAlmostEqual(expAlongC,actAlongC)	
+
+
+	def testAbsoluteVacuum_cubicCellOneAtom(self):
+		self.lattAngles = [90,90,90]
+		self.lenVac = 0 #This is ADDITIONAL vacuum
+		expAbsVac = self.lattParams[-1] #The vacuum separation between 2 surface layers
+		self._checkAbsoluteVacuumAsExpected(expAbsVac)
+
+	def testAbsoluteVacuum_cubicCellOneAtomWithExtraVacuum(self):
+		self.lattAngles = [90,90,90]
+		self.lenVac = 5
+		expAbsVac = self.lattParams[-1] + self.lenVac
+		self._checkAbsoluteVacuumAsExpected(expAbsVac)
+
+	def testAbsoluteVacuum_cubicCellTwoAtoms(self):
+		self.lattAngles = [90,90,90]
+		self.lenVac = 0
+		zFractCoord = 0.6
+		self.fractCoords = [ [0.0,0.0,0.0],
+		                     [0.5,0.5,zFractCoord] ]
+		self.eleList = ["Mg", "Mg"]
+		expAbsVac = self.lattParams[-1] - zFractCoord*self.lattParams[-1]
+		self._checkAbsoluteVacuumAsExpected(expAbsVac)
+
+
+	def testAbsoluteVacuum_hexCellOneAtom(self):
+		self.lattAngles = [60,90,90]
+		self.lenVac = 0
+		expAbsVac = math.cos(math.radians( abs(self.lattAngles[0]-90) ) ) * self.lattParams[-1]
+		self._checkAbsoluteVacuumAsExpected(expAbsVac)
+
+	def testAbsoluteVacuum_hexCellTwoAtoms(self):
+		self.lattAngles = [60,90,90]
+		self.lenVac = 0
+		zFractCoord = 0.6
+		self.fractCoords = [ [0.0,0.0,0.0],
+		                     [0.0,0.0,zFractCoord] ]
+		self.eleList = ["Mg", "Mg"]
+		absVacSingleLayer = math.cos(math.radians( abs(self.lattAngles[0]-90) ) ) * self.lattParams[-1]
+		correctionForSecondLayer = -1*zFractCoord*absVacSingleLayer
+		expAbsVac = absVacSingleLayer + correctionForSecondLayer
+		self._checkAbsoluteVacuumAsExpected(expAbsVac)
+
+	def _checkAbsoluteVacuumAsExpected(self, expVac):
+		self.createTestObjs()
+		actVac = self.surfA.lenAbsoluteVacuum
+		self.assertAlmostEqual(expVac, actVac)
+
+	def testAbsVacGetAndSetConsistent_hexCellOneAtom(self):
+		self.lattAngles = [60,90,90]
+		self.lenVac = 2
+
+		#Test part
+		testAbsVac = 20
+		self.assertNotAlmostEqual(testAbsVac, self.surfA.lenAbsoluteVacuum)
+		self.surfA.lenAbsoluteVacuum = testAbsVac
+		actAbsVac = self.surfA.lenAbsoluteVacuum
+		self.assertAlmostEqual(testAbsVac, actAbsVac)
+
+	def testAbsVacGetAndSetConsistent_hexCellTwoAtoms(self):
+		#Setup part
+		self.lattAngles = [60,90,90]
+		self.lenVac = 2
+		zFractCoord = 0.6
+		self.fractCoords = [ [0.0,0.0,0.0],
+		                     [0.0,0.0,zFractCoord] ]
+		self.eleList = ["Mg", "Mg"]
+		self.createTestObjs()
+
+		#Test part
+		testAbsVac = 20
+		self.assertNotAlmostEqual(testAbsVac, self.surfA.lenAbsoluteVacuum)
+		self.surfA.lenAbsoluteVacuum = testAbsVac
+		actAbsVac = self.surfA.lenAbsoluteVacuum
+		self.assertAlmostEqual(testAbsVac, actAbsVac)
+
+	def testRaisesIfInitWithoutSettingVacLength(self):
+		with self.assertRaises(AttributeError):
+			outObj = tCode.GenericSurface(self.uCellA, self.nLayers)
+
+	def testRaisesIfBothLenVacAndLenAbsoluteVacuumAreSet(self):
+		with self.assertRaises(AttributeError):
+			outObj = tCode.GenericSurface(self.uCellA, self.nLayers, lenVac=4, lenAbsoluteVacuum=5)
+
+	def testInitWithLenAbsoluteVac(self):
+		lenAbsVac = 10
+		outObj = tCode.GenericSurface(self.uCellA, self.nLayers, lenAbsoluteVacuum=lenAbsVac)
+		self.assertAlmostEqual( lenAbsVac, outObj.lenAbsoluteVacuum )
 
 
 class TestAddingVacuumRegion(unittest.TestCase):
