@@ -10,6 +10,7 @@ import math
 import sys
 
 from ..shared import config_vars as configVars
+from ..castep import castep_creator as castepCreator
 from ..job_utils import dos_helpers as dosHelp
 from . import ref_elemental_objs as refEleObjs
 from . import helpers_ref_data as helpers
@@ -158,14 +159,26 @@ def _getMgExptHcpAsUCell():
 
 
 #INTERFACE FUNCTION
+
+
 def getPlaneWaveGeom(structType:str):
-	structTypeToFunct = {"hcp":_getMgPlaneWaveHcpGeomAsUCell,
+	structTypeToFunct = {"hcp": _getMgPlaneWaveHcpGeomAsUCell,
 	                     "bcc": _getMgPlaneWaveBCCGeomAsUCell,
 	                     "fcc": _getMgPlaneWaveFCCGeomAsUCell,
 	                     "atom":_getMgAtomGeomAsUCell}
 	return structTypeToFunct[structType.lower()]()
 
+def getPlaneWaveGeomParsedFileObject(structType:str):
+	structTypeToFunct = {"hcp": _getMgPlaneWaveHcpGeomParsedFile}
+	return structTypeToFunct[structType.lower()]()
 
+
+def _getMgPlaneWaveHcpGeomParsedFile():
+	refPath = os.path.join(BASE_FOLDER,"opt_geoms","hcp","Mg_hcp_SPE_otf_10el_usp_PP_6pt06.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+
+#TODO: These functions should be removed and a wrapper around getPlaneWaveGeomParsedFileObject should be used to fetch geometries
 # Optimised Plane-wave structures (PBE)
 def _getMgPlaneWaveHcpGeomAsUCell():
 	refPath = os.path.join(BASE_FOLDER,"opt_geoms","hcp","Mg_hcp_SPE_otf_10el_usp_PP_6pt06.geom")
