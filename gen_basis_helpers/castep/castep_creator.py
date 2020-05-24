@@ -7,7 +7,6 @@ from ..shared import method_objs as baseObjs
 from ..shared import geom_constraints as geoConstrainModule
 from . import method_register as methodReg
 
-
 import plato_pylib.parseOther.parse_castep_files as parseCastep
 
 
@@ -167,10 +166,7 @@ class CastepCalcObj(baseObjs.CalcMethod):
 	@property
 	def parsedFile(self):
 		outFilePath = self.basePath + ".castep" #Only parse the basic output file for now
-		parsedDict = parseCastep.parseCastepOutfile(outFilePath)
-		outObj = types.SimpleNamespace(**parsedDict)
-		outObj.unitCell.convAngToBohr()
-		return outObj
+		return getParsedFileObjFromCastepOutputFile(outFilePath)
 
 	@property
 	def basePath(self):
@@ -179,4 +175,12 @@ class CastepCalcObj(baseObjs.CalcMethod):
 	@basePath.setter
 	def basePath(self,val):
 		self._basePath = os.path.splitext(val)[0]
+
+
+def getParsedFileObjFromCastepOutputFile(outFilePath):
+	parsedDict = parseCastep.parseCastepOutfile(outFilePath)
+	outObj = baseObjs.StandardParsedOutputFile.fromKwargDict(**parsedDict)
+	outObj.unitCell.convAngToBohr()
+	return outObj
+
 

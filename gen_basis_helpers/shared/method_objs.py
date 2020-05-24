@@ -63,6 +63,40 @@ class ParsedFile():
 		raise NotImplementedError("")
 
 
+class StandardParsedOutputFile(ParsedFile):
+
+	def __init__(self, energies=None, numbAtoms=None, unitCell=None):
+		""" Initializer
+		
+		Args:
+			energies: plato_pylib Energies object
+			numbAtoms: The number of atoms in the calculation
+			unitCell: plato_pylib UnitCell object; units should generally be in bohr
+
+		"""
+		self._energies = energies
+		self._numbAtoms = numbAtoms
+		self._unitCell = unitCell
+
+	@classmethod
+	def fromKwargDict(cls, **kwargs):
+		allowedKwargs = ["energies", "numbAtoms", "unitCell"]
+		outKwargs = {k:kwargs[k] for k in kwargs if k in allowedKwargs}
+		return cls(**outKwargs)
+
+	@property
+	def energies(self):
+		return self._energies
+
+	@property
+	def numbAtoms(self):
+		return self._numbAtoms
+
+	@property
+	def unitCell(self):
+		return self._unitCell
+
+
 
 class CalcMethodFactoryBase(baseCreator.CreatorWithResetableKwargsTemplate):
 

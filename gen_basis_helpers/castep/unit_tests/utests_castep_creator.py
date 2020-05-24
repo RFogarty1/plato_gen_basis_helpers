@@ -188,10 +188,16 @@ class TestCastepCalcObj(unittest.TestCase):
 		expCastepFile = self.basePath + ".castep"
 		mockedParserModule.parseCastepOutfile.assert_called_once_with(expCastepFile)
 
-
-
-
-
+	@mock.patch("gen_basis_helpers.castep.castep_creator.baseObjs.StandardParsedOutputFile")
+	@mock.patch("gen_basis_helpers.castep.castep_creator.parseCastep")
+	def testParsedFileReturnsExpected(self, mockedParserModule, mockedParsedOutputFileClass):
+		expParsedFile, expOutObj = {"a":"a"}, mock.Mock()
+		mockedParserModule.parseCastepOutfile.side_effect = lambda *args,**kwargs: expParsedFile
+		mockedParsedOutputFileClass.fromKwargDict.side_effect = lambda *args, **kwargs: expOutObj
+		actOutObj = self.testObjA.parsedFile
+		mockedParsedOutputFileClass.fromKwargDict.assert_called_once_with(**expParsedFile)
+		expOutObj.unitCell.convAngToBohr.assert_called_once_with()
+		self.assertEqual(expOutObj,actOutObj)
 
 
 
