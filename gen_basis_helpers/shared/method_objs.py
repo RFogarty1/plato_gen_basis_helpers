@@ -107,3 +107,28 @@ class CalcMethodFactoryBase(baseCreator.CreatorWithResetableKwargsTemplate):
 	registeredKwargs.add("geom")
 
 
+
+class StubCalcMethodFromParsedFileObject(CalcMethod):
+
+	def __init__(self, parsedFile):
+		self._parsedFile = parsedFile
+
+	def writeFile(self):
+		pass
+
+	@property
+	def outFilePath(self):
+		return ""
+
+	@property
+	def nCores(self):
+		return 1
+
+	@property
+	def runComm(self):
+		return list()
+
+	@property
+	def parsedFile(self):
+		return self._parsedFile
+
