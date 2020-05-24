@@ -30,10 +30,12 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	registeredKwargs.add("applyNLayersToBulk")
 	registeredKwargs.add("baseCreator")
 	registeredKwargs.add("stubBulkCalcObj")
+	registeredKwargs.add("useAbsVacLength")
 
 	def _setDefaultInitAttrs(self):
 		self.applyNLayersToBulk = False
 		self.cellDims = [1,1,1]
+		self.useAbsVacLength = False
 
 	def _createFromSelf(self):
 		bulkCalcObj = self._getBulkCalcObj()
@@ -45,12 +47,6 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		return calcRunners.StandardInputObj(workflow,label)
 
 
-	def _getAbsoluteVacuumLength(self):
-		bulkCell = self._bulkCellNoSurfaceLayers
-		surfClass = self._getSurfaceObjClass() #TODO: Need to switch this to a factory soon, to unify interface between diff surfaces
-		return surfClass.lenAbsoluteVacuum
-
-
 	# This should be overwritten by code-specific versions
 	def _createCalcObjCreator(self):
 		""" Return a CalcMethodFactoryBase instance with no kPts or geom present
@@ -60,8 +56,14 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		raise ValueError("baseCreator attribute not set")
 
 	def _addInfoToWorkflowOutput(self,workflow):
-		extraInfo = types.SimpleNamespace(lenVac=self.lenVac,nLayers=self.nLayers, lenAbsoluteVacuum=self._getAbsoluteVacuumLength() )
+		absVac, addedVac = self._getAbsoluteVacuumAndAddedVacuumLength()
+		extraInfo = types.SimpleNamespace(lenVac=addedVac, nLayers=self.nLayers, lenAbsoluteVacuum=absVac )
 		workflow.output[0].extraInfo = extraInfo
+
+	def _getAbsoluteVacuumAndAddedVacuumLength(self):
+		bulkCell = self._bulkCellNoSurfaceLayers
+		outObj = self._getSurfInstanceFromBulkCell(bulkCell)
+		return outObj.lenAbsoluteVacuum, outObj.lenVac
 
 	def _getSurfaceCalcObj(self):
 		outCreator = self._createCalcObjCreator() #No geometry included
@@ -112,7 +114,7 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	def _bulkCell(self):
 		baseBulkCell = self._bulkCellNoSurfaceLayers
 		if self.applyNLayersToBulk:
-			surfClass = self._getSurfaceObjClass() #TODO: Need to switch this to a factory soon, to unify interface between diff surfaces
+			surfClass = self._getSurfaceObjClass()
 			lenVac = 0.0
 			outUCell = surfClass(baseBulkCell,self.nLayers,lenVac).unitCell
 		else:
@@ -122,9 +124,17 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	@property
 	def _surfaceCell(self):
 		bulkCell = self._bulkCellNoSurfaceLayers
-		surfClass = self._getSurfaceObjClass() #TODO: Need to switch this to a factory soon, to unify interface between diff surfaces
-		surfUCell = surfClass(bulkCell,self.nLayers,self.lenVac).unitCell
+		surfObj = self._getSurfInstanceFromBulkCell(bulkCell)		
+		surfUCell = surfObj.unitCell
 		return surfUCell
+
+	def _getSurfInstanceFromBulkCell(self, bulkCell):
+		surfClass = self._getSurfaceObjClass() #TODO: Need to switch this to a factory soon, to unify interface between diff surfaces
+		if self.useAbsVacLength:
+			surfObj = surfClass(bulkCell,self.nLayers,lenAbsoluteVacuum=self.lenVac)
+		else:
+			surfObj = surfClass(bulkCell,self.nLayers,self.lenVac)
+		return surfObj
 
 	@property
 	def _bulkCellNoSurfaceLayers(self):
@@ -176,7 +186,7 @@ class MapSurfaceEnergiesToStandardFormat():
 		self._checkInputArgsValid()
 
 	def _checkInputArgsValid(self):
-		validXVals = [x.lower() for x in ["methodStr", "lenVac", "nLayers", "lenAbsoluteVac"]]
+		validXVals = [x.lower() for x in ["methodStr", "lenVac", "nLayers", "lenAbsoluteVacuum"]]
 		if self.xVal.lower() not in validXVals:
 			raise AttributeError("{} is an invalid value for xVal".format(self.xVal))
 
@@ -195,8 +205,8 @@ class MapSurfaceEnergiesToStandardFormat():
 			outVal = stdInputObj.workflow.output[0].extraInfo.lenVac
 		elif self.xVal.lower() == "nlayers":
 			outVal = stdInputObj.workflow.output[0].extraInfo.nLayers
-		elif self.xVal.lower() == "lenAbsoluteVac".lower():
-			outVal = stdInputObj.workflow.output[0].extraInfo.lenAbsoluteVac
+		elif self.xVal.lower() == "lenAbsoluteVacuum".lower():
+			outVal = stdInputObj.workflow.output[0].extraInfo.lenAbsoluteVacuum
 		else:
 			raise ValueError("self.xVal={} is an invalid value".format(self.xVal))
 

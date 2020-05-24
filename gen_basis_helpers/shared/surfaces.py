@@ -31,6 +31,10 @@ class GenericSurface(baseSurface.BaseSurface):
 		self._nLayers = nLayers
 		self._setLenVacFromInitializerInputArgs(lenVac, lenAbsoluteVacuum)
 
+	@property
+	def lenVac(self):
+		return self._lenVac
+
 	def _setLenVacFromInitializerInputArgs(self, lenVac, lenAbsoluteVacuum):
 		if (lenVac is None) and (lenAbsoluteVacuum is None):
 			raise AttributeError("lenVac or lenAbsoluteVacuum need setting")

@@ -23,6 +23,7 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 		self.surfType = "hcp0001"
 		self.lenVac = 10
 		self.nLayers = 4
+		self.useAbsVacLength = False
 		self.applyNLayersToBulk = None
 		self.baseWorkfolder = os.path.join("fake","folder")
 		self.createTestObjs()
@@ -33,7 +34,8 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 		                                                               surfType=self.surfType, nLayers=self.nLayers,
 		                                                               lenVac=self.lenVac, kPts=self.kPoints, eleKey=self.eleKey,
 		                                                               methodKey=self.methodKey, structKey=self.structKey,
-		                                                               applyNLayersToBulk=self.applyNLayersToBulk)
+		                                                               applyNLayersToBulk=self.applyNLayersToBulk,
+		                                                               useAbsVacLength=self.useAbsVacLength)
 
 	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.CodeSpecificStandardInputCreatorTemplate._getSurfaceObjClass")
 	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.supCell")
@@ -114,6 +116,21 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 		self.testObjA.stubBulkCalcObj = expBulkCalcObj
 		self.assertEqual(expBulkCalcObj, self.testObjA._getBulkCalcObj())
 
+	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.CodeSpecificStandardInputCreatorTemplate._bulkCellNoSurfaceLayers", new_callable=mock.PropertyMock)
+	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.CodeSpecificStandardInputCreatorTemplate._getSurfaceObjClass")
+	def testAbsVacTruePassesExpectedArgsToSurfObj(self, mockedGetSurfObj, mockedBulkCell):
+		self.useAbsVacLength = True
+		self.createTestObjs()
+		expSurfObjClass, expSurfObjInstance, expSurfCell, expBulkCell = mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock()
+		mockedBulkCell.return_value = expBulkCell
+		mockedGetSurfObj.side_effect = [expSurfObjClass]
+		expSurfObjClass.side_effect = [expSurfObjInstance]
+		expSurfObjInstance.unitCell = expSurfCell
+		actCell = self.testObjA._surfaceCell
+
+		self.assertEqual(expSurfCell,actCell)
+		expSurfObjClass.assert_called_with(expBulkCell, self.nLayers, lenAbsoluteVacuum=self.lenVac)
+
 
 class TestMapFunction(unittest.TestCase):
 
@@ -133,7 +150,7 @@ class TestMapFunction(unittest.TestCase):
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		extraInfoObj = types.SimpleNamespace(nLayers=self.nLayers, lenVac=self.lenVac, lenAbsoluteVac=self.lenAbsoluteVac)
+		extraInfoObj = types.SimpleNamespace(nLayers=self.nLayers, lenVac=self.lenVac, lenAbsoluteVacuum=self.lenAbsoluteVac)
 		self.testWorkflowA = mock.Mock()
 		self.testWorkflowA.output = [types.SimpleNamespace(surfaceEnergy=self.surfEnergy,surfEPerAtom=self.ePerAtomSurf,
 		                                                   bulkEPerAtom=self.ePerAtomBulk, extraInfo=extraInfoObj)]
@@ -184,7 +201,7 @@ class TestMapFunction(unittest.TestCase):
 		self._compareTableDataWithExpected(expTableData)
 
 	def testExpectedTableDataOutputForLenAbsoluteVac(self):
-		self.xVal = "lenAbsoluteVac"
+		self.xVal = "lenAbsoluteVacuum"
 		self.createTestObjs()
 		expTableData = ["{}".format(self.lenAbsoluteVac), self.surfEnergyFmtStr.format(self.surfEnergy)]
 		self._compareTableDataWithExpected(expTableData)
