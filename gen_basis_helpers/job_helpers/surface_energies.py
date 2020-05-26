@@ -171,7 +171,7 @@ class MapSurfaceEnergiesToStandardFormat():
 		""" Initializer
 		
 		Args:
-			xVal (str): What to use as the independent variable; options are "methodStr", "lenVac" or "nLayers" or "lenAbsoluteVac"
+			xVal (str): What to use as the independent variable; options are "methodStr", "structStr", "lenVac", "nLayers", "lenAbsoluteVac"
 			xLabel (str): What to call the x value in output tables
 			xValFmt (str): Format string for reporting xVal (only really needs altering if using lenVac)
 			ePerAtomFmtStr (str): Format string for reporting energy for atom
@@ -186,7 +186,7 @@ class MapSurfaceEnergiesToStandardFormat():
 		self._checkInputArgsValid()
 
 	def _checkInputArgsValid(self):
-		validXVals = [x.lower() for x in ["methodStr", "lenVac", "nLayers", "lenAbsoluteVacuum"]]
+		validXVals = [x.lower() for x in ["methodStr", "lenVac", "nLayers", "lenAbsoluteVacuum", "structStr"]]
 		if self.xVal.lower() not in validXVals:
 			raise AttributeError("{} is an invalid value for xVal".format(self.xVal))
 
@@ -201,6 +201,8 @@ class MapSurfaceEnergiesToStandardFormat():
 	def _getXValFromStdInpObj(self, stdInputObj):
 		if self.xVal.lower() == "methodstr":
 			outVal = stdInputObj.label[0].methodKey
+		elif self.xVal.lower() == "structstr":
+			outVal = stdInputObj.label[0].structKey
 		elif self.xVal.lower() == "lenvac":
 			outVal = stdInputObj.workflow.output[0].extraInfo.lenVac
 		elif self.xVal.lower() == "nlayers":
