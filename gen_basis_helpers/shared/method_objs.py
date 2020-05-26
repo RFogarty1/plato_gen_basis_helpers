@@ -132,3 +132,24 @@ class StubCalcMethodFromParsedFileObject(CalcMethod):
 	def parsedFile(self):
 		return self._parsedFile
 
+
+class StubCalcMethodFactory():
+
+	def __init__(self, returnVal=None):
+		""" Initializer
+		
+		Args:
+			returnVal: object to be returned by the create() method. Generally will be a CalcMethod object
+				
+		"""
+		self.returnVal = returnVal
+		self.workFolder = None
+
+	def create(self, **kwargs):
+		return self.returnVal
+
+
+
+
+
+
