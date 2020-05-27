@@ -158,9 +158,49 @@ def _getMgExptHcpAsUCell():
 	return outCell
 
 
+def getPlaneWaveSurfaceParsedFileObject(surfType, nLayers=None, relaxType="unrelaxed"):
+	""" Returns a ParsedFile object for castep calculation on a surface. Note the unrelaxed geometries are built from from the castep optimised bulk cell
+	
+	Args:
+		surfType (str): The type of surface; examples are hcp0001 and hcp10m10 
+		nLayers (int, optional): The number of surface layers used in the calculation. Default will vary for different surfTypes; but will represent converged structures
+		relaxType (str, optional): String denoting the type of relaxation applied. Default="unrelaxed"; other options are "constant_volume" for now
+
+	Returns
+		parsedFile (ParsedFile object): This contains the geometry and total energy of the requested structure
+	
+	"""
+	structTypeDefaultNLayers = {"hcp0001":10, "hcp10m10":16}
+	if nLayers is None:
+		nLayers = structTypeDefaultNLayers[surfType]
+
+	structTypeToFunct = { ("hcp0001" , 10,"unrelaxed"): _getMgHcp0001PlaneWaveUnrelaxedParsedFile_10layers,
+	                      ("hcp0001" , 10,"constant_volume"  ): _getMgHcp0001PlaneWaveRelaxedParsedFile_10layers,
+	                      ("hcp10m10", 16,"unrelaxed"): _getMgHcp10m10PlaneWaveUnrelaxedParsedFile_16layers,
+	                      ("hcp10m10", 16, "constant_volume" ): _getMgHcp10m10PlaneWaveRelaxedParsedFile_16layers
+	                     }
+
+	return structTypeToFunct[(surfType,nLayers,relaxType)]()
+
+def _getMgHcp0001PlaneWaveUnrelaxedParsedFile_10layers():
+    refPath = os.path.join(BASE_FOLDER,"surface_energies", "hcp0001", "castep_geom", "unrelaxed", "surface_n10_vac_18pt90.castep")
+    return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+def _getMgHcp0001PlaneWaveRelaxedParsedFile_10layers():
+    refPath = os.path.join(BASE_FOLDER,"surface_energies", "hcp0001", "castep_geom", "relaxed", "nlayers_10_absvac_10_ang", "geom_opt.castep")
+    return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+def _getMgHcp10m10PlaneWaveUnrelaxedParsedFile_16layers():
+	refPath = os.path.join(BASE_FOLDER,"surface_energies", "hcp10m10", "castep_geom", "unrelaxed", "surface_n16_vac_18pt90.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+def _getMgHcp10m10PlaneWaveRelaxedParsedFile_16layers():
+	refPath = os.path.join(BASE_FOLDER,"surface_energies", "hcp10m10", "castep_geom", "relaxed", "nlayers_16_absvac_10_ang", "geom_opt.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+
+
 #INTERFACE FUNCTION
-
-
 def getPlaneWaveGeom(structType:str):
 	structTypeToFunct = {"hcp": _getMgPlaneWaveHcpGeomAsUCell,
 	                     "bcc": _getMgPlaneWaveBCCGeomAsUCell,
