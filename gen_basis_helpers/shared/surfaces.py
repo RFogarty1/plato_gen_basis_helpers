@@ -9,6 +9,8 @@ import numpy as np
 import plato_pylib.shared.ucell_class as uCell
 import plato_pylib.utils.supercell as supCell
 
+from . import plane_equations as planeEqn
+
 import gen_basis_helpers.shared.base_surface as baseSurface
 
 
@@ -62,14 +64,14 @@ class GenericSurface(baseSurface.BaseSurface):
 		""" Length of vacuum between surface planes in two periodic images (bottom plane in one cell and top plane in another). Put another way, this is the minimum interaction distance between atoms in different cells along c.
 		"""
 		lattVects = self._singleLayerCell.lattVects
-		abPlaneEquation = ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1],normaliseCoeffs=True)
+		abPlaneEquation = planeEqn.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1],normaliseCoeffs=True)
 
 		#Find the plane-equations for the top plane
 		allDVals = list()
 		for x in self._singleLayerCell.cartCoords:
 			allDVals.append( abPlaneEquation.calcDForInpXyz(x[:3]) )
 		maxD = max(allDVals)
-		topPlaneEquation = ThreeDimPlaneEquation( *(abPlaneEquation.coeffs[:3] + [maxD]) )
+		topPlaneEquation = planeEqn.ThreeDimPlaneEquation( *(abPlaneEquation.coeffs[:3] + [maxD]) )
 
 		#Find a position lying in the bottom plane for our single cell
 		unused, bottomAtomIndex = min( (idx,val) for val,idx in enumerate(allDVals) ) #Any atom in this plane is fine
@@ -94,7 +96,7 @@ class GenericSurface(baseSurface.BaseSurface):
 	#separation between surface planes
 	def _getAmountOfVacuumToAddAlongC(self):
 		lattVects = self._singleLayerCell.lattVects
-		surfPlaneEquation = ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1],normaliseCoeffs=True)
+		surfPlaneEquation = planeEqn.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1],normaliseCoeffs=True)
 		unitSurfaceNormal = surfPlaneEquation.coeffs[:3]
 		unitCVector = [x/self._singleLayerCell.lattParams["c"] for x in lattVects[2]]
 		componentAlongC = np.dot( np.array(unitSurfaceNormal), np.array(unitCVector) )
@@ -315,80 +317,4 @@ def _uCellIsRockSaltPrimitive(inpCell, printError=True, angleTol=1e-1, lattParam
 
 	return isPrim
 
-
-
-#TODO: Move this to its own module
-class ThreeDimPlaneEquation():
-	""" Class representing a 3-dimension plane equation ax + by +cz = d
-
-	"""
-	def __init__(self, a, b, c, d):
-		""" Initializer
-		
-		Args:
-			a,b,c,d (floats): Parameters for the plane equation ax + by + cz = d
-				 
-		"""
-		self.a = a
-		self.b = b
-		self.c = c
-		self.d = d
-
-	@classmethod
-	def fromTwoPositionVectors(cls, inpVectA, inpVectB, normaliseCoeffs=True):
-		""" Alternative initializer. Creates the object using two input POSITION vectors (i.e. both MUST pass through origin)
-		
-		Args:
-			inpVectA: (len 3 float iter) Position vector
-			inpVectB: (len 3 float iter) Position vector
-			normaliseCoeffs: (Bool, Optional) If True then always return coefficients for the normalised (i.e. unit) vector normal to the plane. Default=True
-				 
-		"""
-		vectA, vectB = np.array(inpVectA), np.array(inpVectB)
-		normVect = np.cross(vectA,vectB)
-		if normaliseCoeffs:
-			lenNormVect = math.sqrt( sum([x**2 for x in normVect]) )
-			normVect = np.array( [x/lenNormVect for x in normVect] )
-
-		#D is always zero, since the position vectors are also points on the plane
-		outCoeffs = [x for x in normVect] + [0] 
-
-		return cls(*outCoeffs)
-
-
-	def getDistanceOfPointFromPlane(self, inpXyz):
-		""" Calculates the distance of a point from the plane
-		
-		Args:
-			inpXyz: (len 3 float iter) [x,y,z] co-ordinates
-				 
-		Returns
-			outDist: (float) The distance between input point and the nearest point on this plane
-	 
-		"""
-		#Step 1 = Find the d value for the parralel plane this lies on; the displacement vector between point and plane is then the vector normal to this plane
-		#Step 2  = use the fact the normal vector points the same way as the displacement vecctor to get a length
-		dValForThisPoint = self.calcDForInpXyz(inpXyz)
-		diffInDVals = abs( dValForThisPoint - self.d )
-		lenNormalVectorToThisPlane = math.sqrt( (self.a**2) + (self.b**2) + (self.c**2) )
-		outDist = diffInDVals / lenNormalVectorToThisPlane
-		return outDist
-
-
-	def calcDForInpXyz(self, inpXyz):
-		""" For a given xyz calculate d. If d=self.d then the point lies on this plane; else it lies on a parralel plane with d being the output to this function
-		
-		Args:
-			inpXyz: (len 3 float iter) co-ordinates for a point
-				 
-		"""
-		assert len(inpXyz) == 3
-		return sum( [param*coord for param,coord in it.zip_longest([self.a,self.b,self.c],inpXyz)] )
-
-
-	@property
-	def coeffs(self):
-		""" Returns a,b,c,d coeffs (in ax + by +cz = d) as a len-4 iter
-		"""
-		return [self.a,self.b,self.c,self.d]
 
