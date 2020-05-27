@@ -27,3 +27,24 @@ def createMethodStrToMethodNameDict_three_centre_2019_tight_binding_paper():
 
 	return outDict
 
+
+def createMethodAliasToMethodNameDict_cp2k_basis_set_2020_paper_pure_mg():
+	outDict = dict()
+
+	outDict["ucl-ssp"]                       = "mDZVP"
+	outDict["ucl-sssp"]                      = "mTZVP"
+	outDict["ucl-ssspp"]                     = "mTZV2P"
+	outDict["rc_7pt0"]                       = "rc7pt0-ssppdd"
+	outDict["rc_7pt5"]                       = "rc7pt5-ssppdd"
+	outDict["rc_8pt0"]                       = "rc8pt0-ssppdd"
+	outDict["rc_7pt5_ssppd_3expSets"]        = "rc7pt5-ssppd"
+	outDict["rc_7pt5_spd_s"]                 = "rc7pt5-sspd"
+	outDict["rc_7pt5_ssp"]                   = "rc7pt5-ssp"
+	outDict["rc_7pt5_1z"]                    = "rc7pt5-spd"
+	outDict["rc_7pt5_ssp_pls_s_diff_8pt0"]   = "rc7pt5-ssp+s"
+	outDict["rc_7pt5_spd_s_pls_s_diff_8pt0"] = "rc7pt5-sspd+s"
+
+	return outDict
+
+
+
