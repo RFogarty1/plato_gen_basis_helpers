@@ -119,6 +119,11 @@ def _():
                                  potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
 
 
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-q2-ssp-rc7pt5-r06pt0-plus-s-diffuse-8pt0".lower())
+def _():
+    return basObj.CP2KBasisObjStandard( element="will_be_overwritten", basis="ssp-rc7pt5-r06pt0-plus-s-diffuse-8pt0",
+                                 potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
+
 
 #Rc = 8.0 basis set
 @basRegister.decoRegisterCP2KBasisCreatorToMethodStr("GTH-PBE-q2-spd-2z-rc8pt0-r06pt5-1".lower())
