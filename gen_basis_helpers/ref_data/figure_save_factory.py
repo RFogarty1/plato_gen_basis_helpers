@@ -17,3 +17,8 @@ def createFigureSaver_threeCentreTightBindingBostomTalk():
 	outSaver = createFigureSaver_threeCentreTightBindingPaper()
 	outSaver.baseFolder = os.path.join( outSaver.baseFolder, "mrs_talk" )
 	return outSaver
+
+def createFigureSaver_cp2kBasisPaper2020():
+	baseFolder = configVars.CP2K_BASIS_PAPER_2020_FIG_SAVE_FOLDER
+	return baseObjs.StandardFigureSaver.fromDefaultPlusKwargs(baseFolder=baseFolder)
+
