@@ -176,6 +176,50 @@ def addVacuumToUnitCellAlongC(inpCell, lenVac):
 	inpCell.cartCoords = cartCoords
 
 
+def _getSingleLayerHcp1010FromPrimitiveCell_longTermination(primCell):
+	""" Gets the hcp(10-10) primtive cell with long termination; meaning the first interlayer spacing is larger than the second
+		WARNING: THIS FUNCTION ISNT WELL TESTED and wasnt written to neccesarily be super-general. Be VERY careful using it """
+	startPrimCell = getSingleLayerHcp1010FromPrimitiveCell(primCell)
+
+	assert len(startPrimCell.cartCoords)==2
+
+	#We need to get the image atom for our current top layer
+	allCart = startPrimCell.cartCoords
+	atomACart, atomBCart = [np.array(x[:3]) for x in allCart]
+	lattVectC = np.array( startPrimCell.lattVects[2] )
+
+	atomDistsFromAbPlane = _getDistancesFromAtomsToAbPlaneForInpUCell(startPrimCell)
+
+
+	if atomDistsFromAbPlane[0] > atomDistsFromAbPlane[1]:
+		topAtomIdx, topAtomXyz = 0, allCart[0][:3]
+	else:
+		topAtomIdx, topAtomXyz = 1, allCart[1][:3]
+
+	#Now apply a translation vector. I THINK this will ALWAYS be the negative direction based on the distance from ab plane
+	#Might not be true if we allow starting fract coords that have any values > 1 or < 0
+	cVect = startPrimCell.lattVects[2] 
+	newBottomAtomXyz = [atomCoord-translation for atomCoord,translation in it.zip_longest(topAtomXyz,cVect)]
+
+	#Now modify the cartesian coordinates
+	allCart[topAtomIdx][:3] = newBottomAtomXyz
+	startPrimCell.cartCoords = allCart
+	return startPrimCell
+
+
+#NOT TESTED PROPERLY
+def _getDistancesFromAtomsToAbPlaneForInpUCell(inpStruct):
+    lattVects = inpStruct.lattVects
+    bottomPlane = planeEqn.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0], lattVects[1])
+    cartCoords = [x[:3] for x in inpStruct.cartCoords]
+    distsFromPlane = list()
+    for x in cartCoords:
+        currDist= bottomPlane.getDistanceOfPointFromPlane(x)
+        distsFromPlane.append(currDist)
+    return distsFromPlane
+
+
+
 def getSingleLayerHcp1010FromPrimitiveCell(primCell):
 	_checkInpCellIsHcpPrimitive(primCell)
 
