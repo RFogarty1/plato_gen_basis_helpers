@@ -39,6 +39,8 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 		self.useAbsVacLength = False
 		self.nLayers = 1
 		self.lenVac = 0
+		self.surfType = surfGetterHelp.GenericSurface
+
 
 	def _createFromSelf(self):
 		bulkCalcObj = self._getBulkCalcObj()
