@@ -31,11 +31,14 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	registeredKwargs.add("baseCreator")
 	registeredKwargs.add("stubBulkCalcObj")
 	registeredKwargs.add("useAbsVacLength")
+	registeredKwargs.add("surfGeom") #This overwrites things like nLayers if its set. Should be a UnitCell object
 
 	def _setDefaultInitAttrs(self):
 		self.applyNLayersToBulk = False
 		self.cellDims = [1,1,1]
 		self.useAbsVacLength = False
+		self.nLayers = 1
+		self.lenVac = 0
 
 	def _createFromSelf(self):
 		bulkCalcObj = self._getBulkCalcObj()
@@ -123,6 +126,9 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 
 	@property
 	def _surfaceCell(self):
+		if self.surfGeom is not None:
+			return self.surfGeom
+
 		bulkCell = self._bulkCellNoSurfaceLayers
 		surfObj = self._getSurfInstanceFromBulkCell(bulkCell)		
 		surfUCell = surfObj.unitCell

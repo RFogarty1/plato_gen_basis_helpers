@@ -25,6 +25,7 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 		self.nLayers = 4
 		self.useAbsVacLength = False
 		self.applyNLayersToBulk = None
+		self.surfGeom = None
 		self.baseWorkfolder = os.path.join("fake","folder")
 		self.createTestObjs()
 
@@ -35,7 +36,8 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 		                                                               lenVac=self.lenVac, kPts=self.kPoints, eleKey=self.eleKey,
 		                                                               methodKey=self.methodKey, structKey=self.structKey,
 		                                                               applyNLayersToBulk=self.applyNLayersToBulk,
-		                                                               useAbsVacLength=self.useAbsVacLength)
+		                                                               useAbsVacLength=self.useAbsVacLength,
+		                                                               surfGeom=self.surfGeom)
 
 	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.CodeSpecificStandardInputCreatorTemplate._getSurfaceObjClass")
 	@mock.patch("gen_basis_helpers.job_helpers.surface_energies.supCell")
@@ -130,6 +132,16 @@ class TestSurfaceEnergiesCreatorTemplate(unittest.TestCase):
 
 		self.assertEqual(expSurfCell,actCell)
 		expSurfObjClass.assert_called_with(expBulkCell, self.nLayers, lenAbsoluteVacuum=self.lenVac)
+
+
+
+	def testSurfGeomInput(self):
+		expOutCell = mock.Mock()
+		self.surfGeom = expOutCell
+		self.createTestObjs()
+		actOutCell = self.testObjA._surfaceCell
+		self.assertEqual( expOutCell, actOutCell )
+
 
 
 class TestMapFunction(unittest.TestCase):
