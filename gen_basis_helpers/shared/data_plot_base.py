@@ -73,14 +73,26 @@ class DataPlotterBase():
 	registeredKwargs.add("data")
 
 	def __init__(self, **kwargs):
+		#First initialise all arguments
 		for key in self.registeredKwargs:
 			setattr(self,key,None)
+
+		#Hook to set any default values for attributes
+		self._setDefaultInitAttrs()
 
 		for key in kwargs:
 			if key in self.registeredKwargs:
 				setattr(self,key,kwargs[key])
 			else:
 				raise KeyError("{} is an invalid keyword.\n Available kwargs are {}".format(key , self.registeredKwargs))
+
+
+	#Taken from CreatorWithResetableKwargsTemplate
+	def _setDefaultInitAttrs(self):
+		""" Hook - overiding is optional. This is used to explicitly set any attributes to default values upon initiatiation. Any values set here will be overwritten if the relevant kwarg is passed to the constructor (including if you explicitly pass None with the kwarg)
+		"""
+		pass
+
 
 
 	def _updateAttrsFromKwargs(self, **kwargs):
@@ -106,24 +118,9 @@ class DataPlotterBase():
 
 		with temporarilySetDataPlotterRegisteredAttrs(self,kwargs):
 
-			if plotData is not None:	
-				toPlot = [np.array(x) for x in plotData]
-			else:
-				if self.data is not None:
-					toPlot = [np.array(x) for x in self.data]
-				else:
-					toPlot = list()
 
-			if self.axHandle is None:
-				outFig = plt.figure()
-				outFig.add_subplot(111)
-			else:
-				outFig = None
-				plt.sca(self.axHandle)	
-
-			plotFunct = self._getPlotFunction()
-
-
+			toPlot = self._getToPlotData(plotData)
+			outFig = self._getOutfigHandleAndSetCurrentAxis()
 	
 			for idx,pData in enumerate(toPlot):
 				try:
@@ -131,8 +128,8 @@ class DataPlotterBase():
 				except TypeError:
 					currLabel = "data set {}".format(idx)
 
-
-				plotFunct( pData[:,0], pData[:,1], label=currLabel )
+				self._plotSingleDataSeries(pData,currLabel, idx)
+				
 	
 			if self.xLim is not None:
 				plt.xlim(self.xLim)
@@ -153,8 +150,36 @@ class DataPlotterBase():
 			if self.legend is True:
 				plt.legend()
 
+			#Allow toPlot to be accesible when modifying the plot
+			with misc.temporarilySetInstanceAttrs(self, {"data":toPlot}):
+				self._modifyAxisPlot() #Hook for doing further modifications
+
 		return outFig
 
+
+	def _getOutfigHandleAndSetCurrentAxis(self):
+		if self.axHandle is None:
+			outFig = plt.figure()
+			outFig.add_subplot(111)
+		else:
+			outFig = None
+			plt.sca(self.axHandle)	
+		return outFig
+
+	def _getToPlotData(self, plotData=None):
+		if plotData is not None:	
+			toPlot = [np.array(x) for x in plotData]
+		else:
+			if self.data is not None:
+				toPlot = [np.array(x) for x in self.data]
+			else:
+				toPlot = list()
+		return toPlot
+
+
+	def _plotSingleDataSeries(self, inpData, label, idx):
+		plotFunct = self._getPlotFunction()
+		plotFunct( inpData[:,0], inpData[:,1], label=label )
 
 	def _getPlotFunction(self):
 		if self.plotFunct is None:
@@ -165,6 +190,11 @@ class DataPlotterBase():
 			return plt.plot
 		else:
 			raise ValueError("{} is an invalid value for plotFunct".format(self.plotFunct))
+
+
+	def _modifyAxisPlot(self):
+		""" Hook - provides a function to overwrite to modify the plot after basic things have been done. The current axis will be set correctly, so you can just use plt.something without specifying the axis to work on """
+		pass
 
 
 #Recommended class to use. Less flexible than Base but has a couple of painful to code features inbuilt 
