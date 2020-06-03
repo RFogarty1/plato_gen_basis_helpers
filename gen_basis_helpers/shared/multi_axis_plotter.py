@@ -1,12 +1,15 @@
 
+
 """ Purpose of this is to allow two independent sets of axes/data to be plotted on a single graph """
 
+
+import matplotlib.pyplot as plt
 
 class MultiAxisPlotterStandard():
 	""" Class for combining two individual plots onto a single graph with 2 indendepent x and y axes
 
 	"""
-	def __init__(self, plotFactories, axHandle=None):
+	def __init__(self, plotFactories)
 		""" Initialiser
 		
 		Args:
@@ -35,7 +38,8 @@ class MultiAxisPlotterStandard():
 			raise ValueError("Multi axis plotter can only handle 2 independent axes; but {} given".format(nFactories))
 
 		axHandle, outFig = self._getAxisHandleAndOutFigHandle()
-		self.plotFactories[0].createPlot(axHandle=axHandle)
+		if outFig is None:
+			self.plotFactories[0].createPlot(axHandle=axHandle)
 		secondAxis = self._getSecondXIndependentAxis(axHandle)
 		thirdAxis = self._getSecondYIndependentAxis(secondAxis)
 		self.plotFactories[1].createPlot(axHandle=thirdAxis)
@@ -63,6 +67,7 @@ class MultiAxisPlotterStandard():
 
 		if inpAxis.get_ylabel() == "":
 			inpAxis.set_ylabel(self.plotFactories[1].ylabel)
+
 
 
 

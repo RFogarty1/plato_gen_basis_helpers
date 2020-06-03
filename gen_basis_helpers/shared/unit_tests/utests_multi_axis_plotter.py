@@ -44,7 +44,7 @@ class TestMultiAxisPlotterStandard(unittest.TestCase):
 
 	@mock.patch("gen_basis_helpers.shared.multi_axis_plotter.MultiAxisPlotterStandard._getAxisHandleAndOutFigHandle")
 	def testExpCallToFirstPlotFactory(self, mockedGetAxAndFigure):
-		expFig, expAx = mock.Mock(), mock.Mock()
+		expFig, expAx = None, mock.Mock() #Should only call the plot function if no figure handle is returned
 		mockedGetAxAndFigure.side_effect = lambda : [expAx, expFig]
 		self.testObjA.create()
 		self.plotterA.createPlot.assert_called_once_with(axHandle=expAx)
