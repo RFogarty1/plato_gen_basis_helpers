@@ -9,7 +9,7 @@ class MultiAxisPlotterStandard():
 	""" Class for combining two individual plots onto a single graph with 2 indendepent x and y axes
 
 	"""
-	def __init__(self, plotFactories)
+	def __init__(self, plotFactories):
 		""" Initialiser
 		
 		Args:
