@@ -9,12 +9,15 @@ from . import misc_utils as misc
 class LabelledBarChartPlotterStandard(dPlotBase.DataPlotterBase):
 	registeredKwargs = set(dPlotBase.DataPlotterBase.registeredKwargs)
 	registeredKwargs.discard("plotFunct")
+	registeredKwargs.add("barColors")
 	registeredKwargs.add("fixDataSeriesOrLabels")
 	registeredKwargs.add("labels") 
 	registeredKwargs.add("labelRotations")
 	registeredKwargs.add("barWidths")
 	registeredKwargs.add("barSeparationWithinLabels")
 	registeredKwargs.add("barSeparationBetweenLabels")
+	registeredKwargs.add("removeXTicks") #Duplicated from DataPlotterStandard
+	registeredKwargs.add("removeYTicks") #Duplicated from DataPlotterStandard
 	registeredKwargs.add("xStartPos")
 	registeredKwargs.add("patterns")
 
@@ -145,13 +148,23 @@ class LabelledBarChartPlotterStandard(dPlotBase.DataPlotterBase):
 		else:
 			patternKwarg = misc.getCycleListToMaxLength(self.patterns,idx+1)[idx]
 
-		plt.bar(inpData[:,0], inpData[:,1], self.barWidths, label=label, hatch=patternKwarg)
+		if self.barColors is None:
+			barColorKwarg = None
+		else:
+			barColorKwarg = misc.getCycleListToMaxLength(self.barColors,idx+1)[idx]
+
+		plt.bar(inpData[:,0], inpData[:,1], self.barWidths, label=label, hatch=patternKwarg, color=barColorKwarg)
 
 
 	#Overrides parent hook function
 	def _modifyAxisPlot(self):
 		plotData = self.data #gauranteed by parent class
 		self._putLabelsOnPlot(plotData)
+
+		if self.removeYTicks:
+			plt.yticks([])
+		if self.removeXTicks:
+			plt.xticks([])
 
 	def _putLabelsOnPlot(self, plotData):
 		if plotData == list():
