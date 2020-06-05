@@ -21,7 +21,7 @@ class MgOReferenceDataObj(refEleObjs.RefElementalDataBase):
 		pass
 
 	def getExptGeom(self,key="rocksalt"):
-		return _getExptRockSaltStruct()
+		return getExptRockSaltStruct()
 
 
 	def getStructsForEos(self, structKey):
@@ -34,15 +34,16 @@ class MgOReferenceDataObj(refEleObjs.RefElementalDataBase):
 		return getPlaneWaveSurfEnergy(structKey)
 
 
-def _getExptRockSaltStruct():
+def getExptRockSaltStruct():
 	""" Data taken from 10.2183/pjab.55.43 (Sasaki 1979)
 	"""
+	return _getExptRockSaltStruct()
+
+def _getExptRockSaltStruct():
 	a = 4.217 #Angstrom, the only lattice parameter needed
 	outUCell = _createMgORocksaltStructFromLattParam(a)
 	outUCell.convAngToBohr()
 	return outUCell
-
-
 
 # Structures to use for bulk mod calculations (to be consistent)
 def _getUCellsForBulkModCalcsStandard(structType:str):
@@ -79,7 +80,14 @@ def _createMgORocksaltStructFromLattParam(a):
 	fractPos = [ [0.0, 0.0, 0.0,"Mg"], [0.5,0.5,0.5,"O"] ]
 	return uCell.UnitCell.fromLattVects(cellVecs, fractCoords=fractPos)
 
+#Plane wave geometry
+def getPlaneWaveGeom(structType="rocksalt"):
+	structTypeToFunct = {"rocksalt":_getPlaneWaveRocksaltGeom}
+	return structTypeToFunct[structType.lower()]()
 
+def _getPlaneWaveRocksaltGeom():
+	refPath = os.path.join(BASE_FOLDER,"opt_geom","rocksalt","geom_opt.castep")
+	return helpers.getUCellInBohrFromCastepOutFile(refPath)
 
 #EoS data
 def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
