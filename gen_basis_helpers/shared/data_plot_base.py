@@ -130,7 +130,6 @@ class DataPlotterBase():
 
 				self._plotSingleDataSeries(pData,currLabel, idx)
 				
-	
 			if self.xLim is not None:
 				plt.xlim(self.xLim)
 	
@@ -213,9 +212,12 @@ class DataPlotterStandard(DataPlotterBase):
 		self.registeredKwargs.add("lineColors")
 		self.registeredKwargs.add("lineMarkers")
 		self.registeredKwargs.add("lineMarkerSizes")
-		self.registeredKwargs.add("removeXTicks")
+		self.registeredKwargs.add("removeXTicks") #Currently takes priority over xTickLabels
 		self.registeredKwargs.add("removeYTicks")
 		self.registeredKwargs.add("mapPlotDataFunct")
+		self.registeredKwargs.add("xTickLabels")
+		self.registeredKwargs.add("xTickValues")
+		self.registeredKwargs.add("xTickLabelRotation")
 
 		super().__init__(**kwargs)
 	
@@ -234,6 +236,8 @@ class DataPlotterStandard(DataPlotterBase):
 		self._changeColorsIfNeeded(outFig, **kwargs)
 		self._changeLineMarkersIfNeeded(outFig, **kwargs)
 		self._changeLineMarkerSizesIfNeeded(outFig, **kwargs)
+
+		self._sortXTickLabels(plt.gca())
 
 		if self.removeYTicks:
 			plt.yticks([])
@@ -303,5 +307,25 @@ class DataPlotterStandard(DataPlotterBase):
 				legLineHandles = axHandle.get_legend().get_lines()
 				propSetFunct( legLineHandles[idx], propVal )
 
+
+	def _sortXTickLabels(self, axis):
+		if self.xTickLabels is None:
+			return None
+		if self.xTickValues is None:
+			raise ValueError("xTickValues needs to set if xTickValues is set")
+
+		putXTickLabelsOnPlot(axis, self.xTickValues, self.xTickLabels, rotation=self.xTickLabelRotation)
+
+
+
+
+def putXTickLabelsOnPlot(inpAxis, tickVals, plotLabels, rotation=0):
+	if rotation is None:
+		rotation = 0
+
+	inpAxis.set_xticks(tickVals)
+	inpAxis.set_xticklabels(plotLabels)
+	for x in inpAxis.get_xticklabels():
+		x.set_rotation(rotation)
 
 
