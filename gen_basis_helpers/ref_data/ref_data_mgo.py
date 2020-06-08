@@ -1,6 +1,8 @@
 
 
 import os
+
+from ..castep import castep_creator as castepCreator
 from ..shared import config_vars as configVars
 from . import ref_elemental_objs as refEleObjs
 from . import helpers_ref_data as helpers
@@ -81,13 +83,17 @@ def _createMgORocksaltStructFromLattParam(a):
 	return uCell.UnitCell.fromLattVects(cellVecs, fractCoords=fractPos)
 
 #Plane wave geometry
-def getPlaneWaveGeom(structType="rocksalt"):
-	structTypeToFunct = {"rocksalt":_getPlaneWaveRocksaltGeom}
+def getPlaneWaveGeomParsedFileObject(structType="rocksalt"):
+	structTypeToFunct = {"rocksalt":_getPlaneWaveRockSaltParsedFileObj}
 	return structTypeToFunct[structType.lower()]()
 
-def _getPlaneWaveRocksaltGeom():
+def _getPlaneWaveRockSaltParsedFileObj():
 	refPath = os.path.join(BASE_FOLDER,"opt_geom","rocksalt","geom_opt.castep")
-	return helpers.getUCellInBohrFromCastepOutFile(refPath)
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+def getPlaneWaveGeom(structType="rocksalt"):
+	return getPlaneWaveGeomParsedFileObject(structType).unitCell
+
 
 #EoS data
 def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
