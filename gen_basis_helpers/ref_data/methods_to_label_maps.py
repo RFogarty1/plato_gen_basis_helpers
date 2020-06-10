@@ -43,6 +43,9 @@ def createMethodAliasToMethodNameDict_cp2k_basis_set_2020_paper_pure_mg():
 	outDict["rc_7pt5_1z"]                    = "rc7pt5-spd"
 	outDict["rc_7pt5_ssp_pls_s_diff_8pt0"]   = "rc7pt5-ssp+s"
 	outDict["rc_7pt5_spd_s_pls_s_diff_8pt0"] = "rc7pt5-sspd+s"
+	outDict["rc_8pt0_ssppd_3expSets"]        = "rc8pt0-ssppd"
+	outDict["rc_8pt0_1z"]                    = "rc8pt0-spd"
+	outDict["rc_8pt0_spd_s"]                 = "rc8pt0-sspd"
 
 	return outDict
 
