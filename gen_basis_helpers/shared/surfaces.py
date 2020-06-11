@@ -362,3 +362,58 @@ def _uCellIsRockSaltPrimitive(inpCell, printError=True, angleTol=1e-1, lattParam
 	return isPrim
 
 
+
+
+def getSingleLayerRocksalt011FromPrimitiveCell(primCell):
+	""" 
+	
+	Args:
+		primCell: (plato_pylib UnitCell object) This must be a primitive rock salt cell. Meaning 2 atoms, with each lattice angle=60 degrees and a=b=c
+			 
+	Returns
+		 outCell: (plato_pylib UnitCell object) Contains a 4-atom unit-cell which forms the basis for forming rock-salt 011 surfaces (it is one layer)
+ 
+	Raises:
+		 AssertionError: If the input primitive cell is not a rock salt cell. Probably not garanteed to be raised if an incompatible cell is passed, but at least catches some errors.
+	"""
+	assert _uCellIsRockSaltPrimitive(primCell, printError=True), "UnitCell {} is not a primitive rock salt cell".format(primCell)
+	atomA, atomB = primCell.fractCoords[0][-1], primCell.fractCoords[1][-1]
+	conventLattParam = (2*primCell.lattParams["a"]) / math.sqrt(2)
+	otherLattParams = primCell.lattParams["a"]
+	outputLattParams = [conventLattParam, otherLattParams, otherLattParams]
+	outputLattAngles = [90,90,90]
+	fractCoords = [ [0.0, 0.0, 0.0, atomA],
+	                [0.0, 0.5, 0.5, atomB],
+	                [0.5, 0.0, 0.0, atomB],
+	                [0.5, 0.5, 0.5, atomA] ]
+	outCell = uCell.UnitCell(lattParams=outputLattParams, lattAngles=outputLattAngles)
+	outCell.fractCoords = fractCoords
+	return outCell
+
+
+#I WAS going to make the surface via this and some general implementation; but gave up basically
+def _getConventionalRocksaltCellFromPrimitiveCell(primCell):
+	assert _uCellIsRockSaltPrimitive(primCell, printError=True), "UnitCell {} is not a primitive rock salt cell".format(primCell)
+	atomA = primCell.fractCoords[0][-1]
+	atomB = primCell.fractCoords[1][-1]
+	lattParamAll = (2*primCell.lattParams["a"]) / math.sqrt(2)
+	outLattParams = [lattParamAll for x in range(3)]
+	outLattAngles = [90,90,90]
+	fractCoords = [ [0.0, 0.0, 0.0, atomA],
+	                [0.5, 0.0, 0.0, atomB],
+	                [0.0, 0.5, 0.0, atomB],
+	                [0.5, 0.5, 0.0, atomA],
+	                [0.0, 0.0, 0.5, atomB],
+	                [0.5, 0.0, 0.5, atomA],
+	                [0.0, 0.5, 0.5, atomA],
+	                [0.5, 0.5, 0.5, atomB] ]
+	outCell = uCell.UnitCell(lattParams=outLattParams, lattAngles=outLattAngles)
+	outCell.fractCoords = fractCoords
+	return outCell
+
+
+
+
+
+
+

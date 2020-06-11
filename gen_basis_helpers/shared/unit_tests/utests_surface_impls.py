@@ -464,6 +464,54 @@ class TestCentreFractCoordsAlongC(unittest.TestCase):
 
 
 
+class TestGetSurfaceLayerForRocksalt011FromPrimitive(unittest.TestCase):
+
+	def setUp(self):
+		self.atomA = "Mg"
+		self.atomB = "O"
+		self.lattParams = [1,1,1]
+		self.lattAngles = [60,60,60]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		fractCoords = [ [0.0,0.0,0.0], [0.5,0.5,0.5] ]
+		atomList = [self.atomA,self.atomB]
+		self.testCellA = UCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles,
+		                                fractCoords=fractCoords, elementList=atomList)
+
+	def testConventionalCellFromPrimitiveGivesExpected(self):
+		expFract = [ [0.0, 0.0, 0.0, self.atomA],
+		             [0.5, 0.0, 0.0, self.atomB],
+		             [0.0, 0.5, 0.0, self.atomB],
+		             [0.5, 0.5, 0.0, self.atomA],
+		             [0.0, 0.0, 0.5, self.atomB],
+		             [0.5, 0.0, 0.5, self.atomA],
+		             [0.0, 0.5, 0.5, self.atomA],
+		             [0.5, 0.5, 0.5, self.atomB] ]
+		expLattParams = [(2*x)/math.sqrt(2) for x in self.lattParams]
+		expLattAngles = [90,90,90]
+		expCell = UCell.UnitCell(lattParams=expLattParams, lattAngles=expLattAngles)
+		expCell.fractCoords = expFract
+		actCell = tCode._getConventionalRocksaltCellFromPrimitiveCell(self.testCellA)
+		self.assertEqual(expCell,actCell)
+
+	def testSurfaceLayerFromPrimitveGivesExpected(self):
+		expLattParamA = (2*self.lattParams[0])/math.sqrt(2)
+		expLattParamOther = math.sqrt(0.5) * expLattParamA
+		expLattParams = [expLattParamA, expLattParamOther, expLattParamOther]
+		expLattAngles = [90,90,90]
+		expFract = [ [0.0, 0.0, 0.0, self.atomA],
+		             [0.0, 0.5, 0.5, self.atomB],
+		             [0.5, 0.0, 0.0, self.atomB],
+		             [0.5, 0.5, 0.5, self.atomA] ]
+
+		expCell = UCell.UnitCell(lattParams=expLattParams, lattAngles=expLattAngles)
+		expCell.fractCoords = expFract
+		actCell = tCode.getSingleLayerRocksalt011FromPrimitiveCell(self.testCellA)
+		self.assertEqual(expCell,actCell)
+
+
+
 
 
 
