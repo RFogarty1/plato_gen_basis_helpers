@@ -31,6 +31,7 @@ def createMethodStrToMethodNameDict_three_centre_2019_tight_binding_paper():
 def createMethodAliasToMethodNameDict_cp2k_basis_set_2020_paper_pure_mg():
 	outDict = dict()
 
+	#Pure Mg basis sets
 	outDict["ucl-ssp"]                       = "mDZVP"
 	outDict["ucl-sssp"]                      = "mTZVP"
 	outDict["ucl-ssspp"]                     = "mTZV2P"
@@ -46,6 +47,16 @@ def createMethodAliasToMethodNameDict_cp2k_basis_set_2020_paper_pure_mg():
 	outDict["rc_8pt0_ssppd_3expSets"]        = "rc8pt0-ssppd"
 	outDict["rc_8pt0_1z"]                    = "rc8pt0-spd"
 	outDict["rc_8pt0_spd_s"]                 = "rc8pt0-sspd"
+
+	#Mixed mg-oxygen basis sets
+	outDict["mg_7pt5_ssspd-O-sp"]            = "Mg-rc7pt5-sspd+s-O-SZV"
+	outDict["mg_7pt5_ssspd-O-ssppd"]         = "Mg-rc7pt5-sspd+s-O-DZVP"
+	outDict["mg_7pt5_ssspd-O-ssspppd"]       = "Mg-rc7pt5-sspd+s-O-TZVP"
+	outDict["mg_7pt5_ssspd-O-ssspppdd"]      = "Mg-rc7pt5-sspd+s-O-TZV2P"
+	outDict["mg_ucl-ssspp-O-sp"]             = "Mg-TZV2P-O-SZV"
+	outDict["mg_ucl-ssspp-O-ssppd"]          = "Mg-TZV2P-O-DZVP"
+	outDict["mg_ucl-ssspp-O-ssspppd"]        = "Mg-TZV2P-O-TZVP"
+	outDict["mg_ucl-ssspp-O-ssspppdd"]       = "Mg-TZV2P-O-TZV2P"
 
 	return outDict
 
