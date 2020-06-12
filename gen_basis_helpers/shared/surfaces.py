@@ -413,6 +413,101 @@ def _getConventionalRocksaltCellFromPrimitiveCell(primCell):
 
 
 
+def getSingleLayerBrucite0001FromPrimitiveCell(primCell):
+	""" Get a single layer of brucite 0001 (with OH terminations) from a primitive cell (which may well have Mg/OH terminations)
+	
+	Args:
+		primCell: (plato_pylib UnitCell object) This must be a primitive brucite hexagonal cell. Meaning Mg(OH)2 in fract coords; and a=b!=c, alpha=beta=90, gamma=120
+			 
+	Returns
+		 outCell: (plato_pylib UnitCell object) Contains a unit-cell which forms the basis for forming brucite 0001 surfaces (it is one layer)
+ 
+	Raises:
+		 AssertionError: If the input primitive cell is not a brucite hexagonal cell. Probably not garanteed to be raised if an incompatible cell is passed, but at least catches some errors.
+	"""
+	assert _uCellIsBrucitePrimitive(primCell), "Input cell is not a brucite primitive cell"
+
+	#Step 1 is to find the top OH positions
+	outCell = copy.deepcopy(primCell)
+	topHPos,topHIdx = _findLowestOrHighestZPosAndIdxForElementInFractCoords(outCell.fractCoords, "H", lowOrHigh="high")
+	topOPos,topOIdx = _findLowestOrHighestZPosAndIdxForElementInFractCoords(outCell.fractCoords, "O", lowOrHigh="high")
+	mgPos,mgIdx = _findLowestOrHighestZPosAndIdxForElementInFractCoords(outCell.fractCoords, "Mg", lowOrHigh="high")
+	bottomHPos, bottomHIdx = _findLowestOrHighestZPosAndIdxForElementInFractCoords(outCell.fractCoords, "H", lowOrHigh="low")
+	bottomOPos, bottomOIdx = _findLowestOrHighestZPosAndIdxForElementInFractCoords(outCell.fractCoords, "O", lowOrHigh="low")
+
+	#If Mg is the the middle of the cell then do nothing
+	if (mgPos < topHPos) and (mgPos < topOPos) and (mgPos > bottomHPos) and (mgPos > bottomOPos):
+		return outCell
+
+	#If Mg is at the top of the cell; push it to the bottom of the cell
+	if (mgPos > topOPos):
+		translationVector = outCell.lattVects[-1]
+		cartCoords = copy.deepcopy(outCell.cartCoords) #Copy should be unnecesary really
+		cartCoords[mgIdx] = [x-t for x,t in it.zip_longest(cartCoords[mgIdx][:3],translationVector)] + ["Mg"]
+		outCell.cartCoords = cartCoords
+
+	#Next step is to displace by the c-vector (i.e. get their images). This SHOULD be the same as subtracting c from the z-coord
+	#TODO: The translation vector is not garanteed to be POSITIVE; need some way of testing if i should add or subtract
+	translationVector = outCell.lattVects[-1]
+	cartCoords = copy.deepcopy(outCell.cartCoords) #Copy should be unnecesary really
+	cartCoords[topHIdx] = [x-t for x,t in it.zip_longest(cartCoords[topHIdx][:3],translationVector)] + ["H"]
+	cartCoords[topOIdx] = [x-t for x,t in it.zip_longest(cartCoords[topOIdx][:3],translationVector)] + ["O"]
+	outCell.cartCoords = cartCoords
+
+	_centreCFractCoordsForInpCell(outCell)
+	
+	return outCell
+
+
+def _findLowestOrHighestZPosAndIdxForElementInFractCoords(fCoords, element, lowOrHigh="low"):
+	eleList = [fCoord[-1] for fCoord in fCoords]
+	zPositions = [fCoord[-2] for fCoord in fCoords]
+	topZ, bottomZ = min(zPositions)-0.1, max(zPositions)+0.1 #Start values must allow ALL atoms to be < or > than as required
+
+	for idx,(zPos,ele) in enumerate( zip(zPositions,eleList) ):
+		if lowOrHigh.lower()=="low":
+			if (ele.lower() == element.lower()) and (zPos<bottomZ):
+				bottomZ, outIdx = zPos, idx
+		elif lowOrHigh.lower()=="high":
+			if (ele.lower() == element.lower()) and (zPos>topZ):
+				topZ, outIdx = zPos, idx
+		else:
+			raise ValueError("{} is an invalid option for lowOrHigh".format(lowOrHigh))
+	
+	outZ = bottomZ if lowOrHigh.lower()=="low" else topZ
+	return outZ,outIdx
+
+
+
+def _uCellIsBrucitePrimitive(inpCell, printError=True,  angleTol=1e-1, lattParamTol=1e-1):
+	isPrim=True
+	printMsg = ""
+
+	#Check angles 
+	angles = [x for x in inpCell.lattAngles.values()]
+	expAngles = [90,90,120]
+	for exp,act in it.zip_longest(expAngles, angles):
+		if abs(exp-act)>angleTol:
+			printMsg = "Angles should be {} for Brucite primitive cell; but found angles of {}".format(expAngles,angles)
+			isPrim=False
+
+	#Check lattice parameters (a=b!=c always true for the primitive cell)
+	a,b,c = [x for x in inpCell.lattParams.values()]
+	if (abs(b-a)>lattParamTol) or (c<=b):
+		printMsg = "Lattice parameters {} are inconsistent with a hexagonal cell where a=b!=c".format([a,b,c])
+		isPrim=False
+
+	#Check correct elements are present
+	expElements = sorted( ["H","H","O","O","Mg"] )
+	actElements = sorted( [x[-1] for x in inpCell.fractCoords] )
+	if expElements != actElements:
+		printMsg = "Elements {} are incorrect for brucite".format(actElements)
+		isPrim=False
+
+	if (printError is True) and (isPrim is False):
+		print(printMsg)
+
+	return isPrim
 
 
 

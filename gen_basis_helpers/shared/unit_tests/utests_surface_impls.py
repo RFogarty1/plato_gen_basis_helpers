@@ -511,8 +511,89 @@ class TestGetSurfaceLayerForRocksalt011FromPrimitive(unittest.TestCase):
 		self.assertEqual(expCell,actCell)
 
 
+class TestGetSurfaceLayerFor0001ForBrucitePrimitive(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [2,2,3]
+		self.lattAngles = [90,90,120]
+		self.fractCoordsMgTerminated = [ [1/3, 2/3, 0.4, "H" ],
+		                                 [2/3, 1/3, 0.6, "H" ],
+		                                 [1/3, 2/3, 0.2, "O" ],
+		                                 [2/3, 1/3, 0.8, "O" ],
+		                                 [0.0, 0.0, 0.0, "Mg"] ]
+
+		#We simply use the image for the highest OH in the surface, then make it so all fract co-ords are +ve in this example
+		self.fractCoordsOHTerminated = [ [1/3, 2/3, 0.9, "H"  ],
+		                                 [2/3, 1/3, 0.1, "H"  ],
+		                                 [1/3, 2/3, 0.7, "O"  ],
+		                                 [2/3, 1/3, 0.3, "O"  ],
+		                                 [0.0, 0.0, 0.5, "Mg" ] ]
+
+		self.fractCoordsMgTerminatedUpsideDown = [  [1/3, 2/3, 0.4, "H" ],
+		                                            [2/3, 1/3, 0.6, "H" ],
+		                                            [1/3, 2/3, 0.2, "O" ],
+		                                            [2/3, 1/3, 0.8, "O" ],
+		                                            [0.0, 0.0, 1.0, "Mg"] ]
 
 
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testCellMgTerminated = UCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.testCellMgTerminated.fractCoords = self.fractCoordsMgTerminated
+
+		self.testCellMgTerminatedUpsideDown = UCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.testCellMgTerminatedUpsideDown.fractCoords = self.fractCoordsMgTerminatedUpsideDown
+
+		self.testCellOHTerminated = UCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.testCellOHTerminated.fractCoords = self.fractCoordsOHTerminated
+
+
+	def testRaisesForWrongLatticeAngles(self):
+		self.lattAngles[2] = 50
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			tCode.getSingleLayerBrucite0001FromPrimitiveCell( self.testCellMgTerminated )
+
+	def testRaisesForWrongLattParams(self):
+		self.lattParams[1] = self.lattParams[2]
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			tCode.getSingleLayerBrucite0001FromPrimitiveCell( self.testCellMgTerminated )
+
+	def testRaisesWhenWrongElementsPresent(self):
+		self.fractCoordsMgTerminated[-1][-1] = "He"
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			tCode.getSingleLayerBrucite0001FromPrimitiveCell( self.testCellMgTerminated )
+
+	def testExpectedOutputGivenForMgTerminatedCell(self):
+		expCell = self.testCellOHTerminated
+		actCell = tCode.getSingleLayerBrucite0001FromPrimitiveCell( self.testCellMgTerminated )
+		self.assertEqual(expCell,actCell)
+
+	#This actually works simply because lattVects are created as f(lattParams). Hence c vector is
+	#always going to be [0,0,+c]
+	def testExpectedOutputGivenForMgTerminatedCellWithOppositeDirectionLatticeVector(self):
+		inpCell = self.testCellMgTerminated
+		lattVects = copy.deepcopy(inpCell.lattVects)
+		lattVects[-1] = [-1*x for x in lattVects[-1]]
+		inpCell.lattVects = lattVects
+		expCell = self.testCellOHTerminated
+		expCell.lattVects = lattVects
+		actCell = tCode.getSingleLayerBrucite0001FromPrimitiveCell( inpCell )
+		self.assertEqual(expCell,actCell)
+
+	def testExpectedOutputGivenWhenApplyingFunctionTwice(self):
+		expCell = self.testCellOHTerminated
+		firstCell = tCode.getSingleLayerBrucite0001FromPrimitiveCell( self.testCellMgTerminated )
+		actCell = tCode.getSingleLayerBrucite0001FromPrimitiveCell( firstCell )
+		self.assertEqual(expCell,actCell)
+
+	def testExpectedOutputForCellWithMgAtTop(self):
+		expCell = self.testCellOHTerminated
+		actCell = tCode.getSingleLayerBrucite0001FromPrimitiveCell( self.testCellMgTerminatedUpsideDown )
+		self.assertEqual(expCell,actCell)
 
 
 if __name__ == '__main__':
