@@ -344,14 +344,14 @@ def _uCellIsRockSaltPrimitive(inpCell, printError=True, angleTol=1e-1, lattParam
 		isPrim = False
 
 	#Check correct angle
-	angles = [x for x in inpCell.lattAngles.values()]
+	angles = inpCell.getLattAnglesList()
 	expAngle = 60.0
 	if not all([ abs((x-expAngle))<angleTol for x in angles]):
 		printMsg = "Angles should also be 60.0 degrees for rocksalt primitive cell, found angles of {}".format(angles)
 		isPrim=False
 
 	#Check correct lattice paramter relationships
-	lattParams = [x for x in inpCell.lattParams.values()]
+	lattParams = inpCell.getLattParamsList()
 	if not all([ abs(x-lattParams[0]) < lattParamTol for x in lattParams]):
 		printMsg = "Lattice parameters should all be equal for rocksalt primitive cell, found parameters of {}".format(lattParams)
 		isPrim=False
@@ -484,7 +484,7 @@ def _uCellIsBrucitePrimitive(inpCell, printError=True,  angleTol=1e-1, lattParam
 	printMsg = ""
 
 	#Check angles 
-	angles = [x for x in inpCell.lattAngles.values()]
+	angles = [x for x in inpCell.getLattAnglesList()]
 	expAngles = [90,90,120]
 	for exp,act in it.zip_longest(expAngles, angles):
 		if abs(exp-act)>angleTol:
@@ -492,7 +492,7 @@ def _uCellIsBrucitePrimitive(inpCell, printError=True,  angleTol=1e-1, lattParam
 			isPrim=False
 
 	#Check lattice parameters (a=b!=c always true for the primitive cell)
-	a,b,c = [x for x in inpCell.lattParams.values()]
+	a,b,c = [x for x in inpCell.getLattParamsList()]
 	if (abs(b-a)>lattParamTol) or (c<=b):
 		printMsg = "Lattice parameters {} are inconsistent with a hexagonal cell where a=b!=c".format([a,b,c])
 		isPrim=False
