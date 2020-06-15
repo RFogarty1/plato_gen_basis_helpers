@@ -1,5 +1,6 @@
 
 import copy
+import types
 import os
 
 from ..castep import castep_creator as castepCreator
@@ -8,8 +9,50 @@ from ..shared import config_vars as configVars
 
 import plato_pylib.shared.ucell_class as uCell
 
+from . import ref_elemental_objs as refEleObjs
+from . import ref_conv_data_objs as refConvDataObjs
+from . import helpers_ref_data as helpers
 
 BASE_FOLDER = os.path.join( configVars.CASTEP_DB_PATH, "brucite" )
+
+def createBruciteRefObj():
+	return BruciteReferenceDataObj()
+
+def createBruciteConvObj():
+	return BruciteConvDataObj()
+
+
+class BruciteConvDataObj(refConvDataObjs.RefConvergenceDatabase):
+
+	def __init__(self):
+		pass
+
+	@property
+	def kptGridVals(self):
+		outDict = {"hexagonal":[6,6,4]}
+		primCellFunct = lambda x: outDict[x]
+		return types.SimpleNamespace(getKptsPrimCell=primCellFunct)
+
+
+
+class BruciteReferenceDataObj(refEleObjs.RefElementalDataBase):
+
+	def __init__(self):
+		pass
+
+	def getExptGeom(self,key="hexagonal"):
+		return getExptBruciteStructure()
+
+
+	def getStructsForEos(self, structKey):
+		return getStructsForEos(structKey)
+
+	def getEosFitDict(self,key,eos="murnaghan"):
+		return getPlaneWaveEosFitDict(key,eos=eos)
+
+#    def getPlaneWaveSurfaceEnergy(self, structKey):
+#        return getPlaneWaveSurfEnergy(structKey)
+
 
 
 def getExptBruciteStructure():
@@ -68,5 +111,14 @@ def _getPlaneWaveHexagonalParsedFileObj():
 def getPlaneWaveGeom(structType="hexagonal"):
 	return getPlaneWaveGeomParsedFileObject(structType).unitCell
 
+
+#EoS data
+def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
+	structTypeToFunct = {"hexagonal":_getPlaneWaveEosDictHexagonal}
+	return structTypeToFunct[structType](eos)
+
+def _getPlaneWaveEosDictHexagonal(eos):
+	outFolder = os.path.join(BASE_FOLDER,"eos","hexagonal")
+	return helpers.getEosFitDictFromEosCastepFolder(outFolder,eos=eos)
 
 
