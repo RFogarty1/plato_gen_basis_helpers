@@ -41,6 +41,23 @@ class ThreeDimPlaneEquation():
 
 		return cls(*outCoeffs)
 
+	def getSignedDistanceOfPointFromPlane(self, inpXyz):
+		""" Calculates the signed fistance of a point from the plane. If the normal vector points towards the point, the distance is +ve, if it points in the opposite direction it is negative 
+
+		Args:
+			inpXyz: (len 3 float iter) [x,y,z] co-ordinates
+
+		Returns:
+			outDist: (float) The signed distance between the input point and the nearest point on this plane
+		"""
+		#Step 1 = Find the d value for the parralel plane this lies on; the displacement vector between point and plane is then the vector normal to this plane
+		#Step 2  = use the fact the normal vector points the same way (or the exact opposite way) as the displacement vector to get a signed distance
+		dValForThisPoint = self.calcDForInpXyz(inpXyz)
+		diffInDVals = dValForThisPoint - self.d #Using the absolute value here would give the unsigned distance
+		lenNormalVectorToThisPlane = math.sqrt( (self.a**2) + (self.b**2) + (self.c**2) )
+		outDist = diffInDVals / lenNormalVectorToThisPlane
+		return outDist
+
 
 	def getDistanceOfPointFromPlane(self, inpXyz):
 		""" Calculates the distance of a point from the plane
@@ -52,13 +69,7 @@ class ThreeDimPlaneEquation():
 			outDist: (float) The distance between input point and the nearest point on this plane
 	 
 		"""
-		#Step 1 = Find the d value for the parralel plane this lies on; the displacement vector between point and plane is then the vector normal to this plane
-		#Step 2  = use the fact the normal vector points the same way as the displacement vecctor to get a length
-		dValForThisPoint = self.calcDForInpXyz(inpXyz)
-		diffInDVals = abs( dValForThisPoint - self.d )
-		lenNormalVectorToThisPlane = math.sqrt( (self.a**2) + (self.b**2) + (self.c**2) )
-		outDist = diffInDVals / lenNormalVectorToThisPlane
-		return outDist
+		return abs( self.getSignedDistanceOfPointFromPlane(inpXyz) )
 
 
 	def calcDForInpXyz(self, inpXyz):

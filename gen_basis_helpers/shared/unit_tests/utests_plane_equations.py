@@ -64,3 +64,20 @@ class TestThreeDimPlaneEqn(unittest.TestCase):
 		for exp,act in it.zip_longest(expCoeffs,actCoeffs):
 			self.assertAlmostEqual(exp,act)
 
+	def testCalcSignedDistanceBetweenPlaneAndPoint_011_plane_negative_dist(self):
+		pointCoords = [0,0,0]
+		self.planeParams = [0, 1.0, 1.0, 1.0]
+		self.createTestObjs()
+		#z=0.5 and y=0.5 should be the closest point; hence the expected distance can be figured out easily
+		unSignedDist = math.sqrt( (0.5**2) + (0.5**2) )
+		expDist = -1*unSignedDist #The normal vector points the opposite direction, hence signed distance is negative
+		actDist = self.testObjA.getSignedDistanceOfPointFromPlane(pointCoords)
+		self.assertAlmostEqual(expDist,actDist)
+
+	def testCalcSignedDistanceBetweenPlaneAndPoint_011_plane_positive_dist(self):
+		pointCoords = [0,0,0]
+		self.planeParams = [0, -1.0, -1.0, -1.0]
+		self.createTestObjs()
+		expDist = math.sqrt( (0.5**2) + (0.5**2) )
+		actDist = self.testObjA.getSignedDistanceOfPointFromPlane(pointCoords)
+		self.assertAlmostEqual(expDist,actDist)
