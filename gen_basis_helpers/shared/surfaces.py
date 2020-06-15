@@ -222,7 +222,11 @@ def _getDistancesFromAtomsToAbPlaneForInpUCell(inpStruct):
 
 def getSingleLayerHcp1010FromPrimitiveCell(primCell):
 	_checkInpCellIsHcpPrimitive(primCell)
+	return _getSingleLayerHcp1010FromPrimitiveCell(primCell)
 
+
+
+def _getSingleLayerHcp1010FromPrimitiveCell(primCell):
 	#Trying diff approach
 	uVectA = [0,0,1] #this is for the 0001 surface
 	uVectB = [1,0,0] #This should be for the 10m10 surface
@@ -459,6 +463,14 @@ def getSingleLayerBrucite0001FromPrimitiveCell(primCell):
 	return outCell
 
 
+def getSingleLayerBrucite1010FromPrimitiveCell(primCell):
+	assert _uCellIsBrucitePrimitive
+	startPrimCell = _getSingleLayerHcp1010FromPrimitiveCell(primCell)
+	outCell = _getShiftedBrucitePrimCellSuchThatMgIsInCentreSurfacePlane(startPrimCell)
+	_centreCFractCoordsForInpCell(outCell)
+	return outCell
+
+#TODO: Remove in favor of surface plane case (more generally useful)
 def _findLowestOrHighestZPosAndIdxForElementInFractCoords(fCoords, element, lowOrHigh="low"):
 	eleList = [fCoord[-1] for fCoord in fCoords]
 	zPositions = [fCoord[-2] for fCoord in fCoords]
@@ -477,6 +489,120 @@ def _findLowestOrHighestZPosAndIdxForElementInFractCoords(fCoords, element, lowO
 	outZ = bottomZ if lowOrHigh.lower()=="low" else topZ
 	return outZ,outIdx
 
+
+
+def _getShiftedBrucitePrimCellSuchThatMgIsInCentreSurfacePlane(inpCell):
+	outCell = copy.deepcopy(inpCell)
+
+	#Figure out the distances of each atom from the surface plane
+	signedDists = _getSignedDistsFromSurfacePlaneForInpCell(inpCell)
+	mgIdx = [fCoord[-1] for fCoord in inpCell.fractCoords].index("Mg")
+	mgSignedDist = signedDists[mgIdx]
+
+	#Figure out which atoms are above and below Mg
+	mgIndicesVsDist, indicesAboveVsDist, indicesBelowVsDist = list(),list(),list()
+	floatErrorTol = 1e-4
+	for idx, dist in enumerate(signedDists):
+		if abs(dist-mgSignedDist) < floatErrorTol:
+			mgIndicesVsDist.append([idx,dist])
+		elif dist < mgSignedDist:
+			indicesBelowVsDist.append([idx,dist])
+		elif dist > mgSignedDist:
+			indicesAboveVsDist.append([idx,dist])
+		else:
+			raise ValueError("Reached a point in an elif which should not be reachable")
+
+	assert len(mgIndicesVsDist)==1
+
+	#Ensure Mg is not ALREADY in the centre, if not shift the atoms above/below it so it ends up central
+	if len(indicesAboveVsDist)==len(indicesBelowVsDist):
+		return outCell
+
+	#NOT the one thats tested
+	elif len(indicesAboveVsDist)>len(indicesBelowVsDist):
+		nToShiftDown = len(indicesAboveVsDist) - 2
+		tVector = [-1*x for x in outCell.lattVects[-1]]
+		for unused in range(nToShiftDown):
+			idxShifted, unused = max(indicesAboveVsDist, key=lambda x:x[1])
+			idxToPop = [x[0] for x in indicesAboveVsDist].index(idxShifted)
+			_shiftXthAtomByTranslationVectorForInpCell(outCell, idxShifted, outCell.lattVects[-1])
+			popedIdx = indicesAboveVsDist.pop(idxToPop)
+
+	elif len(indicesBelowVsDist)>len(indicesAboveVsDist):
+		nToShiftUp =len(indicesBelowVsDist) - 2
+		tVector = outCell.lattVects[-1]
+		for counter in range(nToShiftUp):
+			idxShifted, unused = min(indicesBelowVsDist, key=lambda x:x[1] ) #This would give the index in the GLOBAL; not indices above
+			idxToPop = [x[0] for x in indicesBelowVsDist].index(idxShifted)
+			_shiftXthAtomByTranslationVectorForInpCell(outCell, idxShifted, outCell.lattVects[-1])
+			popedIdx = indicesBelowVsDist.pop(idxToPop)
+
+	return outCell
+
+def _getSignedDistsFromSurfacePlaneForInpCell(inpCell):
+	#Separate coordinates and elements
+	eleList = [cCoord[-1] for cCoord in inpCell.cartCoords]
+	cartCoords = [cCoord[:3] for cCoord in inpCell.cartCoords]
+
+	#Get plane equation for the surface and make sure the normal vector points the same direction as the c vector
+	lattVects = inpCell.lattVects
+	abPlaneEquation = planeEqn.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1],normaliseCoeffs=True)
+	cVector = lattVects[-1]
+	normalVector = abPlaneEquation.coeffs[:3]
+	if np.array(cVector).dot(np.array(normalVector)) < 0:
+		abPlaneEquation.a, abPlaneEquation.b, abPlaneEquation.c = [x*-1 for x in abPlaneEquation.coeffs]
+
+	#Get the signed distances of ALL atoms
+	signedDists = list()
+	for cCoord in cartCoords:
+		currDist = abPlaneEquation.getSignedDistanceOfPointFromPlane(cCoord)
+		signedDists.append(currDist)
+
+	return signedDists
+
+
+def _shiftXthAtomByTranslationVectorForInpCell(inpCell, atomIdx, translationVector):
+	cartCoords = [cCoords[:3] for cCoords in inpCell.cartCoords]
+	eleList = [cCoords[-1] for cCoords in inpCell.cartCoords]
+	cartCoords[atomIdx] = [ x+t for x,t in it.zip_longest( cartCoords[atomIdx], translationVector ) ]
+	outCartCoords = [coord +[ele] for coord,ele in it.zip_longest(cartCoords, eleList)]
+	inpCell.cartCoords = outCartCoords
+
+
+
+
+#Note: Tricky to gaurantee this works if any atoms are BELOW the surface plane
+def _findIdxOfElementInLowestOrHighestSurfacePlane(inpCell, element, lowOrHigh="low"):
+	#Separate fractional coordinates
+	fCoords = inpCell.fractCoords
+	eleList = [fCoord[-1] for fCoord in fCoords]
+	fractCoords = [fCoord[:3] for fCoord in fCoords]
+
+	#Get plane equation for the surface and make sure the normal vector points the same direction as the c vector
+	lattVects = inpCell.lattVects
+	abPlaneEquation = planeEqn.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1],normaliseCoeffs=True)
+	cVector = lattVects[-1]
+	normalVector = abPlaneEquation.coeffs[:3]
+	if np.array(cVector).dot(np.array(normalVector)) < 0:
+		abPlaneEquation.a, abPlaneEquation.b, abPlaneEquation.c = [x*-1 for x in abPlaneEquation.coeffs]
+
+	#Get the signed distances of ALL atoms
+	signedDists = list()
+	for fCoord in fractCoords:
+		currDist = abPlaneEquation.getSignedDistanceOfPointFromPlane(fCoord)
+		signedDists.append(currDist)
+
+	#Figure out which atom of this element is on the lowest or highest surface plane
+	indicesAndDistsForEle = [ [idx,dist] for idx, (ele,dist) in enumerate(it.zip_longest(eleList,signedDists)) if ele.lower()==element.lower() ]
+#	distsForEle = [x[0] for x in distsAndIndicesForEle]
+	if lowOrHigh.lower()=="low":
+		outIdx,minDist = min(indicesAndDistsForEle, key=lambda x:x[1]) #Sort by the second list entry(the distance) but return min value of the first
+	elif lowOrHigh.lower()=="high":
+		outIdx, maxDist = max(enumerate(distsForEle), key=lambda x:x[1])
+	else:
+		raise ValueError("{} is an invalid argument for lowOrHigh".format(lowOrHigh))
+	
+	return outIdx
 
 
 def _uCellIsBrucitePrimitive(inpCell, printError=True,  angleTol=1e-1, lattParamTol=1e-1):

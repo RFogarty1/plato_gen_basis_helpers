@@ -535,7 +535,6 @@ class TestGetSurfaceLayerFor0001ForBrucitePrimitive(unittest.TestCase):
 		                                            [2/3, 1/3, 0.8, "O" ],
 		                                            [0.0, 0.0, 1.0, "Mg"] ]
 
-
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -594,6 +593,38 @@ class TestGetSurfaceLayerFor0001ForBrucitePrimitive(unittest.TestCase):
 		expCell = self.testCellOHTerminated
 		actCell = tCode.getSingleLayerBrucite0001FromPrimitiveCell( self.testCellMgTerminatedUpsideDown )
 		self.assertEqual(expCell,actCell)
+
+
+class TestGetSurfaceLayerFor1010ForBrucitePrimitive(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParamsExp = [3,2,2]
+		self.lattAnglesExp = [60,90,90]
+
+		#Despite the same z-coords, the atoms further along b are actually on a higher up plane
+		self.fractCoordsExpBeforeCentering = [ [0.9, 2/3, 0.5, "H"],
+		                                       [0.1, 1/3, 1/6, "H"],
+		                                       [0.7, 2/3, 0.5, "O"],
+		                                       [0.3, 1/3, 1/6, "O"],
+		                                       [0.5, 0.0, 5/6, "Mg"] ]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testCellA = UCell.UnitCell(lattParams=self.lattParamsExp, lattAngles=self.lattAnglesExp)
+		self.testCellA.fractCoords = self.fractCoordsExpBeforeCentering
+
+	def testPutMgInCentreAroundMgAlongC(self):
+		#we need the image along c of two atoms; figuring out which two is the main job of the code really
+		translationVector = self.testCellA.lattVects[-1]
+		expCoordsAferCentering = self.testCellA.cartCoords
+		expCoordsAferCentering[1] = [x+t for x,t in zip(expCoordsAferCentering[1],translationVector)] + ["H"]
+		expCoordsAferCentering[3] = [x+t for x,t in zip(expCoordsAferCentering[3],translationVector)] + ["O"]
+		expCell = copy.deepcopy(self.testCellA)
+		expCell.cartCoords = expCoordsAferCentering
+		actCell = tCode._getShiftedBrucitePrimCellSuchThatMgIsInCentreSurfacePlane(self.testCellA)
+		self.assertEqual(expCell,actCell)
+
+
 
 
 if __name__ == '__main__':
