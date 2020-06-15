@@ -44,8 +44,9 @@ class MapEosWorkflowOutputToUsefulFormatStandard():
 
 	"""
 
-	def __init__(self, deltaE=True):
+	def __init__(self, deltaE=True, volMapFunction=None):
 		self.deltaE = deltaE
+		self.volMapFunction = volMapFunction if volMapFunction is not None else lambda x:x
 
 	def _getPlotData(self,stdInpObj):
 		allData = stdInpObj.workflow.output
@@ -78,6 +79,7 @@ class MapEosWorkflowOutputToUsefulFormatStandard():
 		dataList = list()
 		for x in allData:
 			v0, b0, e0 = x.data["v0"],x.data["b0"], x.data["e0"]
+			v0 = self.volMapFunction(v0)
 			dataList.append( [methKeyAll, v0, b0, e0] )
 
 		#Convert data to delta E0
