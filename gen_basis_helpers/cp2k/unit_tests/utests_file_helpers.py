@@ -84,6 +84,11 @@ class testModifyCp2kObj(unittest.TestCase):
 		actStr = self.startCP2KObj.get_input_string()
 		self.assertEqual( sorted(expStr), sorted(actStr) )
 
+	def testSmearingFalseWorks(self):
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, {"useSmearing":False})
+		expStr = _loadExpectedOutputNoSmearing()
+		actStr = self.startCP2KObj.get_input_string()
+		self.assertEqual( sorted(expStr), sorted(actStr) )
 
 
 def _getDefObjInputStr():
@@ -126,4 +131,11 @@ def _loadExpectedOutputCellOptA():
 	outStr = outStr.replace("&FORCE_EVAL\n", "&FORCE_EVAL\n  STRESS_TENSOR ANALYTICAL\n")
 	constraintStr = "&MOTION\n  &CELL_OPT\n    KEEP_ANGLES TRUE\n  &END CELL_OPT\n&END MOTION\n"
 	outStr = constraintStr + outStr
+	return outStr
+
+
+def _loadExpectedOutputNoSmearing():
+	outStr = _getDefObjInputStr()
+	outStr = outStr.replace("      &SMEAR ON\n        ELECTRONIC_TEMPERATURE [K] 157.9\n        METHOD FERMI_DIRAC\n      &END SMEAR",
+	                        "      &SMEAR FALSE\n        ELECTRONIC_TEMPERATURE [K] 157.9\n        METHOD FERMI_DIRAC\n      &END SMEAR")
 	return outStr

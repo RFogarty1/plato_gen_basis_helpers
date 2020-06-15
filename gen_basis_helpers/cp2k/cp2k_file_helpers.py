@@ -136,6 +136,11 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 		else:
 			raise ValueError("Constraining angles to {} is not currently supported".format(angleConstraints))
 
+
+	if useDict.get("useSmearing".lower()) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.SMEAR.Section_parameters = False
+
+
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work
 	
