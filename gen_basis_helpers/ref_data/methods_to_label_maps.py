@@ -49,14 +49,30 @@ def createMethodAliasToMethodNameDict_cp2k_basis_set_2020_paper_pure_mg():
 	outDict["rc_8pt0_spd_s"]                 = "rc8pt0-sspd"
 
 	#Mixed mg-oxygen basis sets
-	outDict["mg_7pt5_ssspd-O-sp"]            = "Mg-rc7pt5-sspd+s-O-SZV"
-	outDict["mg_7pt5_ssspd-O-ssppd"]         = "Mg-rc7pt5-sspd+s-O-DZVP"
-	outDict["mg_7pt5_ssspd-O-ssspppd"]       = "Mg-rc7pt5-sspd+s-O-TZVP"
-	outDict["mg_7pt5_ssspd-O-ssspppdd"]      = "Mg-rc7pt5-sspd+s-O-TZV2P"
-	outDict["mg_ucl-ssspp-O-sp"]             = "Mg-TZV2P-O-SZV"
-	outDict["mg_ucl-ssspp-O-ssppd"]          = "Mg-TZV2P-O-DZVP"
-	outDict["mg_ucl-ssspp-O-ssspppd"]        = "Mg-TZV2P-O-TZVP"
-	outDict["mg_ucl-ssspp-O-ssspppdd"]       = "Mg-TZV2P-O-TZV2P"
+	outDict["mg_7pt5_ssspd-O-sp"]            = "Mg-rc7pt5-sspd+s-O-mSZV"
+	outDict["mg_7pt5_ssspd-O-ssppd"]         = "Mg-rc7pt5-sspd+s-O-mDZVP"
+	outDict["mg_7pt5_ssspd-O-ssspppd"]       = "Mg-rc7pt5-sspd+s-O-mTZVP"
+	outDict["mg_7pt5_ssspd-O-ssspppdd"]      = "Mg-rc7pt5-sspd+s-O-mTZV2P"
+	outDict["mg_ucl-ssspp-O-sp"]             = "Mg-TZV2P-O-mSZV"
+	outDict["mg_ucl-ssspp-O-ssppd"]          = "Mg-TZV2P-O-mDZVP"
+	outDict["mg_ucl-ssspp-O-ssspppd"]        = "Mg-TZV2P-O-mTZVP"
+	outDict["mg_ucl-ssspp-O-ssspppdd"]       = "Mg-TZV2P-O-mTZV2P"
+
+	#Pure oxygen basis sets
+	outDict["O-sp"]                          = "O-mSZV"
+	outDict["O-ssppd"]                       = "O-mDZVP"
+	outDict["O-ssspppd"]                     = "O-mTZVP"
+	outDict["O-ssspppdd"]                    = "O-mTZV2P"
+
+	#mixed mg-oh basis sets
+	outDict["mg_7pt5_ssspd-OH-SZV"]         = "Mg-rc7pt5-sspd+s-OH-mSZV"
+	outDict["mg_7pt5_ssspd-OH-DZVP"]        = "Mg-rc7pt5-sspd+s-OH-mDZVP"
+	outDict["mg_7pt5_ssspd-OH-TZVP"]        = "Mg-rc7pt5-sspd+s-OH-mTZVP"
+	outDict["mg_7pt5_ssspd-OH-TZV2P"]       = "Mg-rc7pt5-sspd+s-OH-mTZV2P"
+	outDict["mg_ucl-ssspp-OH-SZV"]          = "Mg-TZV2P-OH-mSZV"
+	outDict["mg_ucl-ssspp-OH-DZVP"]         = "Mg-TZV2P-OH-mDZVP"
+	outDict["mg_ucl-ssspp-OH-TZVP"]         = "Mg-TZV2P-OH-mTZVP"
+	outDict["mg_ucl-ssspp-OH-TZV2P"]        = "Mg-TZV2P-OH-mTZV2P"
 
 	return outDict
 
