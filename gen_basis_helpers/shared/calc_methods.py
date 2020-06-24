@@ -787,6 +787,21 @@ def _getOptDict_dft2_exact_e1_pp_uniform_second_order():
 #	return outOptDict
 
 
+@registerMethodStrToObj("dft2_exact_scf_monopoles")
+def _():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_exact()
+	optDict["scfflag"] = 1
+	getStrDictFromOptDict = getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
+
+@registerMethodStrToObj("dft2_exact_scf_dipoles")
+def _():
+	runCommFunct = _getRunCommPlatoDft2
+	optDict = _getOptDict_dft2_exact()
+	optDict["scfflag"] = 2
+	getStrDictFromOptDict = getPlatoStrDictFromOptDict_tb1OrTb2
+	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
 
 
 @registerMethodStrToObj("dft2_exact")
