@@ -34,3 +34,25 @@ class TestPlatoCalcObj(unittest.TestCase):
 			self.testObjA.parseOutFile()
 
 
+class TestPlatoMethodObj(unittest.TestCase):
+
+	def setUp(self):
+		self.optDict = dict()
+		self.runCommFunction = mock.Mock()
+		self.strDictFromOptDictFunction = mock.Mock()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.PlatoMethod(self.optDict, self.runCommFunction, self.strDictFromOptDictFunction)
+
+	def testNLoopsSetterLeadsToExpOptDictAndGetterEntry(self):
+		expVal = 20
+		self.testObjA.nLoops = expVal
+		actValProp = self.testObjA.nLoops
+		actValDict = self.testObjA.optDict["nloops"] #ALWAYS lower case in the opt dict
+		self.assertEqual(expVal, actValProp)
+		self.assertEqual(expVal, actValDict)
+
+
+
+

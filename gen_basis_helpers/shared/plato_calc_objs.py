@@ -33,6 +33,38 @@ class PlatoMethod():
 		self.optDict["dataset"] = value
 
 	@property
+	def nLoops(self):
+		return self.optDict["nloops"]
+
+	@nLoops.setter
+	def nLoops(self, val):
+		self.optDict["nloops"] = val
+
+	@property
+	def residueTol(self):
+		return self.optDict["ResidueTol".lower()]
+
+	@residueTol.setter
+	def residueTol(self,val):
+		self.optDict["ResidueTol".lower()] = val
+
+	@property
+	def mixScheme(self):
+		return self.optDict["mixScheme".lower()]
+
+	@mixScheme.setter
+	def mixScheme(self,val):
+		self.optDict["mixScheme".lower()] = val
+
+	@property
+	def mixFactor(self):
+		return self.optDict["mixFactor".lower()]
+
+	@mixFactor.setter
+	def mixFactor(self,val):
+		self.optDict["mixFactor".lower()] = val
+
+	@property
 	def integGrid(self):
 		return self.optDict[self.gridKwarg]
 
@@ -45,10 +77,6 @@ class PlatoMethod():
 		geomDict = platoInp.getPlatoGeomDictFromUnitCell(struct)
 		strDict.update(geomDict)
 		return strDict
-
-
-
-
 
 
 class CalcObj():
