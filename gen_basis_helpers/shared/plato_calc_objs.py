@@ -52,7 +52,7 @@ class PlatoMethod():
 
 
 class CalcObj():
-	def __init__(self, filePath, strDict, strDictWriteFunction, fileParser, runCommFunction, inpFileExt, outFileExt):
+	def __init__(self, filePath, strDict, strDictWriteFunction, fileParser, runCommFunction, inpFileExt, outFileExt, **kwargs):
 		self.filePath = os.path.splitext(filePath)[0]
 		self.strDict = strDict
 		self.inpFileExt = inpFileExt
@@ -60,17 +60,24 @@ class CalcObj():
 		self._strDictWriteFunction = strDictWriteFunction
 		self._fileParser = fileParser
 		self._runCommFunction = runCommFunction
+		self.raiseInParserIfScfNotConverged = kwargs.get("raiseInParserIfScfNotConverged", True)
 
 	@classmethod
 	def fromEnforcedKwargs(cls, **kwargs):
-		kwargs = {k.lower():v for k,v in kwargs.items()}
+		kwargsLower = {k.lower():v for k,v in kwargs.items()}
 		reqArgsOrder = ["filePath", "strDict", "strDictWriteFunction", "fileParser",
 		                "runCommFunction", "inpFileExt", "outFileExt"]
+
 		argsList = list()
 		for x in reqArgsOrder:
-			argsList.append( kwargs[x.lower()] )
+			argsList.append( kwargsLower[x.lower()] )
+
+		#Sort out keyword args
+		reqArgsLower = [k.lower() for k in reqArgsOrder]
+		kwargDict = {k:v for k,v in kwargs.items() if k.lower() not in reqArgsLower}
+
 	
-		return cls(*argsList)
+		return cls(*argsList, **kwargDict)
 
 	def getRunComm(self):
 		return self._runCommFunction(self.filePath + self.inpFileExt)
@@ -81,5 +88,9 @@ class CalcObj():
 		self._strDictWriteFunction(self.filePath + self.inpFileExt, self.strDict)
 
 	def parseOutFile(self):
-		return self._fileParser(self.filePath + self.outFileExt)
+		outPath = self.filePath + self.outFileExt
+		outDict = self._fileParser(outPath)
+		if outDict["scf_is_converged"] is False:
+			raise ValueError("SCF not converged for file {}".format(outPath))
+		return outDict
 
