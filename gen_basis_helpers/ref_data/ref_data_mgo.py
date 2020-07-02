@@ -115,4 +115,34 @@ def _getSurfaceEnergyRocksalt001():
 	return helpers.getCastepRefRocksalt001SurfacEnergyFromSurfAndBulkFilePaths(surfFile,bulkFile)
 
 
+def getPlaneWaveSurfaceParsedFileObject(surfType, nLayers=None, relaxType="unrelaxed"):
+	""" Returns a ParsedFile object for castep calculation on a surface. Note the unrelaxed geometries are built from from the castep optimised bulk cell
+	
+	Args:
+		surfType (str): The type of surface; examples are hcp0001 and hcp10m10 
+		nLayers (int, optional): The number of surface layers used in the calculation. Default will vary for different surfTypes; but will represent converged structures
+		relaxType (str, optional): String denoting the type of relaxation applied. Default="unrelaxed"; other options are "constant_volume" for now
+
+	Returns
+		parsedFile (ParsedFile object): This contains the geometry and total energy of the requested structure
+	
+	"""
+	structTypeDefaultNLayers = {"rocksalt_001":4, "rocksalt_110":4}
+	if nLayers is None:
+		nLayers = structTypeDefaultNLayers[surfType]
+
+	structTypeToFunct = { ("rocksalt_001", 4, "constant_volume"): _getRocksalt001PlaneWaveRelaxedParsedFile_4layers,
+	                      ("rocksalt_110", 4, "constant_volume"): _getRocksalt110PlaneWaveRelaxedParsedFile_4layers }
+
+	return structTypeToFunct[(surfType.lower(), nLayers, relaxType.lower())]()
+
+def _getRocksalt001PlaneWaveRelaxedParsedFile_4layers():
+	refPath = os.path.join(BASE_FOLDER,"surface_energies","rocksalt_001","relaxed_surface_calc","geom_opt.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+def _getRocksalt110PlaneWaveRelaxedParsedFile_4layers():
+	refPath = os.path.join(BASE_FOLDER,"surface_energies","rocksalt_110","relaxed_surface_calc","geom_opt.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+
 
