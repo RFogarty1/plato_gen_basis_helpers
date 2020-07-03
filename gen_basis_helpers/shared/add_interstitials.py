@@ -28,6 +28,8 @@ def addSingleInterToHcpBulkGeom(bulkCell, site, ele=None, strat=None):
 		_addSingleTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	elif site.lower() == "basal_tetrahedral":
 		_addSingleBasalTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
+	elif site.lower() == "octahedral":
+		_addSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	else:
 		raise ValueError("{} is an invalid value for site variable".format(site.lower()))
 
@@ -61,7 +63,7 @@ def _addSingleTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 def _addSingleBasalTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
 
-	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx) #0 is atom idx
+	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx) 
 	vectorToNearestOOPNeighbour = [x-y for x,y in it.zip_longest( nearestOutOfPlaneCoords, topAtomCoord )]
 	nearestNebDistance =  _getDistTwoVectors([0,0,0], vectorToNearestOOPNeighbour)
 	cVector = [0,0,1]
@@ -73,6 +75,35 @@ def _addSingleBasalTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=Non
 	newCartCoord = newCoord + [ele]
 
 	_addAtomCartCoordsToInpCell(bulkCell, newCartCoord)
+
+def _addSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
+	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
+
+	#Need to get 3 atoms in plane which form a triangle [i assume these atoms are exactly in plane with the first atom]
+	nearestInPlaneCoords = _getNearestNebCoordsInPlane(bulkCell, topAtomIdx)
+	vectToNearestInPlane = [x-y for x,y in it.zip_longest(nearestInPlaneCoords,topAtomCoord)]
+	lenNearestNeb = _getLenOneVector(vectToNearestInPlane)
+
+	#Get atomC coordinates by rotating the x/y directions of AB vector by 60 degrees (using a standard rotation matrix operator)
+	aToCVector = [0,0,0]
+	aToCVector[0] = vectToNearestInPlane[0]*math.cos(math.radians(60)) - vectToNearestInPlane[1]*math.sin(math.radians(60))
+	aToCVector[1] = vectToNearestInPlane[0]*math.sin(math.radians(60)) + vectToNearestInPlane[1]*math.cos(math.radians(60))
+	atomCCoords = [a+b for a,b in it.zip_longest(topAtomCoord,aToCVector)]
+
+	#Now we need to find the centroid of these thre atoms and displace downwards halfway to the next plane
+	topCentroid = [(a+b+c)/3 for a,b,c in it.zip_longest(topAtomCoord, nearestInPlaneCoords, atomCCoords)]
+	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx)
+	vectorToNearestOOPNeighbour = [x-y for x,y in it.zip_longest( nearestOutOfPlaneCoords, topAtomCoord )]
+	distNearestOutOfPlane = _getLenOneVector( vectorToNearestOOPNeighbour )
+	cVector = [0,0,1]
+	angleAC = _getAngleTwoVectors( vectorToNearestOOPNeighbour, cVector )
+	planeSpacing = math.cos(math.radians(angleAC)) * distNearestOutOfPlane
+	zDisp = 0.5*planeSpacing
+
+	#Put all this together to get the next co-ordinate
+	outCoord = [x for x in topCentroid]
+	outCoord[-1] += zDisp
+	_addAtomCartCoordsToInpCell(bulkCell, outCoord + [ele])
 
 def _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell,strat=None):
 	cartCoords = bulkCell.cartCoords
@@ -88,8 +119,6 @@ def _addAtomCartCoordsToInpCell(inpCell, atomCoord):
 	cartCoords.append(atomCoord)
 	inpCell.cartCoords = cartCoords
 
-
-	
 def _getNearestNebDistanceOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 	""" Returns the nearest neighbour distance for a given atom in a unit cell (including periodic images by default) EXCLUDING neighbours which are in the same z-plane (within a tolerance)
 	
@@ -98,19 +127,27 @@ def _getNearestNebDistanceOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 		atomIdx: int, index of the atom you want to look for nearest neighboru distances for. 0 means the 1st atom in the list from inpCell.fractCoords (or inpCell.cartCoords)
 		zFractTol, float (Optional), Maximum Difference in z cartesian co-ordinates which allows two atoms to be thought of as in the same plane (Default = 1e-2) 
 	"""
+	inpAtomCoords = inpCell.cartCoords[atomIdx][:3]
+	coords = _getNearestNebCoordsOutOfZPlane(inpCell, atomIdx, zCartTol)
+	dist = _getDistTwoVectors(coords, inpAtomCoords)
+	return dist
 
-	#Create supercell and filter out atoms such that we only keep those with the same z-coords (within tol)
+def _getNearestNebCoordsInPlane(inpCell, atomIdx, zCartTol=1e-1):
+	#Step 1 = create the relevant supercell
 	inpCartCoord = inpCell.cartCoords[atomIdx][0:3]
-	superCell = supCellHelp.superCellFromUCell(inpCell,[2,2,2])
+	superCell = supCellHelp.superCellFromUCell(inpCell,[3,3,3])
 	newCartCoords = superCell.cartCoords[atomIdx][0:3]
 	coordDiffs = [abs(x-y) for x,y in it.zip_longest(inpCartCoord,newCartCoords)]
 	assert all([x<1e-5 for x in coordDiffs])
 
-	#Filter the coordinates
-	filteredCoords = _getAllNeighbourCoordsInDiffZPlane(superCell.cartCoords, atomIdx, zCartTol)
 
-	#Return the shortest distance
-	return _getNearestDistanceToPointFromListOfCoords(inpCartCoord, filteredCoords)
+	#Step 2 = figure out the index (within the NEW supercell)
+	filteredCoords = _getAllNeighbourCoordsInSameZPlane(superCell.cartCoords, atomIdx, zCartTol)
+	idxInFilteredList = _getIdxOfNearestPointFromListOfCoords(inpCartCoord, filteredCoords)
+
+	#Step 3 = return the co-ordinates for that index
+	return filteredCoords[idxInFilteredList]
+
 
 def _getNearestNebCoordsOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 
@@ -140,6 +177,20 @@ def _getAllIndicesForNeighboursInDiffZPlane(inpCoords, atomIdx, zCartTol=1e-2):
 			if (zDisp > zCartTol):
 				filteredIndices.append(idx)
 	return filteredIndices
+
+
+def _getAllNeighbourCoordsInSameZPlane(inpCoords, atomIdx,zCartTol=1e-1):
+	inpCartCoord = inpCoords[atomIdx][:3]
+
+	filteredCoords = list()
+	for idx,coord in enumerate(inpCoords):
+		xyz = coord[0:3]
+		if idx!=atomIdx:
+			zDisp = abs(xyz[-1] - inpCartCoord[-1])
+			if (zDisp < zCartTol):
+				filteredCoords.append(xyz)
+	return filteredCoords
+
 
 def _getAllNeighbourCoordsInDiffZPlane(inpCoords, atomIdx,zCartTol=1e-2):
 	inpCartCoord = inpCoords[atomIdx][:3]
@@ -196,6 +247,9 @@ def _getIdxOfNearestPointFromListOfCoords(inpPoint, otherPoints):
 			minDistance = currDist
 			outIdx = idx
 	return outIdx
+
+def _getLenOneVector(vectA):
+	return math.sqrt( sum([x**2 for x in vectA]) )
 
 def _getDistTwoVectors(vectA,vectB):
 	sqrDiff = [ (a-b)**2 for a,b in it.zip_longest(vectA,vectB) ]

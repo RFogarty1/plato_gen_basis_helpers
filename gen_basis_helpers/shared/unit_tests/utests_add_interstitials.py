@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 import math
 import unittest
 import unittest.mock as mock
@@ -83,6 +84,7 @@ class TestAddInterToHcpBulkGeom(unittest.TestCase):
 		self.fractPositions = [ [0.0,0.0,0.0], [1/3,2/3,0.5] ]
 		self.atomList = ["X" for x in self.fractPositions]
 		self.site = "tetrahedral"
+		self.ele = "X"
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -137,4 +139,29 @@ class TestAddInterToHcpBulkGeom(unittest.TestCase):
 		expOutCell.cartCoords = expCartCoords
 		tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site, ele="X", strat="utest")
 		self.assertEqual(expOutCell,self.testCellA)
+
+	def testOctaInExpectedPositionCoverAlessThanPerfect(self):
+		self.site = "octahedral"
+		expOutCell = copy.deepcopy(self.testCellA)
+		expCartCoords = expOutCell.cartCoords
+		expNewCoord = self._getCoordForOctaInter()
+		expCartCoords.append(expNewCoord)
+		expOutCell.cartCoords = expCartCoords
+		tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site, ele=self.ele, strat="utest")
+		self.assertEqual(expOutCell,self.testCellA)
+
+	def _getCoordForOctaInter(self):
+		#Note the im assuming the start atom is at origin
+		a=self.lattParams[0]
+		atomAPos = [0,0,0]
+		atomBPos = [a,0,0]
+		atomCPos = [a*math.cos(math.radians(60)), a*math.sqrt(0.75), 0.0]
+		centroidPos = [(v1+v2+v3)/3 for v1,v2,v3 in it.zip_longest(atomAPos,atomBPos,atomCPos)]
+		zDisp = 0.25*self.lattParams[2]
+		outPos = [x for x in centroidPos]
+		outPos[-1] += zDisp
+		outPos += [self.ele]
+		return outPos
+
+
 
