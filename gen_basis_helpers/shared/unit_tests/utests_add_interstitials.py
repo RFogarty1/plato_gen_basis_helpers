@@ -96,6 +96,10 @@ class TestAddInterToHcpBulkGeom(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site)
 
+	def testRaisesForIncorrectSite(self):
+		with self.assertRaises(ValueError):
+			tCode.addSingleInterToHcpBulkGeom(self.testCellA, "fake_site")
+
 	def testTetraInExpectedPositionA(self):
 		nearestNebOutOfPlaneDist = tCode._getNearestNebDistanceOutOfZPlane(self.testCellA,0)
 		nearestNebCartCoords = self.testCellA.cartCoords[1][:3]
@@ -124,5 +128,13 @@ class TestAddInterToHcpBulkGeom(unittest.TestCase):
 		tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site, ele="X", strat="utest")
 		self.assertEqual(expOutCell,self.testCellA)
 
-
+	def testTetraBasalInExpectedPositionCoverALessThanPerfect(self):
+		self.site = "basal_tetrahedral"
+		expOutCell = copy.deepcopy(self.testCellA)
+		expCartCoords = expOutCell.cartCoords
+		expNewCoord = expCartCoords[0][:2] + [expCartCoords[0][2]+0.5*self.lattParams[-1]] + ["X"]
+		expCartCoords.append(expNewCoord)
+		expOutCell.cartCoords = expCartCoords
+		tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site, ele="X", strat="utest")
+		self.assertEqual(expOutCell,self.testCellA)
 

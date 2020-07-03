@@ -26,6 +26,10 @@ def addSingleInterToHcpBulkGeom(bulkCell, site, ele=None, strat=None):
 
 	if site.lower() == "tetrahedral":
 		_addSingleTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
+	elif site.lower() == "basal_tetrahedral":
+		_addSingleBasalTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
+	else:
+		raise ValueError("{} is an invalid value for site variable".format(site.lower()))
 
 def _checkInpCellAnglesConsistentWithHcp(inpCell):
 	expAngles = [90,90,120]
@@ -35,15 +39,9 @@ def _checkInpCellAnglesConsistentWithHcp(inpCell):
 		raise ValueError("Angles {} expected but found {}".format(expAngles,actAngles))
 
 def _addSingleTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
-	# Initially just use the first atom, in order to pass the unit test
-	cartCoords = bulkCell.cartCoords
-	
-	if strat=="utest":
-		topAtomIdx = 0
-	else:
-		topAtomIdx = _getCentralAtomIdxInInpCell(bulkCell)
+	#Figure out the atom we centre around
+	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
 
-	topAtomCoord = cartCoords[topAtomIdx][:3]
 	
 	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx) #0 is atom idx
 	vectorToNearestOOPNeighbour = [x-y for x,y in it.zip_longest( nearestOutOfPlaneCoords, topAtomCoord )]
@@ -58,8 +56,39 @@ def _addSingleTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 	newCoord[-1] += zDisp
 	newCartCoord = newCoord + [ele]
 
-	cartCoords.append(newCartCoord)
-	bulkCell.cartCoords = cartCoords
+	_addAtomCartCoordsToInpCell(bulkCell, newCartCoord)
+
+def _addSingleBasalTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
+	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
+
+	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx) #0 is atom idx
+	vectorToNearestOOPNeighbour = [x-y for x,y in it.zip_longest( nearestOutOfPlaneCoords, topAtomCoord )]
+	nearestNebDistance =  _getDistTwoVectors([0,0,0], vectorToNearestOOPNeighbour)
+	cVector = [0,0,1]
+	vectAngle = _getAngleTwoVectors(cVector, vectorToNearestOOPNeighbour)
+	zDisp = nearestNebDistance*math.cos(math.radians(vectAngle))
+
+	newCoord = copy.deepcopy(topAtomCoord)
+	newCoord[-1] += zDisp
+	newCartCoord = newCoord + [ele]
+
+	_addAtomCartCoordsToInpCell(bulkCell, newCartCoord)
+
+def _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell,strat=None):
+	cartCoords = bulkCell.cartCoords
+	if strat=="utest":
+		topAtomIdx = 0
+	else:
+		topAtomIdx = _getCentralAtomIdxInInpCell(bulkCell)
+	topAtomCoord = cartCoords[topAtomIdx][:3]
+	return topAtomIdx, topAtomCoord
+
+def _addAtomCartCoordsToInpCell(inpCell, atomCoord):
+	cartCoords = inpCell.cartCoords	
+	cartCoords.append(atomCoord)
+	inpCell.cartCoords = cartCoords
+
+
 	
 def _getNearestNebDistanceOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 	""" Returns the nearest neighbour distance for a given atom in a unit cell (including periodic images by default) EXCLUDING neighbours which are in the same z-plane (within a tolerance)
