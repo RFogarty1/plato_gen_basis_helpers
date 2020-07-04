@@ -150,6 +150,17 @@ class TestAddInterToHcpBulkGeom(unittest.TestCase):
 		tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site, ele=self.ele, strat="utest")
 		self.assertEqual(expOutCell,self.testCellA)
 
+	def testBasalOctaInExpectedPositionCoverAlessThanPerfect(self):
+		self.site = "basal_octahedral"
+		expOutCell = copy.deepcopy(self.testCellA)
+		expCartCoords = expOutCell.cartCoords
+		expNewCoord = self._getCoordForOctaInter()
+		expNewCoord[2] += 0.25*self.lattParams[2]
+		expCartCoords.append(expNewCoord)
+		expOutCell.cartCoords = expCartCoords
+		tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site, ele=self.ele, strat="utest")
+		self.assertEqual(expOutCell,self.testCellA)
+
 	def _getCoordForOctaInter(self):
 		#Note the im assuming the start atom is at origin
 		a=self.lattParams[0]

@@ -30,6 +30,8 @@ def addSingleInterToHcpBulkGeom(bulkCell, site, ele=None, strat=None):
 		_addSingleBasalTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	elif site.lower() == "octahedral":
 		_addSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
+	elif site.lower() == "basal_octahedral":
+		_addSingleBasalOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	else:
 		raise ValueError("{} is an invalid value for site variable".format(site.lower()))
 
@@ -78,6 +80,17 @@ def _addSingleBasalTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=Non
 
 def _addSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
+	outCoord = _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx, topAtomCoord)
+	_addAtomCartCoordsToInpCell(bulkCell, outCoord + [ele])
+
+def _addSingleBasalOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
+	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
+	octaCoord = _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx, topAtomCoord)
+	zDisp = octaCoord[2] - topAtomCoord[2]
+	octaCoord[2] += zDisp #The octahedral displacement was half was we need for the basal octahedral
+	_addAtomCartCoordsToInpCell(bulkCell, octaCoord + [ele])
+
+def _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx, topAtomCoord):
 
 	#Need to get 3 atoms in plane which form a triangle [i assume these atoms are exactly in plane with the first atom]
 	nearestInPlaneCoords = _getNearestNebCoordsInPlane(bulkCell, topAtomIdx)
@@ -103,7 +116,7 @@ def _addSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 	#Put all this together to get the next co-ordinate
 	outCoord = [x for x in topCentroid]
 	outCoord[-1] += zDisp
-	_addAtomCartCoordsToInpCell(bulkCell, outCoord + [ele])
+	return outCoord
 
 def _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell,strat=None):
 	cartCoords = bulkCell.cartCoords
