@@ -32,6 +32,8 @@ def addSingleInterToHcpBulkGeom(bulkCell, site, ele=None, strat=None):
 		_addSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	elif site.lower() == "basal_octahedral":
 		_addSingleBasalOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
+	elif site.lower() == "basal_crowdion":
+		_addSingleBasalCrowdionInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	else:
 		raise ValueError("{} is an invalid value for site variable".format(site.lower()))
 
@@ -89,6 +91,13 @@ def _addSingleBasalOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None
 	zDisp = octaCoord[2] - topAtomCoord[2]
 	octaCoord[2] += zDisp #The octahedral displacement was half was we need for the basal octahedral
 	_addAtomCartCoordsToInpCell(bulkCell, octaCoord + [ele])
+
+def _addSingleBasalCrowdionInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
+	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
+	nearestInPlaneCoord = _getNearestNebCoordsInPlane(bulkCell, topAtomIdx)
+	vectToNearestInPlane = [b-a for a,b in it.zip_longest(topAtomCoord,nearestInPlaneCoord)]
+	interPos = [x+(0.5*d) for x,d in it.zip_longest(topAtomCoord,vectToNearestInPlane)]
+	_addAtomCartCoordsToInpCell(bulkCell, interPos + [ele])
 
 def _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx, topAtomCoord):
 
@@ -151,8 +160,6 @@ def _getNearestOutOfPlaneCoordsToPointForInpCell(inpCell, pointCoords, zCartTol=
 	nearestPointIdx = _getIdxOfNearestPointFromListOfCoords(pointCoords[:3], filteredCoords)
 	return filteredCoords[nearestPointIdx]
 
-def _getNearestDistanceToPointForInpCell(inpCell, pointCoords):
-	pass
 
 def _getNearestNebDistanceOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 	""" Returns the nearest neighbour distance for a given atom in a unit cell (including periodic images by default) EXCLUDING neighbours which are in the same z-plane (within a tolerance)
