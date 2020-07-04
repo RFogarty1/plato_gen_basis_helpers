@@ -82,12 +82,12 @@ class TestAddInterToHcpBulkGeom(unittest.TestCase):
 		self.lattParams = [2,2,3]
 		self.lattAngles = [90,90,120]
 		self.fractPositions = [ [0.0,0.0,0.0], [1/3,2/3,0.5] ]
-		self.atomList = ["X" for x in self.fractPositions]
 		self.site = "tetrahedral"
 		self.ele = "X"
 		self.createTestObjs()
 
 	def createTestObjs(self):
+		self.atomList = ["X" for x in self.fractPositions]
 		kwargDict = {"lattParams":self.lattParams, "lattAngles":self.lattAngles,
 		             "fractCoords": self.fractPositions, "elementList":self.atomList}
 		self.testCellA = uCell.UnitCell( **kwargDict )
@@ -170,6 +170,26 @@ class TestAddInterToHcpBulkGeom(unittest.TestCase):
 		expOutCell.cartCoords = expCartCoords
 		tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site, ele=self.ele, strat="utest")
 		self.assertEqual(expOutCell, self.testCellA)
+
+	def testBasalSplitInExpectedPositionCoverALessThanPerfect(self):
+		self.site = "basal_split"
+		#Need at least TWO atoms in-plane in the regular (non periodic) cell
+		self.fractPositions = [[0.0, 0.0, 0.0],
+		                       [0.16666666666666677, 0.6666666666666664, 0.4999999999999999],
+		                       [0.5, 0.0, 0.0],
+		                       [0.6666666666666666, 0.6666666666666664, 0.4999999999999999]]
+		self.createTestObjs()
+
+		expOutCell = copy.deepcopy(self.testCellA)
+		expCartCoords = expOutCell.cartCoords
+		displacement = (2/3)*0.5*0.5*self.lattParams[0]
+		newCoordPos = copy.deepcopy(expCartCoords[0])
+		newCoordPos[0] += displacement
+		expCartCoords[0][0] -= displacement
+		expCartCoords.append(newCoordPos)
+		expOutCell.cartCoords = expCartCoords
+		tCode.addSingleInterToHcpBulkGeom(self.testCellA, self.site, ele=self.ele, strat="utest")
+		self.assertEqual(self.testCellA,expOutCell)
 
 	def _getCoordForOctaInter(self):
 		#Note the im assuming the start atom is at origin

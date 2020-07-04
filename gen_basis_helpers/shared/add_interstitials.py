@@ -34,6 +34,8 @@ def addSingleInterToHcpBulkGeom(bulkCell, site, ele=None, strat=None):
 		_addSingleBasalOctahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	elif site.lower() == "basal_crowdion":
 		_addSingleBasalCrowdionInterstitialToHcpBulkGeom(bulkCell, ele, strat)
+	elif site.lower() == "basal_split":
+		_addSingleBasalSplitInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	else:
 		raise ValueError("{} is an invalid value for site variable".format(site.lower()))
 
@@ -98,6 +100,22 @@ def _addSingleBasalCrowdionInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 	vectToNearestInPlane = [b-a for a,b in it.zip_longest(topAtomCoord,nearestInPlaneCoord)]
 	interPos = [x+(0.5*d) for x,d in it.zip_longest(topAtomCoord,vectToNearestInPlane)]
 	_addAtomCartCoordsToInpCell(bulkCell, interPos + [ele])
+
+def _addSingleBasalSplitInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
+	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
+	nearestInPlaneCoord = _getNearestNebCoordsInPlane(bulkCell, topAtomIdx, inclImages=False)
+	bondVector = [b-a for a,b in it.zip_longest(topAtomCoord, nearestInPlaneCoord)]
+	nnDist = _getLenOneVector(bondVector)
+	newBondDist = (2*nnDist)/3
+	displacement = nnDist - newBondDist 
+	displaceVector = [displacement*(x/nnDist) for x in bondVector]
+	newAtomCoord = [x+d for x,d in it.zip_longest(topAtomCoord,displaceVector)]
+	
+	#New displace one atom in place and add the other
+	cartCoords = bulkCell.cartCoords
+	cartCoords[topAtomIdx] = [x-d for x,d in it.zip_longest(topAtomCoord,displaceVector)] + [cartCoords[topAtomIdx][-1]]
+	cartCoords.append(newAtomCoord + [ele])
+	bulkCell.cartCoords = cartCoords
 
 def _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx, topAtomCoord):
 
@@ -174,10 +192,13 @@ def _getNearestNebDistanceOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 	dist = _getDistTwoVectors(coords, inpAtomCoords)
 	return dist
 
-def _getNearestNebCoordsInPlane(inpCell, atomIdx, zCartTol=1e-1):
+def _getNearestNebCoordsInPlane(inpCell, atomIdx, zCartTol=1e-1, inclImages=True):
 	#Step 1 = create the relevant supercell
 	inpCartCoord = inpCell.cartCoords[atomIdx][0:3]
-	superCell = supCellHelp.superCellFromUCell(inpCell,[3,3,3])
+	if inclImages:
+		superCell = supCellHelp.superCellFromUCell(inpCell,[3,3,3])
+	else:
+		superCell = supCellHelp.superCellFromUCell(inpCell,[1,1,1])
 	newCartCoords = superCell.cartCoords[atomIdx][0:3]
 	coordDiffs = [abs(x-y) for x,y in it.zip_longest(inpCartCoord,newCartCoords)]
 	assert all([x<1e-5 for x in coordDiffs])
