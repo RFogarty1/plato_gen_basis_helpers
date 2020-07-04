@@ -102,9 +102,19 @@ def _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx,
 	aToCVector[0] = vectToNearestInPlane[0]*math.cos(math.radians(60)) - vectToNearestInPlane[1]*math.sin(math.radians(60))
 	aToCVector[1] = vectToNearestInPlane[0]*math.sin(math.radians(60)) + vectToNearestInPlane[1]*math.cos(math.radians(60))
 	atomCCoords = [a+b for a,b in it.zip_longest(topAtomCoord,aToCVector)]
+	atomDCoords = [a+b for a,b in it.zip_longest(atomCCoords,vectToNearestInPlane)]
+
+	#Our parralelogram of atoms can be thought of as two triangles; the centroid of one is directly above
+	#an atom in the next plane, while the other is directly above an octahedral interstitial site (i.e. the one we want)
+	centroidA = [(a+b+c)/3 for a,b,c in it.zip_longest(topAtomCoord, nearestInPlaneCoords, atomCCoords)]
+	centroidB = [(a+b+c)/3 for a,b,c in it.zip_longest(nearestInPlaneCoords, atomCCoords, atomDCoords)]
+	nearestCentrA = _getNearestOutOfPlaneCoordsToPointForInpCell(bulkCell, centroidA)
+	nearestCentrB = _getNearestOutOfPlaneCoordsToPointForInpCell(bulkCell, centroidB)
+	nearestOOPDistCentroidA = _getDistTwoVectors(centroidA, nearestCentrA)
+	nearestOOPDistCentroidB = _getDistTwoVectors(centroidB, nearestCentrB)
+	topCentroid = centroidA if nearestOOPDistCentroidA > nearestOOPDistCentroidB else centroidB
 
 	#Now we need to find the centroid of these thre atoms and displace downwards halfway to the next plane
-	topCentroid = [(a+b+c)/3 for a,b,c in it.zip_longest(topAtomCoord, nearestInPlaneCoords, atomCCoords)]
 	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx)
 	vectorToNearestOOPNeighbour = [x-y for x,y in it.zip_longest( nearestOutOfPlaneCoords, topAtomCoord )]
 	distNearestOutOfPlane = _getLenOneVector( vectorToNearestOOPNeighbour )
@@ -131,6 +141,18 @@ def _addAtomCartCoordsToInpCell(inpCell, atomCoord):
 	cartCoords = inpCell.cartCoords	
 	cartCoords.append(atomCoord)
 	inpCell.cartCoords = cartCoords
+
+
+def _getNearestOutOfPlaneCoordsToPointForInpCell(inpCell, pointCoords, zCartTol=1e-2):
+	#Step 1 = create the relevant supercell
+	superCell = supCellHelp.superCellFromUCell(inpCell,[3,3,3])
+	otherPoints = [x[:3] for x in superCell.cartCoords]
+	filteredCoords = _getAllCoordsInDiffZPlaneAsInpCartCoord(pointCoords[:3], otherPoints)
+	nearestPointIdx = _getIdxOfNearestPointFromListOfCoords(pointCoords[:3], filteredCoords)
+	return filteredCoords[nearestPointIdx]
+
+def _getNearestDistanceToPointForInpCell(inpCell, pointCoords):
+	pass
 
 def _getNearestNebDistanceOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 	""" Returns the nearest neighbour distance for a given atom in a unit cell (including periodic images by default) EXCLUDING neighbours which are in the same z-plane (within a tolerance)
@@ -166,7 +188,7 @@ def _getNearestNebCoordsOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 
 	#Step 1 = create the relevant supercell
 	inpCartCoord = inpCell.cartCoords[atomIdx][0:3]
-	superCell = supCellHelp.superCellFromUCell(inpCell,[3,3,3])
+	superCell = supCellHelp.superCellFromUCell(inpCell,[3,3,4])
 	newCartCoords = superCell.cartCoords[atomIdx][0:3]
 	coordDiffs = [abs(x-y) for x,y in it.zip_longest(inpCartCoord,newCartCoords)]
 	assert all([x<1e-5 for x in coordDiffs])
@@ -204,6 +226,15 @@ def _getAllNeighbourCoordsInSameZPlane(inpCoords, atomIdx,zCartTol=1e-1):
 				filteredCoords.append(xyz)
 	return filteredCoords
 
+def _getAllCoordsInDiffZPlaneAsInpCartCoord(inpCartCoord, allCoords, zCartTol=1e-2):
+	inpCoords = allCoords
+	filteredCoords = list()
+	for idx,coord in enumerate(inpCoords):
+		xyz = coord[0:3]
+		zDisp = abs(xyz[-1] - inpCartCoord[-1])
+		if (zDisp > zCartTol):
+			filteredCoords.append(xyz)
+	return filteredCoords
 
 def _getAllNeighbourCoordsInDiffZPlane(inpCoords, atomIdx,zCartTol=1e-2):
 	inpCartCoord = inpCoords[atomIdx][:3]
