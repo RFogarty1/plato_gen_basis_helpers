@@ -36,6 +36,8 @@ def addSingleInterToHcpBulkGeom(bulkCell, site, ele=None, strat=None):
 		_addSingleBasalCrowdionInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	elif site.lower() == "basal_split":
 		_addSingleBasalSplitInterstitialToHcpBulkGeom(bulkCell, ele, strat)
+	elif site.lower() == "crowdion":
+		_addSingleCrowdionInterstitialToHcpBulkGeom(bulkCell, ele, strat)
 	else:
 		raise ValueError("{} is an invalid value for site variable".format(site.lower()))
 
@@ -117,6 +119,14 @@ def _addSingleBasalSplitInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 	cartCoords.append(newAtomCoord + [ele])
 	bulkCell.cartCoords = cartCoords
 
+def _addSingleCrowdionInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
+	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
+	nearestOOPCoord = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx)
+	dispVector = [0.5*(b-a) for a,b in it.zip_longest(topAtomCoord, nearestOOPCoord)]
+	interPos = [a+b for a,b in it.zip_longest(topAtomCoord, dispVector)]
+	_addAtomCartCoordsToInpCell(bulkCell, interPos + [ele])
+
+
 def _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx, topAtomCoord):
 
 	#Need to get 3 atoms in plane which form a triangle [i assume these atoms are exactly in plane with the first atom]
@@ -154,6 +164,7 @@ def _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx,
 	outCoord = [x for x in topCentroid]
 	outCoord[-1] += zDisp
 	return outCoord
+
 
 def _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell,strat=None):
 	cartCoords = bulkCell.cartCoords
