@@ -170,14 +170,15 @@ def getPlaneWaveSurfaceParsedFileObject(surfType, nLayers=None, relaxType="unrel
 		parsedFile (ParsedFile object): This contains the geometry and total energy of the requested structure
 	
 	"""
-	structTypeDefaultNLayers = {"hcp0001":10, "hcp10m10":16}
+	structTypeDefaultNLayers = {"hcp0001":10, "hcp10m10":16, "hcp10m10_long_termination":16}
 	if nLayers is None:
 		nLayers = structTypeDefaultNLayers[surfType]
 
 	structTypeToFunct = { ("hcp0001" , 10,"unrelaxed"): _getMgHcp0001PlaneWaveUnrelaxedParsedFile_10layers,
 	                      ("hcp0001" , 10,"constant_volume"  ): _getMgHcp0001PlaneWaveRelaxedParsedFile_10layers,
 	                      ("hcp10m10", 16,"unrelaxed"): _getMgHcp10m10PlaneWaveUnrelaxedParsedFile_16layers,
-	                      ("hcp10m10", 16, "constant_volume" ): _getMgHcp10m10PlaneWaveRelaxedParsedFile_16layers
+	                      ("hcp10m10", 16, "constant_volume" ): _getMgHcp10m10PlaneWaveRelaxedParsedFile_16layers,
+	                      ("hcp10m10_long_termination", 16, "constant_volume"): _getMgHcp10m10_longTerminationPlaneWaveRelaxedParsedFile_16layers
 	                     }
 
 	return structTypeToFunct[(surfType,nLayers,relaxType)]()
@@ -198,7 +199,9 @@ def _getMgHcp10m10PlaneWaveRelaxedParsedFile_16layers():
 	refPath = os.path.join(BASE_FOLDER,"surface_energies", "hcp10m10", "castep_geom", "relaxed", "nlayers_16_absvac_10_ang", "geom_opt.castep")
 	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
 
-
+def _getMgHcp10m10_longTerminationPlaneWaveRelaxedParsedFile_16layers():
+	refPath = os.path.join(BASE_FOLDER,"surface_energies", "hcp10m10_long_termination", "castep_geom", "relaxed", "nlayers_16_absvac_10_ang", "geom_opt.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
 
 #INTERFACE FUNCTION
 def getPlaneWaveGeom(structType:str):
