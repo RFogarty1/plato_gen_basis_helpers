@@ -375,9 +375,16 @@ def getPlaneWaveDissocSepVsTotalE(inBohr=True):
 	return outList
 
 
+def getInterstitialPlaneWaveParsedFile(structType, interstitialType, relaxType, cellSize):
+	paramsToOutFunct = {("hcp","no_inter", "plane_wave_geom", "3_3_2"): _getHcpPlaneWaveNoInter332}
+	return paramsToOutFunct[(structType,interstitialType,relaxType,cellSize)]()
+
+def _getHcpPlaneWaveNoInter332():
+	refFile = os.path.join(BASE_FOLDER, "interstitial", "no_inter", "no_inter.castep")
+	parsedFile = castepCreator.getParsedFileObjFromCastepOutputFile(refFile)
+	return parsedFile
 
 #Structures to use for intersitials
-
 def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:"str, octahedral or tetrahedral",
                                    relaxType:"str, unrelaxed or relaxed", cellSize:"Str with dims, e.g 3_3_2"):
 

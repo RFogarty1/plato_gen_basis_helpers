@@ -7,6 +7,7 @@ import types
 
 import numpy as np 
 
+from ..castep import castep_creator as castepCreator
 from ..shared import config_vars as configVars
 from ..job_utils import dos_helpers as dosHelp
 from ..shared import unit_convs as unitConvs
@@ -184,6 +185,16 @@ def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
 	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
 
 
+
+def getInterstitialPlaneWaveParsedFile(structType, interstitialType, relaxType, cellSize):
+	paramsToOutFunct = {("hcp","no_inter", "plane_wave_geom", "3_3_2"): _getHcpPlaneWaveNoInter332}
+	return paramsToOutFunct[(structType,interstitialType,relaxType,cellSize)]()
+
+
+def _getHcpPlaneWaveNoInter332():
+	refFile = os.path.join(BASE_FOLDER, "interstitial", "no_inter", "Zr_hcp_no_inter.castep")
+	parsedFile = castepCreator.getParsedFileObjFromCastepOutputFile(refFile)
+	return parsedFile
 
 def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:"str, octahedral or tetrahedral",
                                    relaxType:"str, unrelaxed or relaxed", cellSize:"Str with dims, e.g 3_3_2"):
