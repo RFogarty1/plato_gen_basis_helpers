@@ -90,6 +90,7 @@ class TestMapFunction(unittest.TestCase):
 		self.defectEnergyA = 20
 		self.ePerAtomDefectA = 30
 		self.ePerAtomBulkA = 40
+		self.xVal = "methodStr"
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -98,7 +99,7 @@ class TestMapFunction(unittest.TestCase):
 		outputObj = types.SimpleNamespace(defectE=self.defectEnergyA,bulkEPerAtom=self.ePerAtomBulkA,
 		                                       defectEPerAtom=self.ePerAtomDefectA, run=mock.Mock())
 		self.workflowA = types.SimpleNamespace( output=[outputObj], run=mock.Mock() )
-		self.testObjA = tCode.MapSelfDefectWorkflowOutputToUsefulFormatStandard()
+		self.testObjA = tCode.MapSelfDefectWorkflowOutputToUsefulFormatStandard(xVal=self.xVal)
 		self.standardInpObjA = calcRunners.StandardInputObj( self.workflowA, labelA )
 
 	def runTestFunct(self):
@@ -114,3 +115,11 @@ class TestMapFunction(unittest.TestCase):
 		actData = actOutput.tableWithEPerAtomVals
 		self.assertEqual(expData, actData)
 
+	def testExpTableForXValStructKey(self):
+		self.xVal = "structStr"
+		self.createTestObjs()
+		expData = [self.structKey] + ["{:.2f}".format(x) for x in [self.defectEnergyA, self.ePerAtomBulkA, self.ePerAtomDefectA]]
+		actOutput = self.runTestFunct()
+		actData = actOutput.tableWithEPerAtomVals
+		self.assertEqual(expData, actData)	
+	

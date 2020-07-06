@@ -67,14 +67,24 @@ class MapSelfDefectWorkflowOutputToUsefulFormatStandard():
 		The callable interface takes a non-composite StandardInput object as the sole argument
 	"""
 
-	def __init__(self, defectEFormat="{:.2f}", ePerAtomFmtStr="{:.2f}"):
+	def __init__(self, defectEFormat="{:.2f}", ePerAtomFmtStr="{:.2f}", xVal="methodStr", xLabel="Basis Set"):
 		self.defectEFormat = defectEFormat
 		self.ePerAtomFmtStr = ePerAtomFmtStr
+		self.xVal = xVal
+		self.xLabel = xLabel
+
+	def _getXVal(self, stdInputObj):
+		if self.xVal == "methodStr":
+			return stdInputObj.label[0].methodKey
+		elif self.xVal == "structStr":
+			return stdInputObj.label[0].structKey
+		else:
+			raise ValueError("{} is an invalid value for xVal".format(self.xVal))
 
 	def _getTableData(self, stdInputObj):
-		methKey = stdInputObj.label[0].methodKey
+		xKey = self._getXVal(stdInputObj)
 		defectE = self.defectEFormat.format(stdInputObj.workflow.output[0].defectE)
-		return [methKey, defectE]
+		return [xKey, defectE]
 
 	def _getTableDataWithEPerAtom(self,stdInputObj):
 		outTable = self._getTableData(stdInputObj)
@@ -84,10 +94,10 @@ class MapSelfDefectWorkflowOutputToUsefulFormatStandard():
 		return outTable	
 
 	def _getTableHeadings(self):
-		return ["Basis Set", "Defect Energy (eV)"]
+		return [self.xLabel, "Defect Energy (eV)"]
 
 	def _getTableWithEPerAtomHeadings(self):
-		return ["Basis Set", "Defect Energy (eV)", "E per atom (bulk, eV)", "E per atom (defect, eV)",]
+		return [self.xLabel, "Defect Energy (eV)", "E per atom (bulk, eV)", "E per atom (defect, eV)"]
 
 	def __call__(self, stdInputObj):
 		stdInputObj.workflow.run()
