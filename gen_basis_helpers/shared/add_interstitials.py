@@ -3,6 +3,8 @@ import copy
 import itertools as it
 import math
 
+from . import simple_vector_maths as vectHelp
+
 import plato_pylib.utils.supercell as supCellHelp
 
 def addSingleInterToHcpBulkGeom(bulkCell, site, ele=None, strat=None):
@@ -56,9 +58,9 @@ def _addSingleTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx) #0 is atom idx
 	vectorToNearestOOPNeighbour = [x-y for x,y in it.zip_longest( nearestOutOfPlaneCoords, topAtomCoord )]
 
-	nearestNebDistance =  _getDistTwoVectors([0,0,0], vectorToNearestOOPNeighbour)
+	nearestNebDistance =  vectHelp.getDistTwoVectors([0,0,0], vectorToNearestOOPNeighbour)
 	cVector = [0,0,1]
-	vectAngle = _getAngleTwoVectors(cVector, vectorToNearestOOPNeighbour)
+	vectAngle = vectHelp.getAngleTwoVectors(cVector, vectorToNearestOOPNeighbour)
 	zDisp = (0.5*nearestNebDistance) / math.cos(math.radians(vectAngle))
 
 	#Get co-ords for the new atom
@@ -73,9 +75,9 @@ def _addSingleBasalTetrahedralInterstitialToHcpBulkGeom(bulkCell, ele, strat=Non
 
 	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx) 
 	vectorToNearestOOPNeighbour = [x-y for x,y in it.zip_longest( nearestOutOfPlaneCoords, topAtomCoord )]
-	nearestNebDistance =  _getDistTwoVectors([0,0,0], vectorToNearestOOPNeighbour)
+	nearestNebDistance =  vectHelp.getDistTwoVectors([0,0,0], vectorToNearestOOPNeighbour)
 	cVector = [0,0,1]
-	vectAngle = _getAngleTwoVectors(cVector, vectorToNearestOOPNeighbour)
+	vectAngle = vectHelp.getAngleTwoVectors(cVector, vectorToNearestOOPNeighbour)
 	zDisp = nearestNebDistance*math.cos(math.radians(vectAngle))
 
 	newCoord = copy.deepcopy(topAtomCoord)
@@ -107,7 +109,7 @@ def _addSingleBasalSplitInterstitialToHcpBulkGeom(bulkCell, ele, strat=None):
 	topAtomIdx, topAtomCoord = _getAtomIdxAndCoordsOfAtomToCentreAround(bulkCell, strat)
 	nearestInPlaneCoord = _getNearestNebCoordsInPlane(bulkCell, topAtomIdx, inclImages=False)
 	bondVector = [b-a for a,b in it.zip_longest(topAtomCoord, nearestInPlaneCoord)]
-	nnDist = _getLenOneVector(bondVector)
+	nnDist = vectHelp.getLenOneVector(bondVector)
 	newBondDist = (2*nnDist)/3
 	displacement = nnDist - newBondDist 
 	displaceVector = [displacement*(x/nnDist) for x in bondVector]
@@ -132,7 +134,7 @@ def _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx,
 	#Need to get 3 atoms in plane which form a triangle [i assume these atoms are exactly in plane with the first atom]
 	nearestInPlaneCoords = _getNearestNebCoordsInPlane(bulkCell, topAtomIdx)
 	vectToNearestInPlane = [x-y for x,y in it.zip_longest(nearestInPlaneCoords,topAtomCoord)]
-	lenNearestNeb = _getLenOneVector(vectToNearestInPlane)
+	lenNearestNeb = vectHelp.getLenOneVector(vectToNearestInPlane)
 
 	#Get atomC coordinates by rotating the x/y directions of AB vector by 60 degrees (using a standard rotation matrix operator)
 	aToCVector = [0,0,0]
@@ -147,16 +149,16 @@ def _getCoordsForSingleOctahedralInterstitialToHcpBulkGeom(bulkCell, topAtomIdx,
 	centroidB = [(a+b+c)/3 for a,b,c in it.zip_longest(nearestInPlaneCoords, atomCCoords, atomDCoords)]
 	nearestCentrA = _getNearestOutOfPlaneCoordsToPointForInpCell(bulkCell, centroidA)
 	nearestCentrB = _getNearestOutOfPlaneCoordsToPointForInpCell(bulkCell, centroidB)
-	nearestOOPDistCentroidA = _getDistTwoVectors(centroidA, nearestCentrA)
-	nearestOOPDistCentroidB = _getDistTwoVectors(centroidB, nearestCentrB)
+	nearestOOPDistCentroidA = vectHelp.getDistTwoVectors(centroidA, nearestCentrA)
+	nearestOOPDistCentroidB = vectHelp.getDistTwoVectors(centroidB, nearestCentrB)
 	topCentroid = centroidA if nearestOOPDistCentroidA > nearestOOPDistCentroidB else centroidB
 
 	#Now we need to find the centroid of these thre atoms and displace downwards halfway to the next plane
 	nearestOutOfPlaneCoords = _getNearestNebCoordsOutOfZPlane(bulkCell,topAtomIdx)
 	vectorToNearestOOPNeighbour = [x-y for x,y in it.zip_longest( nearestOutOfPlaneCoords, topAtomCoord )]
-	distNearestOutOfPlane = _getLenOneVector( vectorToNearestOOPNeighbour )
+	distNearestOutOfPlane = vectHelp.getLenOneVector( vectorToNearestOOPNeighbour )
 	cVector = [0,0,1]
-	angleAC = _getAngleTwoVectors( vectorToNearestOOPNeighbour, cVector )
+	angleAC = vectHelp.getAngleTwoVectors( vectorToNearestOOPNeighbour, cVector )
 	planeSpacing = math.cos(math.radians(angleAC)) * distNearestOutOfPlane
 	zDisp = 0.5*planeSpacing
 
@@ -200,7 +202,7 @@ def _getNearestNebDistanceOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 	"""
 	inpAtomCoords = inpCell.cartCoords[atomIdx][:3]
 	coords = _getNearestNebCoordsOutOfZPlane(inpCell, atomIdx, zCartTol)
-	dist = _getDistTwoVectors(coords, inpAtomCoords)
+	dist = vectHelp.getDistTwoVectors(coords, inpAtomCoords)
 	return dist
 
 def _getNearestNebCoordsInPlane(inpCell, atomIdx, zCartTol=1e-1, inclImages=True):
@@ -319,32 +321,15 @@ def _getCentralAtomIdxInInpCell(bulkCell):
 
 def _getNearestDistanceToPointFromListOfCoords(inpPoint, otherPoints):
 	nearestIdx = _getIdxOfNearestPointFromListOfCoords(inpPoint,otherPoints)
-	return _getDistTwoVectors(inpPoint,otherPoints[nearestIdx])
+	return vectHelp.getDistTwoVectors(inpPoint,otherPoints[nearestIdx])
 	
 def _getIdxOfNearestPointFromListOfCoords(inpPoint, otherPoints):
-	minDistance = _getDistTwoVectors(inpPoint, otherPoints[0])
+	minDistance = vectHelp.getDistTwoVectors(inpPoint, otherPoints[0])
 	outIdx = 0
 	for idx,x in enumerate(otherPoints):
-		currDist = _getDistTwoVectors(inpPoint,x)
+		currDist = vectHelp.getDistTwoVectors(inpPoint,x)
 		if (currDist < minDistance):
 			minDistance = currDist
 			outIdx = idx
 	return outIdx
-
-def _getLenOneVector(vectA):
-	return math.sqrt( sum([x**2 for x in vectA]) )
-
-def _getDistTwoVectors(vectA,vectB):
-	sqrDiff = [ (a-b)**2 for a,b in it.zip_longest(vectA,vectB) ]
-	return math.sqrt( sum(sqrDiff) )
-
-def _getAngleTwoVectors(vectA,vectB):
-	normFactorA = math.sqrt( sum( [x**2 for x in vectA] ) )
-	normFactorB = math.sqrt( sum( [x**2 for x in vectB] ) )
-
-	normA = [x/normFactorA for x in vectA]
-	normB = [x/normFactorB for x in vectB]
-
-	dotProd = sum( [a*b for a,b in it.zip_longest(normA,normB)] )
-	return math.degrees( math.acos(dotProd) )
 
