@@ -1,7 +1,119 @@
 
+import copy
+import plato_pylib.utils.supercell as supCellHelp
+
+from . import plane_equations as planeEqnHelp
 from . import simple_vector_maths as vectHelp
 
 
+#Functions including interfaces to unitCell class
+def getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpCell, atomIdx, planeEqn, includeImages=True, planeTolerance=1e-2):
+	""" Returns the nearest in-plane neighbour distance for atomIdx.
+	
+	Args:
+		inpCell: plato_pylib UnitCell object
+		atomIdx: index of atom in the unitCell
+		planeEqn: ThreeDimPlaneEquation object, defines the plane to look in. Doesnt need to pass through atomIdx; this function will generate a shifted plane which DOES pass through it regardless
+		includeImages: Bool (Optional), If True then periodic images (in all directions) will be considered
+			 
+	Returns
+		 nebDist: The distance to the nearest in plane neighbour
+ 
+	"""
+	if includeImages:
+		startCell = supCellHelp.getUnitCellSurroundedByNeighbourCells(inpCell)
+	else:
+		startCell = inpCell
+
+	cartCoords = copy.deepcopy([x[:3] for x in startCell.cartCoords])
+	inpPoint = cartCoords[atomIdx]
+	cartCoords.pop(atomIdx)
+	planeCoeffs = planeEqn.coeffs
+	planeDValue = planeEqn.calcDForInpXyz(inpPoint)
+	planeCoeffs[-1] = planeDValue
+
+	print("\n\n\nDEBUG\n\n\n")
+	print("cartCoords = {}".format(cartCoords))
+
+	newPlane = planeEqnHelp.ThreeDimPlaneEquation(*planeCoeffs)
+
+	return getDistanceToNearestInPlanePointToInpPoint(inpPoint, cartCoords, newPlane, planeTolerance)
+
+#Functions for getting in-plane OR out-of plane nearest neighbours
+def getDistanceToNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
+	outCoords = getCoordsOfNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance)
+	outDist = vectHelp.getDistTwoVectors(inpPoint,outCoords)
+	return outDist
+
+def getDistanceToNearestOutOfPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
+	outCoords = getCoordsOfNearestOutOfPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance)
+	outDist = vectHelp.getDistTwoVectors(inpPoint,outCoords)
+	return outDist
+
+def getCoordsOfNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
+	outIdx = getIdxOfNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance)
+	return otherPoints[outIdx]
+
+def getCoordsOfNearestOutOfPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
+	outIdx = getIdxOfNearestOutOfPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance)
+	return otherPoints[outIdx]
+
+def getIdxOfNearestOutOfPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
+	filterFunct = getFilteredIndicesForCoordsOutOfInputPlane
+	outIdx = _getIdxOfNearestPointToInpPointAfterFiltering(inpPoint, otherPoints, planeEqn, filterFunct, planeTolerance)
+	return outIdx
+
+def getIdxOfNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
+	filterFunct = getFilteredIndicesForCoordsInInputPlane
+	outIdx = _getIdxOfNearestPointToInpPointAfterFiltering(inpPoint, otherPoints, planeEqn, filterFunct, planeTolerance)
+	return outIdx
+
+def _getIdxOfNearestPointToInpPointAfterFiltering(inpPoint, otherPoints, planeEqn, filterFunct, planeTolerance=1e-2):
+	relevantIndices = filterFunct(otherPoints, planeEqn, planeTolerance)
+	relevantCoords = [otherPoints[idx] for idx in relevantIndices]
+	idxInRelevantCoords = getIdxOfNearestPointToInputPoint(inpPoint, relevantCoords)
+	outIdx = relevantIndices[idxInRelevantCoords]
+	return outIdx
+
+#Functions for filtering co-ordinates based on plane equations
+def getFilteredIndicesForCoordsOutOfInputPlane(inpCoords, planeEqn, planeTolerance=1e-2):
+	return _getFilteredIndicesBasedOnWhetherTheyAreInPlane(inpCoords, planeEqn, False, planeTolerance)
+
+def getFilteredIndicesForCoordsInInputPlane(inpCoords, planeEqn, planeTolerance=1e-2):
+	return _getFilteredIndicesBasedOnWhetherTheyAreInPlane(inpCoords, planeEqn, True, planeTolerance)
+
+def _getFilteredIndicesBasedOnWhetherTheyAreInPlane(inpCoords, planeEqn, keepInPlane, planeTolerance=1e-2):
+	""" Get a set of co-ordinates from inpCoords based on whether they lie on the input plane
+	
+	Args:
+		inpCoords: iter of iters(len-3), x,y,z co-ordinates for a set of points
+		planeEqn: ThreeDimPlaneEquation object, defines the plane
+		keepInPlane: Bool, If True we keep co-ords in the same plane; else we keep co-ords NOT in the plane
+		planeTolerance: float, Points further from the plane than this value are considered to be in different planes
+			 
+	Returns
+		 outIndices: iter of ints, Indices in inpCoords for the filtered co-ordinates
+ 
+	"""
+	outOfPlaneIndices = list()
+	inPlaneIndices = list()
+
+	for idx,x in enumerate(inpCoords):
+		currDist = planeEqn.getDistanceOfPointFromPlane(x)
+		if (currDist < planeTolerance):
+			inPlaneIndices.append(idx)
+		else:
+			outOfPlaneIndices.append(idx)
+
+	if keepInPlane:
+		outIndices = inPlaneIndices
+	else:
+		outIndices = outOfPlaneIndices
+
+	return outIndices
+
+
+#General function for getting nearest distances/coords to points
 def getNearestDistanceToInputPoint(inpPoint, otherPoints):
 	""" Return distance to point closest to inpPoint. For Example, inpPoint may be co-ordinates of an atom while otherPoints are all the neighbour co-ordinates; in which case this function will give the nearest neighbour distance (or one of them at least)
 	
