@@ -3,6 +3,7 @@ import copy
 import itertools as it
 import math
 
+from . import cart_coord_utils as cartCoordUtils
 from . import simple_vector_maths as vectHelp
 
 import plato_pylib.utils.supercell as supCellHelp
@@ -188,7 +189,7 @@ def _getNearestOutOfPlaneCoordsToPointForInpCell(inpCell, pointCoords, zCartTol=
 	superCell = supCellHelp.superCellFromUCell(inpCell,[3,3,3])
 	otherPoints = [x[:3] for x in superCell.cartCoords]
 	filteredCoords = _getAllCoordsInDiffZPlaneAsInpCartCoord(pointCoords[:3], otherPoints)
-	nearestPointIdx = _getIdxOfNearestPointFromListOfCoords(pointCoords[:3], filteredCoords)
+	nearestPointIdx = cartCoordUtils.getIdxOfNearestPointToInputPoint(pointCoords[:3], filteredCoords)
 	return filteredCoords[nearestPointIdx]
 
 
@@ -219,7 +220,7 @@ def _getNearestNebCoordsInPlane(inpCell, atomIdx, zCartTol=1e-1, inclImages=True
 
 	#Step 2 = figure out the index (within the NEW supercell)
 	filteredCoords = _getAllNeighbourCoordsInSameZPlane(superCell.cartCoords, atomIdx, zCartTol)
-	idxInFilteredList = _getIdxOfNearestPointFromListOfCoords(inpCartCoord, filteredCoords)
+	idxInFilteredList = cartCoordUtils.getIdxOfNearestPointToInputPoint(inpCartCoord, filteredCoords)
 
 	#Step 3 = return the co-ordinates for that index
 	return filteredCoords[idxInFilteredList]
@@ -237,7 +238,7 @@ def _getNearestNebCoordsOutOfZPlane(inpCell, atomIdx, zCartTol=1e-2):
 	#Step 2 = figure out the index (within the NEW supercell)
 	filteredIndices = _getAllIndicesForNeighboursInDiffZPlane(inpCell.cartCoords, atomIdx, zCartTol) #TODO: Not actually needed
 	filteredCoords = _getAllNeighbourCoordsInDiffZPlane(inpCell.cartCoords, atomIdx, zCartTol)
-	idxInFilteredList = _getIdxOfNearestPointFromListOfCoords(inpCartCoord, filteredCoords)
+	idxInFilteredList = cartCoordUtils.getIdxOfNearestPointToInputPoint(inpCartCoord, filteredCoords)
 
 	#Step 3 = return the co-ordinates for that index
 	return filteredCoords[idxInFilteredList]
@@ -308,7 +309,7 @@ def _getNearestNebDistanceForAtomInUcell(inpCell, atomIdx):
 
 	#Figure out all distances
 	otherAtomCoords = [superCell.cartCoords[x][0:3] for x in range( len(superCell.cartCoords) ) if x!=atomIdx]
-	return _getNearestDistanceToPointFromListOfCoords(cartCoords, otherAtomCoords)
+	return cartCoordUtils.getNearestDistanceToInputPoint(cartCoords, otherAtomCoords)
 
 def _getCentralAtomIdxInInpCell(bulkCell):
 	lattVects= bulkCell.lattVects
@@ -317,19 +318,5 @@ def _getCentralAtomIdxInInpCell(bulkCell):
 		centralPoint = [x+l for x,l in it.zip_longest(centralPoint,lVect)]
 	
 	atomCoords = [x[:3] for x in bulkCell.cartCoords]
-	return _getIdxOfNearestPointFromListOfCoords(centralPoint, atomCoords)
-
-def _getNearestDistanceToPointFromListOfCoords(inpPoint, otherPoints):
-	nearestIdx = _getIdxOfNearestPointFromListOfCoords(inpPoint,otherPoints)
-	return vectHelp.getDistTwoVectors(inpPoint,otherPoints[nearestIdx])
-	
-def _getIdxOfNearestPointFromListOfCoords(inpPoint, otherPoints):
-	minDistance = vectHelp.getDistTwoVectors(inpPoint, otherPoints[0])
-	outIdx = 0
-	for idx,x in enumerate(otherPoints):
-		currDist = vectHelp.getDistTwoVectors(inpPoint,x)
-		if (currDist < minDistance):
-			minDistance = currDist
-			outIdx = idx
-	return outIdx
+	return cartCoordUtils.getIdxOfNearestPointToInputPoint(centralPoint, atomCoords)
 
