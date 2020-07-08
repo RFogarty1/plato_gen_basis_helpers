@@ -21,6 +21,9 @@ def getAngleTwoVectors(vectA,vectB):
 	normA = [x/normFactorA for x in vectA]
 	normB = [x/normFactorB for x in vectB]
 
-	dotProd = sum( [a*b for a,b in it.zip_longest(normA,normB)] )
+	dotProd = getDotProductTwoVectors(normA,normB)
 	return math.degrees( math.acos(dotProd) )
+
+def getDotProductTwoVectors(vectA,vectB):
+	return sum( [a*b for a,b in it.zip_longest(vectA,vectB)] )
 

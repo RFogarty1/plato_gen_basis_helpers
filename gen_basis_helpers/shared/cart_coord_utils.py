@@ -39,6 +39,32 @@ def getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpCell, atomIdx, planeEqn, 
 
 	return getDistanceToNearestInPlanePointToInpPoint(inpPoint, cartCoords, newPlane, planeTolerance)
 
+
+def getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell):
+	""" See getABPlaneEqnWithNormVectorSameDirAsC docstring """
+	return getABPlaneEqnWithNormVectorSameDirAsC(inpCell.lattVects)
+
+def getABPlaneEqnWithNormVectorSameDirAsC(lattVects):
+	""" Gets a plane equation for the a,b plane with the normal vector pointing along the direction of the c vector. Useful for defining "above" or "below" in a consistent way
+	
+	Args:
+		lattVects: len 3 iter of len 3 iters, lattice vectors a,b and c.
+			 
+	Returns
+		 planeEqn: ThreeDimPlaneEquation object, represents the plane equation for the ab plane whereby the normal vector points along the same rough direction as the c-vector (dot product is positive)
+ 
+	"""
+	aVect, bVect, cVect = lattVects
+	startPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation.fromTwoPositionVectors(aVect,bVect)
+	normVector = startPlaneEqn.coeffs[:3]
+
+	if (vectHelp.getDotProductTwoVectors(normVector,cVect) < 0):
+		outCoeffs = [-1*x for x in startPlaneEqn.coeffs]
+	else:
+		outCoeffs = startPlaneEqn.coeffs
+
+	return planeEqnHelp.ThreeDimPlaneEquation(*outCoeffs)
+
 #Functions for getting in-plane OR out-of plane nearest neighbours
 def getDistanceToNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
 	outCoords = getCoordsOfNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance)

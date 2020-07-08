@@ -1,6 +1,7 @@
 
 import math
 import itertools as it
+import types
 
 import unittest
 import unittest.mock as mock
@@ -119,5 +120,24 @@ class TestUnitCellInterfaceFunctions(unittest.TestCase):
 		actDist = tCode.getNearestInPlaneDistanceGivenInpCellAndAtomIdx(self.testCellA, self.testAtomIdx,self.planeEqnA)
 		self.assertAlmostEqual(expDist,actDist)
 
+	def testGetSurfacePlanePointingSameDirAsCVector(self):
+		""" Want the surface plane-equation with the normal vector pointing along c for the cubic cell (and the same direction for other cells)"""
 
+		expPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
+		actPlaneEqn = tCode.getABPlaneEqnWithNormVectorSameDirAsC(self.testCellA.lattVects)
+		self.assertEqual(expPlaneEqn,actPlaneEqn)
 
+	def testGetSurfacePlanePointingSameDirAsCVector_negativeCVector(self):
+		lattVects = self.testCellA.lattVects
+		lattVects[-1] = [-1*x for x in lattVects[-1]]
+		expPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,-1,0)
+		actPlaneEqn = tCode.getABPlaneEqnWithNormVectorSameDirAsC(lattVects)
+		self.assertEqual(expPlaneEqn,actPlaneEqn)
+
+	def testGetSurfacePlanePointingSameDirAsCVectorUCellInterface_negativeCVector(self):
+		lattVects = self.testCellA.lattVects
+		lattVects[-1] = [-1*x for x in lattVects[-1]]
+		stubInpCell = types.SimpleNamespace(lattVects=lattVects)
+		expPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,-1,0)
+		actPlaneEqn = tCode.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(stubInpCell)
+		self.assertEqual(expPlaneEqn, actPlaneEqn)
