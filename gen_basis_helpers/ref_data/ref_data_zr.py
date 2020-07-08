@@ -187,7 +187,10 @@ def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
 
 
 def getInterstitialPlaneWaveParsedFile(structType, interstitialType, relaxType, cellSize):
-	paramsToOutFunct = {("hcp","no_inter", "plane_wave_geom", "3_3_2"): _getHcpPlaneWaveNoInter332}
+	paramsToOutFunct = {("hcp","no_inter", "plane_wave_geom", "3_3_2"): _getHcpPlaneWaveNoInter332,
+	                    ("hcp","basal_tetra","relaxed_constant_pressure","3_3_2"): _getParsedFileHcpPlaneWaveBasalTetra_constantPressure,
+	                    ("hcp","octahedral","relaxed_constant_pressure","3_3_2"): _getParsedFileHcpPlaneWaveOctahedral_constantPressure,
+	                    ("hcp","split","relaxed_constant_pressure","3_3_2"): _getParsedFileHcpPlaneWaveSplitInter_constantPressure}
 	return paramsToOutFunct[(structType,interstitialType,relaxType,cellSize)]()
 
 
@@ -196,8 +199,31 @@ def _getHcpPlaneWaveNoInter332():
 	parsedFile = castepCreator.getParsedFileObjFromCastepOutputFile(refFile)
 	return parsedFile
 
+def _getParsedFileHcpPlaneWaveBasalTetra_constantPressure():
+	refFile = os.path.join(BASE_FOLDER, "interstitial", "relaxed", "constant_p", "basal_tetra", "geom_opt.castep")
+	parsedFile = castepCreator.getParsedFileObjFromCastepOutputFile(refFile)
+	return parsedFile
+
+def _getParsedFileHcpPlaneWaveOctahedral_constantPressure():
+	refFile = os.path.join(BASE_FOLDER, "interstitial", "relaxed", "constant_p", "Zr_hcp_strain6_0-Ointerstitial.castep")
+	parsedFile = castepCreator.getParsedFileObjFromCastepOutputFile(refFile)
+	return parsedFile
+
+def _getParsedFileHcpPlaneWaveSplitInter_constantPressure():
+	#Originally was tetrahedral; but relaxed to split structure
+	refFile = os.path.join(BASE_FOLDER,"interstitial", "relaxed", "constant_p", "Zr_hcp_strain6_0-Tinterstitial.castep")
+	parsedFile = castepCreator.getParsedFileObjFromCastepOutputFile(refFile)
+	return parsedFile
+
 def getInterstitialPlaneWaveStruct(structType:"str, e.g. hcp", interstitialType:"str, octahedral or tetrahedral",
                                    relaxType:"str, unrelaxed or relaxed", cellSize:"Str with dims, e.g 3_3_2"):
+
+	try:
+		outVal = getInterstitialPlaneWaveParsedFile(structType, interstitialType, relaxType, cellSize).unitCell
+		return outVal
+	except KeyError:
+		pass
+
 	paramsToStructDict = {("hcp","octahedral" , "relaxed_constant_pressure","3_3_2"): _getHcpPlaneWaveStruct_interOctaRelaxedConstPressure332,
 	                      ("hcp","tetrahedral", "relaxed_constant_pressure","3_3_2"): _getHcpPlaneWaveStruct_interTetraRelaxedConstantPressure332,
 	                      ("hcp","octahedral" , "unrelaxed","3_3_2"): _getHcpPlaneWaveStruct_interOctaUnrelaxed,
