@@ -32,9 +32,6 @@ def getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpCell, atomIdx, planeEqn, 
 	planeDValue = planeEqn.calcDForInpXyz(inpPoint)
 	planeCoeffs[-1] = planeDValue
 
-	print("\n\n\nDEBUG\n\n\n")
-	print("cartCoords = {}".format(cartCoords))
-
 	newPlane = planeEqnHelp.ThreeDimPlaneEquation(*planeCoeffs)
 
 	return getDistanceToNearestInPlanePointToInpPoint(inpPoint, cartCoords, newPlane, planeTolerance)
