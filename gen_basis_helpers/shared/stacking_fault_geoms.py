@@ -68,7 +68,9 @@ class HcpI2StackingFaultGeomGenerator(BaseStackingFaultGeomGenerator):
 
 		#Figure out the number of atoms in each plane; throw if not all equal
 		nAtomsPerPlane = len(uniquePlaneAtomIndices[0]) 
-		assert all([len(x)==nAtomsPerPlane for x in uniquePlaneAtomIndices])
+		maxInPlane = max([len(x) for x in uniquePlaneAtomIndices])
+		minInPlane = min([len(x) for x in uniquePlaneAtomIndices])
+		assert all([len(x)==nAtomsPerPlane for x in uniquePlaneAtomIndices]), "Each ab plane should have the same number of atoms in it; but between {} and {} found in current system".format(minInPlane,maxInPlane)
 
 		#Find the central plane index
 		#Number of planes will always be even, and since we displace above we need to take the bottom of the 2 central as our pivot
@@ -132,8 +134,18 @@ class HcpI2StackingFaultGeomGenerator(BaseStackingFaultGeomGenerator):
 		inpGeom.cartCoords = outCoords
 
 	def _displaceCellInPlace(self, inpGeom, displacement, centralIdx=None, planeTolerance=None):
+		_checkAnglesConsistentWithHcp0001(inpGeom)
 		displaceFactorOneVector = self._getDisplacementVectorForDispParamEqualsOne(inpGeom)
 		displaceVector = [x*displacement for x in displaceFactorOneVector]
 		self._applyDisplacementVectorToRelevantAtomsInCell(inpGeom, displaceVector, centralIdx, planeTolerance)
+
+
+
+def _checkAnglesConsistentWithHcp0001(inpCell, errorTol=5e-1):
+	expAngles = [90,90,120]
+	actAngles = inpCell.getLattAnglesList()
+	angleDiffs = [abs(exp-act) for exp,act in it.zip_longest(expAngles,actAngles)]
+	if any([x>errorTol for x in angleDiffs]):
+		raise ValueError("Angles need to be {}, not {}".format(expAngles,actAngles))
 
 

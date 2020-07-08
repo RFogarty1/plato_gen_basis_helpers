@@ -70,25 +70,23 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 		self.assertEqual(expIdx,actIdx)
 
 	#Algorithm for finding the central index works on the assumption that each plane has the same number of atoms in it
-	@unittest.skip("")
 	def testRaisesErrorGettingDefaultCentralIdxForDifferentNumbersOfAtomsInDiffPlanes(self):
-		self.assertTrue(False)
+		self.fractPositions.append(self.fractPositions[-1])
+		self.centralAtomIdx = None
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			self._runTestFunct()
 
-	@unittest.skip("")
-	def testUsesSensibleCentralAtomIdx_2x1x3Cell(self):
-		self.assertTrue(False)
-
-
-	@unittest.skip("")
 	def testRaisesIfInputCellAnglesIncorrect(self):
-		self.assertTrue(False)
+		self.lattAngles = [90,90,90]
+		self.createTestObjs()
+		dispVal = 1.0
+		with self.assertRaises(ValueError):
+			self.testObjA.getGeomForGivenDisplacement(self.testCellA,dispVal)
 
-	@unittest.skip("")
+
+	@unittest.skip("TODO")
 	def testExpectedGeomForHalfDisp_testA(self):
-		self.assertTrue(False)
-
-	@unittest.skip("")
-	def testExpectedGeomForFullDisp_2x1x1CellA(self):
 		self.assertTrue(False)
 
 
