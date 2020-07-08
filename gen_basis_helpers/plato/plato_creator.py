@@ -16,6 +16,7 @@ class PlatoCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
 	registeredKwargs.add("methodStr")
 	registeredKwargs.add("dataSet") #Plato relative path
 	registeredKwargs.add("gridVals") #Format varies based on methodStr; for dft fft grid is used, fot dft2 atom centred is used
+	registeredKwargs.add("extraValsForOptDict") #We update the final optDict with this
 
 	#Key function
 	def _createFromSelf(self):
@@ -42,6 +43,8 @@ class PlatoCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
 			methObj.integGrid = self.gridVals
 		if self.dataSet is not None:
 			methObj.dataSet = self.dataSet
+		if self.extraValsForOptDict is not None:
+			methObj.optDict.update(self.extraValsForOptDict)
 
 	def _getStrDictFromMethodObj(self, methObj):
 		return methObj.getStrDictWithStruct(self.geom)
