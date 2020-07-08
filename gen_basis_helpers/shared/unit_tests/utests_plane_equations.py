@@ -1,4 +1,5 @@
 
+import copy
 import math
 import itertools as it
 import unittest
@@ -81,3 +82,15 @@ class TestThreeDimPlaneEqn(unittest.TestCase):
 		expDist = math.sqrt( (0.5**2) + (0.5**2) )
 		actDist = self.testObjA.getSignedDistanceOfPointFromPlane(pointCoords)
 		self.assertAlmostEqual(expDist,actDist)
+
+	def testTwoEqualPlanesCompareEqual(self):
+		planeA = self.testObjA
+		planeB = copy.deepcopy(planeA)
+		self.assertEqual(planeA,planeB)
+
+	def testTwoUnEqualPlanesCompareUnEqual(self):
+		planeA = self.testObjA
+		planeB = copy.deepcopy(planeA)
+		planeB.d += 1
+		self.assertNotEqual(planeA,planeB)
+

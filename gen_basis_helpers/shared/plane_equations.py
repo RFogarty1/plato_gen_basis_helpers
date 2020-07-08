@@ -15,6 +15,7 @@ class ThreeDimPlaneEquation():
 			a,b,c,d (floats): Parameters for the plane equation ax + by + cz = d
 				 
 		"""
+		self._eqTol = 1e-6
 		self.a = a
 		self.b = b
 		self.c = c
@@ -40,6 +41,17 @@ class ThreeDimPlaneEquation():
 		outCoeffs = [x for x in normVect] + [0] 
 
 		return cls(*outCoeffs)
+
+	def __eq__(self,other):
+		
+		eqTol = min(self._eqTol, other._eqTol)
+
+		for cA,cB in it.zip_longest(self.coeffs, other.coeffs):
+			if (abs(cA-cB) > eqTol):
+				return False
+
+		return True
+
 
 	def getSignedDistanceOfPointFromPlane(self, inpXyz):
 		""" Calculates the signed fistance of a point from the plane. If the normal vector points towards the point, the distance is +ve, if it points in the opposite direction it is negative 
