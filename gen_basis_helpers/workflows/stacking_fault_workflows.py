@@ -1,5 +1,5 @@
 
-
+import copy
 import itertools as it
 import types
 
@@ -29,6 +29,18 @@ class StackingFaultWorkflow(baseFlow.BaseLabelledWorkflow):
 		self.energyType = "electronicTotalE" if energyType is None else energyType
 		self.fitterObj = fitterObj
 		self._output = types.SimpleNamespace( **{k:None for k in self.namespaceAttrs} )
+		self._writeInpFiles()
+
+	def _writeInpFiles(self):
+		self.perfectStructCalcObj.writeFile()
+		[x.writeFile() for x in self.calcObjs]
+
+	@property
+	def preRunShellComms(self):
+		allComms = [self.perfectStructCalcObj.runComm]
+		for x in self.calcObjs:
+			allComms.append( x.runComm )
+		return allComms
 
 	@property	
 	def namespaceAttrs(self):
@@ -74,7 +86,8 @@ class StackingFaultWorkflow(baseFlow.BaseLabelledWorkflow):
 		self._output.fitResult = self.fitterObj.fitStackingFaultEnergies( self.dispVals, self._output.stackFaultEnergiesRaw )
 
 def _getABSurfaceAreaFromParsedFile(parsedFile):
-	inpCell = parsedFile.unitCell
+	inpCell = copy.deepcopy(parsedFile.unitCell)
+	inpCell.fractCoords = [[0,0,0,"x"]] #Need some kind of fractional co-ordinates to create the surface object
 	nLayers, lenAbsVac = 1,0
 	surfObj = surfHelp.GenericSurface(inpCell, nLayers, lenAbsoluteVacuum=lenAbsVac)
 	return surfObj.surfaceArea
