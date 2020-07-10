@@ -191,7 +191,8 @@ def getInterstitialPlaneWaveParsedFile(structType, interstitialType, relaxType, 
 	                    ("hcp","basal_tetra","relaxed_constant_pressure","3_3_2"): _getParsedFileHcpPlaneWaveBasalTetra_constantPressure,
 	                    ("hcp","octahedral","relaxed_constant_pressure","3_3_2"): _getParsedFileHcpPlaneWaveOctahedral_constantPressure,
 	                    ("hcp","split","relaxed_constant_pressure","3_3_2"): _getParsedFileHcpPlaneWaveSplitInter_constantPressure,
-	                    ("hcp","basal_octa","relaxed_constant_pressure","3_3_2"):_getParsedFileHcpPlaneWaveBasalOctaInter_constantPressure}
+	                    ("hcp","basal_octa","relaxed_constant_pressure","3_3_2"):_getParsedFileHcpPlaneWaveBasalOctaInter_constantPressure,
+	                    ("hcp","crowdion","relaxed_constant_pressure","3_3_2"):_getParsedFileHcpPlaneWAveCrowdionInter_constantPressure}
 	return paramsToOutFunct[(structType,interstitialType,relaxType,cellSize)]()
 
 
@@ -218,6 +219,11 @@ def _getParsedFileHcpPlaneWaveSplitInter_constantPressure():
 
 def _getParsedFileHcpPlaneWaveBasalOctaInter_constantPressure():
 	refFile = os.path.join(BASE_FOLDER, "interstitial", "relaxed", "constant_p", "basal_octa", "geom_opt.castep")
+	parsedFile = castepCreator.getParsedFileObjFromCastepOutputFile(refFile)
+	return parsedFile
+
+def _getParsedFileHcpPlaneWAveCrowdionInter_constantPressure():
+	refFile = os.path.join(BASE_FOLDER, "interstitial", "relaxed", "constant_p", "crowdion", "geom_opt.castep")
 	parsedFile = castepCreator.getParsedFileObjFromCastepOutputFile(refFile)
 	return parsedFile
 
