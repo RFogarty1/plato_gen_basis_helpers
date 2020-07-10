@@ -1,4 +1,4 @@
-
+import copy
 import unittest
 import unittest.mock as mock
 
@@ -67,6 +67,71 @@ class TestGeomConstraintsClass(unittest.TestCase):
 
 
 
+class TestAtomicPositionConstraintsClass(unittest.TestCase):
 
+	def setUp(self):
+		self.atomicCartConstraints = list()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.AtomicPositionConstraints( self.atomicCartConstraints )
+
+	def testConstraintsPresentFalseWhenNonePassed(self):
+		self.assertFalse(self.testObjA.constraintsPresent)
+
+	def testConstraintsPresentTrueIfOnePassed(self):
+		testAtomIdx = 2
+		testConstraint = tCode.AtomicCartesianConstraint(testAtomIdx, fixY=True)
+		self.atomicCartConstraints.append(testConstraint)
+		self.createTestObjs()
+		self.assertTrue(self.testObjA.constraintsPresent)
+
+	def testConstraintsPresentTrueIfBlankConstraintPassed(self):
+		testAtomIdx = 3
+		blankConstraint = tCode.AtomicCartesianConstraint(testAtomIdx)
+		self.atomicCartConstraints.append(blankConstraint)
+		self.createTestObjs()
+		self.assertFalse(self.testObjA.constraintsPresent)
+
+class TestAtomicCartConstraints(unittest.TestCase):
+
+	def setUp(self):
+		self.atomIdx = 2
+		self.fixX = True
+		self.fixY = True
+		self.fixZ = True
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"fixX":self.fixX, "fixY":self.fixY, "fixZ":self.fixZ}
+		self.testObjA = tCode.AtomicCartesianConstraint(self.atomIdx, **kwargDict)
+
+	def testEqualityWorksForEqualObjs(self):
+		testObjB = copy.deepcopy(self.testObjA)
+		self.assertEqual(testObjB, self.testObjA)
+
+	def testUnequalObjsCompareUnequal_diffConstraints(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.fixY = not(self.fixY)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA,objB)
+
+	def testUnequalObjsCompareUnequal_diffAtomIdx(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.atomIdx += 1
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testConstraintsPresentReturnsTrueWhenAttrConstrained(self):
+		self.fixX, self.fixY = False, False
+		self.createTestObjs()
+		self.assertTrue(self.testObjA.constraintsPresent)
+
+	def testConstraintsPresentReturnsFalseWhenNoAttrConstrained(self):
+		self.fixX, self.fixY, self.fixZ = False, False, False		
+		self.createTestObjs()
+		self.assertFalse(self.testObjA.constraintsPresent)
 
 

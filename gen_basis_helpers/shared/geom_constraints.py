@@ -1,6 +1,6 @@
 
 
-#TODO: Add alternative initialiser for NO CONSTRAINTS to all these objects; which provides a natural way of specifying free-optimisations
+#TODO: Certain combinations of atomic/cell constraints wont be possible (e.g. free cell optimisation with fixed CARTESIAN co-ordinates); may need something to check that
 class GeomConstraints():
 	""" Class containing information on which geometrical parameters require constraining to initial values
 
@@ -72,14 +72,47 @@ class AtomicPositionConstraints():
 	""" This will eventually be used to hold information on which atomic positions are fixed to initial value (including fixing things like bond lengths); currently just a stub
 
 	"""
-	def __init__(self):
-		pass
+	def __init__(self, atomicCartConstraints=None):
+		self.atomicCartConstraints = list() if atomicCartConstraints is None else list(atomicCartConstraints)
 
 	@property
 	def constraintsPresent(self):
+		if any([x.constraintsPresent for x in self.atomicCartConstraints]):
+			return True
 		return False
 
 	@classmethod
 	def initWithNoConstraints(cls):
 		return cls()
+
+
+class AtomicCartesianConstraint():
+	""" Represents constraints to apply to cartesian co-ordinates of a single atom
+
+	"""
+
+	def __init__(self, atomIdx, fixX=False, fixY=False, fixZ=False):
+		self.atomIdx = atomIdx
+		self.fixX = fixX
+		self.fixY = fixY
+		self.fixZ = fixZ
+
+	def __eq__(self,other):
+		directCmpAttrs = ["atomIdx","fixX","fixY","fixZ"]
+
+		for attr in directCmpAttrs:
+			if getattr(self,attr) != getattr(other,attr):
+				return False
+
+		return True
+
+	@property
+	def constraintsPresent(self):
+		constraintsAttrs = ["fixX","fixY","fixZ"]
+		for x in constraintsAttrs:
+			if getattr(self,x) is True:
+				return True
+		return False
+
+
 
