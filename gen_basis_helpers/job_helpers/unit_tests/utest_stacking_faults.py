@@ -12,6 +12,7 @@ class TestStandardInputCreatorObj(unittest.TestCase):
 
 	def setUp(self):
 		self.baseCreator = mock.Mock()
+		self.perfectCellBaseCreator = mock.Mock()
 		self.perfectCellGeom = mock.Mock()
 		self.dispZeroGeom = mock.Mock()
 		self.dispVals = [1,2] #Lists are anoying to use mocks for
@@ -20,7 +21,8 @@ class TestStandardInputCreatorObj(unittest.TestCase):
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		kwargDict = {"baseCreator":self.baseCreator, "perfectCellGeom":self.perfectCellGeom,
+		kwargDict = {"baseCreator":self.baseCreator, "perfectCellBaseCreator":self.perfectCellBaseCreator,
+		             "perfectCellGeom":self.perfectCellGeom,
 		             "dispZeroGeom":self.dispZeroGeom, "dispVals":self.dispVals,
 		             "fitterObj":self.fitterObj, "stackingFaultGeomGenerator":self.stackingFaultGeomGenerator}
 		self.testObjA = tCode.StandardInputCreatorTemplate(**kwargDict)
@@ -53,9 +55,9 @@ class TestStandardInputCreatorObj(unittest.TestCase):
 		expOutObj = mock.Mock()
 		expDict = {"fake_key":1}
 		mockedGetKwargDict.side_effect = lambda *args:expDict
-		self.baseCreator.create.side_effect = lambda *args,**kwargs:expOutObj
+		self.perfectCellBaseCreator.create.side_effect = lambda *args,**kwargs:expOutObj
 		actOutObj = self.testObjA._createPerfectCalcObj()
-		self.baseCreator.create.assert_called_with(**expDict)
+		self.perfectCellBaseCreator.create.assert_called_with(**expDict)
 		self.assertEqual(expOutObj,actOutObj)
 
 	@mock.patch("gen_basis_helpers.job_helpers.stacking_faults.StandardInputCreatorTemplate.outFolder", new_callable=mock.PropertyMock)

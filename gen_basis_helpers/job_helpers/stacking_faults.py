@@ -10,6 +10,7 @@ class StandardInputCreatorTemplate(stdTemplate.StandardInputCreatorTemplateBase)
 	registeredKwargs = set(stdTemplate.StandardInputCreatorTemplateBase.registeredKwargs)
 
 	registeredKwargs.add("baseCreator")
+	registeredKwargs.add("perfectCellBaseCreator")
 	registeredKwargs.add("perfectCellGeom")
 	registeredKwargs.add("dispZeroGeom") #Often the same as perfectCellGeom
 	registeredKwargs.add("dispVals")
@@ -28,7 +29,7 @@ class StandardInputCreatorTemplate(stdTemplate.StandardInputCreatorTemplateBase)
 
 	def _createPerfectCalcObj(self):
 		kwargDict = self._getKwargDictForModdingPerfectCellCreatorObj()
-		return self.baseCreator.create(**kwargDict)
+		return self.perfectCellBaseCreator.create(**kwargDict)
 
 	def _createAllDispGeoms(self):
 		outGeoms = list()
