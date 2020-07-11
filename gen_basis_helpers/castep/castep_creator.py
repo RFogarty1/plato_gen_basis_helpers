@@ -78,7 +78,7 @@ class CastepCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
 			geomConstraints = self.geomConstraints
 		outDict["cell_constraints"] = getCellConstraintsStrFromGeomConstraintsObj(geomConstraints)
 		eleList = [x[-1] for x in self.geom.cartCoords]
-		ionicConstraints = getIonicConstraintsStrFromAtomicPosConstraintObj(geomConstraints.atomicPostionConstraints,eleList)
+		ionicConstraints = getIonicConstraintsStrFromAtomicPosConstraintObj(geomConstraints.atomicPositionConstraints,eleList)
 		if ionicConstraints is not None:
 			outDict["%block ionic_constraints"] = ionicConstraints
 

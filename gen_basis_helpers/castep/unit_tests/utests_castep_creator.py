@@ -164,11 +164,11 @@ class TestIonicConstraintsFromObj(unittest.TestCase):
 
 	def createTestObjs(self):
 		self.geoConstraints = geomConstraints.GeomConstraints.initWithNoConstraints()
-		self.geoConstraints.atomicPostionConstraints.atomicCartConstraints = self.atomicConstraintObjs
+		self.geoConstraints.atomicPositionConstraints.atomicCartConstraints = self.atomicConstraintObjs
 
 	def testReturnsNoneForNoConstraintsCase(self):
 		expVal = None
-		actVal = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPostionConstraints, self.eleList)
+		actVal = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPositionConstraints, self.eleList)
 		self.assertEqual(expVal,actVal)
 
 	def testReturnsExpectedForSingleAtomCoordFixed(self):
@@ -180,7 +180,7 @@ class TestIonicConstraintsFromObj(unittest.TestCase):
 		expCastepAtomIdx = 1 #Because its the first "Y" element
 		expConstraintNumber = 1 #Simply means first constraint applied
 		expStr = "{} {} {} 1.0 0.0 0.0".format(1, self.eleList[atomIdxFixed], expCastepAtomIdx)
-		actStr = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPostionConstraints, self.eleList)
+		actStr = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPositionConstraints, self.eleList)
 		self.assertEqual(expStr,actStr)
 	
 	def testReturnsExpectedStrForMultipleAtomConstraints(self):
@@ -191,7 +191,7 @@ class TestIonicConstraintsFromObj(unittest.TestCase):
 		self.atomicConstraintObjs.append(atomConstraintB)
 		self.createTestObjs()
 		expStr = "1 Y 1 0.0 1.0 0.0\n" + "2 X 2 0.0 1.0 0.0\n" + "3 X 2 0.0 0.0 1.0"
-		actStr = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPostionConstraints, self.eleList)
+		actStr = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPositionConstraints, self.eleList)
 		self.assertEqual(expStr,actStr)
 
 

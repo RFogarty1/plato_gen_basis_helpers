@@ -6,13 +6,13 @@ class GeomConstraints():
 	""" Class containing information on which geometrical parameters require constraining to initial values
 
 	"""
-	def __init__(self, atomicPostionConstraints, cellConstraints):
-		self.atomicPostionConstraints = atomicPostionConstraints
+	def __init__(self, atomicPositionConstraints, cellConstraints):
+		self.atomicPositionConstraints = atomicPositionConstraints
 		self.cellConstraints = cellConstraints
 
 	@property
 	def constraintsPresent(self):
-		return self.atomicPostionConstraints.constraintsPresent or self.cellConstraints.constraintsPresent
+		return self.atomicPositionConstraints.constraintsPresent or self.cellConstraints.constraintsPresent
 
 	@classmethod
 	def initWithNoConstraints(cls):
@@ -26,7 +26,7 @@ class GeomConstraints():
 		if self.cellConstraints != other.cellConstraints:
 			return False
 
-		if self.atomicPostionConstraints != other.atomicPostionConstraints:
+		if self.atomicPositionConstraints != other.atomicPositionConstraints:
 			return False
 
 		return True
