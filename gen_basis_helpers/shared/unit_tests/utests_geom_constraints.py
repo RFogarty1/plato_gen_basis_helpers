@@ -40,6 +40,18 @@ class TestCellConstraintsCls(unittest.TestCase):
 		testObj = tCode.CellConstraints.initWithNoConstraints()
 		self.assertTrue( testObj.constraintsPresent is False )
 
+	def testTwoEqualObjsCompareEqual_noConstraints(self):
+		objA = tCode.CellConstraints.initWithNoConstraints()
+		objB = tCode.CellConstraints.initWithNoConstraints()
+		self.assertEqual(objA,objB)
+
+	def testTwoUnequalObjsCompareUnequal_anglesConstraints(self):
+		objA = tCode.CellConstraints.initWithNoConstraints()
+		objB = tCode.CellConstraints.initWithNoConstraints()
+		objA.anglesToFix = [True,False,True]
+		objB.anglesToFix = [True,False,False]
+		self.assertNotEqual(objA,objB)
+
 
 class TestGeomConstraintsClass(unittest.TestCase):
 
@@ -65,7 +77,22 @@ class TestGeomConstraintsClass(unittest.TestCase):
 		testObjA = tCode.GeomConstraints.initWithNoConstraints()
 		self.assertTrue( testObjA.constraintsPresent is False )
 
+	def testTwoEqualCompareEqual_noConstraints(self):
+		objA = tCode.GeomConstraints.initWithNoConstraints()
+		objB = tCode.GeomConstraints.initWithNoConstraints()
+		self.assertEqual(objA,objB)
 
+	def testTwoUnequalCompareUnequal_diffCellConstraints(self):
+		cellConstrA, cellConstrB = mock.Mock(), mock.Mock()
+		objA = tCode.GeomConstraints(self.atomicPositionsConstraints, cellConstrA)
+		objB = tCode.GeomConstraints(self.atomicPositionsConstraints, cellConstrB)
+		self.assertNotEqual(objA,objB)
+
+	def testTwoUnequalCompareUnequal_diffAtomicPositionConstraints(self):
+		atPosConstrA, atPosConstrB = mock.Mock(), mock.Mock()
+		objA = tCode.GeomConstraints(atPosConstrA, self.cellConstraints)
+		objB = tCode.GeomConstraints(atPosConstrB, self.cellConstraints)
+		self.assertNotEqual(objA,objB)
 
 class TestAtomicPositionConstraintsClass(unittest.TestCase):
 
@@ -93,6 +120,30 @@ class TestAtomicPositionConstraintsClass(unittest.TestCase):
 		self.createTestObjs()
 		self.assertFalse(self.testObjA.constraintsPresent)
 
+	def testTwoEqualObjsCompareEqual_noConstraints(self):
+		objA = tCode.AtomicPositionConstraints.initWithNoConstraints()
+		objB = tCode.AtomicPositionConstraints.initWithNoConstraints()
+		self.assertEqual(objA,objB)
+
+	def testTwoUnequalObjsCompareUnequal_diffNumberOfConstraints(self):
+		atomicConstrA = tCode.AtomicCartesianConstraint(1,fixX=True)
+		objA = tCode.AtomicPositionConstraints.initWithNoConstraints()
+		objB = tCode.AtomicPositionConstraints(atomicCartConstraints=[atomicConstrA])
+		self.assertNotEqual(objA, objB)
+
+	def testTwoCompareEqual_oneWithBlankCartConstraints(self):
+		atomicConstrA = tCode.AtomicCartesianConstraint(1) #not really a constraint
+		objA = tCode.AtomicPositionConstraints.initWithNoConstraints()
+		objB = tCode.AtomicPositionConstraints(atomicCartConstraints=[atomicConstrA])
+		self.assertEqual(objA,objB)
+
+	def testTwoCompareUnequal_differentAtomicConstraintObjs(self):
+		atomicConstrA = tCode.AtomicCartesianConstraint(1,fixY=True)
+		atomicConstrB = tCode.AtomicCartesianConstraint(1,fixZ=True)
+		objA = tCode.AtomicPositionConstraints(atomicCartConstraints = [atomicConstrA])
+		objB = tCode.AtomicPositionConstraints(atomicCartConstraints = [atomicConstrB])
+		self.assertNotEqual(objA,objB)
+	
 class TestAtomicCartConstraints(unittest.TestCase):
 
 	def setUp(self):

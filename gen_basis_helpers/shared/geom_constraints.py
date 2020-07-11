@@ -1,3 +1,4 @@
+import itertools as it
 
 
 #TODO: Certain combinations of atomic/cell constraints wont be possible (e.g. free cell optimisation with fixed CARTESIAN co-ordinates); may need something to check that
@@ -18,6 +19,18 @@ class GeomConstraints():
 		atomicPosConstraints = AtomicPositionConstraints.initWithNoConstraints()
 		cellConstraints = CellConstraints.initWithNoConstraints()
 		return cls(atomicPosConstraints, cellConstraints)
+
+	def __eq__(self, other):
+
+		#Generally will be the faster comparison
+		if self.cellConstraints != other.cellConstraints:
+			return False
+
+		if self.atomicPostionConstraints != other.atomicPostionConstraints:
+			return False
+
+		return True
+
 
 
 class CellConstraints():
@@ -67,6 +80,14 @@ class CellConstraints():
 		lattParamsToFix = [False,False,False]
 		return cls(anglesToFix, lattParamsToFix)
 
+	def __eq__(self,other):
+		boolAttrs = ["anglesToFix","lattParamsToFix"]
+		for attr in boolAttrs:
+			if getattr(self,attr) != getattr(other,attr):
+				return False
+		return True
+
+
 
 class AtomicPositionConstraints():
 	""" This will eventually be used to hold information on which atomic positions are fixed to initial value (including fixing things like bond lengths); currently just a stub
@@ -85,6 +106,20 @@ class AtomicPositionConstraints():
 	def initWithNoConstraints(cls):
 		return cls()
 
+	#Note: Slightly restrictive. If the same constraints are in different orders, then objects compare unequal
+	def __eq__(self, other):
+		#Filter out blank constraints
+		atConstrA = [x for x in self.atomicCartConstraints if x.constraintsPresent]
+		atConstrB = [x for x in other.atomicCartConstraints if x.constraintsPresent]
+
+		if len(atConstrA) != len(atConstrB):
+			return False
+
+		for constrA,constrB in it.zip_longest(atConstrA,atConstrB):
+			if constrA != constrB:
+				return False
+
+		return True
 
 class AtomicCartesianConstraint():
 	""" Represents constraints to apply to cartesian co-ordinates of a single atom
