@@ -1,7 +1,9 @@
 
 import copy
 import itertools as it
+
 from . import cart_coord_utils as cartCoordHelp
+from . import geom_constraints as geomConstraintHelp
 from . import plane_equations as planeEqnHelp
 from . import simple_vector_maths as vectHelp
 
@@ -10,7 +12,7 @@ class BaseStackingFaultGeomGenerator():
 
 	"""
 
-	def getGeomForGivenDisplacement(inpGeom, displacement, centralIdx=None, planeTolerance=None):
+	def getGeomForGivenDisplacement(self, inpGeom, displacement, centralIdx=None, planeTolerance=None):
 		""" Return a geometry for the stacking fault displacement for a given input geometry
 		
 		Args:
@@ -27,6 +29,17 @@ class BaseStackingFaultGeomGenerator():
 		"""
 		raise NotImplementedError("")
 
+	def getGeomConstraints(self, inpGeom):
+		""" Get a geometry constraints object for the input geometry
+		
+		Args:
+			inpGeom: (plato_pylib UnitCell object)
+				 
+		Returns
+			geoConstraints: (GeomConstraints object) Contains a representation of the atoms that need to be fixed when running geometry opts
+	 
+		"""
+		raise NotImplementedError("")
 
 
 #TODO: Can likely factor a lot of this out into a standard class (Template pattern)
@@ -138,6 +151,17 @@ class HcpI2StackingFaultGeomGenerator(BaseStackingFaultGeomGenerator):
 		displaceFactorOneVector = self._getDisplacementVectorForDispParamEqualsOne(inpGeom)
 		displaceVector = [x*displacement for x in displaceFactorOneVector]
 		self._applyDisplacementVectorToRelevantAtomsInCell(inpGeom, displaceVector, centralIdx, planeTolerance)
+
+	def getGeomConstraints(self, inpGeom):
+		coords = inpGeom.cartCoords
+		cellConstraints = geomConstraintHelp.CellConstraints([True,True,True],[True,True,True])
+		cartPosConstraints = list()
+		for idx,unused in enumerate(coords):
+			currConstraint = geomConstraintHelp.AtomicCartesianConstraint(idx, fixX=True, fixY=True)
+			cartPosConstraints.append(currConstraint)
+		atomicPosConstraints = geomConstraintHelp.AtomicPositionConstraints( atomicCartConstraints=cartPosConstraints)
+		return geomConstraintHelp.GeomConstraints(atomicPosConstraints,cellConstraints)
+
 
 
 

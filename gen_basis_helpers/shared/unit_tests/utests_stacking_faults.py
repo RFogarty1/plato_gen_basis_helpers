@@ -8,6 +8,7 @@ import unittest.mock as mock
 
 import plato_pylib.shared.ucell_class as uCell
 
+import gen_basis_helpers.shared.geom_constraints as geomConstrHelp
 import gen_basis_helpers.shared.simple_vector_maths as vectHelp
 import gen_basis_helpers.shared.stacking_fault_geoms as tCode
 
@@ -84,11 +85,19 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			self.testObjA.getGeomForGivenDisplacement(self.testCellA,dispVal)
 
+	def testExpectedGeomConstriantsReturned(self):
+		expAtomicConstraints = geomConstrHelp.AtomicPositionConstraints(atomicCartConstraints=self._getAllExpectedAtomicGeomConstraints())
+		expCellConstraints = geomConstrHelp.CellConstraints([True,True,True],[True,True,True])
+		expConstraintObj = geomConstrHelp.GeomConstraints(expAtomicConstraints,expCellConstraints)
+		actConstraintObj = self.testObjA.getGeomConstraints(self.testCellA)
+		self.assertEqual(expConstraintObj,actConstraintObj)
 
-	@unittest.skip("TODO")
-	def testExpectedGeomForHalfDisp_testA(self):
-		self.assertTrue(False)
-
+	def _getAllExpectedAtomicGeomConstraints(self):
+		outConstraints = list()
+		for idx,unused in enumerate(self.fractPositions):
+			currConstraint = geomConstrHelp.AtomicCartesianConstraint(idx, fixX=True,fixY=True)
+			outConstraints.append(currConstraint)
+		return outConstraints
 
 	#Relies on specific properties of the default lattParams/fractPositions
 	def _getExpCartCoordsForFullDispA(self):
