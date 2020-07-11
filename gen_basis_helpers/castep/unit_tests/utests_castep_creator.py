@@ -22,6 +22,7 @@ class TestCastepCreator(unittest.TestCase):
 		self.cutoffEnergy = 700
 		self.symmetryGenerate = True
 		self.geom = mock.Mock()
+		self.geom.cartCoords = list()
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -93,12 +94,14 @@ class TestCastepCreator(unittest.TestCase):
 			self.assertEqual( expParamDictKeyVals[key], actParamDict[key] )
 
 
+	@mock.patch("gen_basis_helpers.castep.castep_creator.getIonicConstraintsStrFromAtomicPosConstraintObj")
 	@mock.patch("gen_basis_helpers.castep.castep_creator.parseCastep")
 	@mock.patch("gen_basis_helpers.castep.castep_creator.getCellConstraintsStrFromGeomConstraintsObj")
 	@mock.patch("gen_basis_helpers.shared.geom_constraints.GeomConstraints")
-	def testLackOfCellConstraintsPassedToCellDict(self, mockedGeomConstraints, mockedGetConstraintsStr, mockedParser):
+	def testLackOfCellConstraintsPassedToCellDict(self, mockedGeomConstraints, mockedGetConstraintsStr, mockedParser, mockedIonicConstr):
 		""" Check that by default we have no cell constraints """
 		expConstraintsObj, expConstraintsStr = mock.Mock(), mock.Mock()
+
 		mockedGeomConstraints.initWithNoConstraints.side_effect = [expConstraintsObj]
 		mockedGetConstraintsStr.side_effect = [expConstraintsStr]
 		expCellDictKeyVals = {"cell_constraints":expConstraintsStr}
@@ -150,7 +153,57 @@ class TestGetCellConstraintsFromObj(unittest.TestCase):
 		self.createTestObjs()
 		expStr = "1 2 3\n0 0 0"
 		self._testExpectedStrGiven(expStr)
+
+
+class TestIonicConstraintsFromObj(unittest.TestCase):
+
+	def setUp(self):
+		self.eleList = ["X","Y","X"]
+		self.atomicConstraintObjs = list()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.geoConstraints = geomConstraints.GeomConstraints.initWithNoConstraints()
+		self.geoConstraints.atomicPostionConstraints.atomicCartConstraints = self.atomicConstraintObjs
+
+	def testReturnsNoneForNoConstraintsCase(self):
+		expVal = None
+		actVal = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPostionConstraints, self.eleList)
+		self.assertEqual(expVal,actVal)
+
+	def testReturnsExpectedForSingleAtomCoordFixed(self):
+		atomIdxFixed = 1 #Note indexing starts at zero
+		atomConstraint = geomConstraints.AtomicCartesianConstraint(atomIdxFixed, fixX=True)
+		self.atomicConstraintObjs.append(atomConstraint)
+		self.createTestObjs()
 		
+		expCastepAtomIdx = 1 #Because its the first "Y" element
+		expConstraintNumber = 1 #Simply means first constraint applied
+		expStr = "{} {} {} 1.0 0.0 0.0".format(1, self.eleList[atomIdxFixed], expCastepAtomIdx)
+		actStr = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPostionConstraints, self.eleList)
+		self.assertEqual(expStr,actStr)
+	
+	def testReturnsExpectedStrForMultipleAtomConstraints(self):
+		atomIdxAFixed, atomIdxBFixed = 1,2
+		atomConstraintA = geomConstraints.AtomicCartesianConstraint(atomIdxAFixed, fixY=True)
+		atomConstraintB = geomConstraints.AtomicCartesianConstraint(atomIdxBFixed, fixY=True, fixZ=True)
+		self.atomicConstraintObjs.append(atomConstraintA)
+		self.atomicConstraintObjs.append(atomConstraintB)
+		self.createTestObjs()
+		expStr = "1 Y 1 0.0 1.0 0.0\n" + "2 X 2 0.0 1.0 0.0\n" + "3 X 2 0.0 0.0 1.0"
+		actStr = tCode.getIonicConstraintsStrFromAtomicPosConstraintObj(self.geoConstraints.atomicPostionConstraints, self.eleList)
+		self.assertEqual(expStr,actStr)
+
+
+class TestGetCastepIndicesFromEleList(unittest.TestCase):
+
+	def setUp(self):
+		self.eleList = ["X","Y","X","Z"]
+
+	def testForThreeElementCase(self):
+		expIndices = [1,1,2,1] #Indices are labelled witihn atomic species in castep
+		actIndices = tCode.getCastepIndicesFromEleList(self.eleList)
+		self.assertEqual(expIndices,actIndices)
 
 class TestCastepCalcObj(unittest.TestCase):
 

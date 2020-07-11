@@ -92,6 +92,12 @@ class AtomicCartesianConstraint():
 	"""
 
 	def __init__(self, atomIdx, fixX=False, fixY=False, fixZ=False):
+		""" Initializer
+		
+		Args:
+			atomIdx (int): Index of the atom to apply constraints to, indexing starts at zero
+				 
+		"""
 		self.atomIdx = atomIdx
 		self.fixX = fixX
 		self.fixY = fixY

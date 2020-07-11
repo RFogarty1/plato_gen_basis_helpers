@@ -77,6 +77,11 @@ class CastepCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
 		else:
 			geomConstraints = self.geomConstraints
 		outDict["cell_constraints"] = getCellConstraintsStrFromGeomConstraintsObj(geomConstraints)
+		eleList = [x[-1] for x in self.geom.cartCoords]
+		ionicConstraints = getIonicConstraintsStrFromAtomicPosConstraintObj(geomConstraints.atomicPostionConstraints,eleList)
+		if ionicConstraints is not None:
+			outDict["%block ionic_constraints"] = ionicConstraints
+
 		return outDict
 
 
@@ -127,6 +132,73 @@ def getCellConstraintsStrFromGeomConstraintsObj(geomConstraintsObj):
 	outStrFmt = "{} {} {}\n{} {} {}" #First 3 for latt params, Second 3 for angles
 	outStr = outStrFmt.format(*outInts)
 	return outStr
+
+def getIonicConstraintsStrFromAtomicPosConstraintObj(atomicPosConstraintObj, eleList):
+	""" Returns the ionic_constraints section str for fixing atomic cartesian positions
+	
+	Args:
+		atomicPosConstraintObj (AtomicPositionConstraints obj): Contains information on what (if anything) to constrain
+		eleList (iter of strs): A list of the elements in the structure in order; needed since castep requires both the element symbol and its position within those elements (e.g. for Mg,Zr,Mg the atomic indices are 1,1,2)
+
+	Returns
+		 outStr (str): Contains any ionic constraints in a format for castep *.cell files
+ 
+	"""
+	if atomicPosConstraintObj.constraintsPresent is False:
+		return None
+
+	#Get all strings in a list
+	idxList = getCastepIndicesFromEleList(eleList)
+	constraintsList = list()
+	currConstraintIdx = 1
+	for constraint in atomicPosConstraintObj.atomicCartConstraints:
+		if constraint.constraintsPresent:
+			atomIdx = idxList[constraint.atomIdx]
+			ele = eleList[constraint.atomIdx]
+			if constraint.fixX:
+				constraintsList.append("{} {} {} 1.0 0.0 0.0".format(currConstraintIdx, ele, atomIdx))
+				currConstraintIdx += 1
+
+			if constraint.fixY:
+				constraintsList.append("{} {} {} 0.0 1.0 0.0".format(currConstraintIdx, ele, atomIdx))
+				currConstraintIdx += 1
+
+			if constraint.fixZ:
+				constraintsList.append("{} {} {} 0.0 0.0 1.0".format(currConstraintIdx, ele, atomIdx))
+				currConstraintIdx += 1
+
+
+	#Combine the list and return
+	outStr = "\n".join(constraintsList)
+
+	return outStr
+
+def getCastepIndicesFromEleList(eleList):
+	""" Get atomic indices as used by castep
+	
+	Args:
+		eleList (iter of Str): Each entry is one element symbol
+			 
+	Returns
+		 idxList (iter of ints): The element indices castep-style. This means the indices start at one and refer to indices within an atomic speciies. E.g. ["X","Y","X"] would lead to [1,1,2] returned
+ 
+	"""
+	idxList = list()
+	elesFound = list()
+	numbInstances = list()
+	for ele in eleList:
+		if ele in elesFound:
+			currEleIdx = elesFound.index(ele)
+			numbInstances[currEleIdx] += 1
+			currIdx = numbInstances[currEleIdx]
+		else:
+			elesFound.append(ele)
+			numbInstances.append(1)
+			currIdx = 1
+
+		idxList.append(currIdx)
+
+	return idxList
 
 
 class CastepCalcObj(baseObjs.CalcMethod):
