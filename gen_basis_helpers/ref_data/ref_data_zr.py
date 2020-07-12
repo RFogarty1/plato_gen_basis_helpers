@@ -494,6 +494,34 @@ def getPlaneWaveDissocSepVsTotalE(inBohr=True):
 	return outList
 
 
+def getPlaneWaveSurfaceParsedFileObject(surfType, nLayers=None, relaxType="unrelaxed"):
+	""" Returns a ParsedFile object for castep calculation on a surface. Note the unrelaxed geometries are built from from the castep optimised bulk cell
+	
+	Args:
+		surfType (str): The type of surface; examples are hcp0001 and hcp10m10 
+		nLayers (int, optional): The number of surface layers used in the calculation. Default will vary for different surfTypes; but will represent converged structures
+		relaxType (str, optional): String denoting the type of relaxation applied. Default="unrelaxed"; other options are "constant_volume" for now
+
+	Returns
+		parsedFile (ParsedFile object): This contains the geometry and total energy of the requested structure
+	
+	"""
+	structTypeDefaultNLayers = {"hcp0001":10}
+	if nLayers is None:
+		nLayers = structTypeDefaultNLayers[surfType]
+
+	structTypeToFunct = {
+	                      ("hcp0001" , 10,"constant_volume"  ): _getZrHcp0001PlaneWaveRelaxedParsedFile_10layers
+	                     }
+
+	return structTypeToFunct[(surfType,nLayers,relaxType)]()
+
+
+def _getZrHcp0001PlaneWaveRelaxedParsedFile_10layers():
+    refPath = os.path.join(BASE_FOLDER,"surface_energies", "hcp0001", "castep_geom", "relaxed", "nlayers_10_absvac_10_ang", "geom_opt.castep")
+    return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+
 def getPlaneWaveSurfEnergy(structKey):
 	outDict = {"hcp0001": _getSurfaceEnergyHcp0001}
 	return outDict[structKey.lower()]()
