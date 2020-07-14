@@ -114,7 +114,7 @@ class HcpI2StackingFaultGeomGenerator(BaseStackingFaultGeomGenerator):
 		nearestInPlaneNebDistance = cartCoordHelp.getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpGeom, atomIdx, surfacePlane) #Works if we assume all are the same; which they should be
 
 		#I think ANY vector along the ab plane would work, hence we use a for simplicity (could make the class configurable if this becomes an issue)
-		dispUnitVector = vectHelp.getUnitVectorFromInpVector(lattVects[0])
+		dispUnitVector = [1,0,0]
 		dispVectorMagnitude = (1/3)*nearestInPlaneNebDistance
 
 		return [x*dispVectorMagnitude for x in dispUnitVector]
@@ -157,7 +157,7 @@ class HcpI2StackingFaultGeomGenerator(BaseStackingFaultGeomGenerator):
 		cellConstraints = geomConstraintHelp.CellConstraints([True,True,True],[True,True,True])
 		cartPosConstraints = list()
 		for idx,unused in enumerate(coords):
-			currConstraint = geomConstraintHelp.AtomicCartesianConstraint(idx, fixX=True, fixY=True)
+			currConstraint = geomConstraintHelp.AtomicCartesianConstraint(idx, fixX=True)
 			cartPosConstraints.append(currConstraint)
 		atomicPosConstraints = geomConstraintHelp.AtomicPositionConstraints( atomicCartConstraints=cartPosConstraints)
 		return geomConstraintHelp.GeomConstraints(atomicPosConstraints,cellConstraints)

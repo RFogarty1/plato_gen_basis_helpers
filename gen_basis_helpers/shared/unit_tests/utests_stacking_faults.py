@@ -95,7 +95,7 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 	def _getAllExpectedAtomicGeomConstraints(self):
 		outConstraints = list()
 		for idx,unused in enumerate(self.fractPositions):
-			currConstraint = geomConstrHelp.AtomicCartesianConstraint(idx, fixX=True,fixY=True)
+			currConstraint = geomConstrHelp.AtomicCartesianConstraint(idx, fixX=True)
 			outConstraints.append(currConstraint)
 		return outConstraints
 
