@@ -72,6 +72,16 @@ def getDefectEnergyFromCastepNoDefectAndDefectFiles(noDefectPath, defectPath):
 
 	return nAtomsDefect * (ePerAtomDefect - ePerAtomNoDefect)
 
+def getDefectEnergyFromCastepNoDefectAndDefectParsedFileObjs(parsedNoDefect, parsedDefect):
+
+	nAtomsNoDefect, energyNoDefect = parsedNoDefect.numbAtoms, parsedNoDefect.energies.electronicTotalE
+	nAtomsDefect, energyDefect = parsedDefect.numbAtoms, parsedDefect.energies.electronicTotalE
+
+	ePerAtomNoDefect = energyNoDefect / nAtomsNoDefect
+	ePerAtomDefect = energyDefect / nAtomsDefect
+
+	return nAtomsDefect * (ePerAtomDefect - ePerAtomNoDefect)
+
 
 def getDimerSepFromCastepOutFile(inpFile,inBohr=True):
 	""" Gets separation
