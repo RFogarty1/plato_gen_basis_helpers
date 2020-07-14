@@ -45,9 +45,10 @@ class BaseStackingFaultGeomGenerator():
 #TODO: Can likely factor a lot of this out into a standard class (Template pattern)
 class HcpI2StackingFaultGeomGenerator(BaseStackingFaultGeomGenerator):
 
-	def __init__(self, centralIdx=None, planeTolerance=5e-2):
+	def __init__(self, centralIdx=None, planeTolerance=5e-2, dispFactorAlongY=0):
 		self.centralIdx = centralIdx
 		self.planeTolerance = planeTolerance
+		self.dispFactorAlongY = dispFactorAlongY
 
 	def _getCentralAtomIdx(self, inpCell, planeTolerance=None):
 		planeTolerance = self.planeTolerance if planeTolerance is None else planeTolerance
@@ -108,16 +109,23 @@ class HcpI2StackingFaultGeomGenerator(BaseStackingFaultGeomGenerator):
 		return outCell
 
 	def _getDisplacementVectorForDispParamEqualsOne(self, inpGeom):
+		#Displace along x (since its easy to fix the x-coordinates)
+		dispVectorMagnitude = self._getDispMagnitudeForFactorEqualsOne(inpGeom)
+		dispUnitVector = [1,0,0]
+		return [x*dispVectorMagnitude for x in dispUnitVector]
+
+	def _getDispMagnitudeForFactorEqualsOne(self, inpGeom):
 		atomIdx = self._getCentralAtomIdx(inpGeom)
 		lattVects = inpGeom.lattVects
 		surfacePlane = planeEqnHelp.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1])
 		nearestInPlaneNebDistance = cartCoordHelp.getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpGeom, atomIdx, surfacePlane) #Works if we assume all are the same; which they should be
-
-		#I think ANY vector along the ab plane would work, hence we use a for simplicity (could make the class configurable if this becomes an issue)
-		dispUnitVector = [1,0,0]
 		dispVectorMagnitude = (1/3)*nearestInPlaneNebDistance
+		return dispVectorMagnitude
 
-		return [x*dispVectorMagnitude for x in dispUnitVector]
+	#This is done to (hopefully) get a better starting guess for displaced structures
+	def _getDisplacementVectorAlongY(self, inpGeom):
+		dispVectorMagnitude = self._getDispMagnitudeForFactorEqualsOne(inpGeom)
+		return [0,dispVectorMagnitude*self.dispFactorAlongY,0]
 
 	def _applyDisplacementVectorToRelevantAtomsInCell(self, inpGeom, displaceVector, centralIdx=None, planeTolerance=None):
 		#Sort out default args
@@ -151,6 +159,10 @@ class HcpI2StackingFaultGeomGenerator(BaseStackingFaultGeomGenerator):
 		displaceFactorOneVector = self._getDisplacementVectorForDispParamEqualsOne(inpGeom)
 		displaceVector = [x*displacement for x in displaceFactorOneVector]
 		self._applyDisplacementVectorToRelevantAtomsInCell(inpGeom, displaceVector, centralIdx, planeTolerance)
+
+		#Also optionally displace along y to help get closer to (expected) minimum structure
+		yDispVector = self._getDisplacementVectorAlongY(inpGeom)
+		self._applyDisplacementVectorToRelevantAtomsInCell(inpGeom, yDispVector, centralIdx, planeTolerance)
 
 	def getGeomConstraints(self, inpGeom):
 		coords = inpGeom.cartCoords

@@ -27,6 +27,7 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 		                       [1/3, 2/3, 5/6]]
 
 		self.dispFactor = 1.0
+		self.dispFactorAlongY = 0.0
 		self.centralAtomIdx = 3
 		self.createTestObjs()
 
@@ -34,7 +35,7 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 		atomList = ["X" for x in self.fractPositions]
 		self.testCellA = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles,
 		                                fractCoords=self.fractPositions, elementList=atomList)
-		self.testObjA = tCode.HcpI2StackingFaultGeomGenerator(centralIdx=self.centralAtomIdx)
+		self.testObjA = tCode.HcpI2StackingFaultGeomGenerator(centralIdx=self.centralAtomIdx, dispFactorAlongY=self.dispFactorAlongY)
 
 	def _runTestFunct(self):
 		return self.testObjA.getGeomForGivenDisplacement(self.testCellA, self.dispFactor, centralIdx=self.centralAtomIdx)
@@ -45,6 +46,16 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 		expCell.cartCoords = expCartCoords
 		actCell = self._runTestFunct()
 		self.assertEqual(expCell,actCell)
+
+	def testExpectedGeomForFullDispWithYDispHalf(self):
+		self.dispFactorAlongY = 0.5
+		self.createTestObjs()
+		expCartCoords = self._getExpCartCoordsForFullDispA_with0pt5DispY()
+		expCell = copy.deepcopy(self.testCellA)
+		expCell.cartCoords = expCartCoords
+		actCell = self._runTestFunct()
+		self.assertEqual(expCell,actCell)
+		
 
 	def testUsesSensibleCentralAtomIdx_1x1x3Cell(self):
 		""" Make sure we use the near-central surface planes for the dislocation by default """
@@ -118,3 +129,26 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 				currCoords[:3] = [x+d for x,d in it.zip_longest(currCoords[:3],dispVector)]
 
 		return expCartCoords
+
+	#Lots of duplication from above (close to 100%)
+	def _getExpCartCoordsForFullDispA_with0pt5DispY(self):
+		expCartCoords = copy.deepcopy(self._getExpCartCoordsForFullDispA())
+
+		#Figure out the displacement vector
+		aVect, bVect, unused = self.testCellA.lattVects
+		uVectA, uVectB = [vectHelp.getUnitVectorFromInpVector(x) for x in [aVect,bVect]]
+		unitVectorDisplacement = [0,1,0] 
+		dispOneDisplacementVector = self.lattParams[0] * (1/3) * self.dispFactorAlongY
+		dispVector = [x*dispOneDisplacementVector for x in unitVectorDisplacement]
+
+		#Apply the displacement to the bottom half of the crystal
+		maxZVal = expCartCoords[self.centralAtomIdx][2]
+		zTol = 1e-2
+		for currCoords in expCartCoords:
+			if (currCoords[-2] <= maxZVal+zTol):
+				currCoords[:3] = [x+d for x,d in it.zip_longest(currCoords[:3],dispVector)]
+
+		return expCartCoords
+
+
+
