@@ -83,8 +83,53 @@ class TestCP2KAddedMoDescriptor(unittest.TestCase):
 		self.assertEqual( testAddedMos, self.testObjA.addedMOs )
 
 
+class TestCP2KCalcObjParsing(unittest.TestCase):
 
+	def setUp(self):
+		self.pyCP2KObjA = methReg.createCP2KObjFromMethodStr("cp2k_test_object")
+		self.basePath = "fake_base_path_a.inp"
+		self.createTestObjs()
 
+	def createTestObjs(self):
+		self.testCalcObjA = tCode.CP2KCalcObj(self.pyCP2KObjA, self.basePath)
 
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_calc_objs.os.getcwd")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_calc_objs.os.path.abspath")
+	def testExpPathToGeomOutput(self, mockedAbsPath, mockedGetCwd):
+		mockedGetCwd.side_effect = lambda : ""
+		mockedAbsPath.side_effect = lambda inpPath:inpPath
+		self.createTestObjs()
+		expPath = "fake_base_path_a-pos-1.xyz"
+		actPath = self.testCalcObjA.outGeomPath
+		self.assertEqual(expPath,actPath)
 
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_calc_objs.CP2KCalcObj.outGeomPath", new_callable=mock.PropertyMock)
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_calc_objs.parseCP2K.parseXyzFromGeomOpt")
+	def testGetFinalCartCoordsFromOpt(self, mockedXyzParser, mockedPathGetter):
+		expFinalGeom, expCartCoords = mock.Mock(), mock.Mock()
+		expPath = "fake_path_a"
+		expFinalGeom.cartCoords = expCartCoords
+		mockedPathGetter.return_value = expPath
+		mockedXyzParser.side_effect = lambda *args: {"all_geoms":[mock.Mock(),expFinalGeom]}
+
+		actCartCoords = self.testCalcObjA._getFinalCartCoordsFromOpt()
+		mockedXyzParser.assert_called_with(expPath)
+		self.assertEqual(expCartCoords,actCartCoords)
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_calc_objs.CP2KCalcObj._getFinalCartCoordsFromOpt")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_calc_objs.parseCP2K.parseCpout")
+	def testExpectedCartCoordsInUnitCellObj(self, mockedCPOutParser, mockedCoordGetter):
+		expUCell, expCartCoords = mock.Mock(), mock.Mock()
+		expCpoutDict = {"unitCell":expUCell}
+		mockedCPOutParser.side_effect = lambda *args: expCpoutDict
+		mockedCoordGetter.side_effect = lambda *args: expCartCoords
+		actOutObj = self.testCalcObjA.parsedFile
+		actCartCoords = actOutObj.unitCell.cartCoords
+		self.assertEqual(expCartCoords,actCartCoords)	
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_calc_objs.parseCP2K.parseCpout")
+	def testNoErrorRaisedIfOptXyzFileMissing(self, mockedCPOutParser):
+		expUCell = mock.Mock()
+		mockedCPOutParser.side_effect = lambda *args:{"unitCell":expUCell}
+		parsedFile = self.testCalcObjA.parsedFile
 

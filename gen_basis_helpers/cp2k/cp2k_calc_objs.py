@@ -27,6 +27,10 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 	@property
 	def outFilePath(self):
 		return self.basePath + ".cpout"
+
+	@property
+	def outGeomPath(self):
+		return self.basePath + "-pos-1.xyz"
 	
 	@property
 	def nCores(self):
@@ -45,8 +49,17 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 	def parsedFile(self):
 		parsedDict = parseCP2K.parseCpout(self.outFilePath)
 		outObj = types.SimpleNamespace(**parsedDict)
+		try:
+			outCartCoords = self._getFinalCartCoordsFromOpt()
+			outObj.unitCell.cartCoords = outCartCoords
+		except FileNotFoundError:
+			pass
 		outObj.unitCell.convAngToBohr()
 		return outObj
+
+	def _getFinalCartCoordsFromOpt(self):
+		parsedXyzDict = parseCP2K.parseXyzFromGeomOpt(self.outGeomPath)
+		return parsedXyzDict["all_geoms"][-1].cartCoords
 
 #Optional descriptors that can be added
 def addInpPathDescriptorToCP2KCalcObjCLASS(inpCls):
