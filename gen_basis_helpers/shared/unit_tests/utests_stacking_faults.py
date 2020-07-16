@@ -99,6 +99,7 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			self.testObjA.getGeomForGivenDisplacement(self.testCellA,dispVal)
 
+	@unittest.skip("")
 	def testExpectedGeomConstriantsReturned(self):
 		expAtomicConstraints = geomConstrHelp.AtomicPositionConstraints(atomicCartConstraints=self._getAllExpectedAtomicGeomConstraints())
 		expCellConstraints = geomConstrHelp.CellConstraints([True,True,True],[True,True,True])
@@ -121,7 +122,7 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 		aVect, bVect, unused = self.testCellA.lattVects
 		uVectA, uVectB = [vectHelp.getUnitVectorFromInpVector(x) for x in [aVect,bVect]]
 		unitVectorDisplacement = uVectA
-		dispOneDisplacementVector = self.lattParams[0] * (1/3) 
+		dispOneDisplacementVector = self.lattParams[0]
 		dispVector = [x*dispOneDisplacementVector for x in unitVectorDisplacement]
 
 		#Apply the displacement to the bottom half of the crystal
@@ -139,7 +140,7 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 
 		#Figure out the displacement vector
 		unitVectorDisplacement = [0.8660254037844386, 0.4999999999999999, 0.0]
-		dispOneDisplacementVector = self.lattParams[0] * (1/3)
+		dispOneDisplacementVector = self.lattParams[0] 
 		dispVector = [x*dispOneDisplacementVector for x in unitVectorDisplacement]
 
 		#Apply the displacement to the bottom half of the crystal
@@ -165,34 +166,51 @@ class TestI1StackingFaultGeomGenerator(unittest.TestCase):
 		                       [1/3, 2/3, 3/6],
 		                       [1/3, 2/3, 5/6]]
 
-		self.dispFactor = 1.0
+		self.dispFactor = 1/3
 		self.centralAtomIdx = 1
+		self.fraction_10m10 = 0.0
+		self.fraction_m2110 = -1.0 #Negative sign should make it point ALONG a (and therefore x)
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		atomList = ["X" for x in self.fractPositions]
 		self.testCellA = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles,
 		                                fractCoords=self.fractPositions, elementList=atomList)
-		self.testObjA = tCode.HcpI1StackingFaultGeomGenerator(centralIdx=self.centralAtomIdx)
+		self.testObjA = tCode.HcpI1StackingFaultGeomGenerator(centralIdx=self.centralAtomIdx, 
+		                                                      fraction_10m10=self.fraction_10m10,
+		                                                      fraction_m2110=self.fraction_m2110)
 
-	@unittest.skip("")
+
+	def testExpectedGeomForNoDisp(self):
+		self.dispFactor = 0.0
+		self.createTestObjs()
+		expCartCoords = self._getExpCartCoordsForNoDisp()	
+		expCell = copy.deepcopy(self.testCellA)
+		expCell.cartCoords = expCartCoords
+		actCell = self.testObjA.getGeomForGivenDisplacement(self.testCellA,self.dispFactor)
+		self.assertEqual(expCell,actCell)
+
 	def testExpectedGeomForFullDisp_testA(self):
 		expCell = copy.deepcopy(self.testCellA)
-		expCartCoords = self._getExpCartCoordsForFullDispA()
+		expCartCoords = self._getExpCartCoordsForFullDispA_m2110()
 		expCell.cartCoords = expCartCoords
-		actCell = self.testObjA.getGeomForGivenDisplacement(self.testCellA,1)
+		actCell = self.testObjA.getGeomForGivenDisplacement(self.testCellA,self.dispFactor)
 		self.assertEqual(expCell,actCell)
 
 
-
-	def _getExpCartCoordsForFullDispA(self):
+	def _getExpCartCoordsForNoDisp(self):
 		expCartCoords = copy.deepcopy(self.testCellA.cartCoords)
 
-		#First step is to make the bottom AB into a BA (simply swap x/y co-ords)
-		firstXY = [x for x in expCartCoords[self.centralAtomIdx][:2]]
-		secondXY = [x for x in expCartCoords[-1][:2]] #Happens to be the only half-layer beneath central atom
-		expCartCoords[self.centralAtomIdx][:2] = secondXY[:2]
-		expCartCoords[0][:2] = secondXY[:2]
+		#First step is to make the bottom AB into a BA (simply swap z co-ords)
+		firstZ = expCartCoords[self.centralAtomIdx][2]
+		secondZ = expCartCoords[0][2]
+		expCartCoords[self.centralAtomIdx][2] = secondZ
+		expCartCoords[0][2] = firstZ
+
+		return expCartCoords
+
+	def _getExpCartCoordsForFullDispA_m2110(self):
+		expCartCoords = self._getExpCartCoordsForNoDisp()
 
 		#Second step is to displace along x to go from AB-BA to AB-CB (or AB-AC, either direction should be isoenergetic)
 		dispVal = (1/3) * self.lattParams[0]

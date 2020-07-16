@@ -50,8 +50,15 @@ class HcpStackingFaultGeomGeneratorTemplate(BaseStackingFaultGeomGenerator):
 
 	def getGeomForGivenDisplacement(self,inpGeom, displacement, centralIdx=None, planeTolerance=None):
 		outCell = copy.deepcopy(inpGeom)
-		self._applyPerfectToDispZeroDisplacementsToCell(outCell,planeTolerance)
-		self._displaceCellInPlace(outCell, displacement, centralIdx, planeTolerance)
+		#Want the central idx to be modified by other functions; hence set as attribute
+		origCentralIdx = self.centralIdx
+		self.centralIdx = centralIdx if self.centralIdx is None else self.centralIdx
+
+		self._applyPerfectToDispZeroDisplacementsToCell(outCell,planeTolerance) #May modify self.centralIdx
+		self._displaceCellInPlace(outCell, displacement, self.centralIdx, planeTolerance)
+
+		#Want the object to remain as started; hence reset self.centraIdx
+		self.centralIdx = origCentralIdx
 		return outCell
 
 
@@ -127,9 +134,12 @@ def _getUniquePlaneDistsAndAtomIndicesFromIdxVsDistList(idxVsDist, planeToleranc
 
 class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
-	def __init__(self, centralIdx=None, planeTolerance=5e-2):
+	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=1, fraction_m2110=0):
 		self.centralIdx = centralIdx
 		self.planeTolerance = planeTolerance
+		self.fraction_10m10 = fraction_10m10
+		self.fraction_m2110 = fraction_m2110
+
 
 	#TODO: We want to make it so centralAtomIdx is basically unchanged w.r.t doing the next stacking fault.
 	#Using ANY centralIdx in the "new" plane is probably good enough though
@@ -148,10 +158,11 @@ class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 		uniquePlaneDists, uniquePlaneAtomIndices = _getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(surfacePlaneEqn, inpCell.cartCoords, planeTolerance)
 		filteredPlaneDists, filteredPlaneAtomIndices = list(), list()
 		for pDist, atomIndices in it.zip_longest(uniquePlaneDists, uniquePlaneAtomIndices):
-			if pDist-centralPlaneDist > planeTolerance: #Only want planes below the central atom plane
+			if pDist-centralPlaneDist < planeTolerance: #Only want planes below the central atom plane
 				filteredPlaneDists.append(pDist)
 				filteredPlaneAtomIndices.append(atomIndices)
 		assert len(filteredPlaneDists)%2==0, "Need to have an even number of planes to apply shifts to"
+
 
 		#Step 2 - swap z co-ordinates of all the relevant A planes wih the B planes below [we've forced the plane to lie in xy due to use of the hcp0001 surface]
 		planeIdxVsDist = [(idx,dist) for idx,dist in enumerate(filteredPlaneDists)]
@@ -159,8 +170,9 @@ class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
 		for idx in range(0,len(sortedIndicesVsDists),2):
 			aPlaneIdx, bPlaneIdx = sortedIndicesVsDists[idx][0], sortedIndicesVsDists[idx+1][0]
-			aPlaneZ = startCartCoords[filteredPlaneAtomIndices[aPlaneIdx]][2]
-			bPlaneZ = startCartCoords[filteredPlaneAtomIndices[bPlaneIdx]][2]
+			aPlaneZ = startCartCoords[filteredPlaneAtomIndices[aPlaneIdx][0]][2]
+			bPlaneZ = startCartCoords[filteredPlaneAtomIndices[bPlaneIdx][0]][2]
+
 			#Sort out plane A->B
 			for atomIdx in filteredPlaneAtomIndices[aPlaneIdx]:
 				outCartCoords[atomIdx][2] = bPlaneZ
@@ -169,13 +181,23 @@ class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 			for atomIdx in filteredPlaneAtomIndices[bPlaneIdx]:
 				outCartCoords[atomIdx][2] = aPlaneZ
 
-#		for idx, (pIdx,pDist) in enumerate(sortedIndicesVsDists):
-#			sortedIndicesVsDists[idx]
+			#Make sure centralIdx remains in the original plane
+			if centralIdx in filteredPlaneAtomIndices[aPlaneIdx]:
+				self.centralIdx = filteredPlaneAtomIndices[bPlaneIdx][0] #Effectively remaining in the same plane
 
+		inpCell.cartCoords = outCartCoords
 
 
 	def _displaceCellInPlace(self, inpGeom, displacement, centralIdx=None, planeTolerance=None):
-		pass
+		planeTolerance = self.planeTolerance if planeTolerance is None else planeTolerance
+		kwargDict = {"centralIdx":self.centralIdx, "planeTolerance":planeTolerance, "fraction_10m10":self.fraction_10m10,
+		             "fraction_m2110":self.fraction_m2110}
+		displacer = HcpI2StackingFaultGeomGenerator(**kwargDict)
+		#TODO: Remove the _ call; can just grab cartCoords to get displacement in place
+		displacedCell = displacer.getGeomForGivenDisplacement(inpGeom, displacement)
+		outCartCoords = displacedCell.cartCoords
+		inpGeom.cartCoords = outCartCoords
+
 
 #TODO: Can likely factor a lot of this out into a standard class (Template pattern)
 class HcpI2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
@@ -229,7 +251,7 @@ class HcpI2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 		lattVects = inpGeom.lattVects
 		surfacePlane = planeEqnHelp.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1])
 		nearestInPlaneNebDistance = cartCoordHelp.getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpGeom, atomIdx, surfacePlane) #Works if we assume all are the same; which they should be
-		dispVectorMagnitude = (1/3)*nearestInPlaneNebDistance
+		dispVectorMagnitude = nearestInPlaneNebDistance
 		return dispVectorMagnitude
 
 	#TODO: Factor most of this out into a function
