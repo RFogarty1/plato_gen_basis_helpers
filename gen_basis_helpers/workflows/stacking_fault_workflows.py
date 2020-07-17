@@ -9,8 +9,63 @@ from ..shared import surfaces as surfHelp
 from . import base_flow as baseFlow
 
 
+
+class StackingFaultWorkflowTwoStructs(baseFlow.BaseLabelledWorkflow):
+	"""Workflow for calculating a stacking fault energy when given the final and initial structures
+	"""
+
+	def __init__(self, perfectStructObj, stackFaultStructObj):
+		""" Initializer
+		
+		Args:
+			perfectStructObj: (CalcMethod object) Object used for calculating energy of the system without a stacking fault
+			stackFaultStructObj: (CalcMethod object) Object used for calculating energy of the system with a stacking fault
+
+		"""
+		self.perfectStructObj = perfectStructObj
+		self.stackFaultStructObj = stackFaultStructObj
+		self.eType = "electronicTotalE"
+		self._output = types.SimpleNamespace( **{k:None for k in self.namespaceAttrs} )
+
+	@property	
+	def namespaceAttrs(self):
+		return ["stackFaultEnergy"]
+
+	@property
+	def output(self):
+		return [self._output]
+
+	@property
+	def preRunShellComms(self):
+		allComms = [self.perfectStructObj.runComm, self.stackFaultStructObj.runComm]
+		return allComms
+
+
+	def _writeInpFiles(self):
+		self.perfectStructCalcObj.writeFile()
+		[x.writeFile() for x in self.calcObjs]
+
+	def run(self):
+		ePerAreaPerfect = self._getEnergyPerAreaForPerfectStruct()
+		ePerAreaFaulted = self._getEnergyPerAreaForStackFault()
+		self._output.stackFaultEnergy = ePerAreaFaulted-ePerAreaPerfect
+
+	def _getEnergyPerAreaForStackFault(self):
+		energyFaulted = getattr(self.stackFaultStructObj.parsedFile.energies, self.eType)
+		surfArea = _getABSurfaceAreaFromParsedFile(self.stackFaultStructObj.parsedFile)
+		return energyFaulted/surfArea
+
+	def _getEnergyPerAreaForPerfectStruct(self):
+		energyPerfect = getattr(self.perfectStructObj.parsedFile.energies, self.eType)
+		surfAreaPerfect = _getABSurfaceAreaFromParsedFile(self.perfectStructObj.parsedFile)
+		return energyPerfect/surfAreaPerfect
+
+
+
+
+#Probably useless junk
 class StackingFaultWorkflow(baseFlow.BaseLabelledWorkflow):
-	""" Workflow for calculating stacking fault energies """
+	""" Workflow for calculating stacking fault energies including unstable and stable. """
 
 
 	def __init__(self, perfectStructCalcObj, calcObjs, dispVals, fitterObj, energyType=None):

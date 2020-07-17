@@ -10,6 +10,40 @@ import gen_basis_helpers.shared.method_objs as methObjs
 import gen_basis_helpers.workflows.stacking_fault_workflows as tCode
 
 
+class TestStackingFaultWorkflowTwoStructs(unittest.TestCase):
+
+	def setUp(self):
+		self.perfectEnergy = 2
+		self.stackStructEnergy = 4
+		self.surfaceAreaAll = 2
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the energies objects
+		stubEnergiesPerfectStruct = types.SimpleNamespace(electronicTotalE=self.perfectEnergy)
+		stubEnergiesStackStruct = types.SimpleNamespace(electronicTotalE=self.stackStructEnergy)
+
+		#Create parsed file stubs
+		stubParsedPerfectStruct = types.SimpleNamespace(energies=stubEnergiesPerfectStruct, unitCell=mock.Mock())
+		stubParsedStackStruct   = types.SimpleNamespace(energies=stubEnergiesStackStruct,  unitCell=mock.Mock())
+
+		#Create calcObj stubs
+		stubPerfectCalcObj = methObjs.StubCalcMethodFromParsedFileObject(stubParsedPerfectStruct)
+		stubStackCalcObj = methObjs.StubCalcMethodFromParsedFileObject(stubParsedStackStruct)
+
+		#Create the workflow
+		self.testWorkflowA = tCode.StackingFaultWorkflowTwoStructs(stubPerfectCalcObj,stubStackCalcObj)
+
+	@mock.patch("gen_basis_helpers.workflows.stacking_fault_workflows._getABSurfaceAreaFromParsedFile")
+	def testExpectedStackFaultEnergy(self, mockedSurfArea):
+		mockedSurfArea.side_effect = lambda inpParsedFile: self.surfaceAreaAll
+		expStackEnergy = (self.stackStructEnergy - self.perfectEnergy) / self.surfaceAreaAll
+		self.testWorkflowA.run()
+		actStackEnergy = self.testWorkflowA.output[0].stackFaultEnergy
+		self.assertAlmostEqual(expStackEnergy,actStackEnergy)
+
+
+
 class TestStackingFaultWorkflow(unittest.TestCase):
 
 	def setUp(self):
