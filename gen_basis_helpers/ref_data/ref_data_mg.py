@@ -158,6 +158,42 @@ def _getMgExptHcpAsUCell():
 	return outCell
 
 
+
+def getPlaneWaveStableStackingFaultSlabParsedFileObject(surfType, faultType, nLayers=None,relaxType="constant_volume"):
+	""" Get a parsed file object for a stable stacking fault geometry
+		
+	Args:
+		surfType (str): hcp0001 only option at the moment
+		faultType (str): "no_fault", "I2", "I1", "T2"
+		nLayers (int): Number of layers used in the slab calculation
+		relaxType (str): How the cell was relaxed; constant_volume is likely always what you want
+
+	"""
+	structTypeDefaultNLayers = {"hcp0001":10}
+	if nLayers is None:
+		nLayers = structTypeDefaultNLayers[surfType]
+
+	if faultType=="no_fault":
+		return getPlaneWaveSurfaceParsedFileObject(surfType,nLayers=nLayers, relaxType=relaxType)
+
+	structTypeToFunct = { ("hcp0001", "i2", 10, "constant_volume"): _getHcp0001PlaneWaveI2FaultParsedFile_10layers_constantVol,
+	                      ("hcp0001", "i1", 10, "constant_volume"): _getHcp0001PlaneWaveI1FaultParsedFile_10layers_constantVol,
+	                      ("hcp0001", "t2", 10, "constant_volume"): _getHcp0001PlaneWaveT2FaultParsedFile_10layers_constantVol }
+
+	return structTypeToFunct[ (surfType, faultType.lower(), nLayers, relaxType) ] ()
+
+def _getHcp0001PlaneWaveI2FaultParsedFile_10layers_constantVol():
+	refPath = os.path.join(BASE_FOLDER, "stacking_faults", "hcp_i2", "stable_geom", "nlayers_10_absvac_10_ang", "geom_opt.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+def _getHcp0001PlaneWaveI1FaultParsedFile_10layers_constantVol():
+	refPath = os.path.join(BASE_FOLDER, "stacking_faults", "hcp_i1", "stable_geom", "nlayers_10_absvac_10_ang", "geom_opt.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
+def _getHcp0001PlaneWaveT2FaultParsedFile_10layers_constantVol():
+	refPath = os.path.join(BASE_FOLDER, "stacking_faults", "hcp_t2_fault", "stable_geom", "nlayers_10_absvac_10_ang", "geom_opt.castep")
+	return castepCreator.getParsedFileObjFromCastepOutputFile(refPath)
+
 def getPlaneWaveSurfaceParsedFileObject(surfType, nLayers=None, relaxType="unrelaxed"):
 	""" Returns a ParsedFile object for castep calculation on a surface. Note the unrelaxed geometries are built from from the castep optimised bulk cell
 	
