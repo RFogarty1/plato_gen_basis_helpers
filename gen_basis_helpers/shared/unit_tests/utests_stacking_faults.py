@@ -182,7 +182,6 @@ class TestHcpI2StackingFaultGeomGenerator(unittest.TestCase):
 
 		return expCartCoords
 
-@unittest.skip("")
 class TestI1StackingFaultGeomGenerator(unittest.TestCase):
 
 	def setUp(self):

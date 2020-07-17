@@ -134,12 +134,12 @@ def _getUniquePlaneDistsAndAtomIndicesFromIdxVsDistList(idxVsDist, planeToleranc
 
 class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
-	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=1, fraction_2m1m10=0):
+	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=0, fraction_2m1m10=0, fraction_11m20=0):
 		self.centralIdx = centralIdx
 		self.planeTolerance = planeTolerance
 		self.fraction_10m10 = fraction_10m10
 		self.fraction_2m1m10 = fraction_2m1m10
-
+		self.fraction_11m20 = fraction_11m20
 
 	#TODO: We want to make it so centralAtomIdx is basically unchanged w.r.t doing the next stacking fault.
 	#Using ANY centralIdx in the "new" plane is probably good enough though
@@ -191,9 +191,9 @@ class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 	def _displaceCellInPlace(self, inpGeom, displacement, centralIdx=None, planeTolerance=None):
 		planeTolerance = self.planeTolerance if planeTolerance is None else planeTolerance
 		kwargDict = {"centralIdx":self.centralIdx, "planeTolerance":planeTolerance, "fraction_10m10":self.fraction_10m10,
-		             "fraction_2m1m10":self.fraction_2m1m10}
+		             "fraction_2m1m10":self.fraction_2m1m10, "fraction_11m20":self.fraction_11m20}
+
 		displacer = HcpI2StackingFaultGeomGenerator(**kwargDict)
-		#TODO: Remove the _ call; can just grab cartCoords to get displacement in place
 		displacedCell = displacer.getGeomForGivenDisplacement(inpGeom, displacement)
 		outCartCoords = displacedCell.cartCoords
 		inpGeom.cartCoords = outCartCoords
