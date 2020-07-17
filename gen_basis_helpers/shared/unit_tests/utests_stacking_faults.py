@@ -247,3 +247,45 @@ class TestI1StackingFaultGeomGenerator(unittest.TestCase):
 		expCartCoords[0][0] += dispVal
 
 		return expCartCoords
+
+
+class TestT2StackingFaultGeomGenerator(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [2,2,3]
+		self.lattAngles = [90,90,120]
+		#Default to a 1x1x3 hcp Cell
+		self.fractPositions = [[0.0, 0.0, 0.0],
+		                       [1/3, 2/3, 1/6],
+		                       [0.0, 0.0, 2/6],
+		                       [0.0, 0.0, 4/6],
+		                       [1/3, 2/3, 3/6],
+		                       [1/3, 2/3, 5/6]]
+
+		self.dispFactor = 1/3
+		self.centralAtomIdx = 1
+		self.fraction_10m10 = 0.0
+		self.fraction_2m1m10 = 1.0 
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		atomList = ["X" for x in self.fractPositions]
+		self.testCellA = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles,
+		                                fractCoords=self.fractPositions, elementList=atomList)
+		self.testObjA = tCode.HcpT2StackingFaultGeomGenerator(centralIdx=self.centralAtomIdx, 
+		                                                      fraction_10m10=self.fraction_10m10,
+		                                                      fraction_2m1m10=self.fraction_2m1m10)
+
+	def testExpectedDisplacementA(self):
+		expCell = copy.deepcopy(self.testCellA)
+		expCartCoords = self._getExpCartCoordsForDispA()
+		expCell.cartCoords = expCartCoords
+		actCell = self.testObjA.getGeomForGivenDisplacement(self.testCellA,self.dispFactor)
+		self.assertEqual(expCell,actCell)
+
+	def _getExpCartCoordsForDispA(self):
+		expCartCoords = copy.deepcopy(self.testCellA.cartCoords)
+		dispVal = self.dispFactor*self.lattParams[0]
+		expCartCoords[self.centralAtomIdx][0] += dispVal
+		return expCartCoords
+

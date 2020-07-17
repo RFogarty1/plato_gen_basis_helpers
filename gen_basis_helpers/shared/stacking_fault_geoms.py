@@ -199,7 +199,67 @@ class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 		inpGeom.cartCoords = outCartCoords
 
 
-#TODO: Can likely factor a lot of this out into a standard class (Template pattern)
+class HcpT2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
+
+	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=0, fraction_2m1m10=0, fraction_11m20=0, checkDispSet=True):
+		self.centralIdx = centralIdx
+		self.planeTolerance = planeTolerance
+		self.fraction_10m10 = fraction_10m10
+		self.fraction_2m1m10 = fraction_2m1m10
+		self.fraction_11m20 = fraction_11m20
+
+	def _applyPerfectToDispZeroDisplacementsToCell(self, inpCell, planeTolerance=5e-2):
+		pass
+
+	def _displaceCellInPlace(self, inpGeom, displacement, centralIdx=None, planeTolerance=None):
+		_checkAnglesConsistentWithHcp0001(inpGeom)
+		displaceFactorOneVector = self._getDisplacementVectorForDispParamEqualsOne(inpGeom)
+		displaceVector = [x*displacement for x in displaceFactorOneVector]
+		self._applyDisplacementVectorToRelevantAtomsInCell(inpGeom, displaceVector, centralIdx, planeTolerance)
+
+	def _getUnitDisplacementVector(self, inpGeom):
+
+		vect10m10, vect2m1m10, vect11m20 = _getBasalUnitDisplacementVectorsForInpCell(inpGeom)
+
+		#Get contribs from individual vectors
+		contrib_10m10  = [x*self.fraction_10m10  for x in vect10m10]
+		contrib_2m1m10 = [x*self.fraction_2m1m10 for x in vect2m1m10]
+		contrib_11m20  = [x*self.fraction_11m20  for x in vect11m20]
+
+		outVect = [a+b+c for a,b,c in it.zip_longest(contrib_10m10,contrib_2m1m10,contrib_11m20)]
+
+		return outVect
+
+	def _getDisplacementVectorForDispParamEqualsOne(self, inpGeom):
+		centralIdx = self._getCentralAtomIdx(inpGeom)
+		dispVectorMagnitude = _getNearestInSurfacePlaneDistanceToAtomIdxInInpGeom(centralIdx, inpGeom)
+		dispUnitVector = self._getUnitDisplacementVector(inpGeom) #Not actually always an actual unit vector
+		outVector = [x*dispVectorMagnitude for x in dispUnitVector]
+		return outVector
+
+	def _applyDisplacementVectorToRelevantAtomsInCell(self, inpGeom, displaceVector, centralIdx=None, planeTolerance=None):
+		#Sort out default args
+		centralIdx = self._getCentralAtomIdx(inpGeom) if centralIdx is None else centralIdx
+		planeTolerance = self.planeTolerance if planeTolerance is None else planeTolerance
+
+		#Step 1 = get a list of all atoms in the same plane as our central atom
+		surfacePlane = cartCoordHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpGeom)
+		unused, atomIndicesSortedIntoPlanes = _getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(surfacePlane, inpGeom.cartCoords, planeTolerance)
+		for x in atomIndicesSortedIntoPlanes:
+			if centralIdx in x:
+				indicesToDisplace = x
+
+		#Step 2 = Apply the displacement to the cart coords
+		cartCoords = inpGeom.cartCoords
+		for idx,coords in enumerate(cartCoords):
+			if idx in indicesToDisplace:
+				cartCoords[idx][:3] = [x+d for x,d in it.zip_longest(cartCoords[idx][:3],displaceVector)]
+
+		#Step 3 = set the cart coords on the output cell
+		inpGeom.cartCoords = cartCoords
+
+
+
 class HcpI2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
 	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=0, fraction_2m1m10=0, fraction_11m20=0, checkDispSet=True):
@@ -247,26 +307,13 @@ class HcpI2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
 
 	def _getUnitDisplacementVector(self, inpGeom):
-		aVect,bVect = inpGeom.lattVects[0], inpGeom.lattVects[1]
-		assert aVect[-1]==0
-		assert bVect[-1]==0
-		a1Vect, a2Vect = vectHelp.getUnitVectorFromInpVector(aVect), vectHelp.getUnitVectorFromInpVector(bVect)
 
-		#Find the third unit vector; this is 120 degrees from the both the first two (2 equations) and its z component is 0
-		cos120 = math.cos(math.radians(120))
-		twoDimVectA3 = np.linalg.inv( np.array( (aVect[:2],bVect[:2]) ) ) @ np.array( [cos120, cos120] )
-		a3Vect = vectHelp.getUnitVectorFromInpVector( [x for x in twoDimVectA3] + [0] )
-
-		#Get a displacement vector
-		vect10m10 = vectHelp.getUnitVectorFromInpVector( [a-b for a,b in it.zip_longest(a1Vect,a3Vect)] )
-		vect2m1m10 = vectHelp.getUnitVectorFromInpVector( [(2*a)-b-c for a,b,c in it.zip_longest(a1Vect,a2Vect,a3Vect)] )
-		vect11m20 = vectHelp.getUnitVectorFromInpVector( [a+b+(-2*c) for a,b,c in it.zip_longest(a1Vect,a2Vect,a3Vect)] )
+		vect10m10, vect2m1m10, vect11m20 = _getBasalUnitDisplacementVectorsForInpCell(inpGeom)
 
 		#Get contribs from individual vectors
 		contrib_10m10  = [x*self.fraction_10m10  for x in vect10m10]
 		contrib_2m1m10 = [x*self.fraction_2m1m10 for x in vect2m1m10]
 		contrib_11m20  = [x*self.fraction_11m20  for x in vect11m20]
-
 
 		outVect = [a+b+c for a,b,c in it.zip_longest(contrib_10m10,contrib_2m1m10,contrib_11m20)]
 
@@ -281,11 +328,7 @@ class HcpI2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
 	def _getDispMagnitudeForFactorEqualsOne(self, inpGeom):
 		atomIdx = self._getCentralAtomIdx(inpGeom)
-		lattVects = inpGeom.lattVects
-		surfacePlane = planeEqnHelp.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1])
-		nearestInPlaneNebDistance = cartCoordHelp.getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpGeom, atomIdx, surfacePlane) #Works if we assume all are the same; which they should be
-		dispVectorMagnitude = nearestInPlaneNebDistance
-		return dispVectorMagnitude
+		return _getNearestInSurfacePlaneDistanceToAtomIdxInInpGeom(atomIdx,inpGeom)
 
 	#TODO: Factor most of this out into a function
 	def _applyDisplacementVectorToRelevantAtomsInCell(self, inpGeom, displaceVector, centralIdx=None, planeTolerance=None):
@@ -339,4 +382,30 @@ def _checkAnglesConsistentWithHcp0001(inpCell, errorTol=5e-1):
 	if any([x>errorTol for x in angleDiffs]):
 		raise ValueError("Angles need to be {}, not {}".format(expAngles,actAngles))
 
+def _getBasalUnitDisplacementVectorsForInpCell(inpGeom):
+	aVect,bVect = inpGeom.lattVects[0], inpGeom.lattVects[1]
+	assert aVect[-1]==0
+	assert bVect[-1]==0
+	a1Vect, a2Vect = vectHelp.getUnitVectorFromInpVector(aVect), vectHelp.getUnitVectorFromInpVector(bVect)
+
+	#Find the third unit vector; this is 120 degrees from the both the first two (2 equations) and its z component is 0
+	cos120 = math.cos(math.radians(120))
+	twoDimVectA3 = np.linalg.inv( np.array( (aVect[:2],bVect[:2]) ) ) @ np.array( [cos120, cos120] )
+	a3Vect = vectHelp.getUnitVectorFromInpVector( [x for x in twoDimVectA3] + [0] )
+
+	#Get a displacement vector
+	vect10m10 = vectHelp.getUnitVectorFromInpVector( [a-b for a,b in it.zip_longest(a1Vect,a3Vect)] )
+	vect2m1m10 = vectHelp.getUnitVectorFromInpVector( [(2*a)-b-c for a,b,c in it.zip_longest(a1Vect,a2Vect,a3Vect)] )
+	vect11m20 = vectHelp.getUnitVectorFromInpVector( [a+b+(-2*c) for a,b,c in it.zip_longest(a1Vect,a2Vect,a3Vect)] )
+
+	return vect10m10, vect2m1m10, vect11m20
+
+
+
+def _getNearestInSurfacePlaneDistanceToAtomIdxInInpGeom(atomIdx, inpGeom):
+	lattVects = inpGeom.lattVects
+	surfacePlane = planeEqnHelp.ThreeDimPlaneEquation.fromTwoPositionVectors(lattVects[0],lattVects[1])
+	nearestInPlaneNebDistance = cartCoordHelp.getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpGeom, atomIdx, surfacePlane) #Works if we assume all are the same; which they should be
+	dispVectorMagnitude = nearestInPlaneNebDistance
+	return dispVectorMagnitude
 
