@@ -134,11 +134,11 @@ def _getUniquePlaneDistsAndAtomIndicesFromIdxVsDistList(idxVsDist, planeToleranc
 
 class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
-	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=1, fraction_m2110=0):
+	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=1, fraction_2m1m10=0):
 		self.centralIdx = centralIdx
 		self.planeTolerance = planeTolerance
 		self.fraction_10m10 = fraction_10m10
-		self.fraction_m2110 = fraction_m2110
+		self.fraction_2m1m10 = fraction_2m1m10
 
 
 	#TODO: We want to make it so centralAtomIdx is basically unchanged w.r.t doing the next stacking fault.
@@ -191,7 +191,7 @@ class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 	def _displaceCellInPlace(self, inpGeom, displacement, centralIdx=None, planeTolerance=None):
 		planeTolerance = self.planeTolerance if planeTolerance is None else planeTolerance
 		kwargDict = {"centralIdx":self.centralIdx, "planeTolerance":planeTolerance, "fraction_10m10":self.fraction_10m10,
-		             "fraction_m2110":self.fraction_m2110}
+		             "fraction_2m1m10":self.fraction_2m1m10}
 		displacer = HcpI2StackingFaultGeomGenerator(**kwargDict)
 		#TODO: Remove the _ call; can just grab cartCoords to get displacement in place
 		displacedCell = displacer.getGeomForGivenDisplacement(inpGeom, displacement)
@@ -202,11 +202,37 @@ class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 #TODO: Can likely factor a lot of this out into a standard class (Template pattern)
 class HcpI2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
-	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=1, fraction_m2110=0):
+	def __init__(self, centralIdx=None, planeTolerance=5e-2, fraction_10m10=0, fraction_2m1m10=0, fraction_11m20=0, checkDispSet=True):
+		""" Initializer
+		
+		Args:
+			centralIdx (int): Optional, mainly for testing. Integer of an atom in the plane you want to centre the displacement around
+			planeTolerance (float): Optional, maximum planar separation between 2 atoms for them to be considered in the same plane
+
+			AT LEAST ONE (and usually only one) of the following needs to be set, they are all in units of the primitive cell lattice parameter (nearest in-plane neighbour distance is how its actually figured out).
+			fraction_10m10: Involves displacement in a direction between two Mg-Mg bonds; note that fraction_10m10=1 (with dispVal=1) will NOT map back to the original cell
+			fraction_2m1m10: Invovles displacement along an Mg-Mg planar bonding direction. A value of 1 (with dispVal=1) will map back to the original structure
+			fraction_11m20: Involves displacement along an Mg-Mg planar bonding direction. A value of 1 (with dispVal=1) will map back to the original structure
+
+			These should generally be set to one or zero each. fraction_2m1m10 and fraction_11m20 are essentially identical and their combination leads to [10-10]; setting both of these to a value can be a more convenient way to displace along [10-10]. While their named "fraction" they are essentially treated independently
+				 
+		"""
 		self.centralIdx = centralIdx
 		self.planeTolerance = planeTolerance
 		self.fraction_10m10 = fraction_10m10
-		self.fraction_m2110 = fraction_m2110
+		self.fraction_2m1m10 = fraction_2m1m10
+		self.fraction_11m20 = fraction_11m20
+		if checkDispSet:
+			self._checkDisplacementVectorSet()
+
+	def _checkDisplacementVectorSet(self):
+		minDisp = 1e-4
+		dirs = ["fraction_10m10", "fraction_2m1m10", "fraction_11m20"]
+		dirVals = [getattr(self,x) for x in dirs]
+		dirIsZero = [ abs(val)<minDisp for val in dirVals ]
+		if all(dirIsZero):
+			raise ValueError("At least one displacement direction needs to > 0")
+
 
 	#The zero displacement case is the perfect cell in this instance
 	def _applyPerfectToDispZeroDisplacementsToCell(self, inpCell, planeTolerance=5e-2):
@@ -232,14 +258,21 @@ class HcpI2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 		a3Vect = vectHelp.getUnitVectorFromInpVector( [x for x in twoDimVectA3] + [0] )
 
 		#Get a displacement vector
-		vect10m10 = [a-b for a,b in it.zip_longest(a1Vect,a3Vect)]
-		vectm2110 = [(-2*a)+b+c for a,b,c in it.zip_longest(a1Vect,a2Vect,a3Vect)]
-		outVect = vectHelp.getUnitVectorFromInpVector( [(a*self.fraction_10m10)+ (b*self.fraction_m2110) for a,b in it.zip_longest(vect10m10,vectm2110)] )
+		vect10m10 = vectHelp.getUnitVectorFromInpVector( [a-b for a,b in it.zip_longest(a1Vect,a3Vect)] )
+		vect2m1m10 = vectHelp.getUnitVectorFromInpVector( [(2*a)-b-c for a,b,c in it.zip_longest(a1Vect,a2Vect,a3Vect)] )
+		vect11m20 = vectHelp.getUnitVectorFromInpVector( [a+b+(-2*c) for a,b,c in it.zip_longest(a1Vect,a2Vect,a3Vect)] )
+
+		#Get contribs from individual vectors
+		contrib_10m10  = [x*self.fraction_10m10  for x in vect10m10]
+		contrib_2m1m10 = [x*self.fraction_2m1m10 for x in vect2m1m10]
+		contrib_11m20  = [x*self.fraction_11m20  for x in vect11m20]
+
+
+		outVect = [a+b+c for a,b,c in it.zip_longest(contrib_10m10,contrib_2m1m10,contrib_11m20)]
 
 		return outVect
 
 	def _getDisplacementVectorForDispParamEqualsOne(self, inpGeom):
-		#Start by assuming the m2110 is ALWAYS true
 		dispVectorMagnitude = self._getDispMagnitudeForFactorEqualsOne(inpGeom)
 		dispUnitVector = self._getUnitDisplacementVector(inpGeom)
 		outVector = [x*dispVectorMagnitude for x in dispUnitVector]
