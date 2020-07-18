@@ -29,8 +29,8 @@ class StandardInputCreatorStackFaultTwoStructs(stdTemplate.StandardInputCreatorT
 		return outWorkflow
 
 	def _getCalcObjStackFaultStruct(self):
-		kwargDict = self.__getKwargDictForModdingStackFaultCreator()
-		return self.baseCreatorStackFaultStruct(**kwargDict)
+		kwargDict = self._getKwargDictForModdingStackFaultCreator()
+		return self.baseCreatorStackFaultStruct.create(**kwargDict)
 
 	def _getCalcObjPerfectStruct(self):
 		kwargDict = self._getKwargDictForModdingPerfectStructCreator()

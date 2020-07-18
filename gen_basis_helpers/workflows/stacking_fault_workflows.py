@@ -26,6 +26,7 @@ class StackingFaultWorkflowTwoStructs(baseFlow.BaseLabelledWorkflow):
 		self.stackFaultStructObj = stackFaultStructObj
 		self.eType = "electronicTotalE"
 		self._output = types.SimpleNamespace( **{k:None for k in self.namespaceAttrs} )
+		self._writeInpFiles()
 
 	@property	
 	def namespaceAttrs(self):
@@ -42,8 +43,8 @@ class StackingFaultWorkflowTwoStructs(baseFlow.BaseLabelledWorkflow):
 
 
 	def _writeInpFiles(self):
-		self.perfectStructCalcObj.writeFile()
-		[x.writeFile() for x in self.calcObjs]
+		self.perfectStructObj.writeFile()
+		self.stackFaultStructObj.writeFile()
 
 	def run(self):
 		ePerAreaPerfect = self._getEnergyPerAreaForPerfectStruct()
