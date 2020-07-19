@@ -100,7 +100,7 @@ class TestMapFunction(unittest.TestCase):
 
 	def testRunMethodIsCalled(self):
 		self.testMapFunct(self.stdInpObj)
-		self.runFunction.assert_called_once()
+		self.runFunction.assert_called_once_with()
 
 	def testExpectedTableDefaultArgs(self):
 		expTableData = [self.methodKey, "{:.4f}".format(self.stackFaultA)]
