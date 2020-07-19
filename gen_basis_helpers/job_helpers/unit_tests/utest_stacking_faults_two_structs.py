@@ -1,7 +1,10 @@
 
+import types
 import unittest
 import unittest.mock as mock
 
+import gen_basis_helpers.shared.calc_runners as calcRunners
+import gen_basis_helpers.shared.label_objs as labelHelp
 import gen_basis_helpers.job_helpers.stacking_faults_two_structs as tCode
 
 class TestStackingFaultTwoStructs(unittest.TestCase):
@@ -74,4 +77,40 @@ class TestStackingFaultTwoStructs(unittest.TestCase):
 		actStdInp = self.testObjA.create()
 		mockedStandardInp.assert_called_with(expWorkflow, expLabel)
 		self.assertEqual(expStdInp, actStdInp)
+
+
+class TestMapFunction(unittest.TestCase):
+
+	def setUp(self):
+		self.eleKey = "fake_ele"
+		self.structKey = "fake_struct"
+		self.methodKey = "fake_method"
+		self.stackFaultA = 20
+		self.multStackFaultByFactor = 1
+		self.runFunction = mock.Mock()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		workflowOutputA = [types.SimpleNamespace( stackFaultEnergy=self.stackFaultA ) ]
+		labelObj = labelHelp.StandardLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
+		workFlowA = types.SimpleNamespace(output=workflowOutputA, run=self.runFunction)
+		self.testMapFunct = tCode.MapStackingFaultTwoStructsToUsefulFormatStandard(multStackFaultByFactor=self.multStackFaultByFactor)
+		self.stdInpObj = calcRunners.StandardInputObj(workFlowA, labelObj)
+
+
+	def testRunMethodIsCalled(self):
+		self.testMapFunct(self.stdInpObj)
+		self.runFunction.assert_called_once()
+
+	def testExpectedTableDefaultArgs(self):
+		expTableData = [self.methodKey, "{:.4f}".format(self.stackFaultA)]
+		actTableData = self.testMapFunct(self.stdInpObj).tableData
+		self.assertEqual(expTableData,actTableData)
+
+	def testExpectedTableWithMultFactor3(self):
+		self.multStackFaultByFactor=3
+		self.createTestObjs()
+		expTableData = [self.methodKey, "{:.4f}".format(self.stackFaultA*self.multStackFaultByFactor)]
+		actTableData = self.testMapFunct(self.stdInpObj).tableData
+		self.assertEqual(expTableData,actTableData)
 
