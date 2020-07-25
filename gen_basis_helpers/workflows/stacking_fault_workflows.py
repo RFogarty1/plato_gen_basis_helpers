@@ -180,6 +180,10 @@ class StackingFaultFitResultsBase():
 	def fitParams(self):
 		raise NotImplementedError("")
 
+	@property
+	def fitFunct(self):
+		raise NotImplementedError("")
+
 class StackingFaultFitterBase():
 	""" Class used to carry out fits to stacking fault data
  
@@ -251,6 +255,7 @@ class StackingFaultFitterPolyStandard(StackingFaultFitterBase):
 		fitResDict["fitDispVals"] = self._getOutputDistVals(dispVals)
 		fitResDict["fitFaultVals"] = [polyFunct(x) for x in fitResDict["fitDispVals"]]
 		fitResDict["goodnessOfFit"] = self._calcGoodnessOfFitVals(structFaultVals, fitResDict["fitFaultValsAtInputDisps"])
+		fitResDict["fitFunct"] = polyFunct
 
 		return types.SimpleNamespace(**fitResDict)
 
