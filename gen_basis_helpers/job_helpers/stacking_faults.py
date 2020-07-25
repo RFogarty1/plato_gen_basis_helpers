@@ -57,7 +57,8 @@ class StandardInputCreatorTemplate(stdTemplate.StandardInputCreatorTemplateBase)
 
 	def _getKwargDictForModdingDispCreatorObj(self, geom, dispVal):
 		outDict = dict()
-		dispStr = str(dispVal).replace(".","pt")
+		dispStr = "{:.2f}".format(dispVal).replace(".","pt")
+		dispStr = dispStr.replace("-","m")
 		outDict["workFolder"] = self.outFolder
 		outDict["fileName"] = "disp_val_{}".format(dispStr)
 		outDict["geom"] = geom

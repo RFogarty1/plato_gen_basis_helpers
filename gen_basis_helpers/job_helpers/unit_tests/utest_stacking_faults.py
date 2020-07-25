@@ -69,7 +69,7 @@ class TestStandardInputCreatorObj(unittest.TestCase):
 		expDict = dict()
 		expDict["geom"] = expGeom
 		expDict["workFolder"] = expWorkfolder
-		expDict["fileName"] = "disp_val_0pt5"
+		expDict["fileName"] = "disp_val_0pt50"
 		actDict = self.testObjA._getKwargDictForModdingDispCreatorObj(expGeom,dispVal)
 		for key in expDict.keys():
 			self.assertEqual( expDict[key], actDict[key] )
