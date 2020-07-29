@@ -196,11 +196,13 @@ class TestStackingFaultPolyFitter(unittest.TestCase):
 		#First we set the polynomial such that the maximum is at an expected value
 		aParam, maxPos = -2,0.7
 		bParam = -1*2*aParam*maxPos
+		self.stackFaultVals = [0.0 for x in self.dispVals]
+		self.createTestObjs()
 
 		mockedCoeffGetter.side_effect = lambda *args: [aParam,bParam,3] #corresponds to x**2 + 2x + 3
 		expFitFunct = lambda x: (aParam*(x**2)) + (bParam*x) + 3
 		expUnstableFaultEnergy = expFitFunct(maxPos)
-		expIntrinsicFaultEnergy = expFitFunct(1)
+		expIntrinsicFaultEnergy = min(self.stackFaultVals)
 
 		actFitRes = self._getActFitObj()
 		actUnstableFaultEnergy = actFitRes.unstableFaultEnergy
@@ -216,4 +218,53 @@ class TestStackingFaultPolyFitter(unittest.TestCase):
 		expError = summedRelativeErrors / len(self.stackFaultVals)
 		actError = self._getActFitObj().goodnessOfFit
 		self.assertAlmostEqual(expError,actError)
+
+	@mock.patch("gen_basis_helpers.workflows.stacking_fault_workflows.StackingFaultFitterPolyStandard._getFitCoeffs")
+	def testGetGoodnessOfFit_zeroStackFaultVal(self, mockedCoeffGetter):
+		self.stackFaultVals[0] = 0
+		self.createTestObjs()
+		mockedCoeffGetter.side_effect = lambda *args: [0.0,0.0]
+		summedRelativeErrors = sum([1 for x in self.stackFaultVals]) - 1 #-1 becuase one of the values is zero
+		expError = summedRelativeErrors / ( len(self.stackFaultVals) - 1)
+		actError = self._getActFitObj().goodnessOfFit
+		self.assertAlmostEqual(expError, actError)
+
+
+class TestStackingFaultPolyFitter_stackingFaultVals(unittest.TestCase):
+
+
+	def setUp(self):
+		self.dispVals = [0.0, 0.1, 0.2, 0.3, 0.4]
+		self.actVals =  [0.0, 1.0 ,0.3, 0.5, 1.2]
+
+		self.fitDispVals = [0.0, 0.11, 0.19, 0.29, 0.39]
+		self.fitVals =     [0.0, 1.10, 0.20, 0.50, 1.3] 
+
+		self.searchRangeIntrinsic = [0.1, 0.4]
+		self.searchRangeUnstable = [0.0,0.3]
+		self.polyOrder = 1 #Should be irrelevant
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"searchRangeIntrinsic":self.searchRangeIntrinsic, "searchRangeUnstable":self.searchRangeUnstable}
+		self.testObjA = tCode.StackingFaultFitterPolyStandard( self.polyOrder, **kwargDict )
+
+	def _runGetIntrinsicFaultEnergy(self):
+		args = self.dispVals, self.actVals, self.fitDispVals, self.fitVals
+		return self.testObjA._getIntrinsicFaultEnergy(*args)
+
+	def _runGetUnstableFaultEnergy(self):
+		args = self.dispVals, self.actVals, self.fitDispVals, self.fitVals
+		return self.testObjA._getUnstableFaultEnergy(*args)
+
+	def testExpectedIntrinsicFaultGivenRange(self):
+		expVal = 0.2
+		actVal = self._runGetIntrinsicFaultEnergy()
+		self.assertAlmostEqual(expVal,actVal)
+
+	def testExpecetedUnstableFaultGivenRange(self):
+		expVal = 1.10
+		actVal = self._runGetUnstableFaultEnergy()
+		self.assertAlmostEqual(expVal,actVal)
 

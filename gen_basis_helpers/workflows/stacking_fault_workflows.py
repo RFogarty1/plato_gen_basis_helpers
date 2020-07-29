@@ -205,16 +205,19 @@ class StackingFaultFitterBase():
 
 class StackingFaultFitterPolyStandard(StackingFaultFitterBase):
 
-	def __init__(self, order):
+	def __init__(self, order, searchRangeIntrinsic=None, searchRangeUnstable=None):
 		""" Initialiser
 		
 		Args:
-			order: (int) the highest power of to use in the polynomial fit. 0 means a constant value, 1 means a linear fit, 2 means a quadratic etc. 
-				 
+			order: (int) the highest power of to use in the polynomial fit. 0 means a constant value, 1 means a linear fit, 2 means a quadratic etc.
+			searchRangeIntrinsic: (len 2 float iter) [min,max] displacements to look for a minimum in (defaults to whole range supplied) 
+			searchRangeUnstable: (len 2 float iter) [min,max] displacmenets to look for a maximum in (defaults to whole range supplied)	 
 		"""
 		self.order = order
 		self.stepValGetStackEnergy = 0.001
 		self.stepValOutputDists = 0.001
+		self.searchRangeIntrinsic = searchRangeIntrinsic
+		self.searchRangeUnstable = searchRangeUnstable
 
 
 	def _getFitCoeffs(self, dispVals, structFaultVals):
@@ -226,20 +229,69 @@ class StackingFaultFitterPolyStandard(StackingFaultFitterBase):
 		outFunct = np.polynomial.polynomial.Polynomial( revCoeffs )
 		return outFunct
 
-	def _getUnstableFaultEnergy(self, fitFunct):
-		xRange = np.arange(0, 1, self.stepValGetStackEnergy)
-		fitVals = [fitFunct(x) for x in xRange]
-		return max(fitVals)
+#	def _getUnstableFaultEnergy(self, fitFunct):
+#		xRange = np.arange(0, 1, self.stepValGetStackEnergy)
+#		fitVals = [fitFunct(x) for x in xRange]
+#		return max(fitVals)
+
+	def _getUnstableFaultEnergy(self, actDispVals, actStackVals, fitDispVals, fitStackVals):
+		if self.searchRangeUnstable is None:
+			searchRange = [ min( [min(actDispVals),min(fitDispVals)] ), max( [max(actDispVals), max(fitDispVals)] ) ] 
+		else:
+			searchRange = self.searchRangeUnstable
+
+		actDispFiltered, actStackFiltered = self._getFilteredDispAndStackValsWithinRange(actDispVals, actStackVals, searchRange)
+		fitDispFiltered, fitStackFiltered = self._getFilteredDispAndStackValsWithinRange(fitDispVals, fitStackVals, searchRange)
+
+		maxFromActVals = max(actStackFiltered)
+		maxFromDispVals = max(fitStackFiltered)
+		return max( [maxFromActVals, maxFromDispVals] )
+
+
+	def _getIntrinsicFaultEnergy(self, actDispVals, actStackVals, fitDispVals, fitStackVals):
+		if self.searchRangeIntrinsic is None:
+			searchRange = [ min( [min(actDispVals),min(fitDispVals)] ), max( [max(actDispVals), max(fitDispVals)] ) ] 
+		else:
+			searchRange = self.searchRangeIntrinsic
+
+		actDispFiltered, actStackFiltered = self._getFilteredDispAndStackValsWithinRange(actDispVals, actStackVals, searchRange)
+		fitDispFiltered, fitStackFiltered = self._getFilteredDispAndStackValsWithinRange(fitDispVals, fitStackVals, searchRange)
+
+		minFromActVals = min(actStackFiltered)
+		minFromDispVals = min(fitStackFiltered)
+		return min( [minFromActVals, minFromDispVals] )
+
+
+	def _getFilteredDispAndStackValsWithinRange( self, dispVals, stackVals, searchRange ):
+		outDisp, outStack = list(), list()
+		minDisp, maxDisp = min(searchRange), max(searchRange)
+		for dVal, sVal in it.zip_longest(dispVals, stackVals):
+			if (dVal >= minDisp) and (dVal <= maxDisp):
+				outDisp.append( dVal )
+				outStack.append( sVal ) 
+		return outDisp, outStack
 
 	def _getOutputDistVals(self, dispVals):
-		minVal = min(dispVals) if min(dispVals) < 0 else 0
-		maxVal = max(dispVals) if max(dispVals) > 1 else 1
+		minVal = min(dispVals)
+		maxVal = max(dispVals)
 		fitDispVals = np.arange(minVal,maxVal,self.stepValOutputDists)
 		return fitDispVals
 
 	def _calcGoodnessOfFitVals(self, stackFaultVals, fitValsAtStackFault):
-		absRelErrors = [ abs( (act-fit)/act ) for act,fit in it.zip_longest(stackFaultVals, fitValsAtStackFault) ]
-		return sum(absRelErrors) / len(absRelErrors)
+		absRelErrors = list()
+		for act,fit in it.zip_longest(stackFaultVals, fitValsAtStackFault):
+			if abs(act) < 1e-10:
+				pass
+			else:
+				currError = abs(act-fit)/act
+				absRelErrors.append(currError)
+
+		try:
+			outVal = sum(absRelErrors) / len(absRelErrors)
+		except ZeroDivisionError:
+			outVal = None
+
+		return outVal
 
 	def fitStackingFaultEnergies(self, dispVals, structFaultVals):
 		#1) Get coefficients for the fit
@@ -250,10 +302,16 @@ class StackingFaultFitterPolyStandard(StackingFaultFitterBase):
 		fitResDict = dict()
 		fitResDict["fitParams"] = outCoeffs
 		fitResDict["fitFaultValsAtInputDisps"] = [polyFunct(x) for x in dispVals]
-		fitResDict["intrinsicFaultEnergy"] = polyFunct(1)
-		fitResDict["unstableFaultEnergy"] = self._getUnstableFaultEnergy(polyFunct)
-		fitResDict["fitDispVals"] = self._getOutputDistVals(dispVals)
-		fitResDict["fitFaultVals"] = [polyFunct(x) for x in fitResDict["fitDispVals"]]
+
+		fitDispVals = self._getOutputDistVals(dispVals)
+		fitFaultVals = [polyFunct(x) for x in fitDispVals]
+
+		fitResDict["fitDispVals"], fitResDict["fitFaultVals"] = fitDispVals, fitFaultVals
+
+		fitResDict["intrinsicFaultEnergy"] = self._getIntrinsicFaultEnergy( dispVals, structFaultVals, fitDispVals, fitFaultVals )
+		fitResDict["unstableFaultEnergy"] = self._getUnstableFaultEnergy( dispVals, structFaultVals, fitDispVals, fitFaultVals )
+
+
 		fitResDict["goodnessOfFit"] = self._calcGoodnessOfFitVals(structFaultVals, fitResDict["fitFaultValsAtInputDisps"])
 		fitResDict["fitFunct"] = polyFunct
 
