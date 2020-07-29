@@ -41,10 +41,15 @@ class TestEosCurvesCreator(unittest.TestCase):
 		with self.assertRaises(AssertionError):
 			self.testObjA._getIterForAttr("geoms")
 
-	def testGetCalcObjsForSingleWorkflow(self):
+	@mock.patch("gen_basis_helpers.job_helpers.eos_curves.StandardInputCreatorEosCurves._getOutFolderFromStructStr")
+	@mock.patch("gen_basis_helpers.job_helpers.eos_curves.StandardInputCreatorEosCurves._getOutFileNameFromGeom")
+	def testGetCalcObjsForSingleWorkflow(self, mockedGetFileName, mockedGetFolderPath):
 		structStr = "bcc"
 		structIdx = 1
 
+		expFileName, expOutFolder = mock.Mock(), mock.Mock()
+		mockedGetFileName.side_effect = lambda *args,**kwargs: expFileName
+		mockedGetFolderPath.side_effect = lambda *args,**kwargs: expOutFolder
 		self.baseCreators = [mock.Mock(), mock.Mock()]
 		expOutput = [mock.Mock(), mock.Mock()]
 		self.geoms[1] = [mock.Mock(), mock.Mock()]
@@ -54,7 +59,7 @@ class TestEosCurvesCreator(unittest.TestCase):
 
 		actOutput = self.testObjA._getCalcObjsForStructStr(structStr)
 		for x in self.geoms[1]:
-			self.baseCreators[1].create.assert_any_call(geom=x)
+			self.baseCreators[1].create.assert_any_call(geom=x,fileName=expFileName,workFolder=expOutFolder)
 		self.assertEqual(expOutput,actOutput)
 
 #                gen_basis_helpers.job_helpers.eos_curves
@@ -97,10 +102,9 @@ class TestEosCurvesCreator(unittest.TestCase):
 
 		mockedWorkflowGetter.side_effect = lambda *args,**kwargs: expWorkflow
 		mockedStandardInp.side_effect = lambda *args,**kwargs: expStdInp
-		expStdInp.create.side_effect = lambda *args,**kwargs: expOutput
 
 		actOutput = self.testObjA.create()
 		mockedWorkflowGetter.assert_called_with()
 		mockedStandardInp.assert_called_with(expWorkflow, expLabel)
-		self.assertEqual(expOutput, actOutput)	
+		self.assertEqual(expStdInp, actOutput)	
 

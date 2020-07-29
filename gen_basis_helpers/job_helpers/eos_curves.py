@@ -1,4 +1,5 @@
 
+import os
 from . import standard_template_obj as stdTemplate
 from ..shared import calc_runners as calcRunners
 from ..workflows import base_flow as baseFlow
@@ -18,7 +19,7 @@ class StandardInputCreatorEosCurves(stdTemplate.StandardInputCreatorTemplateBase
 		outWorkflow = self._createWorkflow()
 		outLabel = labelHelp.StandardLabel(eleKey=self.eleKey, structKey=self.structKey, methodKey=self.methodKey)
 		creatorObj = calcRunners.StandardInputObj(outWorkflow, outLabel)
-		return creatorObj.create()
+		return creatorObj
 
 	def _createWorkflow(self):
 		allWorkflows = list()
@@ -42,9 +43,19 @@ class StandardInputCreatorEosCurves(stdTemplate.StandardInputCreatorTemplateBase
 		creatorObj = self._getIterForAttr("baseCreators")[structIdx]
 		outObjs = list()
 		for x in allGeoms:
-			currObj = creatorObj.create(geom=x)
+			currFileName = self._getOutFileNameFromGeom(x)
+			outFolder = self._getOutFolderFromStructStr(structStr)
+			currObj = creatorObj.create(geom=x, fileName=currFileName, workFolder=outFolder)
 			outObjs.append(currObj)
 		return outObjs
+
+	def _getOutFileNameFromGeom(self,inpGeom):
+		lattParamA = inpGeom.getLattParamsList()[0]
+		currFileName = "{:.2f}".format(lattParamA).replace(".","pt")
+		return currFileName
+
+	def _getOutFolderFromStructStr(self,structStr):
+		return os.path.join(self.baseWorkFolder,self.eleKey, self.methodKey, structStr)
 
 	def _getIterForAttr(self, attr):
 		attrVal = getattr(self,attr)
