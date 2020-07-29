@@ -819,6 +819,13 @@ def _():
 	getStrDictFromOptDict = getPlatoStrDictFromOptDict_tb1OrTb2
 	return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
 
+@registerMethodStrToObj("dft2_exact_scf_quadrupoles")
+def _():
+    runCommFunct = _getRunCommPlatoDft2
+    optDict = _getOptDict_dft2_exact()
+    optDict["scfflag"] = 3
+    getStrDictFromOptDict = getPlatoStrDictFromOptDict_tb1OrTb2
+    return PlatoMethod(optDict, runCommFunct, getStrDictFromOptDict)
 
 @registerMethodStrToObj("dft2_exact")
 def createPlatoMethod_dft2_exact():
