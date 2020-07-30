@@ -8,6 +8,7 @@ import itertools as it
 import os
 import math
 import sys
+import types
 
 from ..shared import config_vars as configVars
 from ..castep import castep_creator as castepCreator
@@ -510,4 +511,46 @@ def _getSurfaceEnergyHcp0001():
 	return helpers.getCastepRefHcp0001SurfaceEnergyFromSurfAndBulkFilePaths(surfFile,bulkModFile)
 
 
+#struct is hcp0001
+def getPWUnrelaxedStackFaultDispsVsStackFaultValsForSlab(structType, faultType, direction, nLayers=None):
+	""" Gets displacements (units of lattice param) against unrelaxed stacking fault energies (eV a_0^{-2}) for a set of plane-wave geometries
+	
+	Args:
+		structType (str): Surface type, e.g hcp0001
+		faultType (str): Label for the type of fault, e.g. i2,i1,t2
+		direction (str): Displacement direction, e.g. 10m10
+		nLayers (opt,int): Number of layers in the cell. Sensible default chosen if not passed
+			 
+	Returns
+		data: SimpleNamespace containing displacement values and stacking fault values for the chosen structure
+ 
+	"""
+	structTypeDefaultNLayers = {"hcp0001":10}
+	if nLayers is None:
+		nLayers = structTypeDefaultNLayers[(structType)]
+
+	structTypeToFunct = { ("hcp0001", "i2", "10m10", 10): _getHcp0001i2_10m10_dispValsVsStackFaultEnergies_10Layers,
+	                      ("hcp0001", "i1", "10m10", 10): _getHcp0001i1_10m10_dispValsVsStackFaultEnergies_10Layers,
+	                      ("hcp0001", "t2", "10m10", 10): _getHcp0001t2_10m10_dispValsVsStackFaultEnergies_10Layers }
+
+	return structTypeToFunct[(structType, faultType, direction, nLayers)]() 
+
+
+def _getHcp0001i2_10m10_dispValsVsStackFaultEnergies_10Layers():
+	dataFolder = os.path.join(BASE_FOLDER, "stacking_faults", "hcp_i2", "unrelaxed_10m10")
+	dispVals, stackFaultVals = helpers.getDispsAndStackFaultEnergiesFromCastepFilesInFolder(dataFolder)
+	outStruct = types.SimpleNamespace( dispVals=dispVals, stackFaultVals=stackFaultVals )
+	return outStruct
+
+def _getHcp0001i1_10m10_dispValsVsStackFaultEnergies_10Layers():
+	dataFolder = os.path.join(BASE_FOLDER, "stacking_faults", "hcp_i1", "unrelaxed_10m10")
+	dispVals, stackFaultVals = helpers.getDispsAndStackFaultEnergiesFromCastepFilesInFolder(dataFolder)
+	outStruct = types.SimpleNamespace( dispVals=dispVals, stackFaultVals=stackFaultVals )
+	return outStruct
+
+def _getHcp0001t2_10m10_dispValsVsStackFaultEnergies_10Layers():
+	dataFolder = os.path.join(BASE_FOLDER, "stacking_faults", "hcp_t2_fault", "unrelaxed_10m10")
+	dispVals, stackFaultVals = helpers.getDispsAndStackFaultEnergiesFromCastepFilesInFolder(dataFolder)
+	outStruct = types.SimpleNamespace( dispVals=dispVals, stackFaultVals=stackFaultVals )
+	return outStruct
 

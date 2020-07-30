@@ -2,13 +2,17 @@
 import itertools as it
 import os
 import math
+import types
 
 import plato_pylib.parseOther.parse_castep_files as parseCastep
 import plato_pylib.shared.ucell_class as UCell
 import plato_pylib.utils.fit_eos as fitBMod
+import plato_pylib.shared.unit_convs as uConv
 
 import gen_basis_helpers.shared.surfaces as surf
 import plato_fit_integrals.initialise.create_surf_energies_workflows as surfFlow
+
+from ..workflows import stacking_fault_workflows as sfaultFlowHelp
 
 def getPerfectHcpMinimalUCell(element):
 	lattVects = [ [ 1.00000000, 0.00000000, 0.00000000],
@@ -207,3 +211,37 @@ class SurfaceRunnerForExtractingRefData(surfFlow.SurfaceRunnerBase):
 
 	def writeFiles(self):
 		pass
+
+
+
+def getDispsAndStackFaultEnergiesFromCastepFilesInFolder(inpFolder):
+	outFiles = [os.path.join(inpFolder,x) for x in os.listdir(inpFolder) if x.endswith(".castep")]
+	dispVals = list()
+	stackFaultValsTotal = list()
+	stackFaultValsRelative = list()
+	refStackFaultValTotal = None
+
+	#Get individual energies
+	for x in outFiles:
+		parsedFile = types.SimpleNamespace(**parseCastep.parseCastepOutfile(x))
+		baseFileName =  os.path.splitext( os.path.split(x)[-1] )[0]
+		if baseFileName.startswith("disp_val"):
+			dispVal = float( baseFileName.replace("disp_val_","").replace("pt",".") )
+			currStackFaultTotal = _getAbsoluteStackFaultValueFromParsedFile(parsedFile)
+			stackFaultValsTotal.append(currStackFaultTotal)
+			dispVals.append(dispVal)
+		elif baseFileName.startswith("perfect_cell"):
+			refStackFaultValTotal = _getAbsoluteStackFaultValueFromParsedFile(parsedFile)
+		else:
+			pass
+
+	#Convert to relative energies
+	stackFaultValsRelative = [x-refStackFaultValTotal for x in stackFaultValsTotal]
+	return dispVals, stackFaultValsRelative
+
+
+def _getAbsoluteStackFaultValueFromParsedFile(parsedFile):
+	surfArea = sfaultFlowHelp._getABSurfaceAreaFromParsedFile(parsedFile)
+	totalEnergy = getattr(parsedFile.energies,"electronicTotalE")
+	return totalEnergy/surfArea
+
