@@ -10,6 +10,7 @@ import plato_pylib.shared.ucell_class as uCell
 import plato_pylib.utils.supercell as supCell
 
 from . import plane_equations as planeEqn
+from . import simple_vector_maths as vectHelp
 
 import gen_basis_helpers.shared.base_surface as baseSurface
 
@@ -230,7 +231,7 @@ def _getSingleLayerHcp1010FromPrimitiveCell(primCell):
 	#Trying diff approach
 	uVectA = [0,0,1] #this is for the 0001 surface
 	uVectB = [1,0,0] #This should be for the 10m10 surface
-	lattVectTransformMatrix = _getRotationMatrixLinkingTwoUnitVectors(uVectA, uVectB)
+	lattVectTransformMatrix = vectHelp.getRotationMatrixLinkingTwoUnitVectors(uVectA, uVectB)
 
 	#Cell vectors part
 	outCell = copy.deepcopy(primCell)
@@ -244,33 +245,6 @@ def _getSingleLayerHcp1010FromPrimitiveCell(primCell):
 	_centreCFractCoordsForInpCell(outCell)
 
 	return outCell
-
-#https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
-def _getRotationMatrixLinkingTwoUnitVectors(uVectA, uVectB):
-	assert abs(1 - _getLengthOfVector(uVectA))<1e-3
-	assert abs(1 - _getLengthOfVector(uVectB))<1e-3
-	assert len(uVectA)==3
-	assert len(uVectB)==3
-
-	crossProd = np.cross(uVectA, uVectB)
-	v1,v2,v3 = crossProd
-	vx = np.array( [ [0    , -1*v3,  1*v2],
-	                 [v3   ,  0   , -1*v1],
-	                 [-1*v2, v1   , 0    ] ] )
-
-	vxSquared = vx.dot(vx)
-	cosTheta = np.dot(uVectA,uVectB)
-	angularFactor = 1 / (1 + cosTheta)
-	vxSquaredWithAngular = angularFactor*vxSquared
-	rotMatrix = np.identity(3) + vx + vxSquaredWithAngular
-
-#	np.identity(3)
-	return rotMatrix
-
-def _getLengthOfVector(inpVector):
-	sqrSum = sum( [x**2 for x in inpVector] )
-	return math.sqrt(sqrSum)
-
 
 def _getResultFromTransformMatrixToFractCoordsInclAtomicSymbols(inpFractCoords, transformMatrix):
 	coordPart = np.array( [x[:3] for x in inpFractCoords] )
