@@ -34,7 +34,8 @@ class MultiPlotGridBase():
 
 class MultiPlotterStandard(MultiPlotterBase):
 	
-	def __init__(self, plotterFactories, gridCreator, annotateGraphs=False, annotateStrs=None, annotatePositionsAbs=None, annotatePositionsRel=None):
+	def __init__(self, plotterFactories, gridCreator, annotateGraphs=False, annotateStrs=None, annotatePositionsAbs=None,
+	             annotatePositionsRel=None, annotateFontSize=None):
 		""" Initializer
 		
 		Args:
@@ -48,6 +49,7 @@ class MultiPlotterStandard(MultiPlotterBase):
 			                   each plot. These are passed as the xy element to matplotlibs annotate function
 			annotatePositionsRel: (iter of 2 element iters OR a single 2-element iter) Same as above except that the positions are defined in terms relative to the x/y limits. e.g
 			                      [0.5,0.5] would mean putting it directly in the middle of the plot area
+			annotateFontSize: (iter of floats OR a single float) Each element is the font size for each annotation
 				 
 		"""
 		#We create this dict only to check input vals are consistent
@@ -60,6 +62,7 @@ class MultiPlotterStandard(MultiPlotterBase):
 		self.annotateStrs =  annotateStrs if annotateStrs is not None else [x for x in string.ascii_lowercase]
 		self.annotatePositionsAbs = annotatePositionsAbs 
 		self.annotatePositionsRel = annotatePositionsRel 
+		self.annotateFontSize = annotateFontSize
 
 		if (self.annotatePositionsAbs is None) and (self.annotatePositionsRel is None):
 			self.annotatePositionsRel = [0.05,0.9]
@@ -131,6 +134,14 @@ class MultiPlotterStandard(MultiPlotterBase):
 			outVal = it.cycle(val)
 		return outVal
 
+	def _getCycledIterableFromIterOrSingleVal(self, val):
+		try:
+			_ = val[0] #Will work if we have an iterable
+		except TypeError:
+			outVal = it.cycle([val])
+		else:
+			outVal = it.cycle(val)
+		return outVal
 
 	def _addAnnotations(self, allAxes):
 		useAbsPos = True if self.annotatePositionsAbs is not None else False
@@ -141,12 +152,14 @@ class MultiPlotterStandard(MultiPlotterBase):
 
 		annotatePos = self._getIterFromAnnotatePos(annotatePos)
 		annotateStrs = it.cycle(self.annotateStrs)
+		fontSize = [x for unused,x in zip(allAxes,self._getCycledIterableFromIterOrSingleVal(self.annotateFontSize)) ]
 
-		for ax,inpStr, inpPos in zip(allAxes, annotateStrs, annotatePos):
+		for idx, (ax,inpStr,inpPos) in enumerate( zip(allAxes, annotateStrs, annotatePos) ):
+			annotateKwargs = {"fontsize":fontSize[idx]}
 			if useAbsPos:
-				ax.annotate(inpStr,inpPos)
+				ax.annotate(inpStr,inpPos, **annotateKwargs)
 			else:
 				currXlim, currYlim = ax.get_xlim(), ax.get_ylim()
 				xRange, yRange = currXlim[1]-currXlim[0], currYlim[1]-currYlim[0]
 				absPos = [ currXlim[0] + (xRange*inpPos[0]), currYlim[0] + (yRange*inpPos[1]) ]
-				ax.annotate(inpStr,absPos)
+				ax.annotate(inpStr,absPos, **annotateKwargs)

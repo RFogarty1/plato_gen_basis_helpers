@@ -208,6 +208,7 @@ class DataPlotterStandard(DataPlotterBase):
 	"""
 
 	def __init__(self, **kwargs):
+		self.registeredKwargs.add("fontSizeAll") #Hackily sets the font size for all parts of the axis
 		self.registeredKwargs.add("lineStyles")
 		self.registeredKwargs.add("lineColors")
 		self.registeredKwargs.add("lineMarkers")
@@ -251,6 +252,10 @@ class DataPlotterStandard(DataPlotterBase):
 		if "legend" not in kwargs:
 			if self.legend:
 				plt.legend() 
+
+		#Optionally change font size of EVERYTHING
+		if self.fontSizeAll is not None:
+			changeFontSizeForInpAxis(plt.gca(), self.fontSizeAll)
 
 		return outFig 
 
@@ -328,4 +333,14 @@ def putXTickLabelsOnPlot(inpAxis, tickVals, plotLabels, rotation=0):
 	for x in inpAxis.get_xticklabels():
 		x.set_rotation(rotation)
 
+
+def changeFontSizeForInpAxis(ax, fontSize):
+	try:
+		legendEntries = ax.get_legend().get_texts()
+	except AttributeError:
+		legendEntries = list()
+
+	for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+				 ax.get_xticklabels() + ax.get_yticklabels() + legendEntries):
+		item.set_fontsize(fontSize)
 

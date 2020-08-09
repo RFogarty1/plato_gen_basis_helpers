@@ -20,7 +20,7 @@ class TestMultiPlotterStandard(unittest.TestCase):
 		self.annotatePositionsAbs = [0.05,0.2]
 		self.testXlimA, self.testXlimB = [0,2], [0,4]
 		self.testYlimA, self.testYlimB = [0,4], [0,6]
-
+		self.fontSize = 12
 
 		self.createTestObjs()
 
@@ -39,7 +39,8 @@ class TestMultiPlotterStandard(unittest.TestCase):
 
 		self.plotterIterA = [self.plotterA, self.plotterB]
 		self.testObjA = tCode.MultiPlotterStandard(self.plotterIterA, self.gridCreatorA, annotateGraphs=self.annotateGraphs,
-		                                           annotateStrs=self.annotateStrs, annotatePositionsAbs=self.annotatePositionsAbs)
+		                                           annotateStrs=self.annotateStrs, annotatePositionsAbs=self.annotatePositionsAbs,
+		                                           annotateFontSize=self.fontSize)
 
 	def testStandardMultiPlotterCalledWithOutputAxes(self):
 		self.testObjA.create()
@@ -97,7 +98,24 @@ class TestMultiPlotterStandard(unittest.TestCase):
 		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVal,actVal)]
 
 
+	def testExpFontsizePassedForFloatVal(self):
+		self.fontSize = 10
+		self.createTestObjs()
+		self.testObjA.create()
+		expFontSize = self.fontSize
+		for mockAx in self.mockAxes:
+			callArgs, callKwargs = mockAx.annotate.call_args
+			actFontsize = callKwargs["fontsize"]
+			self.assertEqual(expFontSize,actFontsize)
 
+	def testExpFontsizesPassedForIter(self):
+		self.fontSize = [10,12]
+		self.createTestObjs()
+		self.testObjA.create()
+		for mockAx,expFontSize in zip(self.mockAxes,it.cycle(self.fontSize)):
+			callArgs,callKwargs = mockAx.annotate.call_args
+			actFontSize = callKwargs["fontsize"]
+			self.assertEqual(expFontSize,actFontSize)
 
 
 
