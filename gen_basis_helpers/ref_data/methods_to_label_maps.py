@@ -23,6 +23,10 @@ def createMethodStrToMethodNameDict_three_centre_2019_tight_binding_paper():
 	outDict["dft2_2bodyhopvna_2bodyhopvnl_else_exact"] = "H_2bvna_2bvnl_XT_Ex_PP_2b"
 	outDict["dft2_e1_2bxc_exacte0"] = "H_2bxc_XT_2bxc_PP_Ex"
 	outDict["dft2_mcwedahop_mcwedaxtal_exact_e0"] = "H_Mc_XT_Mc_PP_Ex"
+	outDict["dft2_exact_scf_monopoles"] = "LCAO_scf0"
+	outDict["dft2_exact_scf_dipoles"] = "LCAO_scf1"
+	outDict["dft2_exact_scf_quadrupoles"] = "LCAO_scf2"
+	outDict["dft2_mcwedahop_mcwedaxtal_pp_fit_uniform_scf_monopoles"] = "H_Mc_XT_Mc_PP_fit_uden0_scf0"
 	outDict["plane-wave"] = "plane-wave"
 
 	return outDict
