@@ -23,7 +23,3 @@ class DataPlotterDos(basePlotter.DataPlotterStandard):
 		return cls(**inpKwargs)
 
 
-	def createPlot(self, plotData, **kwargs):
-		outFig = super().createPlot(plotData, **kwargs)
-		return outFig
-

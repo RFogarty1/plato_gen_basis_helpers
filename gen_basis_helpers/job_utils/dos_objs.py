@@ -1,4 +1,5 @@
 
+import copy
 import os
 
 import numpy as np
@@ -219,11 +220,11 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 
 
 	def plotData(self, **kwargs):
-		thisFunctKwargs = ["inclRefData", "extraData", "shiftDataEFermiToZero", "refDataFirst"]
+		thisFunctKwargs = ["inclRefData", "extraData", "shiftDataEFermiToZero", "refDataFirst","factory"]
 		ourData = np.array(self.data)
 		inclRefData = kwargs.get("inclRefData",True)
 		refDataFirst = kwargs.get("refDataFirst",False)
-
+		factory = kwargs.get("factory",False)
 
 		#Apply shift to normal data if requested
 		if kwargs.get("shiftDataEFermiToZero", False):
@@ -265,7 +266,15 @@ class DosAnalyserStandard(baseObjs.DosAnalyserBase):
 			if key in kwargs:
 				kwargs.pop(key)
 
-		return [self.dataPlotter.createPlot(plotData, **kwargs)]
+		outPlotter = copy.deepcopy(self.dataPlotter)
+		outPlotter._updateAttrsFromKwargs(**kwargs)
+		outPlotter.data = plotData
+		if factory:
+			outObj = outPlotter
+		else:
+			outObj = outPlotter.createPlot()
+
+		return [outObj]
 
 #TODO: Probably accept label as an input argument
 class DosOptions():
