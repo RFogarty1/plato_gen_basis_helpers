@@ -1,6 +1,8 @@
 
 import contextlib
+import copy
 import itertools as it
+import types
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -333,7 +335,6 @@ def putXTickLabelsOnPlot(inpAxis, tickVals, plotLabels, rotation=0):
 	for x in inpAxis.get_xticklabels():
 		x.set_rotation(rotation)
 
-
 def changeFontSizeForInpAxis(ax, fontSize):
 	try:
 		legendEntries = ax.get_legend().get_texts()
@@ -343,4 +344,14 @@ def changeFontSizeForInpAxis(ax, fontSize):
 	for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
 				 ax.get_xticklabels() + ax.get_yticklabels() + legendEntries):
 		item.set_fontsize(fontSize)
+
+def attachPostPlotFunctionToPlotterInstance(inpFunct, inpInstance):
+    oldFunct = copy.deepcopy(inpInstance._modifyAxisPlot)
+    copiedFunct = copy.deepcopy(inpFunct)
+    copiedFunct._prevMethod = copy.deepcopy(inpInstance._modifyAxisPlot)
+    def outFunct(self):
+        oldFunct() #Still gets passed self as its still a class method; may be a bit fragile though
+        copiedFunct(self)
+    inpInstance._modifyAxisPlot = types.MethodType(outFunct, inpInstance)
+
 
