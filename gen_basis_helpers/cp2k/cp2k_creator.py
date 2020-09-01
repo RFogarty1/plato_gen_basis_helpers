@@ -57,6 +57,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("charge")
 	registeredKwargs.add("runType")
 	registeredKwargs.add("geomConstraints")
+	registeredKwargs.add("extraModPyC2pkOpts")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -180,6 +181,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 
 		runTypeModDict = self._getModDictBasedOnRunType()
 		modDict.update(runTypeModDict)
+
+		if self.extraModPyC2pkOpts is not None:
+			modDict.update(self.extraModPyC2pkOpts)
 
 		fileHelpers.modCp2kObjBasedOnDict(pycp2kObj, modDict)
 
