@@ -114,6 +114,10 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MO.Section_parameters = "ON"
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MO.Occupation_numbers = True
 
+	if useDict.get("printOverlapConditionDiag".lower(), False) is True:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.OVERLAP_CONDITION.Section_parameters = "ON"
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.OVERLAP_CONDITION.Diagonalization = True
+
 	if useDict.get("printAOMullikenPop".lower()) is not None:
 		if useDict["printAOMullikenPop".lower()]:
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MULLIKEN.Section_parameters = "ON"
