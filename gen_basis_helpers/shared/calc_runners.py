@@ -168,3 +168,12 @@ class StandardOutputObjComposite(BaseStandardOutputObj):
 		self.objs = list(objs)
 
 
+class StandardMapFunction():
+	"""Takes the output of a workflow (accessed through a non-composite StandardInputObj) and extracts data in format user wants.
+	   The callable interface is __call__(self, stdInpObj). The returned value can be anything, but is usually a types.SimpleNamespace like-object
+
+	"""
+
+	def __call__(self, stdInpObj):
+		raise NotImplementedError("")
+
