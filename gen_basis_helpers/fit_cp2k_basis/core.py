@@ -1,4 +1,7 @@
 
+from ..shared import calc_runners as calcRunners
+import plato_pylib.utils.job_running_functs as jobRunHelp
+
 class CoeffsTransformer():
 	""" Callable class implements __call__(self, coeffs), which returns the input coefficients in the same or different format. Reasons can be to restrict the values coeffs can take (e.g. by applying normalisation) or to get the full function that the coeffs are being optimised for
 
@@ -52,5 +55,61 @@ class CoeffObserver():
 				 
 		"""
 		raise NotImplementedError("")
+
+
+class AdaptedStandardInput(calcRunners.StandardInputObj):
+	""" Same as StandardInputObj but the createOutputObj() function should return an object(obj) which has property obj.data[0].objFunct
+
+	"""
+	pass
+
+#Assume all std output objects are possibly composites? Maybe simply sum all composites or?
+class ObjFunctCalculatorStandard():
+
+	def __init__(self, objs, coeffUpdater, nCores=1):
+		""" Initializer
+		
+		Args:
+			objs: (iter of AdaptedStandardInput objects) These contain run comms and each output an objective function
+			coeffUpdater: (CoeffUpdaterStandard) Used to communicate the new set of coefficients
+			nCores: (int) Number of cores to use for shell comms (generally meaning the running-jobs part)
+ 
+		"""
+		self.objs = list(objs)
+		self.coeffUpdater = coeffUpdater
+		self.nCores = nCores
+
+	def _updateCoeffs(self, coeffs):
+		self.coeffUpdater(coeffs)
+
+	def _doPreRunShellComms(self):
+		runComms = list()
+		for x in self.objs:
+			runComms.extend(x.runComms)
+		jobRunHelp.executeRunCommsParralel(runComms, self.nCores, quiet=True, noCommsOk=True)
+
+	def _calcTotalObjFunct(self):
+		objFunctVals = self._getObjFunctVals()
+		return self._combineObjFunctVals(objFunctVals)
+
+	def _getObjFunctVals(self):
+		outVals = list()
+		for x in self.objs:
+			currOutputObj = x.createOutputObj()
+			outVals.extend( [x.objFunct for x in currOutputObj.data] )
+		return outVals
+
+	def _combineObjFunctVals(self, objFunctVals):
+		return sum(objFunctVals)
+
+	def __call__(self, coeffs):
+		self._updateCoeffs(coeffs)
+		self._doPreRunShellComms()
+		outVal = self._calcTotalObjFunct()
+		return outVal
+
+
+
+
 
 
