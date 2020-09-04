@@ -2,6 +2,7 @@
 from . import base_flow as baseFlow
 from ..gau_prod_theorem import get_ints_s_expansions as sIntHelp
 from ..fit_cp2k_basis import core as coreFit
+from ..fit_cp2k_basis import adapter_stdinp as stdInpAdapterHelp
 
 import types
 
@@ -64,3 +65,28 @@ class BasisFunctSelfOverlapCoeffUpdater(coreFit.CoeffObserver):
 	def updateCoeffs(self, coeffs):
 		newBasisObj = self.coeffsToPolyBasMapper(coeffs)
 		self.workflow.basisObj = newBasisObj
+
+
+class SelfOverlapWorkflowToObjFunctValStandard(stdInpAdapterHelp.WorkflowOutputToObjFunctValStandard):
+
+	def __init__(self, targVals, targAndActValsToObjVal):
+		""" Initializer
+		
+		Args:
+			targVals: (iter of float) Target values for the overlap workflow; will usually be length 1
+			targAndActValsToObjVal: f(targVals,actVals)->objFunctVal
+
+		"""
+		self.targVals = targVals
+		self.targAndActValsToObjVal = targAndActValsToObjVal
+
+	#Get the act values in same format as target
+	def _getValuesFromOutput(self, output):
+		outVals = [x.overlap for x in output]
+		return outVals
+
+	#convert a set of target/actual values to an objective function value
+	def _getObjFunctValFromTargValsAndActVals(self, targVals, actVals):
+		return self.targAndActValsToObjVal(targVals,actVals)
+
+

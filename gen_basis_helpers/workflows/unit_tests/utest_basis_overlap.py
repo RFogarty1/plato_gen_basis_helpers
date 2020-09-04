@@ -1,5 +1,7 @@
 
+import itertools as it
 import math
+import types
 import unittest
 import unittest.mock as mock
 
@@ -71,6 +73,40 @@ class TestSelfOverlapCoeffUpdater(unittest.TestCase):
 		self.testObjA.updateCoeffs(testCoeffs)
 		self.coeffToPolyMapper.assert_called_with(testCoeffs)
 		self.assertEqual(expBasisObj, self.workflowA.basisObj)
+
+
+
+class TestSelfOverlapWorkflowOutputToObjFunct(unittest.TestCase):
+
+	def setUp(self):
+		self.targOverlapsA = [4]
+		self.targOverlapsB = [5,7]
+		self.overlapsA = [2]
+		self.overlapsB = [2,3]
+		self.targActMapFunct = mock.Mock()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.outputA = [types.SimpleNamespace(overlap=x) for x in self.overlapsA]
+		self.outputB = [types.SimpleNamespace(overlap=x) for x in self.overlapsB]
+		self.testObjA = tCode.SelfOverlapWorkflowToObjFunctValStandard(self.targOverlapsA, self.targActMapFunct)
+		self.testObjB = tCode.SelfOverlapWorkflowToObjFunctValStandard(self.targOverlapsB, self.targActMapFunct)
+
+	def testExpectedValuesFromOutputSingleVal(self):
+		expOverlaps = self.overlapsA
+		actOverlaps = self.testObjA._getValuesFromOutput(self.outputA)
+		self.assertEqual(expOverlaps, actOverlaps)
+
+	def testExpectedValuesFromOutputMultiVals(self):
+		expOverlaps = self.overlapsB
+		actOverlaps = self.testObjB._getValuesFromOutput(self.outputB)
+		self.assertEqual(expOverlaps, actOverlaps)
+
+	def testExpectedOutputB(self):
+		self.targActMapFunct.side_effect = lambda targVals, actVals: sum([abs(x-y) for x,y in it.zip_longest(targVals,actVals)])
+		expVal = 7
+		actVal = self.testObjB(self.outputB)
+		self.assertEqual(expVal,actVal)
 
 
 
