@@ -50,3 +50,28 @@ class TestBasisFunctSelfOverlapWorkflow(unittest.TestCase):
 		actVal = self.testObjA.output[0].overlap
 		self.assertAlmostEqual(expVal,actVal)
 
+
+class TestSelfOverlapCoeffUpdater(unittest.TestCase):
+
+	def setUp(self):
+		self.workflowA = mock.Mock()
+		self.coeffToPolyMapper = mock.Mock()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.BasisFunctSelfOverlapCoeffUpdater(self.workflowA, self.coeffToPolyMapper)
+
+	def testUpdateCoeffsCallsExpectedFuncts(self):
+		testCoeffs = [1,2,3]
+		expBasisObj = mock.Mock()
+		self.workflowA.basisObj = mock.Mock()
+		self.coeffToPolyMapper.side_effect = lambda coeffs: expBasisObj
+		self.assertNotEqual(expBasisObj,self.workflowA.basisObj)
+
+		self.testObjA.updateCoeffs(testCoeffs)
+		self.coeffToPolyMapper.assert_called_with(testCoeffs)
+		self.assertEqual(expBasisObj, self.workflowA.basisObj)
+
+
+
+

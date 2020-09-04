@@ -1,6 +1,7 @@
 
 from . import base_flow as baseFlow
 from ..gau_prod_theorem import get_ints_s_expansions as sIntHelp
+from ..fit_cp2k_basis import core as coreFit
 
 import types
 
@@ -42,3 +43,24 @@ class BasisFunctSelfOverlapAtDistWorkflow(baseFlow.BaseLabelledWorkflow):
 		self._checkParamsOkForRun()
 		overlapVal = sIntHelp.getSelfOverlapMcWedaWeightFromGauPolyBasis(self.basisObj, self.dist)
 		self._output.overlap = overlapVal
+
+
+class BasisFunctSelfOverlapCoeffUpdater(coreFit.CoeffObserver):
+	""" Observer object; updates attached BasisFunctSelfOverlapAtDistWorkflow instance whenver it recieves an update on a set of coefficients being used 
+
+	"""
+
+	def __init__(self, workflow, coeffsToPolyBasMapper):
+		""" Initializer
+		
+		Args:
+			workflow: (BasisFunctSelfOverlapAtDistWorkflow workflow)
+			coeffsToPolyBasMapper: (CoeffsTransformer object) Callable object/function which converts a set of input coefficients to the basis function required
+				 
+		"""
+		self.workflow = workflow
+		self.coeffsToPolyBasMapper = coeffsToPolyBasMapper
+
+	def updateCoeffs(self, coeffs):
+		newBasisObj = self.coeffsToPolyBasMapper(coeffs)
+		self.workflow.basisObj = newBasisObj
