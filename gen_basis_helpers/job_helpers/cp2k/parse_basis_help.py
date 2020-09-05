@@ -97,7 +97,7 @@ def _getBasisFunctObjFromExponentSet(expSet, convNormToRawGaussians=True):
 
 	allBasisFuncts = list()
 	for idx,lVal in enumerate(expSet.lVals):
-		startCoeffs = [x[idx] for x in expSet.coeffs] 
+		startCoeffs = expSet.coeffs[idx]
 		if convNormToRawGaussians:
 			normCoeffs = [coeff*calcNormConstantForCP2KOnePrimitive(exponent,lVal) for exponent,coeff in it.zip_longest(allExponents,startCoeffs)]
 		else:
