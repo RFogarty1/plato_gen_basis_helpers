@@ -1,6 +1,8 @@
 
-
 import plato_pylib.plato.parse_gau_files as parseGau
+
+from ..gau_prod_theorem import get_ints_s_expansions as sIntHelp
+
 
 from . import core
 
@@ -44,4 +46,40 @@ class CoeffsToFullBasisSetForFixedExponents(core.CoeffsTransformer):
 		newBasisFunct = parseGau.GauPolyBasis(self.exponents, [coeffs], label=self.angMom)
 		outObj = self.fixedOrbExpansion + [newBasisFunct]
 		return outObj
+
+
+class CoeffsToNormalisedValuesFixedExponents(core.CoeffsTransformer):
+	""" Converts basis set coefficients to values leading to a normalised basis function ( <\phi|\phi>=1 )
+
+	"""
+
+	def __init__(self, exponents, angMom):
+		""" Initializer
+		
+		Args:
+			exponents: (iter of floats) Exponents for the orbital
+			angMom: (int) Angular momentum of the orbital
+
+		"""
+		self.exponents = list(exponents)
+		self.angMom = angMom
+
+	def _getGauPolyBasisFromCoeffs(self, coeffs):
+		mapFunct = CoeffsToFullBasisFunctionForFixedExponents(self.exponents, self.angMom)
+		return mapFunct(coeffs)
+
+	def _getScaleFactor(self, coeffs):
+		gauPolyBasisObj = self._getGauPolyBasisFromCoeffs(coeffs)
+		distVal = 0.0
+
+		if (self.angMom == 0):
+			overlapVal = sIntHelp.getSelfOverlapMcWedaWeightFromGauPolyBasis(gauPolyBasisObj, distVal)
+		else:
+			raise ValueError("{} is an unsupported value for self.angMom".format(self.angMom))
+
+		return 1/overlapVal
+
+	def __call__(self, coeffs):
+		scaleFactor = self._getScaleFactor(coeffs)
+		return [x*scaleFactor for x in coeffs]
 
