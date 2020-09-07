@@ -141,7 +141,7 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 			raise ValueError("Constraining angles to {} is not currently supported".format(angleConstraints))
 
 
-	if useDict.get("useSmearing".lower()) is not None:
+	if useDict.get("useSmearing".lower(),True) is False:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.SMEAR.Section_parameters = False
 
 
