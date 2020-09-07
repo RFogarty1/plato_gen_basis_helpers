@@ -1,11 +1,29 @@
 
 import types
 
-from ..shared import calc_runners as calc_runners
+from ..shared import calc_runners as calcRunners
 
 from . import core
 
-class GenericMapFunctionForGettingObjFunctFromStdInp(calc_runners.StandardMapFunction):
+#TODO: Add ability to put weights into the map function
+
+
+def getAdaptedStdInptFromWorkflow(workflow, outputToObjFunct, label=None):
+	""" Gets an AdaptedStandardInput object when given a workflow and a function to map its output to an objective function value
+	
+	Args:
+		workflow: (BaseWorkflow object) Used to encapsulate instructions for the calculating something
+		outputToObjFunct: (WorkflowOutputToObjFunctValStandard) This maps the output from workflow into an objective function value
+			 
+	Returns
+		stdInp: (AdaptedStandardInput object) A version of () object which creates an output object in the format required for fitting (the overall objective function knows where to find the contributions of this calculation)
+ 
+	"""
+	mapFunction = GenericMapFunctionForGettingObjFunctFromStdInp(outputToObjFunct)
+	stdInpObj = calcRunners.StandardInputObj( workflow, label, mapFunction=mapFunction )
+	return stdInpObj
+
+class GenericMapFunctionForGettingObjFunctFromStdInp(calcRunners.StandardMapFunction):
 
 	def __init__(self, rawOutputToObjFunct):
 		""" Initializer

@@ -65,7 +65,9 @@ class AdaptedStandardInput(calcRunners.StandardInputObj):
 
 #Assume all std output objects are possibly composites? Maybe simply sum all composites or?
 class ObjFunctCalculatorStandard():
+	"""Objective function object; Callable as __call__(self, coeffs) and returns the objcetive functino for the given set of coefficients
 
+	"""
 	def __init__(self, objs, coeffUpdater, nCores=1):
 		""" Initializer
 		
