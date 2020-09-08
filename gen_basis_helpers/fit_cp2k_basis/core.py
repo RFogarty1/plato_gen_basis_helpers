@@ -69,7 +69,7 @@ class ObjFunctCalculatorStandard():
 	"""Objective function object; Callable as __call__(self, coeffs) and returns the objective function for the given set of coefficients
 
 	"""
-	def __init__(self, objs, coeffUpdater, nCores=1, weights=None):
+	def __init__(self, objs, coeffUpdater, nCores=1, weights=None, observers=None):
 		""" Initializer
 		
 		Args:
@@ -77,12 +77,21 @@ class ObjFunctCalculatorStandard():
 			coeffUpdater: (CoeffUpdaterStandard) Used to communicate the new set of coefficients
 			nCores: (int) Number of cores to use for shell comms (generally meaning the running-jobs part)
 			weights: (Optional, iter of floats) default is all ones. Multiple the objective values from objs by these weights
+			observers: (Optional, list of ObjFunctObserver objects) List of observers. These are updated with the current objective function after every call to this objective function
  
 		"""
 		self.objs = list(objs)
 		self.coeffUpdater = coeffUpdater
 		self.nCores = nCores
-		self.weights = weights if weights is not None else [1 for x in self.objs]
+		self.weights = list(weights) if weights is not None else [1 for x in self.objs]
+		self.observers = list(observers) if observers is not None else list()
+
+	def addObjValObserver(self, observer):
+		self.observers.append(observer)
+
+	def _updateObservers(self, objVal):
+		for x in self.observers:
+			x.updateObjVal(objVal)
 
 	def _updateCoeffs(self, coeffs):
 		self.coeffUpdater(coeffs)
@@ -112,9 +121,15 @@ class ObjFunctCalculatorStandard():
 		self._updateCoeffs(coeffs)
 		self._doPreRunShellComms()
 		outVal = self._calcTotalObjFunct()
+		self._updateObservers(outVal)
 		return outVal
 
+class ObjFunctObserver():
+	"""Class can act as an observer for ObjFunctCalculatorStandard, since it implements an updateObjVal method
 
+	"""
+	def updateObjVal(self, objVal):
+		raise NotImplementedError("")
 
 
 

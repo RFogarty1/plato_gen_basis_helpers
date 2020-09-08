@@ -87,7 +87,17 @@ class TestObjFunctCalculator(unittest.TestCase):
 		mockedCalcObjFunct.assert_called_with()
 		self.assertEqual(expOutput,actOutput)
 
-		
+	@mock.patch("gen_basis_helpers.fit_cp2k_basis.core.ObjFunctCalculatorStandard._calcTotalObjFunct")
+	@mock.patch("gen_basis_helpers.fit_cp2k_basis.core.ObjFunctCalculatorStandard._doPreRunShellComms")
+	@mock.patch("gen_basis_helpers.fit_cp2k_basis.core.ObjFunctCalculatorStandard._updateCoeffs")
+	def testAddObjValObserver(self, mockedCoeffUpdater, mockedPreRunShellComms, mockedCalcObjFunct):
+		expObjVal = mock.Mock()
+		mockedCalcObjFunct.side_effect = lambda *args,**kwargs: expObjVal
+		updater = types.SimpleNamespace( updateObjVal=mock.Mock() )
+		self.testObjA.addObjValObserver(updater)
+		self.testObjA(None)
+		updater.updateObjVal.assert_called_with(expObjVal)
+	
 
 
 
