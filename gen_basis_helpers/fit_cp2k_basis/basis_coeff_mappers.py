@@ -19,7 +19,7 @@ class CoeffsToFullBasisFunctionForFixedExponents(core.CoeffsTransformer):
 			angMom: (int) Angular momentum for the orbital
 				 
 		"""
-		self.exponents = exponents
+		self.exponents = list(exponents)
 		self.angMom = angMom
 
 	def __call__(self, coeffs):
@@ -39,7 +39,7 @@ class CoeffsToFullBasisSetForFixedExponents(core.CoeffsTransformer):
 			angMom: (int) Angular momentum for the orbital we're optimising
 		"""
 		self.fixedOrbExpansion = list(fixedOrbExpansion)
-		self.exponents = exponents
+		self.exponents = list(exponents)
 		self.angMom = angMom
 
 	def __call__(self, coeffs):
