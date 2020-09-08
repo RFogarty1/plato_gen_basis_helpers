@@ -1,4 +1,6 @@
 
+import itertools as it
+
 from ..shared import calc_runners as calcRunners
 import plato_pylib.utils.job_running_functs as jobRunHelp
 
@@ -67,18 +69,20 @@ class ObjFunctCalculatorStandard():
 	"""Objective function object; Callable as __call__(self, coeffs) and returns the objective function for the given set of coefficients
 
 	"""
-	def __init__(self, objs, coeffUpdater, nCores=1):
+	def __init__(self, objs, coeffUpdater, nCores=1, weights=None):
 		""" Initializer
 		
 		Args:
 			objs: (iter of AdaptedStandardInput objects) These contain run comms and each output an objective function
 			coeffUpdater: (CoeffUpdaterStandard) Used to communicate the new set of coefficients
 			nCores: (int) Number of cores to use for shell comms (generally meaning the running-jobs part)
+			weights: (Optional, iter of floats) default is all ones. Multiple the objective values from objs by these weights
  
 		"""
 		self.objs = list(objs)
 		self.coeffUpdater = coeffUpdater
 		self.nCores = nCores
+		self.weights = weights if weights is not None else [1 for x in self.objs]
 
 	def _updateCoeffs(self, coeffs):
 		self.coeffUpdater(coeffs)
@@ -101,7 +105,8 @@ class ObjFunctCalculatorStandard():
 		return outVals
 
 	def _combineObjFunctVals(self, objFunctVals):
-		return sum(objFunctVals)
+		weightedVals = [x*w for x,w in it.zip_longest(objFunctVals,self.weights)]
+		return sum(weightedVals)
 
 	def __call__(self, coeffs):
 		self._updateCoeffs(coeffs)
