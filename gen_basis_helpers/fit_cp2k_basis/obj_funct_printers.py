@@ -15,8 +15,14 @@ def makeObjFunctPrintObjValEveryNIters(printEveryNIters, objFunct):
 	printObserver = PrintIterNumberVsObjVal(printEveryNIters)
 	objFunct.addObjValObserver(printObserver)
 
+
+def makeObjFunctPrintObjValAndCoeffsEveryNIters(printEveryNIters, objFunct):
+	printObserver = PrintIterNumberVsObjValAndCoeffs(printEveryNIters)
+	objFunct.addObjValObserver(printObserver)
+	objFunct.coeffUpdater.addObserver(printObserver)
+
 class PrintIterNumberVsObjVal(coreHelp.ObjFunctObserver):
-	""" Class used for printing optimisation progress to screen at times based on how often the objective functio nhas been called
+	""" Class used for printing optimisation progress to screen at times based on how often the objective function has been called
 
 	"""
 	def __init__(self, printEveryNIters):
@@ -36,3 +42,32 @@ class PrintIterNumberVsObjVal(coreHelp.ObjFunctObserver):
 
 	def _printVals(self, iterNumb, objVal):
 		print("Iter Number: {} objVal: {}".format(iterNumb, objVal))
+
+
+#Coeffs first, store them then go to the objVal
+class PrintIterNumberVsObjValAndCoeffs(coreHelp.ObjFunctObserver, coreHelp.CoeffObserver):
+	"""Class used for printing optimisation progress and current coefficients to screen at times based on how often the objective function has been called
+
+
+	"""
+	def __init__(self, printEveryNIters):
+		""" Initializer
+		
+		Args:
+			printEveryNIters: (int) How many iters to pass between each print. E.g. 1 means print every time the objective function is evaluated, 2 every other time etc.
+				 
+		"""
+		self.iterNumb = 0
+		self.printEveryNIters = printEveryNIters
+		self.currCoeffs = None
+
+	def updateCoeffs(self, coeffs):
+		self.currCoeffs = coeffs
+
+	def updateObjVal(self, objVal):
+		self.iterNumb += 1
+		self._printVals(self.iterNumb, objVal, self.currCoeffs)
+
+	def _printVals(self, iterNumb, objVal, coeffs):
+		print("Iter Number: {} objVal: {} coeffs: {}".format(iterNumb, objVal, coeffs))
+
