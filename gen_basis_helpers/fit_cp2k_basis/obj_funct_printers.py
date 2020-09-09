@@ -20,7 +20,7 @@ def makeObjFunctPrintObjValAndCoeffsEveryNIters(printEveryNIters, objFunct, rawC
 	printObserver = PrintIterNumberVsObjValAndCoeffs(printEveryNIters)
 	objFunct.addObjValObserver(printObserver)
 	if rawCoeffs:
-		objFunct.coeffUpdater.ddObserverForRawCoeffs(printObserver)
+		objFunct.coeffUpdater.addObserverForRawCoeffs(printObserver)
 	else:
 		objFunct.coeffUpdater.addObserver(printObserver)
 
@@ -69,7 +69,8 @@ class PrintIterNumberVsObjValAndCoeffs(coreHelp.ObjFunctObserver, coreHelp.Coeff
 
 	def updateObjVal(self, objVal):
 		self.iterNumb += 1
-		self._printVals(self.iterNumb, objVal, self.currCoeffs)
+		if (self.iterNumb%self.printEveryNIters)==0:
+			self._printVals(self.iterNumb, objVal, self.currCoeffs)
 
 	def _printVals(self, iterNumb, objVal, coeffs):
 		print("Iter Number: {} objVal: {} coeffs: {}".format(iterNumb, objVal, coeffs))
