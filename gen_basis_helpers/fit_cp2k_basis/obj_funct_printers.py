@@ -16,10 +16,13 @@ def makeObjFunctPrintObjValEveryNIters(printEveryNIters, objFunct):
 	objFunct.addObjValObserver(printObserver)
 
 
-def makeObjFunctPrintObjValAndCoeffsEveryNIters(printEveryNIters, objFunct):
+def makeObjFunctPrintObjValAndCoeffsEveryNIters(printEveryNIters, objFunct, rawCoeffs=False):
 	printObserver = PrintIterNumberVsObjValAndCoeffs(printEveryNIters)
 	objFunct.addObjValObserver(printObserver)
-	objFunct.coeffUpdater.addObserver(printObserver)
+	if rawCoeffs:
+		objFunct.coeffUpdater.ddObserverForRawCoeffs(printObserver)
+	else:
+		objFunct.coeffUpdater.addObserver(printObserver)
 
 class PrintIterNumberVsObjVal(coreHelp.ObjFunctObserver):
 	""" Class used for printing optimisation progress to screen at times based on how often the objective function has been called
