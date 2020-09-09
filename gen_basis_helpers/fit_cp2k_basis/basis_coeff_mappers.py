@@ -1,4 +1,4 @@
-
+import math
 import plato_pylib.plato.parse_gau_files as parseGau
 
 from ..gau_prod_theorem import get_ints_s_expansions as sIntHelp
@@ -77,7 +77,7 @@ class CoeffsToNormalisedValuesFixedExponents(core.CoeffsTransformer):
 		else:
 			raise ValueError("{} is an unsupported value for self.angMom".format(self.angMom))
 
-		return 1/overlapVal
+		return 1/ math.sqrt(overlapVal)
 
 	def __call__(self, coeffs):
 		scaleFactor = self._getScaleFactor(coeffs)

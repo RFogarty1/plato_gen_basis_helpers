@@ -1,4 +1,5 @@
 
+import itertools as it
 import math
 import unittest
 import unittest.mock as mock
@@ -63,7 +64,7 @@ class TestCoeffsToNormalisedValuesForFixedExponents(unittest.TestCase):
 
 	def testGetScaleFactorAsExpected(self):
 		areaOfGaussian = (math.pi/(2*self.exponentsA[0]))**(3/2)
-		expScaleFactor = 1/(self.coeffsA[0]*self.coeffsA[0]*areaOfGaussian)
+		expScaleFactor = 1/ math.sqrt(self.coeffsA[0]*self.coeffsA[0]*areaOfGaussian)
 		actScaleFactor = self.testObjA._getScaleFactor(self.coeffsA)
 		self.assertAlmostEqual(expScaleFactor,actScaleFactor)
 
@@ -75,6 +76,19 @@ class TestCoeffsToNormalisedValuesForFixedExponents(unittest.TestCase):
 		actCoeffs = self.testObjA(self.coeffsA)
 		mockedGetScaleFactor.assert_called_with(self.coeffsA)
 		self.assertEqual(expCoeffs, actCoeffs)
+
+	def testIdemptotent(self):
+		""" Applying twice to any set of coeffs should give the same result as applying once """
+		#Check that applying it once changes the coeffs
+		coeffsB = list( self.testObjA(self.coeffsA) )
+		expCoeffs = list(coeffsB)
+		for cA,cB in it.zip_longest(self.coeffsA, coeffsB):
+			self.assertNotAlmostEqual(cA,cB)
+
+		#Check that applying the second time does NOT change the coeffs
+		actCoeffs = self.testObjA(coeffsB)
+		for exp,act in it.zip_longest(expCoeffs,actCoeffs):
+			self.assertAlmostEqual(exp,act)
 
 
 
