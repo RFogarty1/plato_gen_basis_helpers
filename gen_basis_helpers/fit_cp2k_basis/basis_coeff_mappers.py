@@ -56,6 +56,33 @@ class CoeffsToFullBasisFunctionForMixedCoeffExponentOpt(core.CoeffsTransformer):
 		outFunct = parseGau.GauPolyBasis(exponents, [outCoeffs], label=self.angMom)
 		return outFunct
 
+
+class CoeffsToFullBasisSetForMixedCoeffExponentOpt():
+	
+	def __init__(self, fixedBasisFuncts, fixedExponents, fixedCoeffs, angMom):
+		""" Initializer
+		
+		Args:
+			IMPORTANT NOTE: The fixedCoeffs/fixedExponents must both be the first n-values in the basis function (if exponents are a1,a2,a3 you cant fix a1 and a3 with this implementation, or even just a3 on its own)
+
+			fixedBasisFuncts: (iter of plato_pylib GauPolyBasis objects) Each represents 1 fixed basis function. Note that label should be set to the angular momentum value of each orbital
+			fixedCoeffs: (iter of floats) The values of the fixed coefficients. Pass a blank list to vary ALL coefficients
+			fixedExponents: (iter of floats) The values of the fixed exponents. Pass a blank list to vary ALL exponents
+			angMom: (int) The angular momentum of the new basis function
+				 
+		"""
+		self.fixedBasisFuncts = list(fixedBasisFuncts)
+		self.fixedExponents = list(fixedExponents)
+		self.fixedCoeffs = list(fixedCoeffs)
+		self.angMom = angMom
+		
+	def __call__(self, coeffs):
+		currArgs = [self.fixedExponents, self.fixedCoeffs, self.angMom]
+		newFunctMapper = basCoeffMappers.CoeffsToFullBasisFunctionForMixedCoeffExponentOpt(*currArgs)
+		newFunct = newFunctMapper(coeffs)
+		return self.fixedBasisFuncts + [newFunct]
+
+
 class CoeffsToFullBasisFunctionForFixedExponents(core.CoeffsTransformer):
 	"""Class holds the exponents/angular momentum for a basis function and returns the whole basis function when given the curent coefficients for the the exponents
 
