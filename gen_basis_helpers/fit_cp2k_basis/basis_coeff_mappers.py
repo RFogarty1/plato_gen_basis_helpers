@@ -14,6 +14,7 @@ class FitCoeffsToBasisFunctionExponentsAndCoeffsBase():
 		raise NotImplementedError("")
 
 
+#TODO: Ideally swap the coeffs/exponents order in the initializer constructor to match others
 class FitCoeffsToBasisFunctionExponentsAndCoeffsMixedOptStandard(FitCoeffsToBasisFunctionExponentsAndCoeffsBase):
 	""" Has interface __call__(fitCoeffs)->(exponents,coeffs) where exponents and coeffs are of the same length and lead to the full basis function. NOTE: This implementation requires that exponents MUST be listed first in fitCoeffs. Furthermore coeffs/exponents need to be ordered a certain way (see initializer)
 	"""
@@ -123,6 +124,32 @@ class CoeffsToFullBasisSetForFixedExponents(core.CoeffsTransformer):
 		outObj = self.fixedOrbExpansion + [newBasisFunct]
 		return outObj
 
+
+
+class CoeffsToNormalisedValuesForMixedCoeffExponentOpt(core.CoeffsTransformer):
+	""" Converts basis set coefficients to values leading to a normalised basis function ( <\phi|\phi>=1 )
+
+	"""
+
+	def __init__(self, fixedExponents, fixedCoeffs, angMom):
+		""" Initializer
+		
+		Args:
+			IMPORTANT NOTE: The fixedCoeffs/fixedExponents must both be the first n-values in the basis function (if exponents are a1,a2,a3 you cant fix a1 and a3 with this implementation, or even just a3 on its own)
+			fixedCoeffs: (iter of floats) The values of the fixed coefficients. Pass a blank list to vary ALL coefficients
+			fixedExponents: (iter of floats) The values of the fixed exponents. Pass a blank list to vary ALL exponents
+			angMom: (int) The angular momentum of the orbital
+				 
+		"""
+		self.fixedCoeffs = fixedCoeffs
+		self.fixedExponents = fixedExponents
+		self.angMom = angMom
+
+	def __call__(self, coeffs):
+		mapToExponentsAndCoeffs = CoeffsToFullBasisFunctionForMixedCoeffExponentOpt(self.fixedExponents, self.fixedCoeffs, angMom)
+		exponents, gauCoeffs = mapToExponentsAndCoeffs(coeffs)
+		fixedExponentObj = CoeffsToNormalisedValuesFixedExponents(exponents,self.angMom)
+		return fixedExponentObj(gauCoeffs)
 
 class CoeffsToNormalisedValuesFixedExponents(core.CoeffsTransformer):
 	""" Converts basis set coefficients to values leading to a normalised basis function ( <\phi|\phi>=1 )
