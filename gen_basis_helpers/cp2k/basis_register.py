@@ -2,7 +2,11 @@
 
 """ Module holds the objects needed to map user-strings to CP2K basis-set objects """
 
+import os
+import plato_pylib.parseOther.parse_cp2k_basis as parseCP2KBasis
+
 import gen_basis_helpers.cp2k.private.get_default_basis_strs as getDefaultBasisStrs
+
 
 #_METHOD_STRS_TO_BASIS_SETS =
 _BASIS_STRS_TO_CP2K_BASIS_CREATORS = getDefaultBasisStrs.defaultBasisStrsToCreators
@@ -80,5 +84,22 @@ def createCP2KBasisObjFromEleAndBasisStr(eleStr, basisStr):
 
 	return outObj
 
-
+def createCP2KBasisSetInPlatoFmt(eleStr, basisStr, basisFolderPath):
+	""" Gets a CP2K basis set in a format often used with plato (including reversing the normalisation of coefficients)
+	
+	Args:
+		eleStr: (str, case-insensitive) The element used
+		basisStr: (str, case-insensitive) The key to a specific basis set/pseudopot. combination
+		basisFilePath: (str) Path to where the CP2K basis files are
+	
+	Returns
+		gauPolyExpansions: (iter of GauPolyBasis objects) Each represents ONE basis function in the standard format for plato. Angular momentum stored on .label
+	
+	"""
+	origBasisObj = createCP2KBasisObjFromEleAndBasisStr(eleStr, basisStr)
+	origBasisPath = os.path.join( basisFolderPath, origBasisObj.basisFile )
+	parsedFile = parseCP2KBasis.parseCP2KBasisFile(origBasisPath)
+	cp2kFormatBasis = parsedFile.getUniqueBasisSet(eleStr, origBasisObj.basis)
+	platoFmtBasis = parseCP2KBasis.getGauPolyBasisFunctionsFromCP2KBasisSet(cp2kFormatBasis)
+	return platoFmtBasis
 
