@@ -39,8 +39,8 @@ class FitCoeffsToBasisFunctionExponentsAndCoeffsMixedOptStandard(FitCoeffsToBasi
 		nFreeExponents = nEach - len(self.fixedExponents)
 		nFreeCoeffs = nEach - len(self.fixedCoeffs)
 
-		outExponents = self.fixedExponents + fitCoeffs[:nFreeExponents]
-		outCoeffs = self.fixedCoeffs + fitCoeffs[nFreeExponents:]
+		outExponents = list(self.fixedExponents) + list(fitCoeffs[:nFreeExponents])
+		outCoeffs = list(self.fixedCoeffs) + list(fitCoeffs[nFreeExponents:])
 
 		return outExponents, outCoeffs
 
@@ -79,7 +79,7 @@ class CoeffsToFullBasisSetForMixedCoeffExponentOpt():
 		
 	def __call__(self, coeffs):
 		currArgs = [self.fixedExponents, self.fixedCoeffs, self.angMom]
-		newFunctMapper = basCoeffMappers.CoeffsToFullBasisFunctionForMixedCoeffExponentOpt(*currArgs)
+		newFunctMapper = CoeffsToFullBasisFunctionForMixedCoeffExponentOpt(*currArgs)
 		newFunct = newFunctMapper(coeffs)
 		return self.fixedBasisFuncts + [newFunct]
 
@@ -146,10 +146,12 @@ class CoeffsToNormalisedValuesForMixedCoeffExponentOpt(core.CoeffsTransformer):
 		self.angMom = angMom
 
 	def __call__(self, coeffs):
-		mapToExponentsAndCoeffs = CoeffsToFullBasisFunctionForMixedCoeffExponentOpt(self.fixedExponents, self.fixedCoeffs, angMom)
-		exponents, gauCoeffs = mapToExponentsAndCoeffs(coeffs)
-		fixedExponentObj = CoeffsToNormalisedValuesFixedExponents(exponents,self.angMom)
-		return fixedExponentObj(gauCoeffs)
+		raise NotImplementedError("")
+#		mapToExponentsAndCoeffs = FitCoeffsToBasisFunctionExponentsAndCoeffsMixedOptStandard(self.fixedCoeffs,self.fixedExponents)
+#		exponents, gauCoeffs = mapToExponentsAndCoeffs(coeffs)
+#		fixedExponentObj = CoeffsToNormalisedValuesFixedExponents(exponents,self.angMom)
+#		normalisedCoeffs = fixedExponentObj(gauCoeffs)
+#		return fixedExponentObj(gauCoeffs)
 
 class CoeffsToNormalisedValuesFixedExponents(core.CoeffsTransformer):
 	""" Converts basis set coefficients to values leading to a normalised basis function ( <\phi|\phi>=1 )
