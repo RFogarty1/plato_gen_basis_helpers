@@ -153,6 +153,22 @@ class CoeffsToNormalisedValuesForMixedCoeffExponentOpt(core.CoeffsTransformer):
 #		normalisedCoeffs = fixedExponentObj(gauCoeffs)
 #		return fixedExponentObj(gauCoeffs)
 
+class CoeffsToNormalisedValuesAllCoeffsFree_someExponentsFree(core.CoeffsTransformer):
+
+	def __init__(self, fixedExponents, fixedCoeffs, angMom):
+		self.fixedCoeffs = list(fixedCoeffs)
+		self.fixedExponents = list(fixedExponents)
+		self.angMom = angMom
+		assert len(self.fixedCoeffs)==0
+
+	def __call__(self,coeffs):
+		mapToExponentsAndCoeffs = FitCoeffsToBasisFunctionExponentsAndCoeffsMixedOptStandard(self.fixedCoeffs,self.fixedExponents)
+		exponents, gauCoeffs = mapToExponentsAndCoeffs(coeffs)
+		fixedExponentObj = CoeffsToNormalisedValuesFixedExponents(exponents,self.angMom)
+		normalisedCoeffs = fixedExponentObj(gauCoeffs)
+		variableExponents = exponents[len(self.fixedExponents):len(exponents)] 
+		return variableExponents + normalisedCoeffs
+
 class CoeffsToNormalisedValuesFixedExponents(core.CoeffsTransformer):
 	""" Converts basis set coefficients to values leading to a normalised basis function ( <\phi|\phi>=1 )
 
