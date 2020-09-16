@@ -113,6 +113,7 @@ class CP2KEosStandardObjCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 	registeredKwargs.add("eosStr")
 	registeredKwargs.add("structStrParamMapper")
 	registeredKwargs.add("eleStr")
+	registeredKwargs.add("extraCreatorKwargs")
 
 	#This is essentially main(); the parent class handles temporarily setting kwargs to user values
 	def _createFromSelf(self):
@@ -154,6 +155,8 @@ class CP2KEosStandardObjCreator(baseCreator.CreatorWithResetableKwargsTemplate):
 			outKwargDict[outKey] = val
 
 		outKwargDict["basisObjs"] = self._getBasisObjects()
+		if self.extraCreatorKwargs is not None:
+			outKwargDict.update(self.extraCreatorKwargs)
 
 		return cp2kCreator.CP2KCalcObjFactoryStandard(**outKwargDict)
 
