@@ -241,6 +241,7 @@ def getDispsAndStackFaultEnergiesFromCastepFilesInFolder(inpFolder):
 
 
 def _getAbsoluteStackFaultValueFromParsedFile(parsedFile):
+	parsedFile.unitCell.convAngToBohr()
 	surfArea = sfaultFlowHelp._getABSurfaceAreaFromParsedFile(parsedFile)
 	totalEnergy = getattr(parsedFile.energies,"electronicTotalE")
 	return totalEnergy/surfArea
