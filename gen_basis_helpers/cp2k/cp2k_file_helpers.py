@@ -122,6 +122,10 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 		if useDict["printAOMullikenPop".lower()]:
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MULLIKEN.Section_parameters = "ON"
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.MULLIKEN.Print_gop = True
+
+	if useDict.get("epsDef".lower(),None) is not None:
+		rawNumber = useDict["epsDef".lower()]
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_default = "{:.2g}".format( rawNumber ).upper()
 	
 	if useDict.get("charge") is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Charge = useDict["charge"]
