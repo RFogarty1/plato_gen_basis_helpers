@@ -5,6 +5,34 @@ from scipy.optimize import minimize
 from . import core as coreHelp
 
 
+def decoObjFunctCallToCatchCalledProcessError(objFunctObj, retVal):
+	""" Decorates an instance of ObjFunctCalculatorStandard class such that when CalledProcessError is encountered the objective function returns retVal (instead of the program crashing)
+	
+	Args:
+		objFunctObj: (ObjFunctCalculatorStandard instance)
+		retVal: (float) Value to return when encountering CalledProcessError
+			
+	"""
+	objFunctObj._doPreRunShellComms = _getWrapPreRunShellCommsToCatchCalledProcessError(objFunctObj._doPreRunShellComms)
+	objFunctObj._calcTotalObjFunct = _getWrapCalcObjFunctValsToCatchCalledProcessError(objFunctObj._calcTotalObjFunct, retVal)
+
+def _getWrapPreRunShellCommsToCatchCalledProcessError(inpFunct):
+	def outFunct():
+		try:
+			inpFunct()
+		except:
+			pass
+	return outFunct
+
+def _getWrapCalcObjFunctValsToCatchCalledProcessError(inpFunct, retVal):
+	def outFunct():
+		try:
+			outVal = inpFunct()
+		except:
+			outVal = retVal
+		return outVal
+	return outFunct
+
 def carryOutOptimisationBasicOptions(objectiveFunct,startCoeffs, method=None, **kwargs):
 	""" Driver to minimize an objective function using scipy.minimize
 	
