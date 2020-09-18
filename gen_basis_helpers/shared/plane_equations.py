@@ -101,3 +101,7 @@ class ThreeDimPlaneEquation():
 		"""
 		return [self.a,self.b,self.c,self.d]
 
+	@coeffs.setter
+	def coeffs(self,val):
+		self.a, self.b, self.c, self.d = val
+
