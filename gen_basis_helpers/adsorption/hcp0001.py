@@ -1,6 +1,9 @@
 
 import itertools as it
 
+import plato_pylib.shared.ucell_class as uCellHelp
+import plato_pylib.utils.supercell as supCellHelp
+
 from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqn
 from ..shared import simple_vector_maths as vectHelp
@@ -18,20 +21,40 @@ class BaseSurfaceToSites():
 		raise NotImplementedError("")
 
 	def __call__(self, inpSurface):
-		return getSurfaceSitesFromInpSurface(inpSurface)
+		return self.getSurfaceSitesFromInpSurface(inpSurface)
 
 
-#TODO: Make this much neater even just for the "top-only" implementation before moving on
-class HcpTopSurfaceToSites(BaseSurfaceToSites):
-
-	def __init__(self, top=True):
-		self.top = top
-		self.minInterPlaneDist = 0.5
-
+class Hcp0001SurfaceToSitesSharedMixin():
+	
 	def getOutwardsSurfaceVectorFromSurface(self, inpSurface):
 		inpGeom = inpSurface.unitCell
 		surfPlaneEqn = self.getSurfacePlaneEqn(inpGeom)
 		return vectHelp.getUnitVectorFromInpVector(surfPlaneEqn.coeffs[:3])
+
+	#TODO: I should likely be grouping close-planes together (using a tolerance criterion)
+	def getSurfacePlaneEqn(self, inpCell):
+		abPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC(inpCell.lattVects)
+
+		#Find the plane-equations for the top or bottom plane [ASSUMES PERFECTLY FLAT SURFACE for now]
+		#(Stolen from the generic surface code for now; TODO: Factor this out)
+		allDVals = list()
+		for x in inpCell.cartCoords:
+			allDVals.append( abPlaneEqn.calcDForInpXyz(x[:3]) )
+		maxD, minD = max(allDVals), min(allDVals)
+		
+		if self.top:
+			outPlaneEquation = planeEqn.ThreeDimPlaneEquation( *(abPlaneEqn.coeffs[:3] + [maxD]) )
+		else:
+			outPlaneEquation = planeEqn.ThreeDimPlaneEquation( *(abPlaneEqn.coeffs[:3] + [minD]) )
+			outPlaneEquation.coeffs = [x*-1 for x in outPlaneEquation.coeffs]
+		return outPlaneEquation
+
+
+class HcpTopSurfaceToSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+
+	def __init__(self, top=True):
+		self.top = top
+		self.minInterPlaneDist = 0.5
 
 	def getSurfaceSitesFromInpSurface(self, inpSurface):
 		inpGeom = inpSurface.unitCell
@@ -52,25 +75,6 @@ class HcpTopSurfaceToSites(BaseSurfaceToSites):
 			outPositions.append(sitePos)
 
 		return outPositions
-
-	#TODO: This can likely be shared between all surface site types
-	#TODO: I should likely be grouping close-planes together (using a tolerance criterion)
-	def getSurfacePlaneEqn(self, inpCell):
-		abPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC(inpCell.lattVects)
-
-		#Find the plane-equations for the top or bottom plane [ASSUMES PERFECTLY FLAT SURFACE for now]
-		#(Stolen from the generic surface code for now; TODO: Factor this out)
-		allDVals = list()
-		for x in inpCell.cartCoords:
-			allDVals.append( abPlaneEqn.calcDForInpXyz(x[:3]) )
-		maxD, minD = max(allDVals), min(allDVals)
-		
-		if self.top:
-			outPlaneEquation = planeEqn.ThreeDimPlaneEquation( *(abPlaneEqn.coeffs[:3] + [maxD]) )
-		else:
-			outPlaneEquation = planeEqn.ThreeDimPlaneEquation( *(abPlaneEqn.coeffs[:3] + [minD]) )
-			outPlaneEquation.coeffs = [x*-1 for x in outPlaneEquation.coeffs]
-		return outPlaneEquation
 	
 	def getSecondLayerPlaneEquation(self,inpCell):
 		surfPlane = self.getSurfacePlaneEqn(inpCell)
@@ -87,6 +91,64 @@ class HcpTopSurfaceToSites(BaseSurfaceToSites):
 
 	def __call__(self, inpSurface):
 		return self.getSurfaceSitesFromInpSurface(inpSurface)
+
+
+class HcpSurfaceToFccHollowSites(Hcp0001SurfaceToSitesSharedMixin,BaseSurfaceToSites):
+
+	def __init__(self, top=True, foldCoordsIntoCell=True):
+		self.top = top
+		self.minInterPlaneDist = 0.5
+		self.foldCoordsIntoCell = foldCoordsIntoCell
+
+	def getSurfaceSitesFromInpSurface(self, inpSurface):
+		#Step 1 - Get the hcp sites (remember to pass top=self.top)
+		#Step 2 - Get the triangle of top-layer atoms around those sites
+		#Step 3 - You can THEN get the neighbouring triangle in a consistent way (maybe ALWAYS fix origin closest to actual origin + always move along x when possible)
+		#Step 3.5 - Note if you do B + (C-A) then the new triangle we care about is B,C,D (hollow site is in the middle of that)
+		#Step 4 - The middle of this new triangle is where you then put the new site
+		hcpSiteGenerator = HcpTopSurfaceToSites(top=self.top)
+		hcpSites = hcpSiteGenerator(inpSurface)
+		surfacePlaneEqn = self.getSurfacePlaneEqn(inpSurface.unitCell)
+		geomWithImages = supCellHelp.getUnitCellSurroundedByNeighbourCells(inpSurface.unitCell, alongC=False)
+		outFccSites = [self._getFccSiteFromHcpSite(geomWithImages, surfacePlaneEqn, x) for x in hcpSites]
+		if self.foldCoordsIntoCell:
+			outFccSites = self._getOutSitesFoldedIntoCell(outFccSites, inpSurface.unitCell)
+		return outFccSites
+
+	def _getFccSiteFromHcpSite(self, geomWithImages, surfacePlaneEqn, hcpXyz):
+		#Firstly we get the three in-plane atom co-ordinates which are around the hcp site
+		inpCoords = [x[:3] for x in geomWithImages.cartCoords]
+		nearestThreeInPlaneIndices = cartHelp.getIndicesNearestInPlanePointsUpToN(3, hcpXyz, inpCoords, surfacePlaneEqn)
+
+		#Now we get a neighbouring triangle, which contains the fcc-hollow site ~ at the centre
+		coordA, coordB, coordC = _getCoordsSortedByDistanceFromOrigin([inpCoords[x] for x in nearestThreeInPlaneIndices])
+		baVect = [x-y for x,y in it.zip_longest(coordB,coordA)]
+		coordD = [x+y for x,y in it.zip_longest(coordC,baVect)]
+		
+		#Get the fcc hollow site position
+		outSite = [(a+b+c)/3 for a,b,c in it.zip_longest(coordB, coordC, coordD)]
+
+		return outSite
+
+	def _getOutSitesFoldedIntoCell(self, outSites, inpCell):
+		cartCoords = list(inpCell.cartCoords)
+		newCoords = [x+["fake_ele"] for x in outSites]
+		inpCell.cartCoords = cartCoords + newCoords
+		uCellHelp.foldAtomicPositionsIntoCell(inpCell)
+		outCartCoords = inpCell.cartCoords
+		outSites = list()
+		for x in outCartCoords:
+			if x[3] == "fake_ele":
+				outSites.append(x[:3])
+		return outSites
+
+
+def _getCoordsSortedByDistanceFromOrigin(inpCoords):
+	idxVsCoord = [x for x in enumerate(inpCoords)]
+	distsFromOrigin = [vectHelp.getDistTwoVectors([0,0,0],x) for x in inpCoords]
+	idxVsDist = [x for x in enumerate(distsFromOrigin)]
+	return [inpCoords[idx] for idx,dist in sorted(idxVsDist, key=lambda x:[0])]
+
 
 
 def getNearestAtomContainingPlane(inputCoords, planeEquation, minDistance=1e-1):
@@ -109,26 +171,5 @@ def getDistanceTwoParralelPlanes(planeA,planeB):
 	assert abs(lenPlaneVectorA-lenPlaneVectorB)<1e-1 
 	interPlaneDist = abs( planeA.coeffs[-1] - planeB.coeffs[-1] )/lenPlaneVectorA
 	return interPlaneDist
-
-
-def groupCoordsBasedOnSignedDistanceFromPlane(inputCoords, planeEquation, planeTol=1e-1):
-	""" Takes a list of co-ordinates an returns indices grouped based on signed distances from an input plane equation
-	
-	Args:
-		inputCoords: (iter of len-3 iters) Each contains [x,y,z] co-ordinates
-		planeEquation: (ThreeDimPlaneEquation object) Represents a plane (usually surface plane used)
-		planeTol: (float) The maximum planar separation between two co-ordinates for them to be considered in the same plane
- 
-	Returns
-		indices: (iter of iter) Each contains the indices of the co-ordinates in a plane (the same signed distance from input planeEquation)
-		avDistances: (iter of iter) Each index (idx) contains the average signed distance of indices[idx] from the input plane
- 
-	"""
-	#TODO:Its VERY difficult to know how to group into planes, e.g. imagine tolerance of 0.1 with distances and -0.8,-0.9,-1.0; theres no UNIQUE grouping here
-	#TODO: Test the grouping function separately with various test cases
-	#STEP 1: get a set of distances
-	#STEP 2: 
-	pass
-
 
 

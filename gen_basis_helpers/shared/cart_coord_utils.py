@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 import plato_pylib.utils.supercell as supCellHelp
 
 from . import plane_equations as planeEqnHelp
@@ -97,6 +98,19 @@ def _getIdxOfNearestPointToInpPointAfterFiltering(inpPoint, otherPoints, planeEq
 	idxInRelevantCoords = getIdxOfNearestPointToInputPoint(inpPoint, relevantCoords)
 	outIdx = relevantIndices[idxInRelevantCoords]
 	return outIdx
+
+def getIndicesNearestInPlanePointsUpToN(nPoints, inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
+	inPlaneIndices = getFilteredIndicesForCoordsInInputPlane(otherPoints, planeEqn, planeTolerance)
+	inPlaneCoords = [otherPoints[idx] for idx in inPlaneIndices]
+	dists = [vectHelp.getDistTwoVectors(inpPoint, x) for x in inPlaneCoords]
+	idxVsDist = [ [idx,x] for idx,x in it.zip_longest(inPlaneIndices,dists)]
+	sortedIndices = [ x[0] for x in sorted( idxVsDist, key=lambda x:x[1]) ]
+	if nPoints<len(sortedIndices):
+		outIndices = sortedIndices[:nPoints]
+	else:
+		outIndices = sortedIndices
+	return outIndices
+
 
 #Functions for filtering co-ordinates based on plane equations
 def getFilteredIndicesForCoordsOutOfInputPlane(inpCoords, planeEqn, planeTolerance=1e-2):

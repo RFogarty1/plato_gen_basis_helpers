@@ -87,4 +87,48 @@ class TestSurfaceToSite_hcp(unittest.TestCase):
 		expSitePosition = expXYVals + [expZVal]
 		return expSitePosition
 
+class TestSurfaceToSite_fccHollow(unittest.TestCase):
+
+
+	def setUp(self):
+		self.lattParamsA =  [12.00001,12,9]
+		self.lattAnglesA = [90,90,120]
+		self.fractCoordsA = [ [0.0, 0.0, 0.0],
+		                      [1/6, 1/3, 0.5],
+		                      [0.5, 0.0, 0.0],
+		                      [2/3, 1/3, 0.5],
+		                      [0.0, 0.5, 0.0],
+		                      [1/6, 5/6, 0.5],
+		                      [0.5, 0.5, 0.0],
+		                      [2/3, 5/6, 0.5] ]
+		self.eleListA = ["Mg" for x in self.fractCoordsA]
+		self.nLayersA = 1
+		self.absVacLengthA = 10
+		self.top = True
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self._createUnitCells()
+		self.surfA = surfHelp.GenericSurface(self.cellA, self.nLayersA, lenAbsoluteVacuum=self.absVacLengthA)
+		self.surfToSiteObj = tCode.HcpSurfaceToFccHollowSites(top=self.top)
+
+	def _createUnitCells(self):
+		cellKwargDict = {"lattParams":self.lattParamsA, "lattAngles":self.lattAnglesA,
+		                 "fractCoords":self.fractCoordsA, "elementList":self.eleListA}
+		self.cellA = uCellHelp.UnitCell(**cellKwargDict)
+
+
+	#Note i got the expected values by doing it near-"manually" and visualising results
+	def testFor2x2Cell(self):
+
+		expSites = [ [6.0, 6.9282032302755105, 7.25],
+		             [0.0, 6.9282032302755105, 7.25],
+		             [9.0, 1.7320508075688785, 7.25],
+		             [3.0, 1.7320508075688785, 7.25] ]
+
+		actSites = self.surfToSiteObj(self.surfA)
+		self.assertEqual( len(expSites), len(actSites) )
+
+		for exp,act in it.zip_longest(expSites, actSites):
+			[self.assertAlmostEqual(e,a,places=4) for e,a in it.zip_longest(exp,act)]
 
