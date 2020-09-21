@@ -19,6 +19,7 @@ class CastepCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
 	registeredKwargs.add("pseudoPotDict") #{eleKey: name_of_pseudopotential}
 	registeredKwargs.add("symmetryGenerate")
 	registeredKwargs.add("cutoffEnergy")
+	registeredKwargs.add("charge")
 
 	#TODO: These should probably be moved up to the CalcMethodFactoryBase as soon as
 	# they needed implementing on ANY other class
@@ -37,6 +38,8 @@ class CastepCalcObjFactoryStandard(baseObjs.CalcMethodFactoryBase):
 	def _createParamFileDict(self):
 		outDict = methodReg.createParamDictFromMethodStr(self.methodStr)
 		outDict["cut_off_energy"] = str(self.cutoffEnergy)
+		if self.charge is not None:
+			outDict["charge"] = str(self.charge)
 		outDict.update( self._getParamModDictBasedOnRunType() )
 		return outDict
 
