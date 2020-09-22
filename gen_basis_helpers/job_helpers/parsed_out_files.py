@@ -12,7 +12,7 @@ class ParsedFileObjsForMultiGeomsStandardInputCreator(stdTemplate.StandardInputC
 
 	registeredKwargs.add("geoms")
 	registeredKwargs.add("baseCreator")
-
+	registeredKwargs.add("catchParserErrors")
 
 	def _createFromSelf(self):
 		workflow = self._getWorkflow()
@@ -21,7 +21,8 @@ class ParsedFileObjsForMultiGeomsStandardInputCreator(stdTemplate.StandardInputC
 
 	def _getWorkflow(self):
 		calcObjs = self._getAllCalcObjs()
-		singleWorkflows = [parsedFileFlow.ParsedFileWorkflow(x) for x in calcObjs]
+		catchParserErrors = False if self.catchParserErrors is None else True
+		singleWorkflows = [parsedFileFlow.ParsedFileWorkflow(x,catchParserErrors=catchParserErrors) for x in calcObjs]
 		compositeWorkflow = baseFlow.StandardLabelledWorkflowComposite(singleWorkflows)
 		return compositeWorkflow
 

@@ -61,13 +61,13 @@ class TestParsedFileStdInpCreator(unittest.TestCase):
 		expCalcObjs = [mock.Mock(), mock.Mock()]
 		expOutput = mock.Mock()
 		mockGetCalcObjs.side_effect = lambda : expCalcObjs
-		mockSingleWorkflow.side_effect = lambda x: x
+		mockSingleWorkflow.side_effect = lambda x, **kwargs: x
 		mockedCompositeWorkflow.side_effect = lambda *args: expOutput
 
 		actOutput = self.testObjA._getWorkflow()
 
 		for x in expCalcObjs:
-			mockSingleWorkflow.assert_any_call(x)
+			mockSingleWorkflow.assert_any_call(x,catchParserErrors=False)
 		mockedCompositeWorkflow.assert_called_with(expCalcObjs) #Since single mocked workflow just returns the mock calcObjs
 		self.assertEqual(expOutput, actOutput)
 
