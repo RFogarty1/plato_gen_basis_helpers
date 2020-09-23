@@ -56,14 +56,18 @@ def _createTestCP2KObject():
 
 	return outObj
 
-
 #NOTE: This is a separate function to test obj, since i want to be able to change this one (but NEVER test obj) in the future
 def _createStandardSPEObj():
 	return _createTestCP2KObject()
 
+def _createStandardSPEObj_tighter_eps_def():
+	startObj = _createTestCP2KObject()
+	startObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_default = "1.0E-12"
+	return startObj
 
 #NOTE: These keys HAVE to be in lower case
 defaultMethodStrsToObjCreators = {"cp2k_test_object":_createTestCP2KObject,
-                                  "spe_standard":_createStandardSPEObj}
+                                  "spe_standard":_createStandardSPEObj,
+                                  "spe_standard_eps_def_e-12":_createStandardSPEObj_tighter_eps_def}
 
 
