@@ -58,6 +58,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("runType")
 	registeredKwargs.add("geomConstraints")
 	registeredKwargs.add("extraModPyC2pkOpts")
+	registeredKwargs.add("saveRestartFile")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -157,7 +158,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	def _createOutputObj(self):
 		basicObj = methRegister.createCP2KObjFromMethodStr(self.methodStr)
 		self._modPycp2kObj(basicObj)
-		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj())
+		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=self.saveRestartFile)
 		return outputObj
 
 	def _modPycp2kObj(self,pycp2kObj):

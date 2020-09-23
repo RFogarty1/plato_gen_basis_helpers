@@ -11,12 +11,13 @@ from . import cp2k_file_helpers as pyCP2KHelpers
 #NOTE: Loads of descriptors are added below (at the bottom of the file)
 class CP2KCalcObj(methodObjs.CalcMethod):
 
-	def __init__(self, pycp2kObj, basePath=None):
+	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=False):
 		self.cp2kObj = pycp2kObj
 		if basePath is None:
 			self.basePath = os.path.abspath( os.path.join( os.getcwd(), "cp2k_file" ) )
 		else:
 			self.basePath = os.path.abspath( os.path.splitext(basePath)[0] )
+		self.saveRestartFile = saveRestartFile
 	
 	def writeFile(self):
 		self.cp2kObj.project_name = os.path.split(self.basePath)[1]
@@ -38,11 +39,13 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 	
 	@property
 	def runComm(self):
-		inpPath = self.basePath + ".inp"
-		inpFolder = os.path.abspath(os.path.split(inpPath)[0] )
-		inpFName = os.path.split(inpPath)[1]
+		baseName = os.path.split(self.basePath)[1]
+		inpFolder= os.path.abspath(os.path.split(self.basePath)[0] )
+		inpFName = baseName + ".inp"
 		outFName = os.path.split(self.outFilePath)[1]
 		commFmt = "cd {};cp2k.sopt {}>{}"
+		if self.saveRestartFile is not True:
+			commFmt += ";rm {}-RESTART.kp*".format(baseName)
 		return commFmt.format(inpFolder, inpFName, outFName)
 	
 	@property
