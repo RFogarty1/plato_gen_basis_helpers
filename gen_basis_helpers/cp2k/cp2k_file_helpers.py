@@ -126,7 +126,27 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 	if useDict.get("epsDef".lower(),None) is not None:
 		rawNumber = useDict["epsDef".lower()]
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_default = "{:.2g}".format( rawNumber ).upper()
+
+	if useDict.get("epsGvgRspace".lower(),None) is not None:
+		rawNumber = useDict["epsGvgRspace".lower()]
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_gvg_rspace = "{:.2g}".format( rawNumber ).upper()
 	
+	if useDict.get("epsPgfOrb".lower(),None) is not None:
+		rawNumber = useDict["epsPgfOrb".lower()]
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_pgf_orb = "{:.2g}".format( rawNumber ).upper()
+
+	if useDict.get("epsPPNL".lower(),None) is not None:
+		rawNumber = useDict["epsPPNL".lower()]
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_ppnl = "{:.2g}".format( rawNumber ).upper()
+
+	if useDict.get("epsRho".lower(), None) is not None:
+		rawNumber = useDict["epsRho".lower()]
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_rho = "{:.2g}".format( rawNumber ).upper()
+
+	if useDict.get("epsCoreCharge".lower(),None) is not None:
+		rawNumber = useDict["epsCoreCharge".lower()]
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Eps_core_charge = "{:.2g}".format( rawNumber ).upper()
+
 	if useDict.get("charge") is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Charge = useDict["charge"]
 
