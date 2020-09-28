@@ -290,11 +290,17 @@ def _getMgAtomGeomAsUCell():
 def getUCellsForBulkModCalcs(structType:str):
 	structTypeToFunct = {"hcp": _getHCPBulkModUCells,
 	                     "bcc": _getBCCBulkModUCells,
-	                     "fcc": _getFCCBulkModUCells}
+	                     "fcc": _getFCCBulkModUCells,
+	                     "hcp_pw_c_over_a": _getHCP_pw_c_over_a_bulkModUCell
+	                    }
 	return structTypeToFunct[structType.lower()]()
 
 def _getHCPBulkModUCells():
 	refFolder = os.path.join(BASE_FOLDER,"eos","hcp")
+	return helpers.getUCellsFromCastepBulkModFolder(refFolder)
+
+def _getHCP_pw_c_over_a_bulkModUCell():
+	refFolder = os.path.join(BASE_FOLDER,"eos", "hcp_pw_c_over_a")
 	return helpers.getUCellsFromCastepBulkModFolder(refFolder)
 
 def _getBCCBulkModUCells():
@@ -325,11 +331,16 @@ def getBccComprStructAsUCell():
 def getPlaneWaveEosFitDict(structType:str, eos="murnaghan"):
 	structTypeToFunct = {"hcp": _getPlaneWaveEosDictHCP,
 	                     "fcc": _getPlaneWaveEosDictFCC,
-	                     "bcc": _getPlaneWaveEosDictBCC}
+	                     "bcc": _getPlaneWaveEosDictBCC,
+	                     "hcp_pw_c_over_a": _getPlaneWaveEosDictHcp_pw_c_over_a}
 	return structTypeToFunct[structType](eos)
 
 def _getPlaneWaveEosDictHCP(eos):
 	outFolder = os.path.join(BASE_FOLDER,"eos","hcp")
+	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
+
+def _getPlaneWaveEosDictHcp_pw_c_over_a(eos):
+	outFolder = os.path.join(BASE_FOLDER, "eos", "hcp_pw_c_over_a")
 	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
 
 def _getPlaneWaveEosDictFCC(eos):
@@ -339,7 +350,6 @@ def _getPlaneWaveEosDictFCC(eos):
 def _getPlaneWaveEosDictBCC(eos):
 	outFolder = os.path.join(BASE_FOLDER,"eos","bcc")
 	return helpers.getEosFitDictFromEosCastepFolder(outFolder)
-
 
 
 #Density of states for planeWave Calcs
