@@ -8,6 +8,7 @@ import itertools as it
 import gen_basis_helpers.cp2k.cp2k_calc_objs as baseCalcObjCP2K
 import gen_basis_helpers.cp2k.basis_register as basRegister
 import gen_basis_helpers.cp2k.method_register as methRegister
+import gen_basis_helpers.cp2k.cp2k_file_helpers as cp2kFileHelpers
 import gen_basis_helpers.cp2k.cp2k_file_helpers as pyCP2KHelp
 import gen_basis_helpers.shared.label_objs as labelHelp
 import gen_basis_helpers.shared.calc_runners as calcRunners
@@ -84,7 +85,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 
 	def __init__(self, geom=None, kPts=None, maxScf=None, cp2kMethodStr=None,
 				basisKeyDicts=None, basisAliases=None, workFolder=None, workFlowToOutputObjMap=None,
-				eleKey=None, structKey=None, charge=None, addedMOs=None):
+				eleKey=None, structKey=None, charge=None, addedMOs=None, extraKwargDictToModCP2KObj=None):
 		""" Initializer for class used to create the standardinput object for grid-convergence calculations
 		
 		Args:
@@ -121,6 +122,7 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 		self.workFlowToOutputObjMap = workFlowToOutputObjMap
 	
 		self._gridValsToUse = None
+		self.extraKwargDictToModCP2KObj = extraKwargDictToModCP2KObj
 	
 	def createStandardInput(self, gridValsToUse):
 		self._gridValsToUse = gridValsToUse
@@ -186,6 +188,10 @@ class CreatorForStandardInputForGridConvergenceTemplate():
 			currObj.relGridCutoff = gVals.relCut
 			currObj.basePath = os.path.join(startFolder, gVals.toStr() )
 			currObj.addedMOs = self.addedMOs
+
+			if self.extraKwargDictToModCP2KObj is not None:
+				cp2kFileHelpers.modCp2kObjBasedOnDict(currObj.cp2kObj, self.extraKwargDictToModCP2KObj)
+
 			allObjs.append(currObj)
 		return allObjs
 	
