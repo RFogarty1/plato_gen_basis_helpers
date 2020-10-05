@@ -28,6 +28,7 @@ class RegisterKeyValDecorator():
 				assert registerKey not in self.register.keys()
 			def decoFunct(val):
 				self.register[registerKey] = val
+				return val #Needed for stacking decorators
 
 			if val is None: #Allows this to be used with the @ decorator syntax
 				return decoFunct
