@@ -74,7 +74,7 @@ def getPlaneWaveAdsorptionSingleAdsorbateTotalEnergy(surface, adsorbate, site, c
 		surface: (str) The type of surface we're using; e.g. hcp0001
 		adsorbate: (str) Denotes the type of molecule that adsorbs (e.g. "H" or "OH")
 		site: (str) The adsorption site
-		cellDims: (len 3 int iter) Cell dimensions in each direction (e.g. [2,2,4])
+		cellDims: (len 3 int iter) Cell dimensions in each direction (e.g. [2,2,4]). Note the z-dimension is generally number of atomic layers
 		surfRelax: (Bool) Whether the surface was relaxed
 		adsorbRelax: (Bool) Whether the adsorbed molecule was relaxed
 		codeKey: (Str) The code used to carry out the calculation; default is castep
@@ -131,14 +131,14 @@ def _():
 	return parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
 
 
-@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4],codeKey="castep"))
+@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,6],codeKey="castep"))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow_castep", "0pt25", "geom_opt.castep")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_6", "fcc_hollow_castep", "0pt25", "geom_opt.castep")
 	return helpersRefData.getUCellInBohrFromCastepOutFile(outPath)
 
-@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4],codeKey="castep"))
+@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,6],codeKey="castep"))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow_castep", "0pt25", "geom_opt.castep")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_6", "fcc_hollow_castep", "0pt25", "geom_opt.castep")
 	return helpersRefData.getEnergyFromCastepOutFile(outPath)
 
 
@@ -154,14 +154,14 @@ def _():
 	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow", "Mg_hydroxyl_4.out")
 	return parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
 
-@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75-fcc-hollow", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4],codeKey="castep"))
+@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75-fcc-hollow", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,6],codeKey="castep"))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow_castep", "1pt00", "geom_opt.castep")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_6", "fcc_hollow_castep", "1pt00", "geom_opt.castep")
 	return helpersRefData.getUCellInBohrFromCastepOutFile(outPath)
 
-@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75-fcc-hollow", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4],codeKey="castep"))
+@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001-OH-0pt75-fcc-hollow", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,6],codeKey="castep"))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow_castep", "1pt00", "geom_opt.castep")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_6", "fcc_hollow_castep", "1pt00", "geom_opt.castep")
 	return helpersRefData.getEnergyFromCastepOutFile(outPath)
 
 
@@ -176,14 +176,14 @@ def _():
 	outPath = os.path.join(BASE_FOLDER, "plain_surfaces", "hcp0001", "cell_2_2_4", "Mg_pureslab.out")
 	return parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
 
-@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey=None, siteKey=None, cellDims=[2,2,4], codeKey="castep"))
+@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey=None, siteKey=None, cellDims=[2,2,6], codeKey="castep"))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow_castep", "0pt00", "geom_opt.castep")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_6", "fcc_hollow_castep", "0pt00", "geom_opt.castep")
 	return helpersRefData.getUCellInBohrFromCastepOutFile(outPath)
 
-@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey=None, siteKey=None, cellDims=[2,2,4], codeKey="castep"))
+@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey=None, siteKey=None, cellDims=[2,2,6], codeKey="castep"))
 def _():
-	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_4", "fcc_hollow_castep", "0pt00", "geom_opt.castep")
+	outPath = os.path.join(BASE_FOLDER, "hydroxyl", "hcp0001", "cell_2_2_6", "fcc_hollow_castep", "0pt00", "geom_opt.castep")
 	return helpersRefData.getEnergyFromCastepOutFile(outPath)
 
 
