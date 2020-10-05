@@ -19,7 +19,7 @@ class TestBuilderWithSimpleFullCoverageCase(unittest.TestCase):
 		self.createCell()
 		self.surfA = surfHelp.GenericSurface(self.cellA, self.nLayersA, lenAbsoluteVacuum=self.absVacLengthA)
 
-		self.surfToSites = hcpSurfHelp.HcpTopSurfaceToSites()
+		self.surfToSites = hcpSurfHelp.HcpSurfaceToHcpSites()
 		self.adsorbateGeom = [[0.0,0.0,0.0,"O"]]
 		self.fractCoverage = 1
 		self.distance = 2

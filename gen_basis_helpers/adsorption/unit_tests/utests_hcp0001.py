@@ -24,7 +24,7 @@ class TestSurfaceToSite_hcp(unittest.TestCase):
 	def createTestObjs(self):
 		self._createUnitCells()
 		self.surfA = surfHelp.GenericSurface(self.cellA, self.nLayersA, lenAbsoluteVacuum=self.absVacLengthA)
-		self.surfToSiteObj = tCode.HcpTopSurfaceToSites(top=self.top)
+		self.surfToSiteObj = tCode.HcpSurfaceToHcpSites(top=self.top)
 
 	def _createUnitCells(self):
 		cellKwargDict = {"lattParams":self.lattParamsA, "lattAngles":self.lattAnglesA,

@@ -50,7 +50,7 @@ class Hcp0001SurfaceToSitesSharedMixin():
 		return outPlaneEquation
 
 
-class HcpTopSurfaceToSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+class HcpSurfaceToHcpSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
 
 	def __init__(self, top=True):
 		self.top = top
@@ -106,7 +106,7 @@ class HcpSurfaceToFccHollowSites(Hcp0001SurfaceToSitesSharedMixin,BaseSurfaceToS
 		#Step 3 - You can THEN get the neighbouring triangle in a consistent way (maybe ALWAYS fix origin closest to actual origin + always move along x when possible)
 		#Step 3.5 - Note if you do B + (C-A) then the new triangle we care about is B,C,D (hollow site is in the middle of that)
 		#Step 4 - The middle of this new triangle is where you then put the new site
-		hcpSiteGenerator = HcpTopSurfaceToSites(top=self.top)
+		hcpSiteGenerator = HcpSurfaceToHcpSites(top=self.top)
 		hcpSites = hcpSiteGenerator(inpSurface)
 		surfacePlaneEqn = self.getSurfacePlaneEqn(inpSurface.unitCell)
 		geomWithImages = supCellHelp.getUnitCellSurroundedByNeighbourCells(inpSurface.unitCell, alongC=False)
