@@ -93,6 +93,22 @@ class HcpSurfaceToHcpSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites)
 		return self.getSurfaceSitesFromInpSurface(inpSurface)
 
 
+class HcpSurfaceToAtopSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+
+	def __init__(self, top=True):
+		self.top = top
+		self.minInterPlaneDist = 0.5
+
+	def getSurfaceSitesFromInpSurface(self, inpSurface):
+		return self.getFirstLayerAtomPositions(inpSurface.unitCell)
+
+	def getFirstLayerAtomPositions(self, inpCell):
+		surfPlane = self.getSurfacePlaneEqn(inpCell)
+		cartCoords = [x[:3] for x in inpCell.cartCoords]
+		indicesInSurfPlane = cartHelp.getFilteredIndicesForCoordsInInputPlane(cartCoords, surfPlane, planeTolerance=self.minInterPlaneDist)
+		return [cartCoords[x] for x in indicesInSurfPlane]
+
+
 class HcpSurfaceToFccHollowSites(Hcp0001SurfaceToSitesSharedMixin,BaseSurfaceToSites):
 
 	def __init__(self, top=True, foldCoordsIntoCell=True):

@@ -132,3 +132,59 @@ class TestSurfaceToSite_fccHollow(unittest.TestCase):
 		for exp,act in it.zip_longest(expSites, actSites):
 			[self.assertAlmostEqual(e,a,places=4) for e,a in it.zip_longest(exp,act)]
 
+
+class TestSurfaceToSites_atop(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParamsA = [2,2,3]
+		self.lattAnglesA = [90,90,120]
+		self.fractCoordsA = [ [0.0,0.0,0.0],
+		                     [1/3, 2/3, 0.5] ]
+		self.eleListA = ["Mg", "Mg"]
+		self.nLayersA = 2
+		self.absVacLengthA = 10
+		self.top = True
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self._createUnitCells()
+		self.surfA = surfHelp.GenericSurface(self.cellA, self.nLayersA, lenAbsoluteVacuum=self.absVacLengthA)
+		self.surfToSiteObj = tCode.HcpSurfaceToAtopSites(top=self.top)
+
+	def _createUnitCells(self):
+		cellKwargDict = {"lattParams":self.lattParamsA, "lattAngles":self.lattAnglesA,
+		                 "fractCoords":self.fractCoordsA, "elementList":self.eleListA}
+		self.cellA = uCellHelp.UnitCell(**cellKwargDict)
+
+	def testForSimpleCell(self):
+		expSitePosition = self._getExpectedPosForSimpleCellTopA()
+		actPositions = self.surfToSiteObj(self.surfA)
+		self.assertTrue( len(actPositions)==1 )
+		for exp,act in it.zip_longest(expSitePosition, actPositions[0]):
+			self.assertAlmostEqual(exp,act)
+
+	def testFor2x2Cell(self):
+		self.fractCoordsA = [ [0.0, 0.0, 0.0],
+		                      [1/6, 1/3, 0.5],
+		                      [0.5, 0.0, 0.0],
+		                      [2/3, 1/3, 0.5],
+		                      [0.0, 0.5, 0.0],
+		                      [1/6, 5/6, 0.5],
+		                      [0.5, 0.5, 0.0],
+		                      [2/3, 5/6, 0.5] ]
+		self.eleListA = ["Mg" for x in self.fractCoordsA]
+		self.nLayersA = 1
+		self.createTestObjs()
+		firstLayerIndices = [1,3,5,7]
+		expPositions = [list(self.surfA.unitCell.cartCoords[idx][:3]) for idx in firstLayerIndices]
+		actPositions = self.surfToSiteObj(self.surfA)
+
+		for expPos, actPos in it.zip_longest(expPositions,actPositions):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expPos,actPos)]
+
+
+	def _getExpectedPosForSimpleCellTopA(self):
+		firstLayerAtomIdx = -1 
+		expSitePosition = list( self.surfA.unitCell.cartCoords[firstLayerAtomIdx][:3] )
+		return expSitePosition
+
