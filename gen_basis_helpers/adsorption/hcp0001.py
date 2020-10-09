@@ -1,5 +1,9 @@
 
+import copy
 import itertools as it
+import math
+
+import numpy as np
 
 import plato_pylib.shared.ucell_class as uCellHelp
 import plato_pylib.utils.supercell as supCellHelp
@@ -92,6 +96,86 @@ class HcpSurfaceToHcpSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites)
 	def __call__(self, inpSurface):
 		return self.getSurfaceSitesFromInpSurface(inpSurface)
 
+
+class HcpSurfaceToWaterBilayerSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+
+	def __init__(self, top=True, firstUnoccStrat=None):
+		""" Description of function
+		
+		Args:
+			top: (Optional, Bool) If True
+			firstUnoccStrat: (Optional, f(sitePositions)) Function to determine the first site to be unoccupied
+
+		Returns
+			What Function Returns
+	 
+		Raises:
+			Errors
+		"""
+		self.top = top
+		self.minInterPlaneDist = 0.5
+		self.firstUnoccStrat = lambda x:x[0] if firstUnoccStrat is None else firstUnoccStrat
+
+
+	def getSurfaceSitesFromInpSurface(self, inpSurface):
+		atopGetter = HcpSurfaceToAtopSites(top=self.top)
+		atopSites = atopGetter(inpSurface)
+		surfVector = self.getOutwardsSurfaceVectorFromSurface(inpSurface)
+		outIndices = self._getBilayerOccupiedSiteIndicesFromAtopSites(atopSites, surfVector)
+		outSites = [x for idx,x in enumerate(atopSites) if idx in outIndices]
+		return outSites
+
+	def _getBilayerOccupiedSiteIndicesFromAtopSites(self, atopPositions, surfVector):
+		firstPosition = self.firstUnoccStrat(atopPositions)
+		vectA, vectB = self._getBilayerCellVectorsFromAtopPositions(atopPositions, surfVector)
+
+		unoccIndices = list()
+		for idx,pos in enumerate(atopPositions):
+			if self._siteIsReachable(pos, firstPosition, vectA, vectB, surfVector):
+				unoccIndices.append(idx)
+
+		occIndices = [idx for idx,x in enumerate(atopPositions) if idx not in unoccIndices]
+
+		fractCoverage = len(occIndices) / ( len(occIndices)+len(unoccIndices) )
+		if abs(fractCoverage-0.66)>1e-2:
+			raise ValueError("Bilayer sites/atop Sites = {}, this value should be 0.66.".format(fractCoverage))
+
+		return occIndices
+
+	def _siteIsReachable(self, testPos, startPos, vectA, vectB, surfVector, intTol=1e-1):
+		diffVector = np.array([x-y for x,y in it.zip_longest(testPos, startPos)])
+		vectorMatrix = np.array( [np.array(vectA), np.array(vectB), np.array(surfVector)] ).transpose()
+		outCoeffs = np.dot(np.linalg.inv(vectorMatrix), diffVector)
+		isReachable=False
+		if all([abs(round(x)-x)<intTol for x in outCoeffs]):
+			isReachable = True
+		return isReachable
+
+	def _getBilayerCellVectorsFromAtopPositions(self, atopPositions, surfVector):
+		firstSite = self.firstUnoccStrat(atopPositions)
+		idxFirstSite = self._getIdxOfSiteInList(firstSite,atopPositions)
+		otherSitePositions = [x for idx,x in enumerate(atopPositions) if idx!=idxFirstSite]
+		nearestSiteCoords = cartHelp.getNearestCoordToInputPoint(firstSite, otherSitePositions)
+
+		#Get the three-vector basis
+		rotatePlus120Matrix = vectHelp.getRotationMatrixAroundAxis(surfVector,120)
+		vectA = [x-y for x,y in it.zip_longest(nearestSiteCoords,firstSite)]
+		vectB = np.dot( rotatePlus120Matrix, vectA )
+		vectC = np.dot( rotatePlus120Matrix, vectB )
+
+		outVectA = [x-y for x,y in it.zip_longest(vectA, vectB)]
+		outVectB = [x-y for x,y in it.zip_longest(vectA, vectC)]
+		return outVectA, outVectB
+
+	def _getIdxOfSiteInList(self, sitePos, allPositions):
+		distsFromSite = list()
+		for currPos in allPositions:
+			currDist = vectHelp.getDistTwoVectors(currPos,sitePos)
+			distsFromSite.append(currDist)
+
+		indices = [idx for idx,dist in enumerate(distsFromSite) if dist <1e-4]
+		assert len(indices) == 1
+		return indices[0]
 
 class HcpSurfaceToAtopSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
 
