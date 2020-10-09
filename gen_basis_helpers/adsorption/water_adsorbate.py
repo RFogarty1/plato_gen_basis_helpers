@@ -143,28 +143,11 @@ def getGeomRotatedAroundAxis(inpGeom, axis, angle):
 	""" Note rotations appear counter-clockwise when looking from end of axis to origin using right-hand rule co-ordinate system
 	
 	"""
-	ux, uy, uz = vectHelp.getUnitVectorFromInpVector( axis )
-	rotationMatrix =  np.zeros( [3,3] )
-
-	cosTheta = math.cos(math.radians(angle))
-	sinTheta = math.sin(math.radians(angle))
-	rotationMatrix[0][0] = cosTheta + ( (ux**2) * (1-cosTheta) )
-	rotationMatrix[0][1] = (ux*uy)*(1-cosTheta) - (uz*sinTheta)
-	rotationMatrix[0][2] = (ux*uz)*(1-cosTheta) + (uy*sinTheta)
-	rotationMatrix[1][0] = (ux*uy*(1-cosTheta)) + (uz*sinTheta)
-	rotationMatrix[1][1] = cosTheta + ((uy**2)*(1-cosTheta))
-	rotationMatrix[1][2] = (uy*uz)*(1-cosTheta) - (ux*sinTheta)
-	rotationMatrix[2][0] = (uz*ux)*(1-cosTheta) - (uy*sinTheta)
-	rotationMatrix[2][1] = (uz*uy)*(1-cosTheta) + (ux*sinTheta)
-	rotationMatrix[2][2] = cosTheta + ((uz*uz)*(1-cosTheta))
-
+	rotationMatrix = vectHelp.getRotationMatrixAroundAxis(axis,angle)
 	geomToRotate = np.array( [x[:3] for x in inpGeom] ).transpose()
 	rotated = np.dot(rotationMatrix, geomToRotate)
 	outGeom = [list(x[:3]) for x in rotated.transpose()]
-
 	return outGeom
-
-
 
 
 

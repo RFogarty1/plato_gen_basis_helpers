@@ -50,4 +50,33 @@ def getRotationMatrixLinkingTwoUnitVectors(uVectA, uVectB):
 
 	return rotMatrix
 
+#simply from wikipedia.
+def getRotationMatrixAroundAxis(axis, angle):
+	""" Gets matrix representation for a rotation around a given axis. Note rotations appear counter-clockwise when looking from end of axis to origin using right-hand rule co-ordinate system
+	
+	Args:
+		axis: (len-3 float iter) Vector defining axis to rotate around, e.g [1,0,0] for x-axis
+		angle: (float) Angle (in degrees) to rotate around
+
+	Returns
+		 rotMatrix: (3x3 np array), use rotMatrix@geom to get the geometry rotated around this axis (assuming geom has 1 co-ord per column)
+ 
+	"""
+
+	ux, uy, uz = getUnitVectorFromInpVector( axis )
+	rotationMatrix =  np.zeros( [3,3] )
+
+	cosTheta = math.cos(math.radians(angle))
+	sinTheta = math.sin(math.radians(angle))
+	rotationMatrix[0][0] = cosTheta + ( (ux**2) * (1-cosTheta) )
+	rotationMatrix[0][1] = (ux*uy)*(1-cosTheta) - (uz*sinTheta)
+	rotationMatrix[0][2] = (ux*uz)*(1-cosTheta) + (uy*sinTheta)
+	rotationMatrix[1][0] = (ux*uy*(1-cosTheta)) + (uz*sinTheta)
+	rotationMatrix[1][1] = cosTheta + ((uy**2)*(1-cosTheta))
+	rotationMatrix[1][2] = (uy*uz)*(1-cosTheta) - (ux*sinTheta)
+	rotationMatrix[2][0] = (uz*ux)*(1-cosTheta) - (uy*sinTheta)
+	rotationMatrix[2][1] = (uz*uy)*(1-cosTheta) + (ux*sinTheta)
+	rotationMatrix[2][2] = cosTheta + ((uz*uz)*(1-cosTheta))
+	return rotationMatrix
+
 
