@@ -117,7 +117,16 @@ def _getEnergyHcp0001HOctahedral_224():
 	outEnergy = parseQE.parseQuantumEspressoOutfile(outPath)["energies"].electronicTotalE
 	return outEnergy
 
+#Mg-H surface (0.25 coverage)
+@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="H".lower(), siteKey="fcc-hollow", cellDims=[2,2,6], codeKey="castep"))
+def _():
+	outPath = os.path.join(BASE_FOLDER, "hydrogen", "hcp0001", "cell_2_2_6", "fcc_hollow", "0pt25", "geom_opt.castep")
+	return helpersRefData.getUCellInBohrFromCastepOutFile(outPath)
 
+@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="H".lower(), siteKey="fcc-hollow", cellDims=[2,2,6], codeKey="castep"))
+def _():
+	outPath = os.path.join(BASE_FOLDER, "hydrogen", "hcp0001", "cell_2_2_6", "fcc_hollow", "0pt25", "geom_opt.castep")
+	return helpersRefData.getEnergyFromCastepOutFile(outPath)
 
 # Mg with OH adsorbed (0.25 coverage)
 @registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4], codeKey="espresso"))
