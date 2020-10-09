@@ -1,6 +1,9 @@
 
 import copy
 import itertools as it
+
+import numpy as np
+
 import plato_pylib.utils.supercell as supCellHelp
 
 from . import plane_equations as planeEqnHelp
@@ -188,4 +191,25 @@ def getIdxOfNearestPointToInputPoint(inpPoint, otherPoints):
 			minDistance = currDist
 			outIdx = idx
 	return outIdx
+
+def getClosestDistanceBetweenTwoPoints(inpPoints):
+	""" When given a list of input points, return the shortest distance between any two points
+	
+	Args:
+		iter (usually len-3), co-ordinates of input point
+			 
+	Returns
+		 distance: (float) Shortest distance between two points
+ 
+	"""
+	#Get a distance matrix with diag terms set to infinity so they dont interfere with np.min
+	distMatrix = np.zeros( (len(inpPoints), len(inpPoints)) )
+	for rowIdx in range(len(inpPoints)):
+		for colIdx in range(len(inpPoints)):
+			if rowIdx==colIdx:
+				distMatrix[rowIdx][colIdx] = np.inf
+			else:
+				distMatrix[rowIdx][colIdx] = vectHelp.getDistTwoVectors(inpPoints[rowIdx],inpPoints[colIdx])
+
+	return np.min(distMatrix) 
 
