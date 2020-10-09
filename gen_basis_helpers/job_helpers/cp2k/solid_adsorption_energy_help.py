@@ -13,12 +13,15 @@ class SolidAdsorptionEnergyStandardInputCreator(solidAdsorb.CodeSpecificStandard
 	registeredKwargs.add("cp2kMethodStr")
 	registeredKwargs.add("relGridCutoff")
 	registeredKwargs.add("printAOMullikenPop")
+	registeredKwargs.add("extraCreatorKwargDict")
 
 	#Takes care of MOST the options (since im forcing cutoffs to be the same for all)
 	def _getBaseCreator(self):
 		kwargDict = {"absGridCutoff":self.absGridCutoff, "basisObjs":self.basisObjs,
 		             "methodStr":self.cp2kMethodStr, "relGridCutoff":self.relGridCutoff,
 		             "printAOMullikenPop":self.printAOMullikenPop}
+		if self.extraCreatorKwargDict is not None:
+			kwargDict.update(self.extraCreatorKwargDict)
 		return cp2kCreatorModule.CP2KCalcObjFactoryStandard(**kwargDict)
 
 
