@@ -1,7 +1,13 @@
 
 import copy
-from . import site_occupiers as addStratHelp
+import numpy as np
 
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import dijkstra
+
+from . import site_occupiers as addStratHelp
+from ..shared import cart_coord_utils as cartHelp
+from ..shared import simple_vector_maths as vectHelp
 
 class BaseGetAdsorbatesForSites():
 	""" (Base docstring) Callable class, when passed a list of positions for adsorption sites it figures out which sites are occupied by which adsorbate. See getAdsorbateListForInpSites for callable interface
@@ -81,4 +87,78 @@ class SingleTypeGetAdsorbatesForSites(BaseGetAdsorbatesForSites):
 			raise ValueError("{} is an invalid fractional coverage for {} sites; the nearest sensible value is {}".format(*currArgs))
 
 		return nearestIdx #+1 to account for the zero-based indexing
+
+
+class AddWaterAdsorbatesToBilayerSitesStandard(BaseGetAdsorbatesForSites):
+
+	def __init__(self, waterA, waterB, distA, distB=None):
+		""" Initializer
+		
+		Args:
+			waterA: (Adsorbate obj) Contains the geometry for the single adsorbate
+			waterB: (Adsorbate obj) Contains the geometry for the single adsorbate
+			distA: (float) Distance of the waterA adsorption from the adsorption
+			distB: (float, Optional) If None then waterB is put at the same distance as waterA
+				 
+		"""
+		self.waterA = waterA
+		self.waterB = waterB
+		self.distA = distA
+		self.distB = distB if distB is not None else distA
+
+
+	def getDistances(self, sitePositions, surfObj=None, surfaceVector=None):
+		waterTypes = self._getWaterTypeForEachSite(sitePositions)
+		outDists = list()
+		for x in waterTypes:
+			if x=="A":
+				outDists.append( self.distA )
+			else:
+				outDists.append( self.distB )
+		return outDists
+
+	#Current implementation forms a graph of nearest neighbours, with distance set to "1" between
+	# each node. We then get a distance matrix linking each node. If we assume the source point is
+	# "waterA" then any a distance of 1 must be "waterB" and distance 2 must be "waterA" etc.
+	def getAdsorbateListForInpSites(self, sitePositions, surfObj=None, surfaceVector=None):
+		sites = self._getWaterTypeForEachSite(sitePositions)
+		outSites = list()
+		for x in sites:
+			if x=="A":
+				outSites.append( copy.deepcopy(self.waterA) )
+			else:
+				outSites.append( copy.deepcopy(self.waterB) )
+
+		return outSites
+
+	def _getWaterTypeForEachSite(self, sitePositions):
+		adjacencyMatrix = self._getAdjacencyMatrix(sitePositions)
+		spFormat = csr_matrix(adjacencyMatrix)
+		distMatrix = dijkstra(spFormat) 
+		outSites = list()
+		for val in distMatrix[0]:
+			if (round(val)%2 == 0):
+				outSites.append( "A" )
+			else:
+				outSites.append( "B" )
+		return outSites
+
+	def _getAdjacencyMatrix(self, sitePositions):
+		nearestNebDist = cartHelp.getClosestDistanceBetweenTwoPoints(sitePositions)
+		nPos = len(sitePositions)
+		outMatrix = np.zeros( (nPos,nPos), dtype=np.int32 )
+
+		distTol = 1e-1
+		for rowIdx in range(nPos):
+			for colIdx in range(nPos):
+				if rowIdx==colIdx:
+					outMatrix[rowIdx][colIdx] = 0
+				else:
+					posA, posB = sitePositions[rowIdx], sitePositions[colIdx]
+					currDist = vectHelp.getDistTwoVectors(posA,posB)
+					if abs(currDist-nearestNebDist) < distTol:
+						outMatrix[rowIdx][colIdx] = 1
+
+		return outMatrix
+
 

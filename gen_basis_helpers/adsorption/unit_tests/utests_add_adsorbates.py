@@ -1,4 +1,5 @@
 
+import math
 import unittest
 import unittest.mock as mock
 
@@ -43,5 +44,42 @@ class TestSingleTypeGetAdsorbates(unittest.TestCase):
 		expObjs = [self.adsorbateObjA for x in range(2)] + [None for x in range(2)]
 		actObjs = self.testObjA(self.inpSitesA)
 		self.assertEqual(expObjs,actObjs)
+
+class TestAddWaterAdsorbatesToBilayer(unittest.TestCase):
+
+	def setUp(self):
+		self.waterA, self.waterB = 1, 2
+		self.distA, self.distB = 1, 2
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		argsA = [self.waterA, self.waterB, self.distA, self.distB]
+		self.testObjA = tCode.AddWaterAdsorbatesToBilayerSitesStandard(*argsA)
+
+	def testForHexagonOfSitesA(self):
+		inpSites = self._loadHexagonOfSites()
+		expAdsList = [self.waterA, self.waterB, self.waterB, self.waterA, self.waterA, self.waterB]
+		actAdsList = self.testObjA(inpSites)
+		self.assertEqual(expAdsList,actAdsList)
+
+	def testDistsForHexagonOfSites(self):
+		inpSites = self._loadHexagonOfSites()
+		expDists = [self.distA, self.distB, self.distB, self.distA, self.distA, self.distB]
+		actDists = self.testObjA.getDistances(inpSites)
+		self.assertEqual(expDists, actDists)
+
+	def _loadHexagonOfSites(self):
+		outCoords = list()
+		dist = 1
+		xCompA = dist*math.cos(math.radians(60)) #Two atoms nearest origin have this x-val
+		yCompA = math.sqrt( 1-(xCompA**2) ) #two top-most atoms have this y-val
+
+		outCoords.append( [0.0,0.0,0.0] )
+		outCoords.append( [xCompA, yCompA, 0.0] )
+		outCoords.append( [xCompA, -1*yCompA, 0.0] )
+		outCoords.append( [xCompA+dist, yCompA, 0.0] )
+		outCoords.append( [xCompA+dist,-1*yCompA, 0.0] )
+		outCoords.append( [(2*dist), 0.0, 0.0] )
+		return outCoords
 
 
