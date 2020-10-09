@@ -118,24 +118,27 @@ class MapGasPhaseReactionEnergyWorkflowToUsefulFormatStandard():
 	"""
 
 	def __init__(self, reactEnergyFmt="{:.3f}", reactantEnergyFmt="{:.3f}",
-	             productEnergyFmt="{:.3f}"):
+	             productEnergyFmt="{:.3f}", divReactionEnergyByConstant=1):
 		""" Initializer
 		
 		Args:
 			reactEnergyFmt: (str,optional) Format str used for the total reaction energy format
+			reactantEnergyFmt: (str,optional) Format str used for the reactant energies
+			productEnergyFmt: (str,optional) Format str used for the product energies
+			divReactionEnergyByConstant: (float, Optional) Reaction energy is divided by this. Can be useful if taking, for example, the average adsorption energy
 				 
 		"""
 		self.reactEnergyFmt = reactEnergyFmt
 		self.reactantEnergyFmt = reactantEnergyFmt
 		self.productEnergyFmt = productEnergyFmt
-
+		self.divReactionEnergyByConstant = divReactionEnergyByConstant
 
 	def _getSimpleTableHeadings(self):
 		return ["Method", "Reaction Energy (eV)"]
 
 	def _getSimpleTableData(self, stdInputObj):
 		methodLabel = stdInputObj.label[0].methodKey
-		reactEnergy = stdInputObj.workflow.output[0].energy
+		reactEnergy = stdInputObj.workflow.output[0].energy / self.divReactionEnergyByConstant
 		return [methodLabel, self.reactEnergyFmt.format(reactEnergy)]
 
 	def _getTableWithEnergyBreakdownsData(self, stdInputObj):
