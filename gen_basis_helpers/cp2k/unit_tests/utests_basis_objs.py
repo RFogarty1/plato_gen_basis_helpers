@@ -44,3 +44,53 @@ class TestStandardBasisObj(unittest.TestCase):
 		self.assertNotEqual( objA.element, objB.element )
 		self.assertNotEqual(objA,objB)
 
+
+class TestGetGhostVersionsOfInputBasisObjs(unittest.TestCase):
+
+	def setUp(self):
+		self.eleA, self.basisA = "eleA", "basisA"
+		self.potA, self.basFileA, self.potFileA = "potA", "basFileA", "potFileA"
+		self.ghostA = False
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDictA = {"element":self.eleA, "basis":self.basisA, "potential":self.potA,
+		              "basisFile": self.basFileA, "potFile":self.potFileA, "ghost":self.ghostA}
+		self.basisObjA = tCode.CP2KBasisObjStandard(**kwargDictA)
+
+	def testGhostVersionFromNonGhostA(self):
+		startObj = copy.deepcopy(self.basisObjA)
+		self.eleA += "_ghost"
+		self.ghostA = True
+		self.createTestObjs()
+		expObj = self.basisObjA
+		actObj = tCode.getStandardGhostVersionOfBasisObj(startObj)
+		self.assertEqual(expObj,actObj)
+
+	def testNoChangesWhenGhostObjGiven(self):
+		self.ghostA = True
+		self.createTestObjs()
+		expObj = self.basisObjA
+		actObj = tCode.getStandardGhostVersionOfBasisObj(self.basisObjA)
+		self.assertEqual(expObj, actObj)
+	
+	def testInputListOfGhostBasisObjsReturnedUnchanged(self):
+		self.ghostA = True
+		self.createTestObjs()
+		basisIterA = [self.basisObjA]
+		expOutput = basisIterA #Since its already a "ghost" type, we expect it unchanged
+		actOutput = tCode.getBasisObjsWithGhostVersionsIncluded(basisIterA)
+		self.assertEqual(expOutput, actOutput)
+
+	def testInputListOfBasisObjsGivesExpectedOutputA(self):
+		basisIterA = [self.basisObjA]
+		expExtra = copy.deepcopy(self.basisObjA)
+		expExtra.element = expExtra.element + "_ghost"
+		expExtra.ghost = True
+		expOutput = [self.basisObjA, expExtra]
+		actOutput = tCode.getBasisObjsWithGhostVersionsIncluded(basisIterA)
+		self.assertEqual(expOutput, actOutput)
+
+
+
+

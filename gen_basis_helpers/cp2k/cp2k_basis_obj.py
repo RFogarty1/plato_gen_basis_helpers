@@ -1,5 +1,5 @@
 
-
+import copy
 
 class CP2KBasisObjBase():
 	"""Class containing all information CP2K needs for the basis set of one element
@@ -119,3 +119,40 @@ class CP2KBasisObjStandard(CP2KBasisObjBase):
 				return False
 		return True
 
+
+def getBasisObjsWithGhostVersionsIncluded(basisObjIter):
+	""" Gets an iter of basis objects with ghost atom basis sets included for each atom type
+	
+	Args:
+		basisObjIter: (iter of CP2KBasisObjStandard)
+			 
+	Returns
+		outObjs: (iter of CP2KBasisObjStandard) Same as basisObjIter except for every non-ghost atom type in the input, there is a ghost atom version in this output list (i.e. this list includes basisObjIter objs)
+ 
+	"""
+	extraObjs = list()
+	for obj in basisObjIter:
+		if obj.ghost is False:
+			newObj = getStandardGhostVersionOfBasisObj(obj)
+			extraObjs.append( newObj )
+	
+	return [x for x in basisObjIter] + extraObjs
+
+def getStandardGhostVersionOfBasisObj(basisObj):
+	""" Gets a version of the input basis obj with ghost=True and ele key modded to have _ghost attached
+	
+	Args:
+		basisObj: (CP2KBasisObjStandard)
+			 
+	Returns
+		 outBasisObj: (CP2KBasisObjStandard), this is always a DIFFERENT object (even if the input is already a ghost type, in which case (basisObj is not outBasisObj) BUT (basisObj==outBasisObj)
+ 
+	"""
+	outBasisObj = copy.deepcopy(basisObj)
+	if outBasisObj.ghost is True:
+		return outBasisObj
+	
+	outBasisObj.element = outBasisObj.element + "_ghost"
+	outBasisObj.ghost = True
+
+	return outBasisObj
