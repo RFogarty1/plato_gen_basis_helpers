@@ -59,6 +59,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("geomConstraints")
 	registeredKwargs.add("extraModPyC2pkOpts")
 	registeredKwargs.add("saveRestartFile")
+	registeredKwargs.add("epsScf")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -179,6 +180,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["printAOMullikenPop".lower()] = True
 		if self.charge is not None:
 			modDict["charge"] = self.charge
+		if self.epsScf is not None:
+			modDict["epsScf"] = self.epsScf
 
 		runTypeModDict = self._getModDictBasedOnRunType()
 		modDict.update(runTypeModDict)
