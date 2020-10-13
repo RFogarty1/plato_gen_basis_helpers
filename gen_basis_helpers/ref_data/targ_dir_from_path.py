@@ -1,20 +1,23 @@
 
 import os
 
+from ..shared import config_vars as cfgVars
+
 class GetSpecialDirFromSubDir():
 	""" Callable class; call redirects to self.getDir; see the docstring for that function for the callable interface. The original use case for this is to get a working directory for jobs based on the path of a jupyter notebook which created the jobs
 
 	"""
 
-	def __init__(self, baseDir, targetSubDir):
+	def __init__(self, baseDir, targetSubDir, applyAbsPath=True):
 		""" Initializer
 		
 		Args:
 			baseDir: (str, path) Path to a base directory; input path to callable interface MUST be downstream from this path
 			targetSubDir: (str, path). os.path.join(baseDir, targetSubDir) should get the target directory
+			applyAbsPath: (bool) Whether to apply os.path.abspath to baseDir argument. Default=True. False can be useful if we dont want to throw an error at module import time
 				 
 		"""
-		self.baseDir = os.path.abspath(baseDir)
+		self.baseDir = os.path.abspath(baseDir) if applyAbsPath else baseDir
 		self.targetSubDir = targetSubDir
 
 
@@ -41,4 +44,13 @@ class GetSpecialDirFromSubDir():
 
 	def __call__(self, *args, **kwargs):
 		return self.getDir(*args, **kwargs)
+
+#We use a try/except to avoid errors at module import time 
+try:
+	mgWaterRepoPath = cfgVars.MG_WATER_REPO_PATH
+except AttributeError:
+	mgWaterRepoPath = None
+	print("WARNING: cfgVars.MG_WATER_REPO_PATH not set")
+
+getMgWaterWorkDirFromCurrent = GetSpecialDirFromSubDir(mgWaterRepoPath, "work_folder", applyAbsPath=False)
 
