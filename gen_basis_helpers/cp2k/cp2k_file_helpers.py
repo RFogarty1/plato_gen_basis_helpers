@@ -241,5 +241,6 @@ def _addBasisInfoSectionToSubSys(elementBasisInfo, subSysSection):
 		currSect.Element = x.element
 		currSect.Basis_set = x.basis
 		currSect.Potential = x.potential
-
+		if x.ghost:
+			currSect.Ghost = True
 

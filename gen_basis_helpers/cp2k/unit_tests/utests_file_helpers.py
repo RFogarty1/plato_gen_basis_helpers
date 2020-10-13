@@ -52,6 +52,13 @@ class testModifyCp2kObj(unittest.TestCase):
 		expStr = _loadExpectedOutputAddBasisAndGeomSingleAtomTestA()
 		self.assertEqual(sorted(expStr), sorted(actStr))
 
+	def testAddUCellGeomAndAllBasisInfoSingleAtomTestA_ghostAtom(self):
+		self.testBasisInfoA.ghost = True
+		tCode.addGeomAndBasisInfoToSimpleCP2KObj(self.startCP2KObj, self.testUCellA, [self.testBasisInfoA])
+		actStr = self.startCP2KObj.get_input_string()
+		expStr = _loadExpectedOutputGhostAtom_a()
+		self.assertEqual(sorted(expStr), sorted(actStr))
+
 	def testAddUCellGeomAndAllBasisInfoTwoElementTestA(self):
 		""" Check we can use basis sets from multiple files. NOTE: CP2K restricts the use of pseudopotentials to those from only ONE file """
 		self.testBasisInfoB.basisFile= "fake_second_basis_file"
@@ -130,8 +137,6 @@ class testModifyCp2kObj(unittest.TestCase):
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, {"runtype":"bsse", "fragmentsBSSE":[[1,2],[3,4]]})
 		expStr = _loadExpectedOutputBSSE_a()
 		actStr = self.startCP2KObj.get_input_string()
-		import pdb
-		pdb.set_trace()
 		self.assertEqual( sorted(expStr), sorted(actStr) )
 
 def _getDefObjInputStr():
@@ -220,5 +225,9 @@ def _loadExpectedOutputBSSE_a():
 	outStr = outStr.replace("Quickstep\n", "Quickstep\n  &BSSE\n    &FRAGMENT\n      LIST 1 2\n    &END FRAGMENT\n    &FRAGMENT\n      LIST 3 4\n    &END FRAGMENT\n  &END BSSE\n")
 	return outStr
 
+def _loadExpectedOutputGhostAtom_a():
+	outStr = _loadExpectedOutputAddBasisAndGeomSingleAtomTestA()
+	outStr = outStr.replace("BASIS_SET test_basis", "BASIS_SET test_basis\n      GHOST TRUE")
+	return outStr
 
 
