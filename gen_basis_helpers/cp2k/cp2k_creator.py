@@ -8,6 +8,7 @@ from . import method_register as methRegister
 from . import basis_register as basRegister
 from . import cp2k_file_helpers as fileHelpers
 from . import cp2k_calc_objs as calcObjs
+from . import cp2k_basis_obj as basisObjHelp
 from ..shared import data_plot_base as dPlotBase
 
 
@@ -60,6 +61,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("extraModPyC2pkOpts")
 	registeredKwargs.add("saveRestartFile")
 	registeredKwargs.add("epsScf")
+	registeredKwargs.add("fragmentsBSSE")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -164,7 +166,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 
 	def _modPycp2kObj(self,pycp2kObj):
 		#Modify basis set info and geometry; these need a special function essentially
-		fileHelpers.addGeomAndBasisInfoToSimpleCP2KObj(pycp2kObj, self.geom, self.basisObjs)
+		basisObjs = self._getBasisObjs()
+		fileHelpers.addGeomAndBasisInfoToSimpleCP2KObj(pycp2kObj, self.geom, basisObjs)
 
 		#Modify any remaining properties we care about
 		modDict = dict()
@@ -190,6 +193,14 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict.update(self.extraModPyC2pkOpts)
 
 		fileHelpers.modCp2kObjBasedOnDict(pycp2kObj, modDict)
+
+
+	def _getBasisObjs(self):
+		basisObjs = self.basisObjs
+		if self.runType is not None:
+			if self.runType.lower() == "bsse":
+				basisObjs = basisObjHelp.getBasisObjsWithGhostVersionsIncluded(self.basisObjs)
+		return basisObjs
 
 	def _getPathToPassCalcObj(self):
 
@@ -217,6 +228,10 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			else:
 				geomOptDict = getCP2KModDictBasedOnGeomConstraints(self.geomConstraints)
 				outDict.update(geomOptDict)
+
+		if runStr.lower() == "bsse":
+			outDict["runType".lower()] = "bsse"
+			outDict["fragmentsBSSE".lower()] = self.fragmentsBSSE
 
 		return outDict
 

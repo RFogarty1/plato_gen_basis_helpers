@@ -18,6 +18,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.workFolder = "fake_folder"
 		self.fileName = "fake_file_name"
 		self.methodStr = "cp2k_test_object"
+		self.fragmentsBSSE = None
 		self.runType = None
 		self.printAOMullikenPop = False
 		self.createTestObjs()
@@ -28,7 +29,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        addedMOs=self.addedMOs, geom=self.geom,
 		                                                        basisObjs=self.basisObj, folderPath=self.workFolder,
 		                                                        fileName=self.fileName, workFolder=None, printAOMullikenPop=self.printAOMullikenPop,
-		                                                        runType=self.runType)
+		                                                        runType=self.runType, fragmentsBSSE=self.fragmentsBSSE)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -140,6 +141,13 @@ class TestStandardCreationObj(unittest.TestCase):
 		actArgDict = {k.lower():args[1][k] for k in expArgDict.keys()}
 		self.assertEqual(expArgDict, actArgDict)
 
+	def testExpectedModDictForRunTypeBSSE(self):
+		self.runType = "bsse"
+		self.fragmentsBSSE = mock.Mock()
+		self.createTestObjs()
+		expArgDict = {"runType".lower():"bsse", "fragmentsBSSE".lower():self.fragmentsBSSE}
+		actArgDict = self.testCreatorObjA._getModDictBasedOnRunType()
+		self.assertEqual(expArgDict, actArgDict)
 
 
 #TODO: Probably test atomic positions and cell constraints separately
@@ -182,4 +190,4 @@ class TestModDictBasedOnGeomConstraints(unittest.TestCase):
 			self.runTestFunct()
 
 		
-	
+
