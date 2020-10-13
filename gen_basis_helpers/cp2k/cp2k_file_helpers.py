@@ -157,6 +157,10 @@ def modCp2kObjBasedOnDict(cp2kObj, optDict):
 		cp2kObj.CP2K_INPUT.GLOBAL.Run_type = useDict["runtype"].upper()
 		if useDict["runtype"].lower() == "cell_opt":
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].Stress_tensor = "analytical".upper()
+		if useDict["runtype"].lower() == "bsse":
+			for frag in useDict["fragmentsBSSE".lower()]:
+				currFrag = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].BSSE.FRAGMENT_add()
+				currFrag.List = " ".join(["{}" for x in frag]).format(*frag) 
 
 	if useDict.get("geo_constrain_cell_angles") is not None:
 		angleConstraints = useDict["geo_constrain_cell_angles"]

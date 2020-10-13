@@ -126,6 +126,14 @@ class testModifyCp2kObj(unittest.TestCase):
 		actStr = self.startCP2KObj.get_input_string()
 		self.assertEqual( sorted(expStr), sorted(actStr) )
 
+	def testRunTypeBSSE(self):
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, {"runtype":"bsse", "fragmentsBSSE":[[1,2],[3,4]]})
+		expStr = _loadExpectedOutputBSSE_a()
+		actStr = self.startCP2KObj.get_input_string()
+		import pdb
+		pdb.set_trace()
+		self.assertEqual( sorted(expStr), sorted(actStr) )
+
 def _getDefObjInputStr():
 	defStr = '&GLOBAL\n  PROJECT_NAME cp2k_file\n  PRINT_LEVEL MEDIUM\n  RUN_TYPE ENERGY\n&END GLOBAL\n&FORCE_EVAL\n  METHOD Quickstep\n  &DFT\n    POTENTIAL_FILE_NAME GTH_POTENTIALS\n    BASIS_SET_FILE_NAME BASIS_SET\n    &QS\n      EPS_DEFAULT 1.0E-10\n    &END QS\n    &XC\n      &XC_FUNCTIONAL PBE\n      &END XC_FUNCTIONAL\n    &END XC\n    &KPOINTS\n      SCHEME MONKHORST-PACK 1 1 1\n    &END KPOINTS\n    &MGRID\n      NGRIDS 4\n      REL_CUTOFF [eV] 50000\n      CUTOFF [eV] 5000\n    &END MGRID\n    &SCF\n      SCF_GUESS ATOMIC\n      ADDED_MOS 4\n      EPS_SCF 1.0E-7\n      MAX_SCF 300\n      &MIXING T\n        NBUFFER 8\n        ALPHA 0.4\n        METHOD BROYDEN_MIXING\n      &END MIXING\n      &SMEAR ON\n        ELECTRONIC_TEMPERATURE [K] 157.9\n        METHOD FERMI_DIRAC\n      &END SMEAR\n      &DIAGONALIZATION ON\n        ALGORITHM Standard\n      &END DIAGONALIZATION\n    &END SCF\n  &END DFT\n  &PRINT\n    &FORCES On\n    &END FORCES\n  &END PRINT\n&END FORCE_EVAL\n'
 	return defStr
@@ -204,6 +212,12 @@ def _loadExpectedOutputEpsRho_3pt7_e10():
 def _loadExpectedOutputEpsCoreCharge_4pt5_e10():
 	outStr = _getDefObjInputStr()
 	outStr = outStr.replace("EPS_DEFAULT 1.0E-10", "EPS_DEFAULT 1.0E-10\n      EPS_CORE_CHARGE 4.5E-10")
+	return outStr
+
+def _loadExpectedOutputBSSE_a():
+	outStr = _getDefObjInputStr()
+	outStr = outStr.replace("RUN_TYPE ENERGY", "RUN_TYPE BSSE")
+	outStr = outStr.replace("Quickstep\n", "Quickstep\n  &BSSE\n    &FRAGMENT\n      LIST 1 2\n    &END FRAGMENT\n    &FRAGMENT\n      LIST 3 4\n    &END FRAGMENT\n  &END BSSE\n")
 	return outStr
 
 
