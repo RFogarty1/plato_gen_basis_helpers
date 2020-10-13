@@ -128,6 +128,18 @@ def _():
 	outPath = os.path.join(BASE_FOLDER, "hydrogen", "hcp0001", "cell_2_2_6", "fcc_hollow", "0pt25", "geom_opt.castep")
 	return helpersRefData.getEnergyFromCastepOutFile(outPath)
 
+
+#Mg with water adsorbed(0.25 coverage)
+@registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="h2o".lower(), siteKey="atop", cellDims=[2,2,6], codeKey="castep"))
+def _():
+	outPath = os.path.join(BASE_FOLDER, "water", "hcp0001", "cell_2_2_6", "atop", "0pt25", "geom_opt.castep")
+	return helpersRefData.getUCellInBohrFromCastepOutFile(outPath)
+
+@registerTotalEnergyDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="h2o".lower(), siteKey="atop", cellDims=[2,2,6], codeKey="castep"))
+def _():
+	outPath = os.path.join(BASE_FOLDER, "water", "hcp0001", "cell_2_2_6", "atop", "0pt25", "geom_opt.castep")
+	return helpersRefData.getEnergyFromCastepOutFile(outPath)
+
 # Mg with OH adsorbed (0.25 coverage)
 @registerGeomDeco(RegistrationKey(surfaceKey="hcp0001", adsorbateKey="OH".lower(), siteKey="fcc-hollow", cellDims=[2,2,4], codeKey="espresso"))
 def _():
