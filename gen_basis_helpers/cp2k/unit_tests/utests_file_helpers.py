@@ -227,7 +227,7 @@ def _loadExpectedOutputBSSE_a():
 
 def _loadExpectedOutputGhostAtom_a():
 	outStr = _loadExpectedOutputAddBasisAndGeomSingleAtomTestA()
-	outStr = outStr.replace("BASIS_SET test_basis", "BASIS_SET test_basis\n      GHOST TRUE")
+	outStr = outStr.replace("ELEMENT Mg\n      POTENTIAL test_potential\n      BASIS_SET test_basis", "BASIS_SET test_basis\n      GHOST TRUE")
 	return outStr
 
 

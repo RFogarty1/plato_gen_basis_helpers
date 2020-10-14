@@ -238,9 +238,13 @@ def _addBasisInfoSectionToSubSys(elementBasisInfo, subSysSection):
 	for x in elementBasisInfo:
 		currSect = subSysSection.KIND_add()
 		currSect.Section_parameters = x.element
-		currSect.Element = x.element
 		currSect.Basis_set = x.basis
-		currSect.Potential = x.potential
 		if x.ghost:
 			currSect.Ghost = True
+		else:
+			currSect.Element = x.element
+			currSect.Potential = x.potential
+
+
+
 
