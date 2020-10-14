@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+import itertools as it
 import os
+
 from pycp2k import CP2K
 #import ase.calculators.cp2k as cp2kAseCalc
 
@@ -75,13 +77,59 @@ def createDefaultCp2kCalcObj(**kwargs):
 	dft.SCF.SMEAR.Method = "FERMI_DIRAC"
 	dft.SCF.SMEAR.Electronic_temperature = "[K] 157.9"
 
-
 	modCp2kObjBasedOnDict(outObj,kwargs)
 
 	return outObj
 
+
 def modCp2kObjBasedOnDict(cp2kObj, optDict):
-	useDict = {k.lower():v for k,v in optDict.items()}
+	modderFunct = _getStandardPyCp2kModder()
+	modderFunct(cp2kObj, optDict)
+
+
+class Pycp2kModderStandard():
+	""" Callable class for modifying a PyCP2K object with a dictionary of update options. See self.modObjBasedOnDict for call interface. Note this class is generally used as a backend.
+
+	"""
+	def __init__(self, extraKeys=None, extraFuncts=None):
+		""" Initializer
+		
+		Args:
+			extraKeys: (iter of str) Each key represents an input key for the optDict
+			extraFuncts: (iter of functs, same length as extraKeys) f(pyCP2KObj, val). Each must modify the cp2k object in place with {key:val} pair from an input dictionary. extraFunct[idx](obj) triggers if extraKeys[idx] found in a  
+				 
+		"""
+		self.extraKeys = list() if extraKeys is None else list(extraKeys)
+		self.extraFuncts = list() if extraFuncts is None else list(extraFuncts)
+		assert len(self.extraKeys)==len(self.extraFuncts)
+
+	def modObjBasedOnDict(self, cp2kObj, optDict):
+		useDict = {k.lower():v for k,v in optDict.items()}
+		_standardModCp2kObjBasedOnDict(cp2kObj, useDict)
+		for key,funct in it.zip_longest(self.extraKeys, self.extraFuncts):
+			if useDict.get(key.lower(),None) is not None:
+				funct(cp2kObj, useDict[key.lower()])
+
+	def __call__(self, cp2kObj, optDict):
+		self.modObjBasedOnDict(cp2kObj,optDict)
+
+def _getStandardPyCp2kModder():
+	outModder = Pycp2kModderStandard()
+	_attachXcFunctionalToModder(outModder)
+	return outModder
+
+def _attachXcFunctionalToModder(modder):
+	key = "xcFunctional".lower()
+	def modXcFunctionalInObj(cp2kObj, val):
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.XC.XC_FUNCTIONAL.Section_parameters = val.upper()
+	_attachFunctionToModderInstance(key, modXcFunctionalInObj, modder)
+
+def _attachFunctionToModderInstance(key, function, instance):
+	instance.extraKeys.append(key)
+	instance.extraFuncts.append(function)
+
+#Simply all options i messed with pre-refactor
+def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 
 	if useDict.get("kpts",None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.KPOINTS.Scheme = "MONKHORST-PACK " + " ".join([str(x) for x in useDict["kpts"]])
