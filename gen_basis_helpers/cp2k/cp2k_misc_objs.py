@@ -16,7 +16,7 @@ class GrimmeDispersionCorrOptsCP2K():
 		self.listedAttrs = ["corrType", "excludeKindsD3", "paramFile", "printDFTD", "refFunctional"]
 		self.corrType = None if corrType is None else corrType
 		self.excludeKindsD3 = None if excludeKindsD3 is None else excludeKindsD3
-		self.paramFile = None if paramFile is None else paramFile
+		self.paramFile = "dftd3.dat" if paramFile is None else paramFile
 		self.refFunctional = None if refFunctional is None else refFunctional
 		self.printDFTD = None if printDFTD is None else printDFTD
 
