@@ -91,16 +91,19 @@ class Pycp2kModderStandard():
 	""" Callable class for modifying a PyCP2K object with a dictionary of update options. See self.modObjBasedOnDict for call interface. Note this class is generally used as a backend.
 
 	"""
-	def __init__(self, extraKeys=None, extraFuncts=None):
+	def __init__(self, extraKeys=None, extraFuncts=None, finalFuncts=None):
 		""" Initializer
 		
 		Args:
 			extraKeys: (iter of str) Each key represents an input key for the optDict
-			extraFuncts: (iter of functs, same length as extraKeys) f(pyCP2KObj, val). Each must modify the cp2k object in place with {key:val} pair from an input dictionary. extraFunct[idx](obj) triggers if extraKeys[idx] found in a  
+			extraFuncts: (iter of functs, same length as extraKeys) f(pyCP2KObj, val). Each must modify the cp2k object in place with {key:val} pair from an input dictionary. extraFunct[idx](obj) triggers if extraKeys[idx] found in useDict 
+			finalFuncts: (iter of functs) Interface is f(cp2kObj,useDict). Probably more useful/flexible than the others, allows dealing with multiple keys simultaneously
 				 
 		"""
 		self.extraKeys = list() if extraKeys is None else list(extraKeys)
 		self.extraFuncts = list() if extraFuncts is None else list(extraFuncts)
+		self.finalFuncts = list() if finalFuncts is None else list(finalFuncts)
+
 		assert len(self.extraKeys)==len(self.extraFuncts)
 
 	def modObjBasedOnDict(self, cp2kObj, optDict):
@@ -110,12 +113,16 @@ class Pycp2kModderStandard():
 			if useDict.get(key.lower(),None) is not None:
 				funct(cp2kObj, useDict[key.lower()])
 
+		for funct in self.finalFuncts:
+			funct(cp2kObj, useDict)
+
 	def __call__(self, cp2kObj, optDict):
 		self.modObjBasedOnDict(cp2kObj,optDict)
 
 def _getStandardPyCp2kModder():
 	outModder = Pycp2kModderStandard()
 	_attachXcFunctionalToModder(outModder)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnGrimmeDisp)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -123,6 +130,37 @@ def _attachXcFunctionalToModder(modder):
 	def modXcFunctionalInObj(cp2kObj, val):
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.XC.XC_FUNCTIONAL.Section_parameters = val.upper()
 	_attachFunctionToModderInstance(key, modXcFunctionalInObj, modder)
+
+
+def _modCp2kObjBasedOnGrimmeDisp(cp2kObj, useDict):
+	print("useDict = {}".format(useDict))
+	ppPart = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[0].DFT.XC.VDW_POTENTIAL
+	def initIfNeeded():
+		if len(ppPart.PAIR_POTENTIAL_list)==0:
+			ppPart.PAIR_POTENTIAL_add()
+			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[0].DFT.XC.VDW_POTENTIAL.Dispersion_functional = "Pair_Potential".upper()
+
+	if useDict.get("grimme_disp_corrType".lower(), None) is not None:
+		initIfNeeded()
+		ppPart.PAIR_POTENTIAL_list[0].Type = useDict["grimme_disp_corrType".lower()]
+
+	if useDict.get("grimme_disp_excludeKindsD3".lower(), None) is not None:
+		initIfNeeded()
+		ppPart.PAIR_POTENTIAL_list[0].D3_exclude_kind = " ".join([str(x) for x in useDict["grimme_disp_excludeKindsD3".lower()]])
+
+	if useDict.get("grimme_disp_paramFile".lower(), None) is not None:
+		initIfNeeded()
+		ppPart.PAIR_POTENTIAL_list[0].Parameter_file_name = useDict["grimme_disp_paramfile"]
+
+	if useDict.get("grimme_disp_refFunctional".lower(),None) is not None:
+		initIfNeeded()
+		ppPart.PAIR_POTENTIAL_list[0].Reference_functional = useDict["grimme_disp_reffunctional"].upper()
+
+	if useDict.get("grimme_disp_printDFTD".lower(), None) is not None:
+		initIfNeeded()
+		if useDict["grimme_disp_printDFTD".lower()]:
+			ppPart.PAIR_POTENTIAL_list[0].PRINT_DFTD.Section_parameters = "ON"
+
 
 def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)

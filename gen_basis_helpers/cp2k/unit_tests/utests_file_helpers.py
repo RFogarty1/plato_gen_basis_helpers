@@ -6,6 +6,8 @@ import gen_basis_helpers.cp2k.basis_register as basis
 import plato_pylib.shared.ucell_class as UCell
 import gen_basis_helpers.cp2k.cp2k_file_helpers as tCode
 
+import gen_basis_helpers.cp2k.cp2k_misc_objs as miscObjs
+
 
 #TODO: Figure out why this test seems to run relatively slow compared to others
 class testModifyCp2kObj(unittest.TestCase):
@@ -145,6 +147,15 @@ class testModifyCp2kObj(unittest.TestCase):
 		actStr = self.startCP2KObj.get_input_string()
 		self.assertEqual( sorted(expStr), sorted(actStr) )
 
+	def testChangeGrimmeDispCorr(self):
+		kwargDict = {"corrType": "DFTD3", "excludeKindsD3":[1],
+		             "paramFile":"fake_file", "refFunctional": "BLYP", "printDFTD":True}
+		grimmeObj = miscObjs.GrimmeDispersionCorrOptsCP2K(**kwargDict)
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, grimmeObj.modPyCP2KDict)
+		expStr = _loadExpectedOutputChangeGrimmeObjA()
+		actStr = self.startCP2KObj.get_input_string()
+		self.assertEqual( sorted(expStr), sorted(actStr) )
+
 def _getDefObjInputStr():
 	defStr = '&GLOBAL\n  PROJECT_NAME cp2k_file\n  PRINT_LEVEL MEDIUM\n  RUN_TYPE ENERGY\n&END GLOBAL\n&FORCE_EVAL\n  METHOD Quickstep\n  &DFT\n    POTENTIAL_FILE_NAME GTH_POTENTIALS\n    BASIS_SET_FILE_NAME BASIS_SET\n    &QS\n      EPS_DEFAULT 1.0E-10\n    &END QS\n    &XC\n      &XC_FUNCTIONAL PBE\n      &END XC_FUNCTIONAL\n    &END XC\n    &KPOINTS\n      SCHEME MONKHORST-PACK 1 1 1\n    &END KPOINTS\n    &MGRID\n      NGRIDS 4\n      REL_CUTOFF [eV] 50000\n      CUTOFF [eV] 5000\n    &END MGRID\n    &SCF\n      SCF_GUESS ATOMIC\n      ADDED_MOS 4\n      EPS_SCF 1.0E-7\n      MAX_SCF 300\n      &MIXING T\n        NBUFFER 8\n        ALPHA 0.4\n        METHOD BROYDEN_MIXING\n      &END MIXING\n      &SMEAR ON\n        ELECTRONIC_TEMPERATURE [K] 157.9\n        METHOD FERMI_DIRAC\n      &END SMEAR\n      &DIAGONALIZATION ON\n        ALGORITHM Standard\n      &END DIAGONALIZATION\n    &END SCF\n  &END DFT\n  &PRINT\n    &FORCES On\n    &END FORCES\n  &END PRINT\n&END FORCE_EVAL\n'
 	return defStr
@@ -241,4 +252,13 @@ def _loadExpectedOutputChangeXcFunctional():
 	outStr = outStr.replace("XC_FUNCTIONAL PBE\n","XC_FUNCTIONAL BLYP\n")
 	return outStr
 
+
+def _loadExpectedOutputChangeGrimmeObjA():
+	outStr = _getDefObjInputStr()
+	newStr = "      &END XC_FUNCTIONAL\n      &VDW_POTENTIAL\n        POTENTIAL_TYPE PAIR_POTENTIAL\n        &PAIR_POTENTIAL\n"
+	newStr += "          TYPE DFTD3\n          PARAMETER_FILE_NAME fake_file\n          REFERENCE_FUNCTIONAL BLYP\n"
+	newStr += "          D3_EXCLUDE_KIND 1\n          &PRINT_DFTD ON\n          &END PRINT_DFTD\n        &END PAIR_POTENTIAL\n"
+	newStr += "      &END VDW_POTENTIAL\n"
+	outStr = outStr.replace("      &END XC_FUNCTIONAL\n", newStr) 
+	return outStr
 
