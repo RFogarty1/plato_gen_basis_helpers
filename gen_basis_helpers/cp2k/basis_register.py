@@ -46,9 +46,44 @@ def registerCP2KBasisCreatorToMethodStr(creator, basisStr, overwrite=False):
 
 
 
+def createCP2KBasisObjFromKindAndStrDict(inpDict):
+	""" Creates an iter of CP2KBasis objects for a dictionary input
+
+	Args:
+		inpDict: (dict) Keys are the "kind" strings (these follow the KIND keyword in CP2K) while values are keys to a specific basis set/pseudopot/element combo (See getRegisteredCP2KObjCreatorStrings for available options)
+			
+	Returns
+		basisObjs: (iter of CP2KBasisObjStandard) Each entry represents the basis-set information for one element
+	
+	Raises:
+		KeyError: If any values in strDict arent valid basis set identifiers. See getRegisteredCP2KObjCreatorStrings for available options
+	"""
+	outList = list()
+	for key in inpDict.keys():
+	    currBasisObj = createCP2KBasisObjsFromKindAndBasisStr(key, inpDict[key])
+	    outList.append( currBasisObj )
+	return outList
+
+
+def createCP2KBasisObjsFromKindAndBasisStr(kindStr, basisStr):
+	""" Creates a CP2KBasis object when given the kind and a string representing the basis set/pseudopot/element to use. See getRegisteredCP2KObjCreatorStrings for available options
+	
+	Args:
+		kindStr: (str) The label for this species. This follows the "KIND" keyword in CP2K and is usually the same as the element
+		basisStr: (str, case-insensitive) The key to a specific basis set/pseudopot. combination
+	
+	Returns
+		outObj: (CP2KBasisObjStandard) Object representation of information needed to add basis-set information to a CP2K file for one element
+	
+	Raises:
+		KeyError: If basisStr is not present
+	"""
+	outObj = _BASIS_STRS_TO_CP2K_BASIS_CREATORS[basisStr.lower()]()
+	outObj.kind = kindStr
+	return outObj
 
 def createCP2KBasisObjsFromStrDict(strDict):
-	""" Creates an iter of CP2KBasis objects for a dictionary input 
+	""" Creates an iter of CP2KBasis objects for a dictionary input [DEPRECATED: Use createCP2KBasisObjsFromKindAndStrDict]
 	
 	Args:
 		strDict:(dict) keys are element strs (e.g. "H","Mg") while values are keys to specific basis set/pseudopot. combination
@@ -68,6 +103,7 @@ def createCP2KBasisObjsFromStrDict(strDict):
 
 def createCP2KBasisObjFromEleAndBasisStr(eleStr, basisStr):
 	""" Creates a CP2KBasis object when given an element symbol and string represnting basis set/pseudopot to use. See getRegisteredCP2KObjCreatorStrings for available options
+		[DEPRECATED: Use createCP2KBasisObjFromKindAndBasisStr]
 	
 	Args:
 		eleStr: (str, case-insensitive) The element used
@@ -81,6 +117,7 @@ def createCP2KBasisObjFromEleAndBasisStr(eleStr, basisStr):
 	"""
 	outObj = _BASIS_STRS_TO_CP2K_BASIS_CREATORS[basisStr.lower()]()
 	outObj.element = eleStr.capitalize()
+	outObj.kind = eleStr.capitalize()
 
 	return outObj
 

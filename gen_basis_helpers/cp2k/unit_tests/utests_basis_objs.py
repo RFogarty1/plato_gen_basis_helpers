@@ -50,17 +50,19 @@ class TestGetGhostVersionsOfInputBasisObjs(unittest.TestCase):
 	def setUp(self):
 		self.eleA, self.basisA = "eleA", "basisA"
 		self.potA, self.basFileA, self.potFileA = "potA", "basFileA", "potFileA"
+		self.kindA = None
 		self.ghostA = False
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		kwargDictA = {"element":self.eleA, "basis":self.basisA, "potential":self.potA,
-		              "basisFile": self.basFileA, "potFile":self.potFileA, "ghost":self.ghostA}
+		              "basisFile": self.basFileA, "potFile":self.potFileA, "ghost":self.ghostA, "kind":self.kindA}
 		self.basisObjA = tCode.CP2KBasisObjStandard(**kwargDictA)
 
 	def testGhostVersionFromNonGhostA(self):
 		startObj = copy.deepcopy(self.basisObjA)
 		self.eleA += "_ghost"
+		self.kindA = str(self.eleA)
 		self.ghostA = True
 		self.createTestObjs()
 		expObj = self.basisObjA
@@ -86,6 +88,7 @@ class TestGetGhostVersionsOfInputBasisObjs(unittest.TestCase):
 		basisIterA = [self.basisObjA]
 		expExtra = copy.deepcopy(self.basisObjA)
 		expExtra.element = expExtra.element + "_ghost"
+		expExtra.kind = expExtra.kind + "_ghost"
 		expExtra.ghost = True
 		expOutput = [self.basisObjA, expExtra]
 		actOutput = tCode.getBasisObjsWithGhostVersionsIncluded(basisIterA)

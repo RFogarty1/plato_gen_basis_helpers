@@ -133,7 +133,6 @@ def _attachXcFunctionalToModder(modder):
 
 
 def _modCp2kObjBasedOnGrimmeDisp(cp2kObj, useDict):
-	print("useDict = {}".format(useDict))
 	ppPart = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[0].DFT.XC.VDW_POTENTIAL
 	def initIfNeeded():
 		if len(ppPart.PAIR_POTENTIAL_list)==0:
@@ -323,7 +322,7 @@ def _addCellSectionToSubSysFromMinimalInterface(lattVects, scaledCoords, subSysS
 def _addBasisInfoSectionToSubSys(elementBasisInfo, subSysSection):
 	for x in elementBasisInfo:
 		currSect = subSysSection.KIND_add()
-		currSect.Section_parameters = x.element
+		currSect.Section_parameters = x.kind
 		currSect.Basis_set = x.basis
 		if x.ghost:
 			currSect.Ghost = True

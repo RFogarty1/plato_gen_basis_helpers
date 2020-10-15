@@ -22,6 +22,7 @@ class TestRegisteringBasisStrs(unittest.TestCase):
 	def testCreatorLedToExpectedObj(self):
 		expObj = defBasisStrs._createStandardBasisObjForUnitTests()
 		expObj.element = "Mg"
+		expObj.kind = "Mg"
 		actObj = tCode.createCP2KBasisObjFromEleAndBasisStr("Mg", "utests-basis")
 		self.assertEqual(expObj,actObj)
 

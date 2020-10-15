@@ -37,9 +37,14 @@ class CP2KBasisObjBase():
 		""" String representing whether to treat this as a ghost atom; with basis functions but no electrons or core """
 		raise NotImplementedError("")
 
+	@property
+	def kind(self):
+		""" String representing the label for this type of atom. Usually the same as element, but sometimes its neccesary to treat different atoms of the same element differently hence we need this"""
+		raise NotImplementedError("")
+
 class CP2KBasisObjStandard(CP2KBasisObjBase):
 
-	def __init__(self, element=None, basis=None, potential=None, basisFile=None, potFile=None, ghost=False):
+	def __init__(self, element=None, basis=None, potential=None, basisFile=None, potFile=None, ghost=False, kind=None):
 		""" Initializer for class designed to hold all required information for the CP2K basis set/potential to use for one element
 		
 		Args (ALL are required, despite being keywords):
@@ -49,11 +54,12 @@ class CP2KBasisObjStandard(CP2KBasisObjBase):
 			basisFile: (str) String representing the name of the basis file this basis set comes from (e.g. GTH_BASIS_SETS)
 			potFile: (str) String representing the name of the potential file this psuedopotential comes from (e.g. GTH_POTENTIALS)
 			ghost: (Bool, Optional, Default=False) Whether to treat this atom type ghost atoms with basis functions but no core/electrons
+			kind: (str, Optional, Defaults to element if unset) Essentially the label for this atom type, often (not always) the same as element
 
 		Raises:
 			AttributeError: If ANY of the keyword arguments arent set (Except ghost)
 		"""
-		reqArgs = ["element", "basis", "potential", "basisFile", "potFile","ghost"]
+		reqArgs = ["element", "basis", "potential", "basisFile", "potFile","ghost", "kind"]
 		self.allArgs = list(reqArgs)
 
 		self._element = element
@@ -62,6 +68,7 @@ class CP2KBasisObjStandard(CP2KBasisObjBase):
 		self._basisFile = basisFile
 		self._potFile = potFile
 		self._ghost = ghost
+		self._kind = str(element) if kind is None else kind
 
 		#Check that everything is set
 		for arg in reqArgs:
@@ -112,6 +119,13 @@ class CP2KBasisObjStandard(CP2KBasisObjBase):
 	def ghost(self,val):
 		self._ghost = val
 
+	@property
+	def kind(self):
+		return self._kind
+
+	@kind.setter
+	def kind(self, val):
+		self._kind = val
 
 	def __eq__(self,other):
 		for arg in self.allArgs:
@@ -153,6 +167,7 @@ def getStandardGhostVersionOfBasisObj(basisObj):
 		return outBasisObj
 	
 	outBasisObj.element = outBasisObj.element + "_ghost"
+	outBasisObj.kind = outBasisObj.kind + "_ghost"
 	outBasisObj.ghost = True
 
 	return outBasisObj
