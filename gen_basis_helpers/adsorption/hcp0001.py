@@ -38,20 +38,7 @@ class Hcp0001SurfaceToSitesSharedMixin():
 	#TODO: I should likely be grouping close-planes together (using a tolerance criterion)
 	def getSurfacePlaneEqn(self, inpCell):
 		abPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC(inpCell.lattVects)
-
-		#Find the plane-equations for the top or bottom plane [ASSUMES PERFECTLY FLAT SURFACE for now]
-		#(Stolen from the generic surface code for now; TODO: Factor this out)
-		allDVals = list()
-		for x in inpCell.cartCoords:
-			allDVals.append( abPlaneEqn.calcDForInpXyz(x[:3]) )
-		maxD, minD = max(allDVals), min(allDVals)
-		
-		if self.top:
-			outPlaneEquation = planeEqn.ThreeDimPlaneEquation( *(abPlaneEqn.coeffs[:3] + [maxD]) )
-		else:
-			outPlaneEquation = planeEqn.ThreeDimPlaneEquation( *(abPlaneEqn.coeffs[:3] + [minD]) )
-			outPlaneEquation.coeffs = [x*-1 for x in outPlaneEquation.coeffs]
-		return outPlaneEquation
+		return cartHelp.getPlaneEqnForOuterSurfaceAtoms(inpCell, top=self.top)
 
 
 class HcpSurfaceToHcpSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):

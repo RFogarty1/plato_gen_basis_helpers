@@ -41,6 +41,35 @@ def getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpCell, atomIdx, planeEqn, 
 	return getDistanceToNearestInPlanePointToInpPoint(inpPoint, cartCoords, newPlane, planeTolerance)
 
 
+def getPlaneEqnForOuterSurfaceAtoms(inpCell, top=True):
+	""" Gets plane equation for the outer atoms in the xy plane, the plane eqn should point towards vacuum/out from the surface at least
+	
+	Args:
+		inpCell: (plato_pylib UnitCell object) 
+		top: (Bool, default=True) If true the surface will be that furthest along c (the "top" surface), else it will be the surface most -ve along c (the bottom surface)
+ 
+	Returns
+		 planeEqn: (ThreeDimPlaneEquation object) outermost surface plane containing atoms
+ 
+	"""
+	abPlaneEqn = getABPlaneEqnWithNormVectorSameDirAsC(inpCell.lattVects)
+
+	#Find the plane-equations for the top or bottom plane [ASSUMES PERFECTLY FLAT SURFACE for now]
+	#(Stolen from the generic surface code for now; TODO: Factor this out)
+	allDVals = list()
+	for x in inpCell.cartCoords:
+		allDVals.append( abPlaneEqn.calcDForInpXyz(x[:3]) )
+	maxD, minD = max(allDVals), min(allDVals)
+	
+	if top:
+		outPlaneEquation = planeEqnHelp.ThreeDimPlaneEquation( *(abPlaneEqn.coeffs[:3] + [maxD]) )
+	else:
+		outPlaneEquation = planeEqnHelp.ThreeDimPlaneEquation( *(abPlaneEqn.coeffs[:3] + [minD]) )
+		outPlaneEquation.coeffs = [x*-1 for x in outPlaneEquation.coeffs]
+
+	return outPlaneEquation
+
+
 def getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell):
 	""" See getABPlaneEqnWithNormVectorSameDirAsC docstring """
 	return getABPlaneEqnWithNormVectorSameDirAsC(inpCell.lattVects)
