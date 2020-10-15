@@ -104,6 +104,11 @@ def _get_sspd_plsS_six_diffuse_opt():
 	return basObj.CP2KBasisObjStandard( element="will be overwritten", basis="rc-7pt5-sspd+s-six-exp-atom-opt",
 	                                    potential="GTH-PBE-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
 
+#OTHER BASIS SETS I ACTUALLY USE REGULARLY
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-BLYP-q2-sspd-plus-s-diffuse-single-exp-atom-opt".lower())
+def _unused():
+	return basObj.CP2KBasisObjStandard( element="Mg", basis="rc-7pt5-sspd+s-single-exp-atom-opt",
+	                                    potential="GTH-BLYP-q2", potFile="GTH_POTENTIALS", basisFile="PLATO_BASIS" )
 
 @basRegister.decoRegisterCP2KBasisCreatorToMethodStr("Mg-GTH-PBE-q2-spd-1z-s-2z-rc7pt5-r06pt0-plus-s-diffuse-8pt0".lower())
 def _getMgRc7pt5BasisObj_ssspd_diffuse():
