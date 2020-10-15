@@ -62,6 +62,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("saveRestartFile")
 	registeredKwargs.add("epsScf")
 	registeredKwargs.add("fragmentsBSSE")
+	registeredKwargs.add("xcFunctional")
+	registeredKwargs.add("grimmeDisp")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -185,6 +187,11 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["charge"] = self.charge
 		if self.epsScf is not None:
 			modDict["epsScf"] = self.epsScf
+		if self.xcFunctional is not None:
+			modDict["xcFunctional".lower()] = self.xcFunctional
+		if self.grimmeDisp is not None:
+			currDict = self.grimmeDisp.modPyCP2KDict
+			modDict.update(currDict)
 
 		runTypeModDict = self._getModDictBasedOnRunType()
 		modDict.update(runTypeModDict)

@@ -1,6 +1,7 @@
 
 import os
 
+import types
 import unittest
 import unittest.mock as mock
 
@@ -15,9 +16,11 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.addedMOs = 5
 		self.geom = "fake_geom"
 		self.basisObj = "fake_basis_obj"
+		self.xcFunctional = None
 		self.workFolder = "fake_folder"
 		self.fileName = "fake_file_name"
 		self.methodStr = "cp2k_test_object"
+		self.grimmeDisp = None
 		self.fragmentsBSSE = None
 		self.runType = None
 		self.printAOMullikenPop = False
@@ -29,7 +32,8 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        addedMOs=self.addedMOs, geom=self.geom,
 		                                                        basisObjs=self.basisObj, folderPath=self.workFolder,
 		                                                        fileName=self.fileName, workFolder=None, printAOMullikenPop=self.printAOMullikenPop,
-		                                                        runType=self.runType, fragmentsBSSE=self.fragmentsBSSE)
+		                                                        runType=self.runType, fragmentsBSSE=self.fragmentsBSSE, xcFunctional=self.xcFunctional,
+		                                                        grimmeDisp=self.grimmeDisp)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -64,12 +68,13 @@ class TestStandardCreationObj(unittest.TestCase):
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
 	def testSelectedArgsPassedToFileHelpers(self, mockMethReg, mockFileHelpers):
-		expArgDict = {"kpts":self.kPts, "addedMOs".lower():self.addedMOs}
+		self.xcFunctional = "BLYP"
+		self.createTestObjs()
+		expArgDict = {"kpts":self.kPts, "addedMOs".lower():self.addedMOs, "xcFunctional".lower():"BLYP"}
 		self.testCreatorObjA.create()
 		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
 		actArgDict = {k.lower():args[1][k] for k in expArgDict.keys()}
 		self.assertEqual(expArgDict, actArgDict)
-
 
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
@@ -96,6 +101,17 @@ class TestStandardCreationObj(unittest.TestCase):
 		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
 		actRelevantArgDict = {k.lower():args[1][k] for k in expRelevantArgDict.keys()}
 		self.assertEqual(expRelevantArgDict, actRelevantArgDict)
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
+	def testGrimmeCoorsPassedToFileHelpers(self, mockMethReg, mockFileHelpers):
+		expDict = {k.lower():v for k,v in {"keyA":"valA", "keyB":"valB"}.items()}
+		stubCorrObj = types.SimpleNamespace( modPyCP2KDict=expDict )
+		self.testCreatorObjA.create(grimmeDisp=stubCorrObj)
+		args, kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
+		actModDict = args[1]
+		actRelevantArgDict = {k.lower():actModDict[k] for k in expDict.keys()}
+		self.assertEqual(expDict, actRelevantArgDict)
 
 
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.calcObjs.os.path.abspath")
