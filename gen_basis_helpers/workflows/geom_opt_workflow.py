@@ -28,7 +28,7 @@ class GeomOptWorkflow(baseFlow.BaseLabelledWorkflow):
 
 	@property
 	def namespaceAttrs(self):
-		return ["geom", "energy"]
+		return ["geom", "energy", "parsedFile"]
 
 	@property
 	def output(self):
@@ -37,5 +37,6 @@ class GeomOptWorkflow(baseFlow.BaseLabelledWorkflow):
 	def run(self):
 		parsedFile = self.calcObj.parsedFile
 		self._output.geom = parsedFile.unitCell
+		self._output.parsedFile = parsedFile
 		self._output.energy = getattr(parsedFile.energies, "electronicTotalE")
 
