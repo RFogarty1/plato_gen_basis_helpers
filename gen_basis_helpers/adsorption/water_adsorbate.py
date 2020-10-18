@@ -5,6 +5,8 @@ import math
 import numpy as np
 
 from . import adsorbate_rep_objs as adsObjHelp
+
+from ..shared import plane_equations as planeEqnHelp
 from ..shared import simple_vector_maths as vectHelp
 
 class WaterAdsorbateStandard(adsObjHelp.Adsorbate):
@@ -148,6 +150,87 @@ def getGeomRotatedAroundAxis(inpGeom, axis, angle):
 	rotated = np.dot(rotationMatrix, geomToRotate)
 	outGeom = [list(x[:3]) for x in rotated.transpose()]
 	return outGeom
+
+
+
+def getStandardAxisRotataionsFromXyz(inpCoords, surfNormal=None):
+	""" Gets roll, pitch and azimuthal angles that relate a standard water orientation to the input co-ordinates
+	
+	Args:
+		inpCoords: (n length iter of len-4 iters) Each entry is [x,y,z,symbol] where symbol is the chemical symbol
+		surfNorm: (len 3-vector) Normal to the surface; needed to define azimuthal axis uniquely (it ALWAYS points the same direction as the surface normal OR orthogonal to it), Default [0,0,1] 
+ 
+	Returns (All values in degrees with domain -90 to +90)
+		roll: (float) 
+		pitch: (float)
+		azimuth: (float)
+	Raises:
+		ValueError: If any angles magnitude is close to 90 degrees; the function becomes badly behaved in this case
+ 
+	"""
+	refPosGetter =  WaterRefPosGetterStandard()
+	#1) Need to get a "standard" orientation
+	ohDists, angle = getWaterInternalCoordsFromXYZ(inpCoords)
+	standardOrientation = refPosGetter(ohDists, angle)
+
+	#2) Get the input geometry in terms of O,H,H order
+	reorderedCoords = list()
+	for x in inpCoords:
+		if x[-1] == "O":
+			reorderedCoords.append(x)
+	for x in inpCoords:
+		if x[-1] == "H":
+				reorderedCoords.append(x)
+
+	#3) Check the order of elements is the same in standardOrientation and out coords
+	eleListA, eleListB = [x[-1] for x in reorderedCoords], [x[-1] for x in standardOrientation]
+	assert eleListA==eleListB
+
+	#4) Get the new rotated co-ordinate system
+	rollVector = vectHelp.getUnitVectorFromInpVector( _getBisectVectorForInpWaterCoords(inpCoords) )
+	azimuthVector = _getAzimuthVectorForInpWaterCoords(inpCoords, surfVector=surfNormal)
+	pitchVector = getGeomRotatedAroundAxis([rollVector], azimuthVector, -90)[0]
+
+
+	#5) Get the rotation matrix linking the two co-ordinate systems
+	startVectors = np.array([refPosGetter.rollAxis, refPosGetter.pitchAxis, refPosGetter.azimuthalAxis])
+	finalVectors = np.array([x[:3] for x in [rollVector,pitchVector,azimuthVector]]).transpose()
+	rotMatrix = np.dot( finalVectors, np.linalg.inv(startVectors) )
+
+	#6) Get the roll, pitch, azimuth from the rotatation matrix (which we know is R_az@R_pi@R_roll, hence we have an analyitcal form for each matrix element)
+	roll, pitch, azimuth = 0,0,0
+	roll = math.degrees( math.atan( rotMatrix[2,1]/rotMatrix[2,2] ) )
+	pitch = math.degrees( math.asin( rotMatrix[2,0] ) )	
+	azimuth = math.degrees( math.atan( rotMatrix[1,0]/rotMatrix[0,0] ) ) 
+
+	#Cant deal with values near 90 at the moment; may try and sort later but for now just throw
+	for angle in roll,pitch,azimuth:
+		if abs( abs(angle)-90 )  < 1e-2:
+			raise ValueError("[roll,pitch,azimuth] = {}. One of these is too close to 90 degrees".format([roll,pitch,azimuth]))
+
+
+	return roll,pitch,azimuth
+
+def _getAzimuthVectorForInpWaterCoords(inpCoords, surfVector=None):
+	surfVector = [0,0,1] if surfVector is None else surfVector
+	inPlaneVects = _getOHVectorsFromInpCoords(inpCoords)
+	planeEqn = planeEqnHelp.ThreeDimPlaneEquation.fromTwoPositionVectors(*inPlaneVects)
+	normToMolecularPlane = planeEqn.coeffs[:3]
+	if vectHelp.getDotProductTwoVectors(surfVector,normToMolecularPlane) < 0:
+		normToMolecularPlane = [-1*x for x in normToMolecularPlane]
+	return normToMolecularPlane
+
+def _getBisectVectorForInpWaterCoords(inpCoords):
+	vectA, vectB = _getOHVectorsFromInpCoords(inpCoords)
+	outVect = [a+b for a,b in it.zip_longest(vectA,vectB)]
+	return outVect
+
+def _getOHVectorsFromInpCoords(inpCoords):
+	oCoord = [x[:3] for x in inpCoords if x[-1].upper()=="O"][0]
+	hCoords = [x[:3] for x in inpCoords if x[-1].upper()=="H"]
+	vectA = [b-a for b,a in it.zip_longest(hCoords[0],oCoord)]
+	vectB = [b-a for b,a in it.zip_longest(hCoords[1],oCoord)]
+	return [vectA, vectB]
 
 
 

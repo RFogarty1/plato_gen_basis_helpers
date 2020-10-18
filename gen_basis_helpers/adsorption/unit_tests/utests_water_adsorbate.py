@@ -168,3 +168,64 @@ class TestGetInternalCoordsFromGeom(unittest.TestCase):
 		for exp,act in it.zip_longest(expDists,actDists):
 			self.assertAlmostEqual(exp,act)
 
+
+class TestGetAxisRotationsFromInpXyz(unittest.TestCase):
+
+	def setUp(self):
+		self.ohDists = [1.1,1.1]
+		self.angle = 105
+		self.roll, self.pitch, self.azimuthal = 0,0,0
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"roll":self.roll, "pitch":self.pitch, "azimuthal":self.azimuthal}
+		self.waterObjA = tCode.WaterAdsorbateStandard(self.ohDists,self.angle, **kwargDict)
+
+	def testAllZeroWhenInRefGeom(self):
+		expVals = [0.0, 0.0, 0.0]
+		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
+
+	def testOutputConsistentWith45Roll(self):
+		self.waterObjA.roll = 45
+		expVals = [45, 0, 0]
+		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
+
+	def testOutputConsistentWith45Pitch(self):
+		self.waterObjA.pitch = 45
+		expVals = [0, 45, 0]
+		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
+
+	def testOutputConsistentWith45Azimuthal(self):
+		self.waterObjA.azimuthal = 45
+		expVals = [0, 0, 45]
+		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
+
+	def testOutputConsitentWithAllNeg45(self):
+		self.waterObjA.azimuthal, self.waterObjA.pitch, self.waterObjA.roll = -45, -45, -45
+		expVals = [-45, -45, -45]
+		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
+
+	def testOutputConsistentWithRangeOfAngleCombos(self):
+		inpCombos =[ [ 30,  40, 50],
+		             [-20, -10, 12],
+		             [14, 26, 19] ]
+		for combo in inpCombos:
+			self._runStandardTestForInpCombo(combo)
+
+	def _runStandardTestForInpCombo(self, inpCombo):
+		self.waterObjA.roll = inpCombo[0]
+		self.waterObjA.pitch = inpCombo[1]
+		self.waterObjA.azimuthal = inpCombo[2]
+		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(inpCombo,actVals)]
+
+	#Badly behaved for angles close to 90; best is to just throw an error for now
+	def testRaisesIfAngleNear90(self):
+		self.waterObjA.roll = -89.999
+		with self.assertRaises(ValueError):
+			tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
