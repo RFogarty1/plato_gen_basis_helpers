@@ -153,7 +153,7 @@ def getGeomRotatedAroundAxis(inpGeom, axis, angle):
 
 
 
-def getStandardAxisRotataionsFromXyz(inpCoords, surfNormal=None):
+def getStandardAxisRotationsFromXyz(inpCoords, surfNormal=None):
 	""" Gets roll, pitch and azimuthal angles that relate a standard water orientation to the input co-ordinates
 	
 	Args:

@@ -183,31 +183,31 @@ class TestGetAxisRotationsFromInpXyz(unittest.TestCase):
 
 	def testAllZeroWhenInRefGeom(self):
 		expVals = [0.0, 0.0, 0.0]
-		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		actVals = tCode.getStandardAxisRotationsFromXyz(self.waterObjA.geom)
 		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
 
 	def testOutputConsistentWith45Roll(self):
 		self.waterObjA.roll = 45
 		expVals = [45, 0, 0]
-		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		actVals = tCode.getStandardAxisRotationsFromXyz(self.waterObjA.geom)
 		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
 
 	def testOutputConsistentWith45Pitch(self):
 		self.waterObjA.pitch = 45
 		expVals = [0, 45, 0]
-		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		actVals = tCode.getStandardAxisRotationsFromXyz(self.waterObjA.geom)
 		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
 
 	def testOutputConsistentWith45Azimuthal(self):
 		self.waterObjA.azimuthal = 45
 		expVals = [0, 0, 45]
-		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		actVals = tCode.getStandardAxisRotationsFromXyz(self.waterObjA.geom)
 		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
 
 	def testOutputConsitentWithAllNeg45(self):
 		self.waterObjA.azimuthal, self.waterObjA.pitch, self.waterObjA.roll = -45, -45, -45
 		expVals = [-45, -45, -45]
-		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		actVals = tCode.getStandardAxisRotationsFromXyz(self.waterObjA.geom)
 		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
 
 	def testOutputConsistentWithRangeOfAngleCombos(self):
@@ -221,11 +221,11 @@ class TestGetAxisRotationsFromInpXyz(unittest.TestCase):
 		self.waterObjA.roll = inpCombo[0]
 		self.waterObjA.pitch = inpCombo[1]
 		self.waterObjA.azimuthal = inpCombo[2]
-		actVals = tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+		actVals = tCode.getStandardAxisRotationsFromXyz(self.waterObjA.geom)
 		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(inpCombo,actVals)]
 
 	#Badly behaved for angles close to 90; best is to just throw an error for now
 	def testRaisesIfAngleNear90(self):
 		self.waterObjA.roll = -89.999
 		with self.assertRaises(ValueError):
-			tCode.getStandardAxisRotataionsFromXyz(self.waterObjA.geom)
+			tCode.getStandardAxisRotationsFromXyz(self.waterObjA.geom)
