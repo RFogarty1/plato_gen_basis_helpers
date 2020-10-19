@@ -12,10 +12,12 @@ class TestSingleTypeGetAdsorbates(unittest.TestCase):
 		self.adsorbateObjA = mock.Mock()
 		self.fractCoverA = 1
 		self.nSites = 4
+		self.nAds = 1
+		self.useFractCover=True
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		self.testObjA = tCode.SingleTypeGetAdsorbatesForSites(self.adsorbateObjA, self.fractCoverA)
+		self.testObjA = tCode.SingleTypeGetAdsorbatesForSites(self.adsorbateObjA, self.fractCoverA, nAds=self.nAds, useFractCover=self.useFractCover)
 		self.inpSitesA = [mock.Mock() for x in range(self.nSites)]
 
 	def testGetNumberOfAdsorbates_fullCoverage(self):
@@ -44,6 +46,17 @@ class TestSingleTypeGetAdsorbates(unittest.TestCase):
 		expObjs = [self.adsorbateObjA for x in range(2)] + [None for x in range(2)]
 		actObjs = self.testObjA(self.inpSitesA)
 		self.assertEqual(expObjs,actObjs)
+
+	def testExpectedNumbAdsObjForNAdsOne(self):
+		#1) Check fract-coverage method wouldnt give expected value
+		expVal = 1
+		fractCoverVal = self.testObjA.getNumberOfAdsorbateObjs(self.nSites)
+		self.assertNotEqual(expVal, fractCoverVal)
+		#2) Check the nAds method gives the correct value
+		self.nAds, self.useFractCover = expVal, False
+		self.createTestObjs()
+		actVal = self.testObjA.getNumberOfAdsorbateObjs(self.nSites)
+		self.assertEqual(expVal,actVal)
 
 class TestAddWaterAdsorbatesToBilayer(unittest.TestCase):
 

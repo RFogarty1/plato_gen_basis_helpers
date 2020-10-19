@@ -40,7 +40,7 @@ class SingleTypeGetAdsorbatesForSites(BaseGetAdsorbatesForSites):
 	""" Callable class, takes a list of positions and figures out which sites are to be occupied by the single type of adsorbate held. See getAdsorbateListForInpSites for callable interface
 
 	"""
-	def __init__(self, adsorbateObj, fractCoverage, addStrat=None, distance=0, fractTol=1e-2):
+	def __init__(self, adsorbateObj, fractCoverage, addStrat=None, distance=0, fractTol=1e-2, nAds=None, useFractCover=True):
 		""" Initializer
 		
 		Args:
@@ -50,12 +50,17 @@ class SingleTypeGetAdsorbatesForSites(BaseGetAdsorbatesForSites):
 			distance: (float, Optional) Distance from the adsorption site (NOT neccesarily a surface atom) to place the adsorbate objects. Some addStrat may use this info
 			fractTol: (float,optional) Sites will be occupied such that actual fract coverage equals fractCoverage+-fractTol, if this is not possible an error will be thrown
 
+			nAds: (int, optional) Specificy the integer number of adsorbates to use. This only takes effect if useFractCover=False
+			useFractCover:(Bool, optional, default=True) Whether to use fractional coverage to determine number of adsorbates. If False will use nAds to determine
+
 		"""
 		self.adsorbateObj = adsorbateObj
 		self.fractCoverage = fractCoverage
 		self.addStrat = addStrat if addStrat is not None else addStratHelp.OccupyInOrderSiteOccupier()
 		self.fractTol = fractTol
 		self.distance = distance
+		self.nAds = nAds
+		self.useFractCover = useFractCover
 
 	def getDistances(self, sitePositions, surfObj=None, surfaceVector=None):
 		adsorbateSites = self.getAdsorbateListForInpSites(sitePositions, surfObj=surfObj, surfaceVector=surfaceVector)
@@ -78,6 +83,9 @@ class SingleTypeGetAdsorbatesForSites(BaseGetAdsorbatesForSites):
 		return [copy.deepcopy(self.adsorbateObj) for x in range(numbAdsorbates)]
 
 	def getNumberOfAdsorbateObjs(self,nSites):
+		if self.useFractCover is False:
+			return self.nAds
+
 		integerFractCoverages = [ x/nSites for x in range(nSites+1) ]
 		diffs = [abs(x-self.fractCoverage) for x in integerFractCoverages]
 		nearestIdx = min( [(idx,x) for idx,x in enumerate(diffs)], key=lambda x:x[1] )[0]
