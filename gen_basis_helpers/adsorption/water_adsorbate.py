@@ -12,7 +12,7 @@ from ..shared import simple_vector_maths as vectHelp
 class WaterAdsorbateStandard(adsObjHelp.Adsorbate):
 
 	def __init__(self, ohDists, angle, refPosGetter=None,
-	             pitch=None, roll=None, azimuthal=None):
+	             pitch=None, roll=None, azimuthal=None, translationVector=None):
 		""" Initialiser
 		
 		Args:
@@ -22,17 +22,15 @@ class WaterAdsorbateStandard(adsObjHelp.Adsorbate):
 			pitch: (Float, Optional, default=0) Rotation around an axis orthogonal to the roll/azimuthal axes, essentially used to tilt O-H up or down. Generally +ve values will tilt OH upwards ([0,-1,0] pitch axis)
 			roll : (Float, Optional, default=0) Rotation around the bisect of the two OH/OH bonds in the reference geometry. Generally expected to be ~0 or ~180
 			azimuthal: (Float, Optional, default=0) Rotation about the z-axis
- 
+			translationVector: (Float, len-3 iter, default=[0,0,0]): Apply this translation to all atoms 
 		"""
-		#TODO
-		#	translationVector: (Float, len-3 iter): Apply this translation to the water
 		self.ohDists = list(ohDists)
 		self.angle = angle
 		self.refPosGetter = refPosGetter if refPosGetter is not None else WaterRefPosGetterStandard()
 		self.pitch = pitch if pitch is not None else 0
 		self.roll = roll if roll is not None else 0
 		self.azimuthal = azimuthal if azimuthal is not None else 0
-#		self.translationVector = list(translationVector) if translationVector is not None else [0.0,0.0,0.0]
+		self.translationVector = list(translationVector) if translationVector is not None else [0.0,0.0,0.0]
 
 	@property
 	def geom(self):
@@ -40,6 +38,7 @@ class WaterAdsorbateStandard(adsObjHelp.Adsorbate):
 		self._applyRollToOutgeom(outGeom)
 		self._applyPitchToOutGeom(outGeom)
 		self._applyAzimuthalToOutGeom(outGeom)
+		self._applyTranslationToOutGeom(outGeom)
 		return outGeom
 
 	#Roll is along the x-axis by default, but more generally its along the bisect angle really.
@@ -56,6 +55,13 @@ class WaterAdsorbateStandard(adsObjHelp.Adsorbate):
 	def _applyRotationToGeom(self, geom, axis, angle):
 		outGeom = getGeomRotatedAroundAxis(geom, axis, angle)
 		self._moveNewCoordsToGeomInPlace(outGeom, geom)
+
+	def _applyTranslationToOutGeom(self, geom):
+		newCoords = list()
+		for oldCoords in geom:
+			currCoords = [x+t for x,t in it.zip_longest(oldCoords[:3],self.translationVector)]
+			newCoords.append(currCoords)
+		self._moveNewCoordsToGeomInPlace(newCoords, geom)
 
 	def _moveNewCoordsToGeomInPlace(self, newCoords, geom):
 		for idx, coords in enumerate(newCoords):

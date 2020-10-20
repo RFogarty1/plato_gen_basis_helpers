@@ -43,12 +43,13 @@ class TestGeometryFromWaterAdsorbate(unittest.TestCase):
 		self.pitch = 0
 		self.roll = 0
 		self.azimuthal = 0
+		self.translationVector = [0,0,0]
 		self.refPosGetter = tCode.WaterRefPosGetterStandard()
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		kwargs = {"refPosGetter":self.refPosGetter, "pitch":self.pitch, "roll":self.roll,
-		          "azimuthal":self.azimuthal}
+		          "azimuthal":self.azimuthal, "translationVector":self.translationVector}
 		self.testObjA = tCode.WaterAdsorbateStandard(self.ohDists, self.angle, **kwargs)
 
 	def testWithOnlyInternalCoords(self):
@@ -115,6 +116,19 @@ class TestGeometryFromWaterAdsorbate(unittest.TestCase):
 		             [contribA, -1*contribA, 0.0, "H"],
 		             [-1*contribB, -1*contribB, 0.0, "H"] ]
 
+		actGeom = self.testObjA.geom
+		self._checkGeomsEqual(expGeom,actGeom)
+
+	def testTranslationVectorA(self):
+		self.translationVector = [1,2,3]
+		self.createTestObjs()
+		contribA = (self.ohDists[0]) / math.sqrt(2)
+		contribB = (self.ohDists[1]) / math.sqrt(2)
+
+		expGeom = [ [ 1.0, 2.0, 3.0, "O"],
+		            [ contribA+1, contribA+2     , 3.0, "H"],
+		            [ contribB+1, (-1*contribB)+2, 3.0, "H"] ]
+		
 		actGeom = self.testObjA.geom
 		self._checkGeomsEqual(expGeom,actGeom)
 
