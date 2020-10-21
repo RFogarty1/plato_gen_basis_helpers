@@ -127,9 +127,25 @@ def _getStandardPyCp2kModder():
 
 def _attachXcFunctionalToModder(modder):
 	key = "xcFunctional".lower()
-	def modXcFunctionalInObj(cp2kObj, val):
-		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.XC.XC_FUNCTIONAL.Section_parameters = val.upper()
-	_attachFunctionToModderInstance(key, modXcFunctionalInObj, modder)
+#	def modXcFunctionalInObj(cp2kObj, val):
+#		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.XC.XC_FUNCTIONAL.Section_parameters = val.upper()
+	_attachFunctionToModderInstance(key, _modXcFunctionalInObjStd, modder)
+
+
+def _modXcFunctionalInObjStd(cp2kObj, val):
+	specialKeys = ["optB88_pw92".lower()]
+	xcSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.XC
+	if val not in specialKeys:
+		xcSection.XC_FUNCTIONAL.Section_parameters = val.upper()
+	else:
+		if val=="optB88_pw92".lower():
+			xcSection.XC_FUNCTIONAL.Section_parameters = None
+			xcSection.XC_FUNCTIONAL.LIBXC.Functional = "XC_GGA_X_OPTB88_VDW"
+			xcSection.XC_FUNCTIONAL.PW92_add()
+			xcSection.XC_FUNCTIONAL.PW92_list[-1].Section_parameters=True
+		else:
+			raise ValueError("Dont know what to do with {}".format(val))
+
 
 
 def _modCp2kObjBasedOnGrimmeDisp(cp2kObj, useDict):
