@@ -52,6 +52,13 @@ class TestCellConstraintsCls(unittest.TestCase):
 		objB.anglesToFix = [True,False,False]
 		self.assertNotEqual(objA,objB)
 
+	def testToDictAndFromDictConsistent(self):
+		self.angleConstraints = [True,True,True]
+		self.createTestObjs()
+		objA = copy.deepcopy(self.testObjA)
+		dictA = objA.toDict()
+		objB = tCode.CellConstraints.fromDict(dictA)
+		self.assertEqual(objA, objB)
 
 class TestGeomConstraintsClass(unittest.TestCase):
 

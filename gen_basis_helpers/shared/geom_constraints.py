@@ -51,6 +51,7 @@ class CellConstraints():
 				 
 		"""
 
+		self.listedAttrs = ["anglesToFix", "lattParamsToFix"]
 		self.anglesToFix = list(anglesToFix)
 		self.lattParamsToFix = list(lattParamsToFix)
 		self._checkParamsCorrectLength()
@@ -79,6 +80,17 @@ class CellConstraints():
 		anglesToFix = [False,False,False]
 		lattParamsToFix = [False,False,False]
 		return cls(anglesToFix, lattParamsToFix)
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		anglesToFix, lattParamsToFix = inpDict["anglesToFix"], inpDict["lattParamsToFix"]
+		return cls(anglesToFix,lattParamsToFix)
+
+	def toDict(self):
+		outDict = dict()
+		for attr in self.listedAttrs:
+			outDict[attr] = getattr(self,attr)
+		return outDict
 
 	def __eq__(self,other):
 		boolAttrs = ["anglesToFix","lattParamsToFix"]
