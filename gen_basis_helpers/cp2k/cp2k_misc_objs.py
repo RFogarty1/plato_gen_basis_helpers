@@ -27,3 +27,40 @@ class GrimmeDispersionCorrOptsCP2K():
 			outDict["grimme_disp_" + currAttr] = getattr(self, currAttr)
 		return outDict
 
+
+class NonLocalDispersionsCorrOptsCP2K():
+
+	def __init__(self, corrType=None, cutoff=None, kernelFileName=None, verboseOutput=False):
+		""" Initializer
+		
+		Args:
+			corrType: (str) "DRSLL", "LMKLL" or "RVV10" dependning on non-local correlation functional
+			cutoff: Optionally specify the cutoff value to use (eV)
+			kernelFileName: (str) Name of the kernel data file Default="vdW_kernel_table.dat"
+			verboseOutput: (Bool,Default=False) Whether to turn on verbose printing
+		"""
+		self.listedAttrs = ["corrType", "cutoff", "kernelFileName", "verboseOutput"]
+		self.corrType = None if corrType is None else corrType
+		self._cutoff = None if cutoff is None else cutoff
+		self.kernelFileName = "vdW_kernel_table.dat" if kernelFileName is None else kernelFileName
+		self.verboseOutput = None if verboseOutput is None else verboseOutput
+
+	@property
+	def modPyCP2KDict(self):
+		outDict = dict()
+		for currAttr in self.listedAttrs:
+			outDict["disp_nl_" + currAttr] = getattr(self, currAttr)
+		return outDict
+
+	@property
+	def cutoff(self):
+		if self._cutoff is None:
+			return None
+		else:
+			return "[eV] {}".format(self._cutoff)
+
+	@cutoff.setter
+	def cutoff(self, val):
+		self._cutoff = val
+		
+

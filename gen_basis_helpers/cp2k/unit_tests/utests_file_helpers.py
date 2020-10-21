@@ -163,6 +163,15 @@ class testModifyCp2kObj(unittest.TestCase):
 		actStr = self.startCP2KObj.get_input_string()
 		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
 
+	def testChangeDispNLCorr(self):
+		kwargDict = {"corrType":"DRSLL", "cutoff":100, "kernelFileName":"fake_file.dat",
+		             "verboseOutput":True}
+		testOptObj = miscObjs.NonLocalDispersionsCorrOptsCP2K(**kwargDict)
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, testOptObj.modPyCP2KDict)
+		expStr = _loadExpectedOutputChangeNonLocalDispCorrObjA()
+		actStr = self.startCP2KObj.get_input_string()
+		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
+
 def _getDefObjInputStr():
 	defStr = '&GLOBAL\n  PROJECT_NAME cp2k_file\n  PRINT_LEVEL MEDIUM\n  RUN_TYPE ENERGY\n&END GLOBAL\n&FORCE_EVAL\n  METHOD Quickstep\n  &DFT\n    POTENTIAL_FILE_NAME GTH_POTENTIALS\n    BASIS_SET_FILE_NAME BASIS_SET\n    &QS\n      EPS_DEFAULT 1.0E-10\n    &END QS\n    &XC\n      &XC_FUNCTIONAL PBE\n      &END XC_FUNCTIONAL\n    &END XC\n    &KPOINTS\n      SCHEME MONKHORST-PACK 1 1 1\n    &END KPOINTS\n    &MGRID\n      NGRIDS 4\n      REL_CUTOFF [eV] 50000\n      CUTOFF [eV] 5000\n    &END MGRID\n    &SCF\n      SCF_GUESS ATOMIC\n      ADDED_MOS 4\n      EPS_SCF 1.0E-7\n      MAX_SCF 300\n      &MIXING T\n        NBUFFER 8\n        ALPHA 0.4\n        METHOD BROYDEN_MIXING\n      &END MIXING\n      &SMEAR ON\n        ELECTRONIC_TEMPERATURE [K] 157.9\n        METHOD FERMI_DIRAC\n      &END SMEAR\n      &DIAGONALIZATION ON\n        ALGORITHM Standard\n      &END DIAGONALIZATION\n    &END SCF\n  &END DFT\n  &PRINT\n    &FORCES On\n    &END FORCES\n  &END PRINT\n&END FORCE_EVAL\n'
 	return defStr
@@ -280,3 +289,20 @@ def _loadExpectedOutputOptB88Functional():
 	newStr += "        &END PW92\n"
 	outStr = outStr.replace("&XC_FUNCTIONAL PBE\n", newStr)
 	return outStr
+
+
+def _loadExpectedOutputChangeNonLocalDispCorrObjA():
+	outStr = _getDefObjInputStr()
+	newStr = "      &END XC_FUNCTIONAL\n"
+	newStr += "      &VDW_POTENTIAL\n"
+	newStr += "         POTENTIAL_TYPE NON_LOCAL\n"
+	newStr += "         &NON_LOCAL\n"
+	newStr += "           TYPE DRSLL\n"
+	newStr += "           VERBOSE_OUTPUT TRUE\n"
+	newStr += "           KERNEL_FILE_NAME fake_file.dat\n"
+	newStr += "           CUTOFF [eV] 100\n"
+	newStr += "         &END NON_LOCAL\n"
+	newStr += "      &END VDW_POTENTIAL\n"
+	outStr = outStr.replace("      &END XC_FUNCTIONAL\n", newStr) 
+	return outStr
+

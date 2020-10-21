@@ -123,6 +123,7 @@ def _getStandardPyCp2kModder():
 	outModder = Pycp2kModderStandard()
 	_attachXcFunctionalToModder(outModder)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnGrimmeDisp)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnDispNonLocalCorr)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -175,6 +176,31 @@ def _modCp2kObjBasedOnGrimmeDisp(cp2kObj, useDict):
 		initIfNeeded()
 		if useDict["grimme_disp_printDFTD".lower()]:
 			ppPart.PAIR_POTENTIAL_list[0].PRINT_DFTD.Section_parameters = "ON"
+
+
+def _modCp2kObjBasedOnDispNonLocalCorr(cp2kObj, useDict):
+	vdwPotPart = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[0].DFT.XC.VDW_POTENTIAL
+	def initIfNeeded():
+		if len(vdwPotPart.NON_LOCAL_list)==0:
+			vdwPotPart.NON_LOCAL_add()
+			vdwPotPart.Dispersion_functional = "Non_local".upper()
+
+	if useDict.get("disp_nl_corrtype",None) is not None:
+		initIfNeeded()
+		vdwPotPart.NON_LOCAL_list[-1].Type = useDict["disp_nl_corrtype"]
+
+	if useDict.get("disp_nl_cutoff",None) is not None:
+		initIfNeeded()
+		vdwPotPart.NON_LOCAL_list[-1].Cutoff = useDict["disp_nl_cutoff"]
+
+	if useDict.get("disp_nl_kernelFileName".lower(),None) is not None:
+		initIfNeeded()
+		vdwPotPart.NON_LOCAL_list[-1].Kernel_file_name = useDict["disp_nl_kernelFileName".lower()]
+
+	if useDict.get("disp_nl_verboseOutput".lower(), None) is not None:
+		initIfNeeded()
+		vdwPotPart.NON_LOCAL_list[-1].Verbose_output = useDict["disp_nl_verboseOutput".lower()]
+
 
 
 def _attachFunctionToModderInstance(key, function, instance):

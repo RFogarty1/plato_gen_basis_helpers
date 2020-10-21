@@ -64,6 +64,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("fragmentsBSSE")
 	registeredKwargs.add("xcFunctional")
 	registeredKwargs.add("grimmeDisp")
+	registeredKwargs.add("nonLocalDisp")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -191,6 +192,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["xcFunctional".lower()] = self.xcFunctional
 		if self.grimmeDisp is not None:
 			currDict = self.grimmeDisp.modPyCP2KDict
+			modDict.update(currDict)
+		if self.nonLocalDisp is not None:
+			currDict = self.nonLocalDisp.modPyCP2KDict
 			modDict.update(currDict)
 
 		runTypeModDict = self._getModDictBasedOnRunType()
