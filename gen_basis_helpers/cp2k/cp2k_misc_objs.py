@@ -27,6 +27,22 @@ class GrimmeDispersionCorrOptsCP2K():
 			outDict["grimme_disp_" + currAttr] = getattr(self, currAttr)
 		return outDict
 
+	def toDict(self):
+		outDict = dict()
+		for attr in self.listedAttrs:
+			outDict[attr] = getattr(self,attr)
+		return outDict
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		return cls(**inpDict)
+
+	def __eq__(self, other):
+		for attr in self.listedAttrs:
+			if getattr(self, attr) != getattr(other, attr):
+				return False
+		return True
+
 
 class NonLocalDispersionsCorrOptsCP2K():
 
@@ -41,7 +57,7 @@ class NonLocalDispersionsCorrOptsCP2K():
 		"""
 		self.listedAttrs = ["corrType", "cutoff", "kernelFileName", "verboseOutput"]
 		self.corrType = None if corrType is None else corrType
-		self._cutoff = None if cutoff is None else cutoff
+		self.cutoff = None if cutoff is None else cutoff
 		self.kernelFileName = "vdW_kernel_table.dat" if kernelFileName is None else kernelFileName
 		self.verboseOutput = None if verboseOutput is None else verboseOutput
 
@@ -49,18 +65,31 @@ class NonLocalDispersionsCorrOptsCP2K():
 	def modPyCP2KDict(self):
 		outDict = dict()
 		for currAttr in self.listedAttrs:
-			outDict["disp_nl_" + currAttr] = getattr(self, currAttr)
+			if currAttr=="cutoff":
+				outDict["disp_nl_" + currAttr] = self.cutoffStr
+			else:
+				outDict["disp_nl_" + currAttr] = getattr(self, currAttr)
 		return outDict
 
 	@property
-	def cutoff(self):
-		if self._cutoff is None:
+	def cutoffStr(self):
+		if self.cutoff is None:
 			return None
 		else:
-			return "[eV] {}".format(self._cutoff)
+			return "[eV] {}".format(self.cutoff)
 
-	@cutoff.setter
-	def cutoff(self, val):
-		self._cutoff = val
-		
+	def toDict(self):
+		outDict = dict()
+		for attr in self.listedAttrs:
+			outDict[attr] = getattr(self,attr)
+		return outDict
 
+	@classmethod
+	def fromDict(cls, inpDict):
+		return cls(**inpDict)
+
+	def __eq__(self, other):
+		for attr in self.listedAttrs:
+			if getattr(self,attr) != getattr(other,attr):
+				return False
+		return True
