@@ -3,6 +3,7 @@
 import copy
 from . import standard_template_obj as stdTemplate
 
+from ..cp2k import cp2k_creator_to_dict as creatorToDictHelp
 from ..shared import calc_runners as calcRunners
 from ..workflows import geom_opt_workflow as goptFlow
 
@@ -48,4 +49,35 @@ class CodeSpecificStandardInputCreatorTemplate(stdTemplate.StandardInputCreatorT
 	@baseCreator.setter
 	def baseCreator(self,val):
 		self._baseCreator = val
+
+
+
+
+def getBasicOutDictFromGeomStdInpCreator(stdInpCreator, calcObjCreatorToDict=None):
+	""" Get a dictionary for writing to a database from a stdInpCreator. This assumes jobs have actually been run, and all options were present in the creator factory (rather than some being passed at creation time)
+	
+	Args:
+		stdInpCreator: (job_helpers/geomOpt creator object)
+		creatorToDict: (Optional, function) Function which takes a CP2K object creator and returns a dictionary representation
+
+	"""
+	creatorToDict = calcObjCreatorToDict if calcObjCreatorToDict is not None else creatorToDictHelp.getSimpleCreatorObjToDictMapObj()
+	outDict = creatorToDict(stdInpCreator.baseCreator)
+	outDict["compound"] = stdInpCreator.eleKey
+	outDict["method"] = stdInpCreator.methodKey
+	outDict["structure"] = stdInpCreator.structKey
+	currStdOut = stdInpCreator.create().createOutputObj()
+	nCreated = len(currStdOut.data[0])
+	assert nCreated==1
+	outDict["out_geom"] = currStdOut.data[0][0].geom.toDict()
+	outDict["energies"] = currStdOut.data[0][0].parsedFile.energies.toDict()
+	return outDict
+
+
+
+
+
+
+
+
 
