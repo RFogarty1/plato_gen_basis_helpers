@@ -260,3 +260,22 @@ def getDistanceTwoParralelPlanes(planeA,planeB):
 	return interPlaneDist
 
 
+def getDistFromFccHollowFromExpBondlengths(surfToAdsL, surfNearestNebL):
+	""" Gets the expected distance between adsorbate and fcc hollow site based on expected bond lengths (should also work ok for hcp site)
+	
+	Args:
+		surfToAdsL: (float) Distance between surface atom and adsorbate
+		surfNearestNebL: (float) Distance between surface nearest neighbour atoms, lattice parameter a in the primitive cell
+
+	Returns
+		outDist: (float) Expected distance between fcc-site and the adsorbate
+	
+	Raises:
+		ValueError: If surfToAdsL is too small a domain error will occur; this is because if distance is too short it becomes impossible for it to be in the centre of 3 surface atoms
+
+	"""
+	sideA = (0.5*surfNearestNebL) / math.cos(math.radians(30))
+	return math.sqrt( (surfToAdsL**2) - (sideA**2) )
+
+
+
