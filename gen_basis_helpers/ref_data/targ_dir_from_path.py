@@ -53,4 +53,6 @@ except AttributeError:
 	print("WARNING: cfgVars.MG_WATER_REPO_PATH not set")
 
 getMgWaterWorkDirFromCurrent = GetSpecialDirFromSubDir(mgWaterRepoPath, "work_folder", applyAbsPath=False)
+getMgWaterDatabaseDirFromCurrent = GetSpecialDirFromSubDir(mgWaterRepoPath, "database_input", applyAbsPath=False)
+
 
