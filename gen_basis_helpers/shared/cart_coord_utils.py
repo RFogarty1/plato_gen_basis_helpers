@@ -232,13 +232,107 @@ def getClosestDistanceBetweenTwoPoints(inpPoints):
  
 	"""
 	#Get a distance matrix with diag terms set to infinity so they dont interfere with np.min
-	distMatrix = np.zeros( (len(inpPoints), len(inpPoints)) )
-	for rowIdx in range(len(inpPoints)):
-		for colIdx in range(len(inpPoints)):
-			if rowIdx==colIdx:
-				distMatrix[rowIdx][colIdx] = np.inf
-			else:
-				distMatrix[rowIdx][colIdx] = vectHelp.getDistTwoVectors(inpPoints[rowIdx],inpPoints[colIdx])
+	distMatrix = _getDistMatrixForSetOfCoords(inpPoints)
+	for idx,unused in enumerate(distMatrix):
+		distMatrix[idx][idx] = np.inf
 
 	return np.min(distMatrix) 
+
+
+
+def getClosestDistanceBetweenTwoElementsForInpCell(inpCell, eleA, eleB, inclImages=True, inclImageDims=None):
+	""" Gets the closest distance between two elements in a list of cartesian co-ordinates
+	
+	Args:
+		inpCell: (plato_pylib UnitCell object) 
+		eleA: (str) Symbol for first element of interest
+		eleB: (str) Symbol for second element of interest
+		inclImages: (Bool, Default=True) Whether to include images
+		inclImageDims: (len-3 bool-iter, Default=[True,True,True]) If inclImages is true then this determines the dimensions for which we include images. Setting some to False can lead to significantly faster runtimes
+
+	Returns
+		 outDist: (float) The smallest distance between eleA and eleB
+ 
+	"""
+	inclImageDims = [True,True,True] if inclImageDims is None else inclImageDims
+	if inclImages is False:
+		inclImageDims = [False, False, False]
+
+	#Get distance matrices for central-central and central-image cells
+	centralCoords, imageCoords = _getCentralAndImageCoordsFromInpCell(inpCell, imageDims=inclImageDims)
+	distMatrixCentral = _getDistMatrixForSetOfCoords(centralCoords)
+	distMatrixCentralAndImages = _getDistMatrixBetweenTwoSetsOfSeparateCoords(centralCoords, imageCoords)
+
+	#figure out the relevant indices in central/image cells
+	indicesACentral = [idx for idx,coord in enumerate(centralCoords) if coord[-1].upper()==eleA.upper()]
+	indicesBCentral = [idx for idx,coord in enumerate(centralCoords) if coord[-1].upper()==eleB.upper()]
+
+	if any(inclImageDims):
+		indicesAImages  = [idx for idx,coord in enumerate(imageCoords)   if coord[-1].upper()==eleA.upper()]
+		indicesBImages  = [idx for idx,coord in enumerate(imageCoords)   if coord[-1].upper()==eleB.upper()]
+	else:
+		indicesAImages = list()
+		indicesBImages = list()
+
+	#TODO: Refactor these two loops into functions (taking indices and distance matrices as args)
+	#Get the minimum distance in the central cell
+	minDistCentral = np.inf
+	for idxA in indicesACentral:
+		for idxB in indicesBCentral:
+			if idxA!=idxB:
+				currDist = distMatrixCentral[idxA][idxB]
+				if currDist < minDistCentral:
+					minDistCentral = currDist
+
+	#TODO: Sort out the image cells next
+	minDistWithImages = np.inf
+	for idxA in indicesACentral:
+		for idxB in indicesBImages:
+			currDist = distMatrixCentralAndImages[idxA][idxB]
+			if currDist <minDistWithImages:
+				minDistWithImages = currDist
+
+	minDist = min( [minDistCentral,minDistWithImages] )
+
+	return minDist
+
+
+
+def _getCentralAndImageCoordsFromInpCell(inpCell, imageDims=None):
+	imageDims = [True, True, True] if imageDims is None else imageDims
+
+	kwargs = {"alongA":imageDims[0], "alongB":imageDims[1], "alongC":imageDims[2]}
+	cellWithImages = supCellHelp.getUnitCellSurroundedByNeighbourCells(inpCell, **kwargs)
+
+	startAtomIndicesInB = _getIndicesOfDuplicatedAtomsInCoordsB( inpCell.cartCoords, cellWithImages.cartCoords )
+	centralCoords, imageCoords = list(), list()
+	for idx,coord in enumerate(cellWithImages.cartCoords):
+		if idx in startAtomIndicesInB:
+			centralCoords.append(coord)
+		else:
+			imageCoords.append(coord)
+	return centralCoords, imageCoords
+
+#Works using distances
+def _getIndicesOfDuplicatedAtomsInCoordsB(coordsA, coordsB, distTol=1e-2):
+	duplicatedIndices = list()
+	for idxA,coordA in enumerate(coordsA):
+		for idxB,coordB in enumerate(coordsB):
+			currDist = vectHelp.getDistTwoVectors(coordA[:3], coordB[:3])
+			if (currDist<distTol):
+				duplicatedIndices.append(idxB)
+	return duplicatedIndices
+
+def _getDistMatrixForSetOfCoords(inpCoords):
+	return _getDistMatrixBetweenTwoSetsOfSeparateCoords(inpCoords, inpCoords)
+
+def _getDistMatrixBetweenTwoSetsOfSeparateCoords(coordsA, coordsB):
+	outMatrix = np.zeros( (len(coordsA), len(coordsB)) )
+	for rIdx,coordA in enumerate(coordsA):
+		for cIdx,coordB in enumerate(coordsB):
+			outMatrix[rIdx][cIdx] = vectHelp.getDistTwoVectors(coordA[:3], coordB[:3])
+	return outMatrix
+
+
+
 

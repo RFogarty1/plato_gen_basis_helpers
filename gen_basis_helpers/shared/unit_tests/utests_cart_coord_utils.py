@@ -141,3 +141,72 @@ class TestUnitCellInterfaceFunctions(unittest.TestCase):
 		expPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,-1,0)
 		actPlaneEqn = tCode.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(stubInpCell)
 		self.assertEqual(expPlaneEqn, actPlaneEqn)
+
+
+class TestGetDistMatrixBetweenTwoSetsOfSeparateCoords(unittest.TestCase):
+
+	def setUp(self):
+		self.coordsA = [ [0.0,0.0,0.0] ]
+
+		self.coordsB = [ [1.0, 0.0, 0.0],
+		                 [0.0, 2.0, 0.0],
+		                 [0.0, 0.0, 3.0] ]
+
+	def testActMatchesExpected_verySimple(self):
+		expMatrix = [ [1,2,3] ]
+		actMatrix = tCode._getDistMatrixBetweenTwoSetsOfSeparateCoords(self.coordsA, self.coordsB)
+		for rIdx,unused in enumerate(expMatrix):
+			for cIdx,unused in enumerate(expMatrix[rIdx]):
+				exp,act = expMatrix[rIdx][cIdx], actMatrix[rIdx][cIdx]
+				self.assertAlmostEqual(exp,act)
+
+class TestGetDistMatrixSingleCoordSet(unittest.TestCase):
+
+	def setUp(self):
+		self.coordsA = [ [0.0,0.0,0.0],
+		                 [0.0,1.0,0.0] ]
+
+	def testActMatchesExpectedA(self):
+		expMatrix = [ [0.0, 1.0],
+		              [1.0, 0.0] ]
+		actMatrix = tCode._getDistMatrixForSetOfCoords(self.coordsA)
+		for rIdx,unused in enumerate(expMatrix):
+			for cIdx,unused in enumerate(actMatrix):
+				exp,act = expMatrix[rIdx][cIdx], actMatrix[rIdx][cIdx]
+				self.assertAlmostEqual(exp,act)
+
+class TestGetClosestDistanceBetweenTwoElements(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParamsA = [2,2,2]
+		self.lattAnglesA = [90,90,90]
+		self.cartCoordsA = [ [1  , 1,  1, "A"],
+		                     [0.1, 1,  1, "B"],
+		                     [1.9, 1,  1, "C"] ]
+
+		self.eleA, self.eleB = "A", "B"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"lattParams":self.lattParamsA, "lattAngles":self.lattAnglesA}
+		self.testCellA = uCell.UnitCell(**kwargDict)
+		self.testCellA.cartCoords = self.cartCoordsA
+
+	def testCentralCellOnly(self):
+		expDist = 0.9
+		actDist = tCode.getClosestDistanceBetweenTwoElementsForInpCell(self.testCellA, self.eleA, self.eleB, inclImages=True)
+		self.assertAlmostEqual(expDist,actDist)
+
+	def testExpectedFromCentralAndImages(self):
+		expDist = 0.2
+		actDist = tCode.getClosestDistanceBetweenTwoElementsForInpCell(self.testCellA, "B", "C")
+		self.assertAlmostEqual(expDist, actDist)
+
+	def testCentralForSameElementCentralOnly(self):
+		self.cartCoordsA.append([0.8,1,1,"A"])
+		self.createTestObjs()
+		expDist = 0.2
+		actDist = tCode.getClosestDistanceBetweenTwoElementsForInpCell(self.testCellA, "A", "A")
+		self.assertAlmostEqual(expDist,actDist)
+
+
