@@ -40,6 +40,12 @@ class Hcp0001SurfaceToSitesSharedMixin():
 		abPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC(inpCell.lattVects)
 		return cartHelp.getPlaneEqnForOuterSurfaceAtoms(inpCell, top=self.top)
 
+	def getFirstLayerAtomPositions(self, inpCell):
+		surfPlane = self.getSurfacePlaneEqn(inpCell)
+		cartCoords = [x[:3] for x in inpCell.cartCoords]
+		indicesInSurfPlane = cartHelp.getFilteredIndicesForCoordsInInputPlane(cartCoords, surfPlane, planeTolerance=self.minInterPlaneDist)
+		return [cartCoords[x] for x in indicesInSurfPlane]
+
 
 class HcpSurfaceToHcpSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
 
@@ -173,11 +179,6 @@ class HcpSurfaceToAtopSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites
 	def getSurfaceSitesFromInpSurface(self, inpSurface):
 		return self.getFirstLayerAtomPositions(inpSurface.unitCell)
 
-	def getFirstLayerAtomPositions(self, inpCell):
-		surfPlane = self.getSurfacePlaneEqn(inpCell)
-		cartCoords = [x[:3] for x in inpCell.cartCoords]
-		indicesInSurfPlane = cartHelp.getFilteredIndicesForCoordsInInputPlane(cartCoords, surfPlane, planeTolerance=self.minInterPlaneDist)
-		return [cartCoords[x] for x in indicesInSurfPlane]
 
 
 class HcpSurfaceToFccHollowSites(Hcp0001SurfaceToSitesSharedMixin,BaseSurfaceToSites):
@@ -227,6 +228,49 @@ class HcpSurfaceToFccHollowSites(Hcp0001SurfaceToSitesSharedMixin,BaseSurfaceToS
 		for x in outCartCoords:
 			if x[3] == "fake_ele":
 				outSites.append(x[:3])
+		return outSites
+
+
+class HcpSurfaceToBridgeSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+
+	def __init__(self, top=True, alongA=True, alongB=True):
+		""" Initialiser
+		
+		Args:
+			top: (Optional, Bool) If True then sites are added to the top-layer (defined as having most +ve components along c)
+			alongA: (Optional, Bool) If True include bridge sites along the first lattice vector
+			alongB: (Optional, Bool) If True include bridge sites along the second lattice vector
+ 
+		"""
+		self.minInterPlaneDist = 0.5
+		self.top = top
+		self.alongA = alongA
+		self.alongB = alongB
+
+	def getSurfaceSitesFromInpSurface(self, inpSurface):
+		startCell = inpSurface.unitCell
+		uVectA, uVectB = [vectHelp.getUnitVectorFromInpVector(x) for x in startCell.lattVects[:2]]
+		topSites = self.getFirstLayerAtomPositions(startCell)
+		surfPlaneEqn = self.getSurfacePlaneEqn(startCell)
+		cartCoords = [x[:3] for x in startCell.cartCoords]
+		planeAtomIndices = cartHelp.getFilteredIndicesForCoordsInInputPlane(cartCoords, surfPlaneEqn, planeTolerance=self.minInterPlaneDist)
+		
+		#NOTE: This assumes ~perfect surface; namely that each top-layer atom has 3-equidistant neighbours
+		aSites, bSites = list(), list()
+		for idx,site in enumerate(topSites):
+			currIdxInFullCell = planeAtomIndices[idx]
+			nearestNebDist = cartHelp.getNearestInPlaneDistanceGivenInpCellAndAtomIdx(startCell, currIdxInFullCell, surfPlaneEqn)
+			currASite = [x+(t*nearestNebDist*0.5) for x,t in it.zip_longest(site,uVectA)]
+			currBSite = [x+(t*nearestNebDist*0.5) for x,t in it.zip_longest(site,uVectB)]
+			aSites.append(currASite), bSites.append(currBSite)
+
+		#Filter based on whether we're populating all sites or not
+		outSites = list()
+		if self.alongA:
+			outSites.extend( aSites )
+		if self.alongB:
+			outSites.extend( bSites )
+
 		return outSites
 
 

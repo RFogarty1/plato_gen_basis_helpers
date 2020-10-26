@@ -189,6 +189,55 @@ class TestSurfaceToSites_atop(unittest.TestCase):
 		return expSitePosition
 
 
+class TestSurfaceToSites_bridge(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParamsA = [2,2,3]
+		self.lattAnglesA = [90,90,120]
+		self.fractCoordsA = [ [0.0,0.0,0.0],
+		                     [1/3, 2/3, 0.5] ]
+		self.eleListA = ["Mg", "Mg"]
+		self.nLayersA = 1
+		self.absVacLengthA = 10
+		self.top = True
+		self.alongA = True
+		self.alongB = True
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self._createUnitCells()
+		self.surfA = surfHelp.GenericSurface(self.cellA, self.nLayersA, lenAbsoluteVacuum=self.absVacLengthA)
+		self.surfToSiteObj = tCode.HcpSurfaceToBridgeSites(top=self.top, alongA=self.alongA, alongB=self.alongB)
+
+	def _createUnitCells(self):
+		cellKwargDict = {"lattParams":self.lattParamsA, "lattAngles":self.lattAnglesA,
+		                 "fractCoords":self.fractCoordsA, "elementList":self.eleListA}
+		self.cellA = uCellHelp.UnitCell(**cellKwargDict)
+
+	def _getExpSitesSimpleCell(self):
+		tVectA = [x*0.5 for x in self.cellA.lattVects[0]]
+		tVectB = [x*0.5 for x in self.cellA.lattVects[1]]
+		siteA = [x+t for x,t in it.zip_longest(self.surfA.unitCell.cartCoords[-1][:3],tVectA)]
+		siteB = [x+t for x,t in it.zip_longest(self.surfA.unitCell.cartCoords[-1][:3],tVectB)]
+		return [siteA,siteB]	
+
+	def testExpectedAllSitesSimpleCell(self):
+		expPositions = self._getExpSitesSimpleCell()
+		actPositions = self.surfToSiteObj(self.surfA)
+		self.assertTrue( len(actPositions)==2 )
+		for expPos,actPos in it.zip_longest(expPositions, actPositions):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expPos,actPos)]
+
+	def testASitesOnlySimpleCell(self):
+		self.alongB = False
+		self.createTestObjs()
+		expPositions = self._getExpSitesSimpleCell()[:1]
+		actPositions = self.surfToSiteObj(self.surfA)
+		self.assertTrue( len(actPositions)==1 )
+		for expPos,actPos in it.zip_longest(expPositions, actPositions):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expPos,actPos)]
+
+
 
 class TestSurfaceToWaterBilayerSites(unittest.TestCase):
 
