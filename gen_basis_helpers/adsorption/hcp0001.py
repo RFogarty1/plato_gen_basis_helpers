@@ -8,24 +8,12 @@ import numpy as np
 import plato_pylib.shared.ucell_class as uCellHelp
 import plato_pylib.utils.supercell as supCellHelp
 
+from . import surf_to_sites_shared as surfToSiteHelp
 from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqn
 from ..shared import simple_vector_maths as vectHelp
 
 
-class BaseSurfaceToSites():
-	""" Callable class that takes a surface object and returns positions of adsorbate sites. Also has a function that returns a vector pointing out from the surface (which allows us to place adsorbates at varying distances from the adsorption sites
-
-	"""
-
-	def getOutwardsSurfaceVectorFromSurface(self, inpSurface):
-		raise NotImplementedError("")
-
-	def getSurfaceSitesFromInpSurface(self, inpSurface):
-		raise NotImplementedError("")
-
-	def __call__(self, inpSurface):
-		return self.getSurfaceSitesFromInpSurface(inpSurface)
 
 
 class Hcp0001SurfaceToSitesSharedMixin():
@@ -47,7 +35,7 @@ class Hcp0001SurfaceToSitesSharedMixin():
 		return [cartCoords[x] for x in indicesInSurfPlane]
 
 
-class HcpSurfaceToHcpSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+class HcpSurfaceToHcpSites(Hcp0001SurfaceToSitesSharedMixin, surfToSiteHelp.BaseSurfaceToSites):
 
 	def __init__(self, top=True):
 		self.top = top
@@ -90,7 +78,7 @@ class HcpSurfaceToHcpSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites)
 		return self.getSurfaceSitesFromInpSurface(inpSurface)
 
 
-class HcpSurfaceToWaterBilayerSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+class HcpSurfaceToWaterBilayerSites(Hcp0001SurfaceToSitesSharedMixin, surfToSiteHelp.BaseSurfaceToSites):
 
 	def __init__(self, top=True, firstUnoccStrat=None):
 		""" Description of function
@@ -170,7 +158,7 @@ class HcpSurfaceToWaterBilayerSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfac
 		assert len(indices) == 1
 		return indices[0]
 
-class HcpSurfaceToAtopSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+class HcpSurfaceToAtopSites(Hcp0001SurfaceToSitesSharedMixin, surfToSiteHelp.BaseSurfaceToSites):
 
 	def __init__(self, top=True):
 		self.top = top
@@ -181,7 +169,7 @@ class HcpSurfaceToAtopSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites
 
 
 
-class HcpSurfaceToFccHollowSites(Hcp0001SurfaceToSitesSharedMixin,BaseSurfaceToSites):
+class HcpSurfaceToFccHollowSites(Hcp0001SurfaceToSitesSharedMixin,surfToSiteHelp.BaseSurfaceToSites):
 
 	def __init__(self, top=True, foldCoordsIntoCell=True):
 		self.top = top
@@ -231,7 +219,7 @@ class HcpSurfaceToFccHollowSites(Hcp0001SurfaceToSitesSharedMixin,BaseSurfaceToS
 		return outSites
 
 
-class HcpSurfaceToBridgeSites(Hcp0001SurfaceToSitesSharedMixin, BaseSurfaceToSites):
+class HcpSurfaceToBridgeSites(Hcp0001SurfaceToSitesSharedMixin, surfToSiteHelp.BaseSurfaceToSites):
 
 	def __init__(self, top=True, alongA=True, alongB=True):
 		""" Initialiser
