@@ -310,4 +310,17 @@ def getDistFromFccHollowFromExpBondlengths(surfToAdsL, surfNearestNebL):
 	return math.sqrt( (surfToAdsL**2) - (sideA**2) )
 
 
+def getDistFromBridgeSiteFromExpBondlengths(surfToAdsL, surfNearestNebL):
+	""" Gets the expected distance between adsorbate and bridge site based on expected bond lengths
+	
+	Args:
+		surfToAdsL: (float) Distance between surface atom and adsorbate
+		surfNearestNebL: (float) Distance between surface nearest neighbour atoms, lattice parameter a in the primitive cell
+
+	Returns
+		outDist: (float) Expected distance between bridge-site and the adsorbate
+	
+	"""
+	return math.sqrt( (surfToAdsL**2) - ((0.5*surfNearestNebL)**2) )
+
 
