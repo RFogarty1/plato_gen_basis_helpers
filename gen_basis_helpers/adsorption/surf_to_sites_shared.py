@@ -17,13 +17,13 @@ class BaseSurfaceToSites():
 		return self.getSurfaceSitesFromInpSurface(inpSurface)
 
 def getWrappedSurfaceToSitesToReorderBasedOnABCentrality(inpFunct):
-	""" Takes a function f(inpSurface)->sitePositions and returns a new version whereby sitePositions are reordered such that the sites closest to the centre of the inpSurface are first in the list (closest to [0.5,0.5,x] fract positions, surface should be defined in AB plane for this)
+	""" Takes a callable BaseSurfaceToSites instance [f(inpSurface)->sitePositions] and returns a new version whereby sitePositions are reordered such that the sites closest to the centre of the inpSurface are first in the list (closest to [0.5,0.5,x] fract positions, surface should be defined in AB plane for this)
 	
 	Args:
-		inpFunct: f(inpSurface)->sitePositions
+		inpFunct: (BaseSurfaceToSites instance)
 			 
 	Returns
-		outFunct: f(inpSurface)->reOrderedSitePositions, the output is now ordered based on distances of sites from centre of the cell
+		outFunct: (BaseSurfaceToSites instance) f(inpSurface)->reOrderedSitePositions, the output is now ordered based on distances of sites from centre of the cell
  
 	"""
 	def outFunct(inpSurf):
@@ -31,7 +31,7 @@ def getWrappedSurfaceToSitesToReorderBasedOnABCentrality(inpFunct):
 		cellCentre = _getCentralCartCoordsForCell(inpSurf.unitCell) 
 		sortFunct = lambda x: vectHelp.getDistTwoVectors(x,cellCentre)
 		return sorted(startPositions,key=sortFunct)	
-	return outFunct
+	return _WrappedSurfToSitesInstance(inpFunct, outFunct)
 
 def _getCentralCartCoordsForCell(inpCell):
 	tempCell = copy.deepcopy(inpCell)
@@ -40,5 +40,19 @@ def _getCentralCartCoordsForCell(inpCell):
 	tempCell.fractCoords = fractCoords
 	return tempCell.cartCoords[-1][:3]
 	
+
+class _WrappedSurfToSitesInstance(BaseSurfaceToSites):
+
+	def __init__(self, rawInstance, wrappedFunction):
+		self.rawInstance = rawInstance
+		self.wrappedFunction = wrappedFunction
+
+	def getOutwardsSurfaceVectorFromSurface(self, inpSurface):
+		return self.rawInstance.getOutwardsSurfaceVectorFromSurface(inpSurface)
+
+	def getSurfaceSitesFromInpSurface(self, inpSurface):
+		return self.wrappedFunction(inpSurface)
+
+
 
 
