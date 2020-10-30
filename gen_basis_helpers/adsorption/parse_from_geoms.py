@@ -20,4 +20,26 @@ class SurfaceAtomsFromInpGeom():
 		return self.getSurfaceAtomsFromInpGeom(inpGeom)
 
 
+class AdsorbatesFromInpGeom():
+	""" Callable class for getting an iter of adsorbate objects from unitCell. Interface should be f(inpGeom)->adsorbateObjs. see self.getAdsorbateObjsFromInpGeom. 
+
+	"""
+
+	def getAdsorbateObjsFromInpGeom(self, inpGeom):
+		""" Get an iter of adsorbate objects
+		
+		Args:
+			inpGeom: (UnitCell object) Contains xyz co-ords
+				 
+		Returns
+			outObjs: (iter of Adsorbate objects) 
+
+		NOTE: This will return adsorbates where ANY atom is in the central cell, thus the number of returned values COULD be larger than the number of adsorbates per cell (and can fluctuate over a closed-system simulation)
+
+		"""
+		raise NotImplementedError("")
+
+	def __call__(self, inpGeom, **kwargs):
+		return self.getAdsorbateObjsFromInpGeom(inpGeom)
+
 
