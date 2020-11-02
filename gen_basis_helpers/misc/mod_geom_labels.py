@@ -3,13 +3,14 @@ from ..shared import cart_coord_utils as cartHelp
 
 """ Used to modify geoms with original goal of excluding certain elements for the Grimme-D3 correction """
 
-def modSurfaceAtomLabels(inpGeom, excludeElements=None, modFunct=None):
+def modSurfaceAtomLabels(inpGeom, excludeElements=None, modFunct=None, planeTolerance=1e-2):
 	""" Modifies (in place) labels for any atoms in inpGeom that are considered to be on a surface
 	
 	Args:
 		inpGeom: (plato_pylib UnitCell object) Contains the geometry
 		excludeElements: (Optional, str iter)  Will limit to only look at elements NOT given in this list. Default is to include ALL elements
 		modFunct: (function) f(currLabel)->newLabel. Default is to just add "_surface" to whatever the current label is
+		planeTolerance: (float) Atoms within this distance of the outer-plane are considered in the outer plane
 			 
 	"""
 	#-1) Deal with input args
@@ -32,8 +33,8 @@ def modSurfaceAtomLabels(inpGeom, excludeElements=None, modFunct=None):
 	bottomSurfacePlane = cartHelp.getPlaneEqnForOuterSurfaceAtoms(tempCell, top=False)
 
 	#2) Get indices within these planes
-	indicesTop = cartHelp.getFilteredIndicesForCoordsInInputPlane(rawCoords, topSurfacePlane)
-	indicesBottom = cartHelp.getFilteredIndicesForCoordsInInputPlane(rawCoords, bottomSurfacePlane)
+	indicesTop = cartHelp.getFilteredIndicesForCoordsInInputPlane(rawCoords, topSurfacePlane, planeTolerance=planeTolerance)
+	indicesBottom = cartHelp.getFilteredIndicesForCoordsInInputPlane(rawCoords, bottomSurfacePlane, planeTolerance=planeTolerance)
 	indicesToMod = indicesTop + indicesBottom #duplicates should be harmless
 
 	#3) Modify based on this
