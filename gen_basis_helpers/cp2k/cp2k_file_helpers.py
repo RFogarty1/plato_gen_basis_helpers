@@ -124,6 +124,7 @@ def _getStandardPyCp2kModder():
 	_attachXcFunctionalToModder(outModder)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnGrimmeDisp)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnDispNonLocalCorr)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnScfOptDict)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -200,6 +201,14 @@ def _modCp2kObjBasedOnDispNonLocalCorr(cp2kObj, useDict):
 		initIfNeeded()
 		vdwPotPart.NON_LOCAL_list[-1].Verbose_output = useDict["disp_nl_verboseOutput".lower()]
 
+def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
+
+	mixSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.MIXING
+	if useDict.get("scfMixAlpha".lower(),None) is not None:
+		mixSection.Alpha = useDict["scfMixAlpha".lower()]
+	
+	if useDict.get("scfMixMethod".lower(),None) is not None:
+		mixSection.Method = useDict["scfMixMethod".lower()]
 
 
 def _attachFunctionToModderInstance(key, function, instance):
