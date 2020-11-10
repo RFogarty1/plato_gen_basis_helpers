@@ -125,6 +125,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnGrimmeDisp)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnDispNonLocalCorr)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnScfOptDict)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnSurfDipoleCorrOptDict)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -209,6 +210,16 @@ def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 	
 	if useDict.get("scfMixMethod".lower(),None) is not None:
 		mixSection.Method = useDict["scfMixMethod".lower()]
+
+
+def _modCp2kObjBasedOnSurfDipoleCorrOptDict(cp2kObj, useDict):
+
+	dftSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT
+	if useDict.get("surf_dipole_corr_useCorr".lower(),None) is not None:
+		dftSection.Surface_dipole_correction = useDict["surf_dipole_corr_useCorr".lower()]
+
+	if useDict.get("surf_dipole_corr_surfDipoleDir".lower(),None) is not None:
+		dftSection.Surf_dip_dir = useDict["surf_dipole_corr_surfDipoleDir".lower()].upper()
 
 
 def _attachFunctionToModderInstance(key, function, instance):

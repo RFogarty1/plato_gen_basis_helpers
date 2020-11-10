@@ -93,3 +93,46 @@ class NonLocalDispersionsCorrOptsCP2K():
 			if getattr(self,attr) != getattr(other,attr):
 				return False
 		return True
+
+
+class SurfaceDipoleCorrectionCP2K():
+	""" Representation for surface dipole correction options in CP2K
+
+	"""
+
+	def __init__(self, useCorr=True, surfDipoleDir=None):
+		""" Initializer
+		
+		Args:
+			useCorr: (Bool) Whether to apply correction or not
+			surfDipoleDir: (char) "x","y" or "z". Direction normal to the surface (i.e. the dipole direction). Default is "z"
+	 
+		"""
+		self.listedAttrs = ["useCorr", "surfDipoleDir"]
+		self.useCorr = useCorr
+		self.surfDipoleDir = "z" if surfDipoleDir is None else surfDipoleDir 
+
+
+	def __eq__(self, other):
+		for attr in self.listedAttrs:
+			if getattr(self, attr) != getattr(other, attr):
+				return False
+		return True
+
+	@property
+	def modPyCP2KDict(self):
+		outDict = dict()
+		for currAttr in self.listedAttrs:
+			outDict["surf_dipole_corr_" + currAttr] = getattr(self, currAttr)
+		return outDict
+
+	def toDict(self):
+		outDict = dict()
+		for attr in self.listedAttrs:
+			outDict[attr] = getattr(self,attr)
+		return outDict
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		return cls(**inpDict)
+

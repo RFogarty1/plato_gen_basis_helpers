@@ -76,6 +76,36 @@ class testNonLocalDispersionObj(unittest.TestCase):
 
 
 
+class testSurfaceDipoleCorrectionObj(unittest.TestCase):
+
+	def setUp(self):
+		self.useCorr = False
+		self.surfDipoleDir = "x"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.SurfaceDipoleCorrectionCP2K(useCorr=self.useCorr, surfDipoleDir=self.surfDipoleDir)
+
+	def testEqualObjsCompareEqual(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertEqual(objA, objB)
+
+	def testUnequalObjsCompareUnequal(self):
+		objA = copy.deepcopy( self.testObjA )
+		self.surfDipoleDir = "y"
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual( objA.surfDipoleDir, objB.surfDipoleDir )
+		self.assertNotEqual( objA, objB )
+
+	def testToAndFromDictConsistentA(self):
+		objA = copy.deepcopy(self.testObjA)
+		outDict = objA.toDict()
+		objB = tCode.SurfaceDipoleCorrectionCP2K.fromDict(outDict)
+		self.assertEqual(objA, objB)
+
 
 
 
