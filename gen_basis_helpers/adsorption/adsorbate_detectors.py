@@ -1,9 +1,86 @@
 
 import copy
 import types
+
+import numpy as np
+
 from . import parse_from_geoms as parseFromGeomBase
 
 from ..shared import cart_coord_utils as cartHelp
+
+class DetectH2OAdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpGeom):
+
+	def __init__(self, minBondLength=0.1, maxBondLength=2.0):
+		""" Initializer
+		
+		Args:
+			minBondLength: (float) Minimum bondlength between O-H.
+			maxBondLength: (float) Maximum separation for O-H to be considered as bonded
+				 
+		"""
+		self.minBondLength = minBondLength
+		self.maxBondLength = maxBondLength
+
+	def getAdsorbateObjsFromInpGeom(self, inpGeom):
+		#1) Filter out any non O/H atoms, I may have to reverse later if i want to implement minDistOtherNebs like in the H2 detector
+		# This step SHOULD speed things up A LOT though for many systems
+		useGeom = copy.deepcopy(inpGeom)
+		cartCoords = [x for x in inpGeom.cartCoords if x[-1].upper()=="H" or x[-1].upper()=="O"]
+		useGeom.cartCoords = cartCoords
+
+		#Get distance matrices
+		centralCoords, imageCoords = cartHelp._getCentralAndImageCoordsFromInpCell(inpGeom)
+		dMatrices = _getDistanceMatricesFromCentralAndImageCoords(centralCoords, imageCoords)
+		imageCentralDistMatrix = np.transpose(dMatrices.centralImage)
+
+		#Get indices of each adsorbate based SOLELY on the distance criteria
+		centralO = [idx for idx,coords in enumerate(centralCoords) if coords[-1].upper()=="O"]
+		imageO = [idx for idx,coords in enumerate(imageCoords) if coords[-1].upper()=="O"]
+		centralH = [idx for idx,coords in enumerate(centralCoords) if coords[-1].upper()=="H"]
+		imageH   = [idx for idx,coords in enumerate(imageCoords)   if coords[-1].upper()=="H"]
+	
+
+		#Step 1) Get data for the CENTRAL oxygen atoms
+		outIndices = list() # each element must be [centralIndices,imageIndices]	
+		for oIdx in centralO:
+			centralHNebs = self._getHAtomIndicesWithinDistTol(oIdx, centralH, dMatrices.centralCentral)
+			imageHNebs = self._getHAtomIndicesWithinDistTol(oIdx, imageH, dMatrices.centralImage)
+			currIndices = [ [oIdx]+centralHNebs, imageHNebs ]
+			if len(currIndices[0]) + len(currIndices[1])==3:
+				outIndices.append(currIndices)
+	
+		#Step 2) Get data for the IMAGE oxygen atoms
+		#image neigbhours needed; but len(centralNebs) >=1 required
+		for oIdx in imageO:
+			centralHNebs = self._getHAtomIndicesWithinDistTol(oIdx, centralH, imageCentralDistMatrix)
+			imageHNebs = self._getHAtomIndicesWithinDistTol(oIdx, imageH, dMatrices.imageImage)
+			currIndices = [ centralHNebs, [oIdx]+imageHNebs ]
+			if len(currIndices[0])>=1:
+				if len(currIndices[0]) + len(currIndices[1]) == 3:
+					outIndices.append(currIndices)
+
+
+		#Step 3) Turn the index lists into adsorbate objects
+		outObjs = list()
+		for outIdxs in outIndices:
+			centralIndices,imageIndices = outIdxs
+			currCentCoords = [ copy.deepcopy(centralCoords[x]) for x in centralIndices]
+			currImageCoords = [ copy.deepcopy(imageCoords[x]) for x in imageIndices ]
+			currObj = types.SimpleNamespace( geom=currCentCoords+currImageCoords )
+			outObjs.append(currObj)
+
+		return outObjs
+
+
+	def _getHAtomIndicesWithinDistTol(self, atomIdx, hIndices, distMatrix):
+		outIndices = list()
+		for colIdx,dist in enumerate(distMatrix[atomIdx]):
+			if (distMatrix[atomIdx][colIdx] <=self.maxBondLength) and (distMatrix[atomIdx][colIdx] >self.minBondLength):
+				if (colIdx in hIndices):
+					outIndices.append(colIdx)
+		return outIndices
+					
+
 
 class DetectH2AdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpGeom):
 
@@ -23,10 +100,7 @@ class DetectH2AdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpG
 	def getAdsorbateObjsFromInpGeom(self, inpGeom):
 		#Get distance matrices for central-central and central-image cells
 		centralCoords, imageCoords = cartHelp._getCentralAndImageCoordsFromInpCell(inpGeom)
-		distMatrixCentral = cartHelp._getDistMatrixForSetOfCoords(centralCoords)
-		distMatrixImageImage = cartHelp._getDistMatrixForSetOfCoords(imageCoords)
-		distMatrixCentralAndImages = cartHelp._getDistMatrixBetweenTwoSetsOfSeparateCoords(centralCoords, imageCoords)
-	
+		dMatrices = _getDistanceMatricesFromCentralAndImageCoords(centralCoords, imageCoords)
 
 		#Get indices of h-atoms in central cell
 		centralH = [idx for idx,coords in enumerate(centralCoords) if coords[-1].upper()=="H"]
@@ -39,13 +113,13 @@ class DetectH2AdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpG
 			centralHNebs, centralHNebs = list(), list()
 			for colIdx in centralH:
 				if colIdx > rowIdx:
-					if (distMatrixCentral[rowIdx][colIdx]<=self.maxBondLength):
-						if (distMatrixCentral[rowIdx][colIdx]>=self.minBondLength):
+					if (dMatrices.centralCentral[rowIdx][colIdx]<=self.maxBondLength):
+						if (dMatrices.centralCentral[rowIdx][colIdx]>=self.minBondLength):
 							h2CentralCentralIdxPairs.append( [rowIdx,colIdx] )
 			for colIdx in imageH:
 				if colIdx > rowIdx:
-					if (distMatrixCentralAndImages[rowIdx][colIdx]<=self.maxBondLength):
-						if (distMatrixCentralAndImages[rowIdx][colIdx]>=self.minBondLength):
+					if (dMatrices.centralImage[rowIdx][colIdx]<=self.maxBondLength):
+						if (dMatrices.centralImage[rowIdx][colIdx]>=self.minBondLength):
 							h2CentralImageIdxPairs.append( [rowIdx,colIdx] )
 
 
@@ -53,19 +127,19 @@ class DetectH2AdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpG
 		outCentralCentralPairs, outCentralImagePairs = list(), list()
 		for centPair in h2CentralCentralIdxPairs:
 			idxA,idxB = centPair
-			otherNebsA  = [idx for idx,dist in enumerate(distMatrixCentral[idxA]) if (idx!=idxA) and (idx!=idxB) and (dist<self.minDistOtherNebs)]
-			otherNebsA += [idx for idx,dist in enumerate(distMatrixCentralAndImages[idxA]) if (dist<self.minDistOtherNebs)]
-			otherNebsB  = [idx for idx,dist in enumerate(distMatrixCentral[idxB]) if (idx!=idxA) and (idx!=idxB) and (dist<self.minDistOtherNebs)]
-			otherNebsB += [idx for idx,dist in enumerate(distMatrixCentralAndImages[idxB]) if (dist<self.minDistOtherNebs)]
+			otherNebsA  = [idx for idx,dist in enumerate(dMatrices.centralCentral[idxA]) if (idx!=idxA) and (idx!=idxB) and (dist<self.minDistOtherNebs)]
+			otherNebsA += [idx for idx,dist in enumerate(dMatrices.centralImage[idxA]) if (dist<self.minDistOtherNebs)]
+			otherNebsB  = [idx for idx,dist in enumerate(dMatrices.centralCentral[idxB]) if (idx!=idxA) and (idx!=idxB) and (dist<self.minDistOtherNebs)]
+			otherNebsB += [idx for idx,dist in enumerate(dMatrices.centralImage[idxB]) if (dist<self.minDistOtherNebs)]
 			if len(otherNebsA)+len(otherNebsB)==0:
 				outCentralCentralPairs.append(centPair)
 
 		for centPair in h2CentralImageIdxPairs:
 			idxA, idxB = centPair
-			otherNebsA  = [idx for idx,dist in enumerate(distMatrixCentral[idxA]) if (idx!=idxA)  and (dist<self.minDistOtherNebs)]
-			otherNebsA += [idx for idx,dist in enumerate(distMatrixCentralAndImages[idxA]) if (dist<self.minDistOtherNebs) and idx!=idxB]
-			otherNebsB  = [idx for idx,dist in enumerate(distMatrixImageImage[idxB]) if (idx!=idxB) and (dist<self.minDistOtherNebs)]
-			centImageIndices = [x[idxB] for x in distMatrixCentralAndImages]
+			otherNebsA  = [idx for idx,dist in enumerate(dMatrices.centralCentral[idxA]) if (idx!=idxA)  and (dist<self.minDistOtherNebs)]
+			otherNebsA += [idx for idx,dist in enumerate(dMatrices.centralImage[idxA]) if (dist<self.minDistOtherNebs) and idx!=idxB]
+			otherNebsB  = [idx for idx,dist in enumerate(dMatrices.imageImage[idxB]) if (idx!=idxB) and (dist<self.minDistOtherNebs)]
+			centImageIndices = [x[idxB] for x in dMatrices.centralImage]
 			otherNebsB += [idx for idx,dist in enumerate(centImageIndices) if (dist<self.minDistOtherNebs) and idx!=idxA]
 			if len(otherNebsA)+len(otherNebsB)==0:
 				outCentralImagePairs.append(centPair)
@@ -86,4 +160,12 @@ class DetectH2AdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpG
 			outObjs.append(currObj)
 
 		return outObjs
+
+def _getDistanceMatricesFromCentralAndImageCoords(centralCoords, imageCoords):
+	distMatrixCentral = cartHelp._getDistMatrixForSetOfCoords(centralCoords)
+	distMatrixImageImage = cartHelp._getDistMatrixForSetOfCoords(imageCoords)
+	distMatrixCentralAndImages = cartHelp._getDistMatrixBetweenTwoSetsOfSeparateCoords(centralCoords, imageCoords)
+	return types.SimpleNamespace( centralCentral=distMatrixCentral, imageImage=distMatrixImageImage, centralImage=distMatrixCentralAndImages )
+
+
 
