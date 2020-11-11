@@ -20,7 +20,7 @@ def getSelectedBasicInfoDictFromCreatorObj(creatorObj):
 
 def _getSelectedDictsFromCreatorObj(creatorObj):
 	outDict = dict()
-	attrsToGet = ["grimmeDisp", "nonLocalDisp"]
+	attrsToGet = ["grimmeDisp", "nonLocalDisp", "surfaceDipoleCorr"]
 	for currAttr in attrsToGet:
 		currVal = getattr(creatorObj, currAttr)
 		if currVal is not None:

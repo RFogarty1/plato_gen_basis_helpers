@@ -65,6 +65,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("xcFunctional")
 	registeredKwargs.add("grimmeDisp")
 	registeredKwargs.add("nonLocalDisp")
+	registeredKwargs.add("surfaceDipoleCorr")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -195,6 +196,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict.update(currDict)
 		if self.nonLocalDisp is not None:
 			currDict = self.nonLocalDisp.modPyCP2KDict
+			modDict.update(currDict)
+		if self.surfaceDipoleCorr is not None:
+			currDict = self.surfaceDipoleCorr.modPyCP2KDict
 			modDict.update(currDict)
 
 		runTypeModDict = self._getModDictBasedOnRunType()
