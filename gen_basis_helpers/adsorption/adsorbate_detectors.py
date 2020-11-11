@@ -29,7 +29,7 @@ class DetectH2OAdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInp
 		useGeom.cartCoords = cartCoords
 
 		#Get distance matrices
-		centralCoords, imageCoords = cartHelp._getCentralAndImageCoordsFromInpCell(inpGeom)
+		centralCoords, imageCoords = cartHelp._getCentralAndImageCoordsFromInpCell(useGeom)
 		dMatrices = _getDistanceMatricesFromCentralAndImageCoords(centralCoords, imageCoords)
 		imageCentralDistMatrix = np.transpose(dMatrices.centralImage)
 
