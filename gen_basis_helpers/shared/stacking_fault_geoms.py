@@ -74,7 +74,7 @@ class HcpStackingFaultGeomGeneratorTemplate(BaseStackingFaultGeomGenerator):
 		surfacePlane = cartCoordHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell)
 
 		#group atoms into their planes
-		uniquePlaneDists, uniquePlaneAtomIndices = _getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(surfacePlane, inpCell.cartCoords, planeTolerance)
+		uniquePlaneDists, uniquePlaneAtomIndices = cartCoordHelp.getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(surfacePlane, inpCell.cartCoords, planeTolerance)
 
 		#Figure out the number of atoms in each plane; throw if not all equal
 		nAtomsPerPlane = len(uniquePlaneAtomIndices[0]) 
@@ -100,36 +100,6 @@ class HcpStackingFaultGeomGeneratorTemplate(BaseStackingFaultGeomGenerator):
 		return centralIdx
 
 
-def _getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(inpPlaneEqn, cartCoords, planeTolerance):
-	idxVsDist = _getAtomIndicesVsSignedDistsFromPlane(inpPlaneEqn, cartCoords)
-	return _getUniquePlaneDistsAndAtomIndicesFromIdxVsDistList(idxVsDist, planeTolerance)
-
-def _getAtomIndicesVsSignedDistsFromPlane(inpPlaneEqn, cartCoords):
-	idxVsDist = list()
-	#Get the distances of each atom from the bottom/top plane of the surface
-	for idx,coord in enumerate(cartCoords):
-		currDist = inpPlaneEqn.getSignedDistanceOfPointFromPlane(coord[:3])
-		idxVsDist.append( (idx,currDist) )
-
-	return idxVsDist
-
-def _getUniquePlaneDistsAndAtomIndicesFromIdxVsDistList(idxVsDist, planeTolerance):
-	allDists = [ idxVsDist[0][1] ]
-	uniquePlaneDists = [ idxVsDist[0][1] ]
-	uniquePlaneAtomIndices = [ [idxVsDist[0][0]] ]
-	for idx,dist in idxVsDist[1:]:
-		sortedIntoPlane = False
-		#Check if this plane has already been found
-		for pIdx, pDist in enumerate(uniquePlaneDists):
-			if abs(pDist-dist) < planeTolerance:
-				uniquePlaneAtomIndices[pIdx].append(idx)
-				sortedIntoPlane = True
-
-		if not sortedIntoPlane:
-			uniquePlaneDists.append( dist )
-			uniquePlaneAtomIndices.append( [idx] ) 
-
-	return uniquePlaneDists, uniquePlaneAtomIndices
 
 
 class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
@@ -155,7 +125,7 @@ class HcpI1StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 		centralPlaneDist = surfacePlaneEqn.getSignedDistanceOfPointFromPlane( centralCoords )
 
 		#Step 1 - we need to group all the AB levels below centralIdx; start by getting all and then filtering
-		uniquePlaneDists, uniquePlaneAtomIndices = _getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(surfacePlaneEqn, inpCell.cartCoords, planeTolerance)
+		uniquePlaneDists, uniquePlaneAtomIndices = cartCoordHelp.getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(surfacePlaneEqn, inpCell.cartCoords, planeTolerance)
 		filteredPlaneDists, filteredPlaneAtomIndices = list(), list()
 		for pDist, atomIndices in it.zip_longest(uniquePlaneDists, uniquePlaneAtomIndices):
 			if pDist-centralPlaneDist < planeTolerance: #Only want planes below the central atom plane
@@ -244,7 +214,7 @@ class HcpT2StackingFaultGeomGenerator(HcpStackingFaultGeomGeneratorTemplate):
 
 		#Step 1 = get a list of all atoms in the same plane as our central atom
 		surfacePlane = cartCoordHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpGeom)
-		unused, atomIndicesSortedIntoPlanes = _getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(surfacePlane, inpGeom.cartCoords, planeTolerance)
+		unused, atomIndicesSortedIntoPlanes = cartCoordHelp.getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(surfacePlane, inpGeom.cartCoords, planeTolerance)
 		for x in atomIndicesSortedIntoPlanes:
 			if centralIdx in x:
 				indicesToDisplace = x

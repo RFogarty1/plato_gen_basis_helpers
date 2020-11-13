@@ -95,6 +95,39 @@ def getABPlaneEqnWithNormVectorSameDirAsC(lattVects):
 
 	return planeEqnHelp.ThreeDimPlaneEquation(*outCoeffs)
 
+
+#Functions for getting inter-planar separation
+def getUniquePlaneDistsAndAtomIndicesFromSurfacePlaneAndCartCoords(inpPlaneEqn, cartCoords, planeTolerance):
+	idxVsDist = _getAtomIndicesVsSignedDistsFromPlane(inpPlaneEqn, cartCoords)
+	return _getUniquePlaneDistsAndAtomIndicesFromIdxVsDistList(idxVsDist, planeTolerance)
+
+def _getAtomIndicesVsSignedDistsFromPlane(inpPlaneEqn, cartCoords):
+	idxVsDist = list()
+	#Get the distances of each atom from the bottom/top plane of the surface
+	for idx,coord in enumerate(cartCoords):
+		currDist = inpPlaneEqn.getSignedDistanceOfPointFromPlane(coord[:3])
+		idxVsDist.append( (idx,currDist) )
+
+	return idxVsDist
+
+def _getUniquePlaneDistsAndAtomIndicesFromIdxVsDistList(idxVsDist, planeTolerance):
+	allDists = [ idxVsDist[0][1] ]
+	uniquePlaneDists = [ idxVsDist[0][1] ]
+	uniquePlaneAtomIndices = [ [idxVsDist[0][0]] ]
+	for idx,dist in idxVsDist[1:]:
+		sortedIntoPlane = False
+		#Check if this plane has already been found
+		for pIdx, pDist in enumerate(uniquePlaneDists):
+			if abs(pDist-dist) < planeTolerance:
+				uniquePlaneAtomIndices[pIdx].append(idx)
+				sortedIntoPlane = True
+
+		if not sortedIntoPlane:
+			uniquePlaneDists.append( dist )
+			uniquePlaneAtomIndices.append( [idx] ) 
+
+	return uniquePlaneDists, uniquePlaneAtomIndices
+
 #Functions for getting in-plane OR out-of plane nearest neighbours
 def getDistanceToNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance=1e-2):
 	outCoords = getCoordsOfNearestInPlanePointToInpPoint(inpPoint, otherPoints, planeEqn, planeTolerance)
