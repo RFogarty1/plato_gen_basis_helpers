@@ -71,6 +71,18 @@ class DetectH2OAdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInp
 
 		return outObjs
 
+	def getCentralCentralAdsorbateIndices(self, useGeom):
+		centralCoords, imageCoords = cartHelp._getCentralAndImageCoordsFromInpCell(useGeom)
+		distMatrixCentral = cartHelp._getDistMatrixForSetOfCoords(centralCoords)
+		centralO = [idx for idx,coords in enumerate(centralCoords) if coords[-1].upper()=="O"]
+		centralH = [idx for idx,coords in enumerate(centralCoords) if coords[-1].upper()=="H"]
+		outIndices = list()
+		for oIdx in centralO:
+			centralHNebs = self._getHAtomIndicesWithinDistTol(oIdx, centralH, distMatrixCentral)
+			if len(centralHNebs)==2:
+				currIndices = [oIdx] + centralHNebs
+				outIndices.append(currIndices)
+		return outIndices
 
 	def _getHAtomIndicesWithinDistTol(self, atomIdx, hIndices, distMatrix):
 		outIndices = list()
@@ -79,8 +91,10 @@ class DetectH2OAdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInp
 				if (colIdx in hIndices):
 					outIndices.append(colIdx)
 		return outIndices
-					
 
+
+
+					
 
 class DetectH2AdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpGeom):
 
