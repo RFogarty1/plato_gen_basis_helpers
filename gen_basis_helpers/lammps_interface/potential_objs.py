@@ -21,8 +21,8 @@ class LammpsPotential():
 
 
 	def _getCommandsFromGlobalPotOpts(self):
-		commAttrCombos = {"pair_style":"pairStyle", "kspace_style":"kSpaceStyle", "bond_style":"bondStyle",
-		                  "angle_style":"angleStyle", "dihedral_style":"dihedralStyle", "improper_style":"improperStyle"}
+		commAttrCombos = collections.OrderedDict( [ ["pair_style","pairStyle"], ["kspace_style","kSpaceStyle"], ["bond_style","bondStyle"],
+		                                            ["angle_style","angleStyle"], ["dihedral_style","dihedralStyle"], ["improper_style","improperStyle"] ] )
 		outDict = collections.OrderedDict()
 		for key,attr in commAttrCombos.items():
 			val = getattr(self.globalPotOpts,attr)

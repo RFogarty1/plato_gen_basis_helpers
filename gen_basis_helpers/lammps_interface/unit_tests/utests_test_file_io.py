@@ -70,7 +70,7 @@ def _getExpectedDictFromFileStrA():
 	headerStr = "         4500 atoms\n         3000 bonds"
 	massStr = "	1	15.9994"
 	atomStr = "      1    1  1 -0.8472   12.12456   28.09298   22.27452  0  1  0"
-	outDict = {"LAMMPS Atom File":headerStr, "Masses":massStr, "Atoms":atomStr}
+	outDict = collections.OrderedDict([ ["LAMMPS Atom File",headerStr], ["Masses",massStr], ["Atoms",atomStr] ])
 	return outDict
 
 
