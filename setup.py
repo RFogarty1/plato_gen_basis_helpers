@@ -10,7 +10,7 @@ setup(name='gen_basis_helpers',
 	              'gen_basis_helpers.fit_cp2k_basis', 'gen_basis_helpers.gau_prod_theorem',
 	              'gen_basis_helpers.job_utils', 'gen_basis_helpers.job_helpers', 'gen_basis_helpers.job_helpers.castep',
 	              'gen_basis_helpers.job_helpers.cp2k','gen_basis_helpers.job_helpers.plato', 
-	              'gen_basis_helpers.misc',
+	              'gen_basis_helpers.lammps_interface', 'gen_basis_helpers.misc',
 	              'gen_basis_helpers.plato','gen_basis_helpers.ref_data',
 	              'gen_basis_helpers.special_builders',
 	              'gen_basis_helpers.shared', 'gen_basis_helpers.workflows']
