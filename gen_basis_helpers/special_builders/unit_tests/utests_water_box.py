@@ -26,7 +26,9 @@ class TestGetLatticeParameterForTargetDensity(unittest.TestCase):
 		kwargs = {"lattParam":self.varyLattParam, "massDict":self.massDictA}
 		return tCode.findLatticeParameterToGetTargetDensityForNWater(*args, **kwargs)
 
-	def testExpValForSimpleCell(self):
+	@mock.patch("gen_basis_helpers.special_builders.water_box.uConvHelp")
+	def testExpValForSimpleCell(self, mockedUConv):
+		mockedUConv.AVOGADRO_NUMBER = 1
 		expVal = 0.1
 		actVal = self.runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)

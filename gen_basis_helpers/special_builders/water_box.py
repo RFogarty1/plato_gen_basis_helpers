@@ -24,7 +24,7 @@ def findLatticeParameterToGetTargetDensityForNWater(inpCell, nWater, targDensity
 	"""
 	massDict = uCellHelp.getEleKeyToMassDictStandard() if massDict is None else massDict
 	massSingleWater = 2*massDict["H"] + massDict["O"]
-	totalMass = nWater*massSingleWater
+	totalMass = nWater*massSingleWater*(1/uConvHelp.AVOGADRO_NUMBER)
 	surfArea = inpCell.volume*(1/inpCell.lattParams[lattParam])
 	return totalMass/(surfArea*targDensity)
 
