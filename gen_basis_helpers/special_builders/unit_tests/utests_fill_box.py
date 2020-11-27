@@ -29,7 +29,7 @@ class TestStandardGetCartCoordsToFillUpToNAtoms(unittest.TestCase):
 		currKwargs = {"lattParams":self.inpCellLattParamsA, "lattAngles":self.inpCellLattAnglesA}
 		self.inpCellA = uCellHelp.UnitCell(**currKwargs)
 		self.inpCellA.fractCoords = self.primFractCoordsA
-		self.testObjA = tCode.GetCartCoordsToFillUpCellToNAtoms(self.primCellA)
+		self.testObjA = tCode.CellFillerStandard(self.primCellA)
 
 	def testGetNLayers_perfectMatchForPossibleVal(self):
 		expLayers = 2

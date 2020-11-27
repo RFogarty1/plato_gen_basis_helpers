@@ -3,7 +3,10 @@ import sympy
 
 import plato_pylib.utils.supercell as supCellHelp
 
-class GetCartCoordsToFillUpCellToNAtoms():
+
+class CellFillerStandard():
+	""" Callable class, see self.getCartCoordsToFillUpCell for the callable interface
+	"""
 
 	def __init__(self, primCell):
 		""" Initializer
