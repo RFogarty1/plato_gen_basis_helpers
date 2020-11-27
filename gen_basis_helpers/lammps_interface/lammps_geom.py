@@ -212,8 +212,8 @@ class _MapGeomInfoToDataDict_atomTypeFull(MapGeomInfoToDataDictBase):
 		nDihedrals = 0
 		nImproper = 0
 		nAtomTypes =len( getEleToTypeIdxMapFromUnitCell(unitCell).keys() )
-		nBondTypes = max([x[1] for x in bondInfo]) if bondInfo is not None else 0
-		nAngleTypes = max([x[1] for x in angleInfo]) if angleInfo is not None else 0
+		nBondTypes = max([x[1] for x in bondInfo]) if (bondInfo is not None) and (bondInfo!=list()) else 0
+		nAngleTypes = max([x[1] for x in angleInfo]) if (angleInfo is not None) and (angleInfo!=list()) else 0
 		outStr = ""
 		outStr += "\t{} atoms\n".format(len(unitCell.cartCoords))
 		outStr += "\t{} bonds\n".format(nBonds)

@@ -4,6 +4,9 @@ import collections
 import unittest
 import unittest.mock as mock
 
+import plato_pylib.shared.ucell_class as uCellHelp
+
+import gen_basis_helpers.lammps_interface.lammps_geom as geomHelp
 import gen_basis_helpers.lammps_interface.file_io as tCode
 
 class TestTokenizeDataFile(unittest.TestCase):
@@ -48,6 +51,44 @@ class TestWriteScriptFile(unittest.TestCase):
 		mockedWriteToFile.assert_called_with(expPath, expStr)
 
 
+class TestGetUnitCellObjFromDataFile(unittest.TestCase):
+
+
+	def setUp(self):
+		self.lattParamsA = [2,3,4]
+		self.lattAnglesA = [90,90,90]
+		self.fractCoordsA = [ [0.5,0.5,0.5,"X"],
+		                      [0.7,0.7,0.7,"Y"],
+		                      [0.7,0.7,0.7,"Y"] ]
+		self.atomStyle = "full"
+		self.massDict = {"X":4.5,"Y":2.8}
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargs = {"lattParams":self.lattParamsA, "lattAngles":self.lattAnglesA}
+		self.testCellA = uCellHelp.UnitCell(**kwargs)
+		self.testCellA.fractCoords = self.fractCoordsA
+		self.lammpsObjA = self._createLammpsGeomFromUCell(self.testCellA)
+		self.geomToDataDict = geomHelp.GetDataDictFromLammpsGeomAtomStyleFull()
+
+	def _createLammpsGeomFromUCell(self, inpCell):
+		kwargs = {"eleToTypeIdx":{"X":1,"Y":2}, "eleToCharge":{"X":0,"Y":0}, "eleToMass":self.massDict,
+		          "geomToBondInfo": lambda *args:list(), "geomToAngleInfo": lambda *args:list(),
+		          "geomToMoleculeIDs":lambda *args:list()} 
+		outObj = geomHelp.LammpsGeom(inpCell, **kwargs)
+		return outObj
+
+	@mock.patch("gen_basis_helpers.lammps_interface.file_io.tokenizeDataFile")
+	def testExpectedGeomFromFileA(self, mockTokenizeDataFile):
+		fakeFilePath = "fake_path"
+		dataDict = self.geomToDataDict(self.lammpsObjA)
+		mockTokenizeDataFile.side_effect = lambda arg: dataDict
+		expCell = self.testCellA
+		actCell = tCode.getUCellObjectFromDataFile(fakeFilePath, atomStyle=self.atomStyle, massDict=self.massDict)
+		mockTokenizeDataFile.assert_called_with(fakeFilePath)
+		self.assertEqual(expCell,actCell)
+
+
 def _loadDataFileStrA():
 	outStr = """LAMMPS Atom File
 
@@ -64,6 +105,8 @@ Atoms
 
 """
 	return outStr
+
+
 
 
 def _getExpectedDictFromFileStrA():

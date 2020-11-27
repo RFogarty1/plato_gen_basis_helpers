@@ -1,7 +1,84 @@
 
 import collections
 
+import plato_pylib.shared.ucell_class as uCellHelp
+
 _DATA_PARSABLE_HEADERS = ["LAMMPS Atom File", "Masses", "Atoms", "Bonds", "Angles"]
+
+
+def getUCellObjectFromDataFile(inpPath, atomStyle="full", massDict=None):
+	massDict = massDict if massDict is not None else uCellHelp.getEleKeyToMassDictStandard()
+
+	tokenizedFile = tokenizeDataFile(inpPath)
+	#Step 1 = get lattice parameters
+	outCell = _getUnitCellObjFromDataHeaderSection(tokenizedFile["LAMMPS Atom File"])
+
+	#Step 2 = get the atomic co-ordinates; this depends on atomStyle
+	if atomStyle=="full":
+		typeIdxToEle = _getTypeIdxToEleFromMassesSectionAndMassDict(tokenizedFile["Masses"],massDict)
+		cartCoords = _getCartCoordsFromAtomsSection_atomStyleFull(tokenizedFile["Atoms"], typeIdxToEle)
+		outCell.cartCoords = cartCoords
+
+	return outCell
+
+def _getUnitCellObjFromDataHeaderSection(headerStr):
+	sectionAsList = [x.strip() for x in headerStr.split("\n")]
+	tiltFactors = [0,0,0]
+	diagParams = [0,0,0]
+
+	for line in sectionAsList:
+		#Get diag elements of lattice vectors
+		if ("xlo" in line) or ("ylo" in line) or ("zlo" in line):
+			splitLine = line.split() #Defaults to splitting all whitespace
+			currParam = float(splitLine[1]) - float(splitLine[0])
+			if "xlo" in line:
+				currIdx = 0
+			elif "ylo" in line:
+				currIdx = 1
+			elif "zlo" in line:
+				currIdx = 2
+			else:
+				raise ValueError("No idea how loop ended up here - it shouldnt be possible")
+			diagParams[currIdx] = currParam
+
+		#Deal with tilt factors
+		if "xy xz yz" in line:
+			tiltFactors = [float(x) for x in line.split()[:3]]
+
+	lattVectors = [ [diagParams[0], 0, 0],
+	                [tiltFactors[0], diagParams[1], 0],
+	                [tiltFactors[1], tiltFactors[2], diagParams[2]] ]
+	return uCellHelp.UnitCell.fromLattVects(lattVectors)
+	
+
+def _getTypeIdxToEleFromMassesSectionAndMassDict(massesStr, massDict, massTol=1e-2):
+	sectionAsList = [x.strip() for x in massesStr.split("\n")]
+	outDict = dict()
+	for line in sectionAsList:
+		if line!="":
+			splitLine = line.split()
+			idx, mass = int(splitLine[0]), float(splitLine[1])
+			currKeys = list()
+			for k,v in massDict.items():
+				if abs(float(v)-mass) < massTol:
+					currKeys.append(k)
+			assert len(currKeys)==1, "Found {} key for mass = {}".format(len(currKeys), mass)
+			outDict[idx] = currKeys[0]
+
+	return outDict
+
+def _getCartCoordsFromAtomsSection_atomStyleFull(atomsStr, idxToEle):
+	sectionAsList = [x.strip() for x in atomsStr.split("\n")]
+	
+	outCoords = list()
+	for line in sectionAsList:
+		if line!="":
+			splitLine = line.split()
+			currEle = idxToEle[ int(splitLine[2]) ]
+			currXYZ = [float(x) for x in splitLine[-3:]]
+			currCoord = currXYZ + [currEle]
+			outCoords.append(currCoord)
+	return outCoords
 
 def tokenizeDataFile(inpPath):
 	""" Takes a LAMMPS data file and converts it into an OrderedDict
