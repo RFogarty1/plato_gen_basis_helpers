@@ -144,3 +144,40 @@ class TestDetectH2Adsorbates(unittest.TestCase):
 		self.assertEqual(expAds,actAds)
 
 
+
+class TestSimpleAtomicAdsorbateDetector(unittest.TestCase):
+
+	def setUp(self):
+		self.caseSensitive = True
+		self.eleSymbol = "fake_ele".upper()
+		self.lattParamsA = [10,10,10]
+		self.lattAnglesA = [90,90,90]
+		self.cartCoordsA = [ [5,5,5,"X"],
+		                     [5,6,4,self.eleSymbol],
+		                     [6,6,6, self.eleSymbol.lower()] ]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testCellA = uCellHelp.UnitCell(lattParams=self.lattParamsA, lattAngles=self.lattAnglesA)
+		self.testCellA.cartCoords = self.cartCoordsA
+		self.testObjA = tCode.DetectSimpleAtomicAdsorbateFromInpGeom(self.eleSymbol, caseSensitive=self.caseSensitive)
+
+
+	def testDetectWithCaseSensitivity(self):
+		expAdsObjs = [ types.SimpleNamespace(geom=[[5,6,4,self.eleSymbol]]) ]
+		actAdsObjs = self.testObjA( self.testCellA )
+		for exp,act in it.zip_longest(expAdsObjs, actAdsObjs):
+			adsRepObjs.adsorbatesSameWithinError(exp,act)
+
+	def testWithoutCaseSensitivity(self):
+		self.caseSensitive = False
+		self.createTestObjs()
+		expAdsObjs = [ types.SimpleNamespace(geom=[ [5,6,4,self.eleSymbol] ]),
+		               types.SimpleNamespace(geom=[ [6,6,6, self.eleSymbol.lower()] ]) ]
+		actAdsObjs = self.testObjA( self.testCellA )
+
+		for exp,act in it.zip_longest(expAdsObjs, actAdsObjs):
+			adsRepObjs.adsorbatesSameWithinError(exp,act)
+
+
+

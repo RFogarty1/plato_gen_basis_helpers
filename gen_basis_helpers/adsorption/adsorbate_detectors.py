@@ -8,18 +8,62 @@ from . import parse_from_geoms as parseFromGeomBase
 
 from ..shared import cart_coord_utils as cartHelp
 
+
+class DetectSimpleAtomicAdsorbateFromInpGeom(parseFromGeomBase.AdsorbatesFromInpGeom):
+
+	def __init__(self, eleKey, caseSensitive=True, postFilterFuncts=None):
+		""" Initializer
+		
+		Args:
+			eleKey: (str) The element symbol for the adsorbate
+			caseSensitive: (Bool) Whether to use case sensitivity when looking for the eleKey symbol
+			postFilterFuncts: (iter of f(inpGeom,outAds)->outAds)) These functions are applied IN ORDER after the main function to get adsorbates. The original use was to allow only adsorbates either "above" or "below" the surface to be returned
+		"""
+		self._eleKey = eleKey #May want to do this for multiple eleKeys later; hence hiding the eleKey variable for now
+		self.caseSensitive = caseSensitive
+		self.postFilterFuncts = list() if postFilterFuncts is None else list(postFilterFuncts)
+
+	def _getFilteredOutputAdsorbates(self, inpGeom, outAds):
+		for funct in self.postFilterFuncts:
+			outAds = funct(inpGeom, outAds)
+		return outAds
+
+	def getAdsorbateObjsFromInpGeom(self, inpGeom):
+		#1) Get the cartesian co-ords
+		outCartCoords = list()
+		for cartCoord in inpGeom.cartCoords:
+			if self.caseSensitive:
+				if cartCoord[-1] == self._eleKey:
+					outCartCoords.append(cartCoord)
+			else:
+				if cartCoord[-1].upper() == self._eleKey.upper():
+					outCartCoords.append(cartCoord)
+
+		#2) Convert into adsorbate objects
+		outAdsObjs = [types.SimpleNamespace(geom=copy.deepcopy([x])) for x in outCartCoords]
+
+		return self._getFilteredOutputAdsorbates(inpGeom, outAdsObjs)
+
+
 class DetectH2OAdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpGeom):
 
-	def __init__(self, minBondLength=0.1, maxBondLength=2.0):
+	def __init__(self, minBondLength=0.1, maxBondLength=2.0, postFilterFuncts=None):
 		""" Initializer
 		
 		Args:
 			minBondLength: (float) Minimum bondlength between O-H.
 			maxBondLength: (float) Maximum separation for O-H to be considered as bonded
+			postFilterFuncts: (iter of f(inpGeom,outAds)->outAds)) These functions are applied IN ORDER after the main function to get adsorbates. The original use was to allow only adsorbates either "above" or "below" the surface to be returned
 				 
 		"""
 		self.minBondLength = minBondLength
 		self.maxBondLength = maxBondLength
+		self.postFilterFuncts = list() if postFilterFuncts is None else list(postFilterFuncts)
+
+	def _getFilteredOutputAdsorbates(self, inpGeom, outAds):
+		for funct in self.postFilterFuncts:
+			outAds = funct(inpGeom, outAds)
+		return outAds
 
 	def getAdsorbateObjsFromInpGeom(self, inpGeom):
 		#1) Filter out any non O/H atoms, I may have to reverse later if i want to implement minDistOtherNebs like in the H2 detector
@@ -69,7 +113,7 @@ class DetectH2OAdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInp
 			currObj = types.SimpleNamespace( geom=currCentCoords+currImageCoords )
 			outObjs.append(currObj)
 
-		return outObjs
+		return self._getFilteredOutputAdsorbates(inpGeom, outObjs)
 
 	def getCentralCentralAdsorbateIndices(self, useGeom):
 		centralCoords, imageCoords = cartHelp._getCentralAndImageCoordsFromInpCell(useGeom)
