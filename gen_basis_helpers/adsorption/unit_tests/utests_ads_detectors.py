@@ -7,8 +7,8 @@ import unittest.mock as mock
 import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.adsorption.adsorbate_rep_objs as adsRepObjs
+import gen_basis_helpers.adsorption.surface_detectors as surfDetectHelp
 import gen_basis_helpers.adsorption.adsorbate_detectors as tCode
-
 
 class TestDetectH2OAdsorbates(unittest.TestCase):
 
@@ -167,7 +167,7 @@ class TestSimpleAtomicAdsorbateDetector(unittest.TestCase):
 		expAdsObjs = [ types.SimpleNamespace(geom=[[5,6,4,self.eleSymbol]]) ]
 		actAdsObjs = self.testObjA( self.testCellA )
 		for exp,act in it.zip_longest(expAdsObjs, actAdsObjs):
-			adsRepObjs.adsorbatesSameWithinError(exp,act)
+			self.assertTrue( adsRepObjs.adsorbatesSameWithinError(exp,act) )
 
 	def testWithoutCaseSensitivity(self):
 		self.caseSensitive = False
@@ -177,7 +177,52 @@ class TestSimpleAtomicAdsorbateDetector(unittest.TestCase):
 		actAdsObjs = self.testObjA( self.testCellA )
 
 		for exp,act in it.zip_longest(expAdsObjs, actAdsObjs):
-			adsRepObjs.adsorbatesSameWithinError(exp,act)
+			self.assertTrue( adsRepObjs.adsorbatesSameWithinError(exp,act) )
 
+
+class TestFilterAdsObjsBasedOnTopOrBottom(unittest.TestCase):
+
+	#TODO: Need a surface detector for this to work; obv just mock the interface though
+	def setUp(self):
+		self.orientation = "top"
+		self.lattParamsA = [10,10,10]
+		self.lattAnglesA = [90,90,90]
+
+		self.cartCoordsA = [ [5,5,3,"X"], #BELOW surface
+		                     [5,5,4,"surf_atom"],
+		                     [5,5,5,"surf_atom"],
+		                     [5,5,6,"surf_atom"],
+		                     [5,5,7,"X"] ] #ABOVE surface
+		self.surfDetectorA = surfDetectHelp.DetectSurfaceBasedOnElementsPresent(["surf_atom"])
+		self.top = True	
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testFilterFunctsA = [ tCode.FilterToAtomsAboveOrBelowSurf(self.surfDetectorA, top=self.top) ]
+		self.testAdsDetector = tCode.DetectSimpleAtomicAdsorbateFromInpGeom("X", postFilterFuncts=self.testFilterFunctsA)
+		self.testCellA = uCellHelp.UnitCell(lattParams=self.lattParamsA, lattAngles=self.lattAnglesA)
+		self.testCellA.cartCoords = self.cartCoordsA
+
+	def testExpectedForTopSimple(self):
+		expAdsObjs = [ types.SimpleNamespace(geom= [[5,5,7,"X"]]) ]
+		actAdsObjs = self.testAdsDetector(self.testCellA)
+		for exp,act in it.zip_longest(expAdsObjs, actAdsObjs):
+			self.assertTrue( adsRepObjs.adsorbatesSameWithinError(exp,act) )
+
+	def testExpectedForBottomSimple(self):
+		self.top=False
+		self.createTestObjs()
+		expAdsObjs = [ types.SimpleNamespace(geom= [[5,5,3,"X"]]) ]
+		actAdsObjs = self.testAdsDetector(self.testCellA)
+		for exp,act in it.zip_longest(expAdsObjs, actAdsObjs):
+			self.assertTrue( adsRepObjs.adsorbatesSameWithinError(exp,act) )
+
+	def testExpectedForTopRequiringWrappingIntoCentralCell(self):
+		self.cartCoordsA[0] = [5,5, 11,"X"] #Should appear above if i dont wrap into central cell
+		self.createTestObjs()
+		expAdsObjs = [ types.SimpleNamespace(geom= [[5,5,7,"X"]]) ]
+		actAdsObjs = self.testAdsDetector(self.testCellA)
+		for exp,act in it.zip_longest(expAdsObjs, actAdsObjs):
+			self.assertTrue( adsRepObjs.adsorbatesSameWithinError(exp,act) )
 
 

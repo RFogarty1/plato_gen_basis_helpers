@@ -1,11 +1,13 @@
 
 import copy
+import itertools as it
 import types
 
 import numpy as np
 
 from . import parse_from_geoms as parseFromGeomBase
 
+from ..shared import plane_equations as planeEqnHelp
 from ..shared import cart_coord_utils as cartHelp
 
 
@@ -227,3 +229,79 @@ def _getDistanceMatricesFromCentralAndImageCoords(centralCoords, imageCoords):
 
 
 
+class FilterToAtomsAboveOrBelowSurf():
+
+	def __init__(self, surfDetector, top=True):
+		""" Initializer. Note: I'm not totally sure this will work if your surface crosses PBCs (which it wont in electrode-centric cells)
+		
+		Args:
+			surfDetector: (SurfaceAtomsFromInpGeom object) Used to figure out which atoms make up the surface for an input geometry
+			top: (Bool) True means filter to atoms ABOVE the surface (defined as those with >c than the middle of the surface). False means filter to the opposite (those below surface/not above it)
+				 
+		"""
+		self.surfDetector = surfDetector
+		self.top = top
+
+	def __call__(self, inpGeom, outAds):
+
+		#1) Get plane equation for the centre of the surface
+		useCell = copy.deepcopy(inpGeom)
+		surfCoords = self.surfDetector(useCell)
+		useCell.cartCoords = surfCoords
+		topSurfPlaneEqn = cartHelp.getPlaneEqnForOuterSurfaceAtoms(useCell)
+		bottomSurfPlaneEqn = cartHelp.getPlaneEqnForOuterSurfaceAtoms(useCell, top=False)
+
+		#2) Filter to co-ords either above/below the surface
+		filteredObjs = list()
+		for adsObj in outAds:
+			distFromTopPlane = _getDistOfClosestAdsorbateAtomToPlane(topSurfPlaneEqn, adsObj, inpGeom)
+			distFromBottomPlane = _getDistOfClosestAdsorbateAtomToPlane(bottomSurfPlaneEqn, adsObj, inpGeom)
+			if distFromTopPlane<distFromBottomPlane:
+				if self.top:
+					filteredObjs.append(adsObj)
+			else:
+				if not self.top:
+					filteredObjs.append(adsObj)
+		return filteredObjs
+
+
+def _getCentralPlaneEqnFromTopAndBottomSurfPlaneEqns(topPlaneEqn,bottomPlaneEqn):
+	paramsTop, paramsBot = topPlaneEqn.coeffs, [x*-1 for x in bottomPlaneEqn.coeffs]
+
+	tol = 1e-3
+	for pTop, pBot in zip(paramsTop[:3],paramsBot[:3]):
+		if abs(pTop-pBot) > tol:
+			raise ValueError("a,b,c (top) = {}: a,b,c(bot) = {}. These SHOULD be equal".format(paramsTop,paramsBot))
+
+	outDValue = (paramsBot[-1] + paramsTop[-1]) / 2
+	outParams = [x for x in paramsTop[:3]] + [outDValue]
+	return planeEqnHelp.ThreeDimPlaneEquation(*outParams)
+	
+
+def _getDistOfClosestAdsorbateAtomToPlane(planeEqn, adsObj, inpCell):
+	secondPlaneCoeffs = [-1*x for x in planeEqn.coeffs]
+	secondPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(*secondPlaneCoeffs)
+	adsGeoms = [x[:3] for x in adsObj.geom]
+	minAdsDist = -1
+
+	for atomGeom in adsGeoms:
+		distA = _getClosestDistOfAtomToPlane(planeEqn, atomGeom, inpCell)
+		distB = _getClosestDistOfAtomToPlane(secondPlaneEqn, atomGeom, inpCell)
+		currAdsDist = distA if distA<distB else distB
+		if (currAdsDist<minAdsDist) or (minAdsDist<0):
+			minAdsDist = currAdsDist
+
+	return minAdsDist
+
+def _getClosestDistOfAtomToPlane(planeEqn, atomGeom, inpCell):
+	surfVector = inpCell.lattVects[-1]
+	coordA = atomGeom[:3]
+	coordUp = [x+t for x,t in it.zip_longest(coordA,surfVector)]
+	coordDn = [x-t for x,t in it.zip_longest(coordA,surfVector)]
+
+	minAdsDist = -1
+	for coords in [coordA,coordUp,coordDn]:
+		currAdsDist = planeEqn.getDistanceOfPointFromPlane(coords)
+		if (currAdsDist<minAdsDist) or (minAdsDist<0):
+			minAdsDist = currAdsDist
+	return minAdsDist
