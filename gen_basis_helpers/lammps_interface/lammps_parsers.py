@@ -63,7 +63,7 @@ def _parseThermoSection(fileAsList, lineIdx):
 
 
 def _getFileAsListFromInpPath(inpPath):
-	with open(inpPath,"rt"):
+	with open(inpPath,"rt") as f:
 		outStr = f.read()
 	return outStr.split("\n")
 
