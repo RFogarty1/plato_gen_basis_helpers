@@ -18,7 +18,7 @@ class TestGetLammpsGeomFromInpGeom(unittest.TestCase):
 		self.eleToCharge = {"O":4,"H":5}
 		self.eleToMass = None
 		self.convAngToBohr = True
-		self.modTiltFactors = [2,2,2]
+		self.modTiltFactors = None
 		self.uCellObj = mock.Mock()
 		self.createTestObjs()
 

@@ -37,8 +37,14 @@ class PureWaterCellToLammpsGeomMapperCentralOnly():
 			outObj: (LammpsGeom) Lammps geom object for input geometry
 	 
 		"""
+
+		if self.modTiltFactors is not None:
+			modTiltFactorsFunct = lambda tiltFactors : [x*tiltFactor for x,tiltFactor in zip(tiltFactors, self.modTiltFactors)]
+		else:
+			modTiltFactorsFunct = None
+
 		if self.atomStyle=="full":
-			getDataDictFunct = lammpsGeomHelp.GetDataDictFromLammpsGeomAtomStyleFull(modTiltFactors=self.modTiltFactors)
+			getDataDictFunct = lammpsGeomHelp.GetDataDictFromLammpsGeomAtomStyleFull(modTiltFactors=modTiltFactorsFunct)
 		else:
 			raise ValueError("{} is an invalid atomStyle".format(self.atomStyle))
 
