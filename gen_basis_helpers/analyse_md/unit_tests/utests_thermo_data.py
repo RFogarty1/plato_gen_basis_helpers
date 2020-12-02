@@ -65,4 +65,9 @@ class TestThermoDataStandard(unittest.TestCase):
 		objB = tCode.ThermoDataStandard.fromStdKwargs(temp=[3,4], step=[1,2])
 		self.assertEqual(objA,objB)
 
+	def testToAndFromDictConsistent(self):
+		objA = self.testObjA
+		dictA = objA.toDict()
+		objB = tCode.ThermoDataStandard.fromDict(dictA)
+		self.assertEqual(objA,objB)
 

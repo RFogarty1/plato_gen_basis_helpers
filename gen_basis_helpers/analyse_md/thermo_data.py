@@ -52,6 +52,14 @@ class ThermoDataStandard(ThermoDataInterface):
 
 		return cls(outDict)
 
+	#Just to satisfy an interface
+	@classmethod
+	def fromDict(cls, inpDict):
+		return cls(inpDict)
+
+	def toDict(self):
+		return dict(self.dataDict)
+
 	@property
 	def props(self):
 		return self.dataDict.keys()
