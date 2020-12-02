@@ -3,8 +3,10 @@ import collections
 import copy
 import os
 import pathlib
+import types
 
 from . import file_io as fileIoHelp
+from . import lammps_parsers as lammpsParsers
 from ..shared import method_objs as methObjHelp
 
 class LammpsCalcObjStandard(methObjHelp.CalcMethod):
@@ -49,7 +51,9 @@ class LammpsCalcObjStandard(methObjHelp.CalcMethod):
 
 	@property
 	def parsedFile(self):
-		raise NotImplementedError("")
+		logPath = os.path.join(self.baseFolderPath,"log.lammps")
+		parsedLogFile = lammpsParsers.parseLammpsLogFile(logPath)
+		return types.SimpleNamespace(**parsedLogFile)
 
 	@property
 	def scriptFilePath(self):
