@@ -58,6 +58,7 @@ class DetectH2OAdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInp
 			postFilterFuncts: (iter of f(inpGeom,outAds)->outAds)) These functions are applied IN ORDER after the main function to get adsorbates. The original use was to allow only adsorbates either "above" or "below" the surface to be returned
 				 
 		"""
+		self._eqTol = 1e-5
 		self.minBondLength = minBondLength
 		self.maxBondLength = maxBondLength
 		self.postFilterFuncts = list() if postFilterFuncts is None else list(postFilterFuncts)
@@ -139,7 +140,27 @@ class DetectH2OAdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInp
 		return outIndices
 
 
+	def __eq__(self, other):
+		eqTol = min(self._eqTol,other._eqTol)
+		numbAttrs = ["minBondLength","maxBondLength"]
 
+		#Check the numerical attributes are similar
+		for attr in numbAttrs:
+			valA, valB = getattr(self,attr), getattr(other,attr)
+			if abs(valA-valB) > eqTol:
+				return False
+
+		#Check post-filter functs are the same. NOTE: I dont neccesarily expect these to have
+		#proper __eq__ implementations, so if any post-filter functions are present objects will probably
+		#just always compare unequal
+		if len(self.postFilterFuncts) != len(other.postFilterFuncts):
+			return False
+		else:
+			for fA,fB in zip(self.postFilterFuncts,other.postFilterFuncts):
+				if fA!=fB:
+					return False
+
+		return True
 					
 
 class DetectH2AdsorbatesFromInpGeomStandard(parseFromGeomBase.AdsorbatesFromInpGeom):

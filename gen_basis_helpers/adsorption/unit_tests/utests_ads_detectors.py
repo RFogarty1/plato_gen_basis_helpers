@@ -1,4 +1,6 @@
 
+
+import copy
 import itertools as it
 import types
 import unittest
@@ -28,10 +30,13 @@ class TestDetectH2OAdsorbates(unittest.TestCase):
 		                     [1,2,3,"X"],
 		                     [0,4,6,"O"] ]
 
+
+		self.postFilterFuncts = None
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		kwargDict = {"minBondLength":self.minBondLength, "maxBondLength":self.maxBondLength}
+		kwargDict = {"minBondLength":self.minBondLength, "maxBondLength":self.maxBondLength,
+		             "postFilterFuncts":self.postFilterFuncts}
 		self.detectorA = tCode.DetectH2OAdsorbatesFromInpGeomStandard(**kwargDict)
 		self._createTestCellA()
 
@@ -80,6 +85,40 @@ class TestDetectH2OAdsorbates(unittest.TestCase):
 
 		for exp,act in it.zip_longest(expAds, actAds):
 			self.assertTrue( adsRepObjs.adsorbatesSameWithinError(exp,act) )
+
+	def testEqualObjsCompareEqual(self):
+		objA = copy.deepcopy(self.detectorA)
+		self.createTestObjs()
+		objB = self.detectorA
+		self.assertEqual(objA,objB)
+
+	def testUnequalObjsCompareUnequal_diffMaxBondLength(self):
+		objA = copy.deepcopy(self.detectorA)
+		self.maxBondLength += 0.1
+		self.createTestObjs()
+		objB = self.detectorA
+		self.assertNotEqual(objA,objB)
+
+	def testUnequalObjsCompareUnequal_diffLengthPostFilterFuncts(self):
+		objA = copy.deepcopy(self.detectorA)
+		self.postFilterFuncts = [mock.Mock()]
+		self.createTestObjs()
+		objB = self.detectorA
+		self.assertNotEqual(objA,objB)
+
+	def testUnequalObjsCompareUnequal_diffPostFilterFunct(self):
+		#Create obj A
+		self.postFilterFuncts = [mock.Mock()]
+		self.createTestObjs()
+		objA = copy.deepcopy(self.detectorA)
+
+		#Create obj B
+		self.postFilterFuncts = [mock.Mock()]
+		self.createTestObjs()
+		objB = self.detectorA
+
+		#Compare
+		self.assertNotEqual(objA,objB)
 
 
 class TestDetectH2Adsorbates(unittest.TestCase):
