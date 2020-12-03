@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 import math
 import unittest
 import unittest.mock as mock
@@ -7,6 +8,37 @@ import unittest.mock as mock
 
 import gen_basis_helpers.analyse_md.thermo_data as thermoDataHelp
 import gen_basis_helpers.analyse_md.analyse_thermo as tCode
+
+
+class TestGetMovingAverageFromThermoData(unittest.TestCase):
+
+
+	def setUp(self):
+		self.temp = [10,15,20]
+		self.step = [10,20,30]
+		self.time = [20,40,60]
+		self.prop = "temp"
+		self.startIdx = 0
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		thermoDataDict = {"step":self.step, "time":self.time, "temp":self.temp}
+		self.thermoDataObjA = thermoDataHelp.ThermoDataStandard(thermoDataDict)
+
+	def _runTestFunct(self):
+		return tCode.getMovingAverageFromThermoData(self.thermoDataObjA, self.prop, startIdx=self.startIdx)
+
+	def testExpectedValsSimpleCaseA(self):
+		expVals = [10, 25/2, 45/3]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals,actVals)]
+
+	def testExpectedForStartIdxOne(self):
+		self.startIdx=1
+		self.createTestObjs()
+		expVals = [15, 35/2]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals,actVals)]
 
 class TestGetStandardStatsDictForThermoProps(unittest.TestCase):
 
