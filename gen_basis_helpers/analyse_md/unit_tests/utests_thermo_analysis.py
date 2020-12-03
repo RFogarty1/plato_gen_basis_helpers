@@ -1,0 +1,138 @@
+
+import copy
+import math
+import unittest
+import unittest.mock as mock
+
+
+import gen_basis_helpers.analyse_md.thermo_data as thermoDataHelp
+import gen_basis_helpers.analyse_md.analyse_thermo as tCode
+
+class TestGetStandardStatsDictForThermoProps(unittest.TestCase):
+
+	def setUp(self):
+		self.temp = [10,15,20]
+		self.step = [10,20,30]
+		self.time = [20,40,60]
+		self.startTime = None
+		self.endTime = None
+		self.startStep = None #zero based numbering i guess
+		self.endStep = None
+		self.timeTol = 1e-3
+		self.props = ["temp"]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		thermoDataDict = {"step":self.step, "time":self.time, "temp":self.temp}
+		self.thermoDataObjA = thermoDataHelp.ThermoDataStandard(thermoDataDict)
+		kwargDict = {"startTime":self.startTime, "endTime":self.endTime,
+		             "startStep":self.startStep, "endStep":self.endStep,
+		             "props":self.props, "timeTol":self.timeTol}
+		self.testObjA = tCode.GetStatsForThermoProps(**kwargDict)
+
+	def testExpectedForSimpleDataA(self):
+		actDict = self.testObjA.create(data=self.thermoDataObjA)
+		expDict = self._loadExpectedDictSimpleDataA()
+		self.assertEqual(expDict, actDict)
+
+	def testExpectedForSimpleData_startTime40(self):
+		self.startTime = 40 - 1e-5 #Really 40; just checking we handle this for float errors
+		self.createTestObjs()
+		expStdDev = math.sqrt( (2*(2.5**2)) /2)
+		kwargDict = {"mean":17.5, "standardDev":expStdDev, "minVal":15,
+		             "maxVal":20, "nVals":2}
+		expDict = {"temp":tCode.StandardStatsObject(**kwargDict)}
+		actDict = self.testObjA.create(data=self.thermoDataObjA)
+		self.assertEqual(expDict, actDict)
+
+	def testExpectedForSimpleData_endTime40(self):
+		self.endTime = 40 - 1e-5 ##Really 40; just checking we handle this for float errors
+		self.createTestObjs()
+		expStdDev = math.sqrt( (2*(2.5**2)) /2)
+		kwargDict = {"mean":12.5, "standardDev":expStdDev, "minVal":10,
+		             "maxVal":15, "nVals":2}
+		expDict = {"temp":tCode.StandardStatsObject(**kwargDict)}
+		actDict = self.testObjA.create(data=self.thermoDataObjA)
+		self.assertEqual(expDict,actDict)
+
+	def testStartStepOveridesStartTime(self):
+		self.startTime = 40
+		self.startStep = 0
+		self.createTestObjs()
+		expDict = self._loadExpectedDictSimpleDataA()
+		actDict = self.testObjA.create(data=self.thermoDataObjA)
+		self.assertEqual(expDict,actDict)
+
+	def testEndStepOveridesEndTime(self):
+		self.endTime = 40
+		self.endStep = 100
+		self.createTestObjs()
+		expDict = self._loadExpectedDictSimpleDataA()
+		actDict = self.testObjA.create(data=self.thermoDataObjA)
+		self.assertEqual(expDict, actDict)
+
+	def _loadExpectedDictSimpleDataA(self):
+		expStdDev = math.sqrt(50/3)
+		kwargDict = {"mean":15, "standardDev":expStdDev,"minVal":10,
+		             "maxVal":20, "nVals":3}
+		expDict = {"temp":tCode.StandardStatsObject(**kwargDict)}
+		return expDict
+
+class TestStandardStatsObject(unittest.TestCase):
+
+	def setUp(self):
+		self.mean = 4
+		self.stdDev = 20
+		self.nVals = 9
+		self.minVal = 2
+		self.maxVal = 10
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"mean":self.mean, "standardDev":self.stdDev,
+		             "nVals":self.nVals, "minVal":self.minVal, "maxVal":self.maxVal}
+		self.testObjA = tCode.StandardStatsObject(**kwargDict)
+
+	def testRangeGivesExpectedVal(self):
+		expRange = abs(self.maxVal-self.minVal)
+		actRange = self.testObjA.range
+		self.assertEqual(expRange,actRange)
+
+	def testRangeReturnsNoneIfOneOfValsNotSet(self):
+		self.maxVal = None
+		self.createTestObjs()
+		expRange = None
+		actRange = self.testObjA.range
+		self.assertEqual(expRange, actRange)
+
+	def testEqualObjsCompareEqual(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertEqual(objA,objB)
+
+	def testEqualObjsCompareEqual_nValsBothNone(self):
+		self.nVals = None
+		self.createTestObjs()
+		objA = copy.deepcopy(self.testObjA)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertEqual(objA,objB)
+
+	def testUnequalObjsCompareUnequal_diffMean(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.mean += 1
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA,objB)
+		self.assertNotEqual(objB,objA)
+
+	def testUnequalObjsCompareUnequal_nStepsNoneOnOne(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.nVals = None
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA,objB)
+
+	
+
