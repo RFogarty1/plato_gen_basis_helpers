@@ -334,19 +334,14 @@ def getClosestDistanceBetweenTwoElementsForInpCell(inpCell, eleA, eleB, inclImag
 def _getCentralAndImageCoordsFromInpCell(inpCell, imageDims=None):
 	imageDims = [True, True, True] if imageDims is None else imageDims
 
-	kwargs = {"alongA":imageDims[0], "alongB":imageDims[1], "alongC":imageDims[2]}
+	kwargs = {"alongA":imageDims[0], "alongB":imageDims[1], "alongC":imageDims[2], "removeStartCoords":True}
 	cellWithImages = supCellHelp.getUnitCellSurroundedByNeighbourCells(inpCell, **kwargs)
-
-	startAtomIndicesInB = _getIndicesOfDuplicatedAtomsInCoordsB( inpCell.cartCoords, cellWithImages.cartCoords )
-	centralCoords, imageCoords = list(), list()
-	for idx,coord in enumerate(cellWithImages.cartCoords):
-		if idx in startAtomIndicesInB:
-			centralCoords.append(coord)
-		else:
-			imageCoords.append(coord)
+	centralCoords = copy.deepcopy(inpCell.cartCoords)
+	imageCoords = copy.deepcopy(cellWithImages.cartCoords)
 	return centralCoords, imageCoords
 
 #Works using distances
+#NOTE: NOW HAS NO USE (since i changed implementation for getting central and image coords)
 def _getIndicesOfDuplicatedAtomsInCoordsB(coordsA, coordsB, distTol=1e-2):
 	duplicatedIndices = list()
 	for idxA,coordA in enumerate(coordsA):
