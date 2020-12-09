@@ -1,4 +1,5 @@
 
+import json
 import plato_pylib.shared.ucell_class as uCellHelp
 
 class TrajectoryBase():
@@ -83,4 +84,37 @@ class TrajStepBase():
 				return False
 
 		return True
+
+
+def dumpTrajObjToFile(trajObj, outFile):
+	""" Dump TrajectoryBase to file. Format involves writing each step as a dict (i.e. JSON notation).
+	
+	Args:
+		trajObj: (TrajectoryBase object) Contains all steps in the trajectory
+		outFile: (str) Path to the output file
+	 
+	"""
+	with open(outFile,"wt") as f:
+		for step in trajObj:
+			f.write(json.dumps(step.toDict()))
+			f.write("\n")
+
+def readTrajObjFromFileToTrajectoryInMemory(inpFile):
+	""" Reads a trajectory file (format defined by dumpTrajObjToFile) and returns a TrajectoryInMemory object
+	
+	Args:
+		inpFile: (str) Path to file containing the trajectory
+			 
+	Returns
+		 trajObj: (TrajectoryInMemory) Holds the full trajectory in memory. Simple/flexible but may not be ideal for large simulations
+
+	"""
+	outTrajObjs = list()
+	with open(inpFile,"rt") as f:
+		for line in f:
+			currDict = json.loads(line)
+			currObj = TrajStepBase.fromDict(currDict)
+			outTrajObjs.append(currObj)
+
+	return TrajectoryInMemory(outTrajObjs)
 

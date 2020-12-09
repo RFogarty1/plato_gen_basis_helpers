@@ -1,11 +1,38 @@
 
 import copy
+import os
 import itertools as it
 import unittest
 import unittest.mock as mock
 
 import plato_pylib.shared.ucell_class as uCellHelp
 import gen_basis_helpers.analyse_md.traj_core as tCode
+
+
+
+class TestTrajInMemoryReadWrite(unittest.TestCase):
+
+	def setUp(self):
+		self.unitCellA = uCellHelp.UnitCell(lattParams=[10,10,10],lattAngles=[90,90,90])
+		self.timeA, self.timeB = 2, 3
+		self.stepA, self.stepB = 0, 50
+		self.fileNameA = "temp_file_a.traj"
+		self.createTestObjs()
+
+	def tearDown(self):
+		os.remove(self.fileNameA)
+
+	def createTestObjs(self):
+		self.trajStepA = tCode.TrajStepBase(time=self.timeA, step=self.stepA, unitCell=self.unitCellA)
+		self.trajStepB = tCode.TrajStepBase(time=self.timeB, step=self.stepB, unitCell=self.unitCellA)
+		self.testObjA = tCode.TrajectoryInMemory([self.trajStepA, self.trajStepB])
+
+	def testReadAndWriteConsistentA(self):
+		expObj = self.testObjA
+		tCode.dumpTrajObjToFile(self.testObjA, self.fileNameA)
+		actObj = tCode.readTrajObjFromFileToTrajectoryInMemory(self.fileNameA)
+		self.assertEqual(expObj, actObj)
+
 
 class TestTrajInMemory(unittest.TestCase):
 	
