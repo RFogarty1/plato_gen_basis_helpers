@@ -88,6 +88,13 @@ class TestTrajInMemory(unittest.TestCase):
 		objB = tCode.TrajectoryInMemory.fromDict(tempDict)
 		self.assertEqual(objA,objB)
 
+	def testApplyFunctionToAllTrajSteps(self):
+		mockFunct = mock.Mock()
+		self.testObjA.applyFunctToEachTrajStep(mockFunct)
+		for tStep in self.fullTrajA:
+			mockFunct.assert_any_call(tStep)
+
+
 
 class TestTrajStepBase(unittest.TestCase):
 	

@@ -34,6 +34,16 @@ class TrajectoryInMemory(TrajectoryBase):
 		outDict = {"trajSteps":[x.toDict() for x in self.trajSteps]}
 		return outDict
 
+	def applyFunctToEachTrajStep(self, funct):
+		""" Applies a function to each trajectory step. Useful for doing things like converting length units
+		
+		Args:
+			funct: f(TrajStepBase) Modifies the object in place
+				 
+		"""
+		for tStep in self.trajSteps:
+			funct(tStep)
+
 	def __eq__(self, other):
 		if self.trajSteps!=other.trajSteps:
 			return False
