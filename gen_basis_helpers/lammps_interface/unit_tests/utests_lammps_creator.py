@@ -23,6 +23,7 @@ class TestLammpsCalcObjFactory(unittest.TestCase):
 		self.dumpOpts = None
 		self.boundaries = None
 		self.walls = None
+		self.eleToTypeIdx = {"O":1}
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -136,10 +137,11 @@ class TestLammpsCalcObjFactory(unittest.TestCase):
 		mockedGetScriptDict.side_effect = lambda *args:expScriptFileDict
 		mockedGetDataDict.side_effect = lambda *args:expDataFileDict
 		mockedCalcObj.side_effect = lambda *args,**kwargs: expCalcObj
+		self.mockGeomObj.eleToTypeIdx = self.eleToTypeIdx
 
 		actCalcObj = self.testObjA.create()
 
-		mockedCalcObj.assert_called_with(self.workFolder, self.fileName, expDataFileDict, expScriptFileDict)
+		mockedCalcObj.assert_called_with(self.workFolder, self.fileName, expDataFileDict, expScriptFileDict,typeIdxToEle={1: 'O'})
 		self.assertEqual(expCalcObj, actCalcObj)
 
 

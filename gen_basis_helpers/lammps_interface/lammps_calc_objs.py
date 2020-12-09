@@ -11,7 +11,7 @@ from ..shared import method_objs as methObjHelp
 
 class LammpsCalcObjStandard(methObjHelp.CalcMethod):
 
-	def __init__(self, baseFolderPath, baseFileName, dataFileOrderedDict, scriptFileOrderedDict):
+	def __init__(self, baseFolderPath, baseFileName, dataFileOrderedDict, scriptFileOrderedDict, typeIdxToEle=None):
 		""" Initializer
 		
 		Args:
@@ -19,6 +19,7 @@ class LammpsCalcObjStandard(methObjHelp.CalcMethod):
 			baseFileName: (str) The name of the base file, i.e. without extensions
 			dataFileOrderedDict: (OrderedDict) Represents the data file, which contains things like geometry. Keys are the headers of that file while vals are the "body" text corresponding to each header
 			scriptFileOrderedDict: (OrderedDict) Represents the script file, which contains all commands for lammps to run an MD simulation
+			typeIdxToEle: (dict) Keys are typeIndices while values are elements these correspond to. Needed to parse geometries which include element identities
 	 
 		Raises:
 			KeyError: writeFile will raise this if the read_data command(key) is not found in the scriptFileOrderedDict
@@ -27,6 +28,7 @@ class LammpsCalcObjStandard(methObjHelp.CalcMethod):
 		self.baseFileName = os.path.splitext(baseFileName)[0]
 		self.dataFileOrderedDict = dataFileOrderedDict
 		self.scriptFileOrderedDict = scriptFileOrderedDict
+		self.typeIdxToEle = typeIdxToEle
 
 	def writeFile(self):
 		pathlib.Path(self.baseFolderPath).mkdir(parents=True, exist_ok=True)
@@ -51,9 +53,15 @@ class LammpsCalcObjStandard(methObjHelp.CalcMethod):
 
 	@property
 	def parsedFile(self):
+		outDict = dict()
 		logPath = os.path.join(self.baseFolderPath,"log.lammps")
+		dumpPath = os.path.join(self.baseFolderPath,"dump.lammpstrj")
+
 		parsedLogFile = lammpsParsers.parseLammpsLogFile(logPath)
-		return types.SimpleNamespace(**parsedLogFile)
+		trajObj = lammpsParsers.getTrajectoryFromLammpsDumpFile(dumpPath, timeStep=parsedLogFile["timestep"], typeIdxToEle=self.typeIdxToEle)
+		outDict["md_thermo_data"] = parsedLogFile["thermo_data"]
+		outDict["md_traj"] = trajObj
+		return types.SimpleNamespace(**outDict)
 
 	@property
 	def scriptFilePath(self):

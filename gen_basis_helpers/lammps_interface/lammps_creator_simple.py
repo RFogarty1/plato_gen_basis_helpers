@@ -28,7 +28,8 @@ class LammpsCalcObjFactorySimple(baseObjs.CalcMethodFactoryBase):
 	def _createFromSelf(self):
 		scriptFileDict = self._getScriptFileDict()
 		dataFileDict = self._getDataFileDict()
-		outObj = calcObjHelp.LammpsCalcObjStandard(self.workFolder, self.fileName, dataFileDict, scriptFileDict)
+		typeIdxToEle = {v:k for k,v in self.lammpsGeomObj.eleToTypeIdx.items()}
+		outObj = calcObjHelp.LammpsCalcObjStandard(self.workFolder, self.fileName, dataFileDict, scriptFileDict, typeIdxToEle=typeIdxToEle)
 		return outObj
 
 	def _getDataFileDict(self):

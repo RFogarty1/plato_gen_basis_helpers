@@ -23,6 +23,7 @@ def parseLammpsLogFile(inpPath):
 	time = [x*timeStep for x in thermoObj.dataDict["step"]]
 	thermoObj.dataDict["time"] = time
 	outDict["thermo_data"] = thermoObj
+	outDict["timestep"] = timeStep
 
 	return outDict
 
@@ -79,6 +80,7 @@ def getTrajectoryFromLammpsDumpFile(inpFile, timeStep=None, typeIdxToEle=None):
  
 	"""
 	fileAsList = _getFileAsListFromInpPath(inpFile)
+	typeIdxToEleToUse = {int(k):v for k,v in typeIdxToEle.items()} if typeIdxToEle is not None else None
 
 	#Remove any blank lines at the end of fileAsList:
 	nBlankLines = 0
@@ -104,11 +106,11 @@ def getTrajectoryFromLammpsDumpFile(inpFile, timeStep=None, typeIdxToEle=None):
 		for step in outObj:
 			step.time = step.step*timeStep
 
-	if typeIdxToEle is not None:
+	if typeIdxToEleToUse is not None:
 		for step in outObj:
 			currCartCoords = step.unitCell.cartCoords
 			for idx,coord in enumerate(currCartCoords):
-				currCartCoords[idx][-1] = typeIdxToEle[ currCartCoords[idx][-1] ]
+				currCartCoords[idx][-1] = typeIdxToEleToUse[ int(currCartCoords[idx][-1]) ]
 			step.unitCell.cartCoords = currCartCoords
 
 	return outObj
