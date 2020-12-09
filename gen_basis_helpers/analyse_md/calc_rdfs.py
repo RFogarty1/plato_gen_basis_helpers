@@ -29,8 +29,8 @@ def getSimpleEleEleRdf(traj, eleA, eleB, distRange, nBins=None):
 	#Check that the range doesnt go beyond L/2, else nonsense results will be given
 	lattParams = traj.trajSteps[0].unitCell.getLattParamsList()
 	if any([x/2<distRange[-1] for x in lattParams]):
-		maxLattParam = max(lattParams)
-		raise ValueError("Maximum range for rdf is L/2 ({}) but {} requested".format( maxLattParam/2, distRange[-1]) )
+		minLattParam = min(lattParams)
+		raise ValueError("Maximum range for rdf is L/2 ({}) but {} requested".format( minLattParam/2, distRange[-1]) )
 
 	#Use MDAnalysis to do the hard work
 	universeObj = mdAnalysisInter.getSimpleAtomicUniverseObjFromTrajObj(traj)
