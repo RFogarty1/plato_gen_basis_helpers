@@ -4,6 +4,7 @@ import itertools as it
 import unittest
 import unittest.mock as mock
 
+import plato_pylib.shared.ucell_class as uCellHelp
 import gen_basis_helpers.analyse_md.traj_core as tCode
 
 class TestTrajInMemory(unittest.TestCase):
@@ -33,6 +34,33 @@ class TestTrajInMemory(unittest.TestCase):
 		self.createTestObjs()
 		objB = self.testObjA
 		self.assertNotEqual(objA, objB)
+
+	@mock.patch("gen_basis_helpers.analyse_md.traj_core.TrajStepBase")
+	def testToDictAndFromDictConsistent(self, mockedTrajStepCls):
+		#Define expected
+		expDictA, expDictB = mock.Mock(), mock.Mock()
+		self.trajStepA, self.trajStepB = mock.Mock(), mock.Mock()
+
+		#Set mock functions appropriately
+		def _fromDictFunct(inpDict):
+			if inpDict==expDictA:
+				return self.trajStepA
+			elif inpDict==expDictB:
+				return self.trajStepB	
+			else:
+				raise ValueError("")
+
+		self.trajStepA.toDict.side_effect = lambda:expDictA
+		self.trajStepB.toDict.side_effect = lambda:expDictB
+		mockedTrajStepCls.fromDict.side_effect = _fromDictFunct
+
+		#Run/compare
+		self.createTestObjs()
+		objA = self.testObjA
+		tempDict = self.testObjA.toDict()
+		objB = tCode.TrajectoryInMemory.fromDict(tempDict)
+		self.assertEqual(objA,objB)
+
 
 class TestTrajStepBase(unittest.TestCase):
 	
@@ -85,4 +113,11 @@ class TestTrajStepBase(unittest.TestCase):
 		self.assertNotEqual(objA, objB)
 		self.assertNotEqual(objB, objA)
 
+	def testToDictAndFromDictConsistent(self):
+		self.unitCell = uCellHelp.UnitCell(lattParams=[1,2,3], lattAngles=[90,90,90])
+		self.createTestObjs()
+		expObj = self.testObjA
+		outDict = self.testObjA.toDict()
+		actObj = tCode.TrajStepBase.fromDict(outDict)
+		self.assertEqual(expObj,actObj)
 
