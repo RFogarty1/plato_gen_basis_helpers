@@ -1,5 +1,7 @@
 
 import json
+import os
+import pathlib
 import plato_pylib.shared.ucell_class as uCellHelp
 
 class TrajectoryBase():
@@ -104,6 +106,8 @@ def dumpTrajObjToFile(trajObj, outFile):
 		outFile: (str) Path to the output file
 	 
 	"""
+	outDir = os.path.split(outFile)[0]
+	pathlib.Path(outDir).mkdir(parents=True, exist_ok=True)
 	with open(outFile,"wt") as f:
 		for step in trajObj:
 			f.write(json.dumps(step.toDict()))
