@@ -96,7 +96,7 @@ class GetWaterBoxForMDFromEmptyBoxStandard():
 	def _getEmptyCellToUseFromInpCell(self, inpCell, waterAdsGap=None):
 		waterAdsGap = self.waterAdsGap if waterAdsGap is None else waterAdsGap
 		outLattParams = [x for x in inpCell.getLattParamsList()]
-		outLattParams[-1] -= self.waterAdsGap*2
+		outLattParams[-1] -= waterAdsGap*2
 		outLattAngles = inpCell.getLattAnglesList()
 		outCell = uCellHelp.UnitCell(lattParams=outLattParams,lattAngles=outLattAngles)
 		return outCell
