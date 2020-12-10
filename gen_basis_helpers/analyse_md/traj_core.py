@@ -132,3 +132,56 @@ def readTrajObjFromFileToTrajectoryInMemory(inpFile):
 
 	return TrajectoryInMemory(outTrajObjs)
 
+def readLastTrajStepFromFile(inpFile):
+	""" Reads only the final trajectory step from a trajectory file (format defined by dumpTrajObjToFile). Faster than reading the whole thing and taking the last step
+	
+	Args:
+		inpFile: (str) Path to the *.traj file
+			 
+	Returns
+		outStep: (TrajStepBase) Contains information (including geometry) for the final step in an MD trajectory
+ 
+	"""
+	with open(inpFile,"rt") as f:
+		line = getFinalNLinesFromFileObj(f)[-1]
+		currDict = json.loads(line)
+		outObj = TrajStepBase.fromDict(currDict)
+	return outObj
+
+
+#Taken from:
+#https://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-similar-to-tail
+#Original function was called tail
+def getFinalNLinesFromFileObj(f, lines=1, _buffer=4098):
+    """Tail a file and get X lines from the end"""
+    # place holder for the lines found
+    lines_found = []
+
+    # block counter will be multiplied by buffer
+    # to get the block size from the end
+    block_counter = -1
+
+    # loop until we find X lines
+    while len(lines_found) < lines:
+        try:
+            f.seek(block_counter * _buffer, os.SEEK_END)
+        except IOError:  # either file is too small, or too many lines requested
+            f.seek(0)
+            lines_found = f.readlines()
+            break
+
+        lines_found = f.readlines()
+
+        # we found enough lines, get out
+        # Removed this line because it was redundant the while will catch
+        # it, I left it for history
+        # if len(lines_found) > lines:
+        #    break
+
+        # decrement the block counter to get the
+        # next X bytes
+        block_counter -= 1
+
+    return lines_found[-lines:]
+
+

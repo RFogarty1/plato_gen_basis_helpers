@@ -1,4 +1,6 @@
 
+import os
+from ..analyse_md import traj_core as trajHelp
 
 def getSingleRecordFromCollectionFromSimpleQuery(collection, queryDict):
 	""" Convenience function for returning a single record from a Mongodb collection when given a query dict
@@ -20,4 +22,41 @@ def getSingleRecordFromCollectionFromSimpleQuery(collection, queryDict):
 
 
 
+def getTrajectoryFromRecord(record, folderKey="md_traj_folder",fileKey="md_traj_file"):
+	""" Gets an MD trajectory from a database record in standard format
+	
+	Args:
+		record: (dict) Record from mongodb
+		folderKey: (str) The key in record which contains a folder
+		fileKey: (str) The key in record which contains the name of the trajectory file
+ 
+	Returns
+		 outTraj: (TrajectoryInMemory object) This object contains all trajectory steps, stored in memory
+ 
+	"""
+	folder = record[folderKey]
+	fileName = record[fileKey]
+	fullPath = os.path.join(folder,fileName)
+	outObj = trajHelp.readTrajObjFromFileToTrajectoryInMemory(fullPath)
+	return outObj
 
+
+def getFinalTrajStepFromRecord(record, folderKey="md_traj_folder",fileKey="md_traj_file"):
+	""" Gets the final recorded step of an MD trajectory from a database record
+	
+	Args:
+		record: (dict) Record from mongodb
+		folderKey: (str) The key in record which contains a folder
+		fileKey: (str) The key in record which contains the name of the trajectory file
+			 
+	Returns
+		 outTraj: (TrajStepBase object) This object contains only the final trajectory step for a file
+ 
+	Raises:
+		 Errors
+	"""
+	folder = record[folderKey]
+	fileName = record[fileKey]
+	fullPath = os.path.join(folder,fileName)
+	outObj = trajHelp.readLastTrajStepFromFile(fullPath)
+	return outObj

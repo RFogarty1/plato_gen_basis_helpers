@@ -33,6 +33,12 @@ class TestTrajInMemoryReadWrite(unittest.TestCase):
 		actObj = tCode.readTrajObjFromFileToTrajectoryInMemory(self.fileNameA)
 		self.assertEqual(expObj, actObj)
 
+	def testReadAndWriteConsistent_readLastStepOnly(self):
+		expObj = self.trajStepB
+		tCode.dumpTrajObjToFile(self.testObjA, self.fileNameA)
+		actObj = tCode.readLastTrajStepFromFile(self.fileNameA)
+		self.assertEqual(expObj,actObj)
+
 
 class TestTrajInMemory(unittest.TestCase):
 	
