@@ -1,4 +1,5 @@
 
+import copy
 import math
 import itertools as it
 import types
@@ -10,6 +11,77 @@ import plato_pylib.shared.ucell_class as uCell
 
 import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 import gen_basis_helpers.shared.cart_coord_utils as tCode
+
+class TestShiftCoordsToLeaveEqualVacAboveAndBelow(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [10,9,8]
+		self.lattAngles = [90,90,90]
+		self.cartCoordsA = [ [5,5,6,"X"],
+		                     [5,5,7,"X"] ]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.testObjA.cartCoords = self.cartCoordsA
+
+	def _loadExpResultForSimpleOrthogonalCell(self):
+		expCoords = [ [5, 5, 3.5, "X"],
+		              [5, 5, 4.5, "X"] ]
+		expCell = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		expCell.cartCoords = expCoords
+		return expCell
+
+	def testExpectedForOrthogonalCell(self):
+		expCell = self._loadExpResultForSimpleOrthogonalCell()
+		tCode.shiftCoordsToLeaveEqualVacAboveAndBelowSurface(self.testObjA)
+		actCell = self.testObjA #works in place
+		self.assertEqual(expCell,actCell)
+
+	def testExpectedForOrthogonalCell_extraVacBelow(self):
+		self.cartCoordsA = [ [5,5,1,"X"],
+		                     [5,5,2,"X"] ]
+		self.createTestObjs()
+		expCell = self._loadExpResultForSimpleOrthogonalCell()
+		tCode.shiftCoordsToLeaveEqualVacAboveAndBelowSurface(self.testObjA)
+		actCell = self.testObjA
+		self.assertEqual(expCell,actCell)
+
+	def testExpectedForNoVacuumCase(self):
+		self.cartCoordsA = [ [5,5,0,"X"],
+		                     [5,5,8,"X"] ]
+		self.createTestObjs()
+		expCell = copy.deepcopy(self.testObjA)
+		tCode.shiftCoordsToLeaveEqualVacAboveAndBelowSurface(self.testObjA)
+		actCell = self.testObjA
+		self.assertEqual(expCell,actCell)
+
+	def testValueErrorIfAtomsOutsideCell(self):
+		self.cartCoordsA = [ [5,5,8,"X"],
+		                     [5,5,9,"X"] ]
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			tCode.shiftCoordsToLeaveEqualVacAboveAndBelowSurface(self.testObjA)
+
+	@unittest.skip("Couldnt be bothered to figure out what the answer should be")
+	def testExpectedValsForNonOrthogCell(self):
+		self.lattParams = [10,10,10]
+		self.lattAngles = [60,90,90]
+		height = 10*math.cos(math.radians(60))
+		self.cartCoordsA = [ [5,5,0.9*height,"X"],
+		                     [5,5,0.8*height,"X"] ]
+		self.createTestObjs()
+		expCoords = [ [5, 5, 0.55*height, "X"],
+		              [5, 5, 0.45*height, "X"] ]
+		expCell = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		expCell.cartCoords = expCoords
+		tCode.shiftCoordsToLeaveEqualVacAboveAndBelowSurface(self.testObjA)
+		actCell = self.testObjA
+		import pdb
+		pdb.set_trace()
+		self.assertEqual(expCell,actCell)
+
+
 
 #Separate lower-level function to get the index
 class TestGetNearestPointFunctions(unittest.TestCase):
@@ -208,5 +280,27 @@ class TestGetClosestDistanceBetweenTwoElements(unittest.TestCase):
 		expDist = 0.2
 		actDist = tCode.getClosestDistanceBetweenTwoElementsForInpCell(self.testCellA, "A", "A")
 		self.assertAlmostEqual(expDist,actDist)
+
+class TestGetHeightOfCell(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [10,9,8]
+		self.lattAngles = [90,90,90]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testCell = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+
+	def testForOrthogonalCell(self):
+		expVal = self.lattParams[-1]
+		actVal = tCode.getHeightOfCell_abSurface(self.testCell)
+		self.assertAlmostEqual(expVal,actVal)
+
+	def testForAlpha60(self):
+		self.lattAngles = [60,90,90]
+		self.createTestObjs()
+		expVal = self.lattParams[-1]*math.sin(math.radians(self.lattAngles[0]))
+		actVal = tCode.getHeightOfCell_abSurface(self.testCell)
+		self.assertAlmostEqual(expVal, actVal)
 
 

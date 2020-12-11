@@ -4,6 +4,8 @@ import math
 
 import numpy as np
 
+from . import simple_vector_maths as vectHelp
+
 class ThreeDimPlaneEquation():
 	""" Class representing a 3-dimension plane equation ax + by +cz = d
 
@@ -94,6 +96,26 @@ class ThreeDimPlaneEquation():
 		assert len(inpXyz) == 3
 		return sum( [param*coord for param,coord in it.zip_longest([self.a,self.b,self.c],inpXyz)] )
 
+
+	
+	def getPointClosestToOrigin(self):
+		""" Returns the point on this plane closest to the origin """
+		coeffs = self.coeffs
+		normVal = 1/( sum([x**2 for x in self.coeffs[:3]]) )
+		outPoint = [x*coeffs[-1]*normVal for x in self.coeffs[:3]]
+
+		#Internal checks; can probably remove later
+		#Firstly check point is expected distance from plane
+		errorTol = 1e-4 #
+		expDist = self.getDistanceOfPointFromPlane([0,0,0])
+		actDist = vectHelp.getLenOneVector(outPoint)
+		if abs(expDist-actDist)>errorTol:
+			raise ValueError("Some mistake in my coding here")
+		#Secondly check point is distance of zero from the plane (i.e. it lies on the plane)
+		if abs( self.getDistanceOfPointFromPlane(outPoint) ) > errorTol:
+			raise ValueError("Some mistake in my coding here")
+
+		return outPoint
 
 	@property
 	def coeffs(self):

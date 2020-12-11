@@ -1,5 +1,6 @@
 
 import copy
+import math
 import itertools as it
 
 import numpy as np
@@ -8,6 +9,81 @@ import plato_pylib.utils.supercell as supCellHelp
 
 from . import plane_equations as planeEqnHelp
 from . import simple_vector_maths as vectHelp
+
+
+
+def getHeightOfCell_abSurface(inpCell):
+	""" Gets the height of a cell with the surface defined in the ab plane. For an orthogonal cell this is just c, else its the distance between top/bottom planes in the cell (<c) for other cells
+	
+	Args:
+		inpCell: (UnitCell object) Contains lattice parameters and angles
+			 
+	Returns
+		 height: (float) Height of the cell
+ 
+	"""
+
+	aVect,bVect,cVect = inpCell.lattVects
+	pointOnTopPlane = cVect
+	bottomPlane = planeEqnHelp.ThreeDimPlaneEquation.fromTwoPositionVectors(aVect,bVect)
+	return bottomPlane.getDistanceOfPointFromPlane(pointOnTopPlane)
+
+
+def shiftCoordsToLeaveEqualVacAboveAndBelowSurface(inpCell):
+	""" Shift cartesian co-ordinates such that top/bottom surface atoms are equal distances from top/bottom of the cell. Note that the surface is defined as the ab plane
+	
+	Args:
+		inpCell: (UnitCell object)
+ 
+	"""
+
+	#Get points on the top/bottom planes of the cell
+	aVect, bVect, cVect = inpCell.lattVects
+	pointOnBotPlane = aVect
+	pointOnTopPlane = [a+c for a,c in zip(aVect,cVect)]
+
+	#Get plane equations for top/bottom atom planes
+	planeEqnTopAtoms = getPlaneEqnForOuterSurfaceAtoms(inpCell)
+	planeEqnBotAtoms = getPlaneEqnForOuterSurfaceAtoms(inpCell, top=False)
+
+	#Check that no atoms are above/below the cell
+	signedDistTopAtomToTopCellPlane = planeEqnTopAtoms.getSignedDistanceOfPointFromPlane(pointOnTopPlane)
+	signedDistBotAtomToBotCellPlane = planeEqnBotAtoms.getSignedDistanceOfPointFromPlane(pointOnBotPlane)
+	errorTol = 1e-2
+	if signedDistTopAtomToTopCellPlane<( -1*errorTol ):
+		raise ValueError("Atoms in inpCell must be contained within cell boundaries")
+	if signedDistBotAtomToBotCellPlane<( -1*errorTol ):
+		raise ValueError("Atoms in inpCell must be contained within cell boundaries")
+
+	#Get the amount of vacuum at the top/bottom of the cell to start with
+	vacTop = planeEqnTopAtoms.getDistanceOfPointFromPlane(pointOnTopPlane)
+	vacBot = planeEqnBotAtoms.getDistanceOfPointFromPlane(pointOnBotPlane)
+	averageVac = (vacTop+vacBot) / 2
+	vacDiff = averageVac - vacTop
+
+	#Figure out the translation vector that gets that diff
+	#-1*vacDiff is because vacDiff works on logic of shiting vacuum, while this function
+	#works on logic of moving surface effectively
+	topSurfNormal = planeEqnTopAtoms.coeffs[:3]
+	transVector = getCVectorCorrespondingToSurfHeightShift(-1*vacDiff, topSurfNormal, cVect)
+
+	#Apply the translation to all cart coords
+	cartCoords = inpCell.cartCoords
+	outCartCoords = list()
+	for coord in cartCoords:
+		currCoord = [x+t for x,t in it.zip_longest(coord[:3],transVector)] + [coord[-1]]
+		outCartCoords.append(currCoord)
+
+	inpCell.cartCoords = outCartCoords
+
+
+#Effectively a backend function, but does get called outside this module so no _
+def getCVectorCorrespondingToSurfHeightShift(heightShift, surfNormal, cVector):
+	theta = vectHelp.getAngleTwoVectors(surfNormal, cVector)
+	unitCVector = vectHelp.getUnitVectorFromInpVector(cVector)
+	lenC = heightShift / math.cos(math.radians(theta))
+	outVector = [lenC*u for u in unitCVector]
+	return outVector
 
 
 #Functions including interfaces to unitCell class
