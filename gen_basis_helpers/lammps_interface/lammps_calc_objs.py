@@ -59,6 +59,12 @@ class LammpsCalcObjStandard(methObjHelp.CalcMethod):
 
 		parsedLogFile = lammpsParsers.parseLammpsLogFile(logPath)
 		trajObj = lammpsParsers.getTrajectoryFromLammpsDumpFile(dumpPath, timeStep=parsedLogFile["timestep"], typeIdxToEle=self.typeIdxToEle)
+
+		#Annoyingly slow, but we need to convert all the parsed units from angstrom to bohr
+		def _convertTrajStepFromAngToBohr(trajStep):
+			trajStep.unitCell.convAngToBohr()
+		trajObj.applyFunctToEachTrajStep( _convertTrajStepFromAngToBohr )
+
 		outDict["md_thermo_data"] = parsedLogFile["thermo_data"]
 		outDict["md_traj"] = trajObj
 		return types.SimpleNamespace(**outDict)
