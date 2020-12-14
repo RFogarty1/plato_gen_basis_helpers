@@ -24,6 +24,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.fragmentsBSSE = None
 		self.runType = None
 		self.printAOMullikenPop = False
+		self.mdOpts = None
 		self.createTestObjs()
 
 	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
@@ -33,7 +34,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        basisObjs=self.basisObj, folderPath=self.workFolder,
 		                                                        fileName=self.fileName, workFolder=None, printAOMullikenPop=self.printAOMullikenPop,
 		                                                        runType=self.runType, fragmentsBSSE=self.fragmentsBSSE, xcFunctional=self.xcFunctional,
-		                                                        grimmeDisp=self.grimmeDisp)
+		                                                        grimmeDisp=self.grimmeDisp, mdOpts=self.mdOpts)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -164,6 +165,15 @@ class TestStandardCreationObj(unittest.TestCase):
 		expArgDict = {"runType".lower():"bsse", "fragmentsBSSE".lower():self.fragmentsBSSE}
 		actArgDict = self.testCreatorObjA._getModDictBasedOnRunType()
 		self.assertEqual(expArgDict, actArgDict)
+
+	def testExpectedExtraMDOptsForMdRun(self):
+		self.runType = "md"
+		self.mdOpts = mock.Mock()
+		expDict = {"fake_key_a":"fake_val_a"}
+		self.mdOpts.optDict = expDict
+		self.createTestObjs()
+		actDict = self.testCreatorObjA._getModDictBasedOnRunType()
+		self.assertEqual(expDict, actDict)
 
 
 #TODO: Probably test atomic positions and cell constraints separately

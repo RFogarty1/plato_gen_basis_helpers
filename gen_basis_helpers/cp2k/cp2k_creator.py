@@ -66,6 +66,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("grimmeDisp")
 	registeredKwargs.add("nonLocalDisp")
 	registeredKwargs.add("surfaceDipoleCorr")
+	registeredKwargs.add("mdOpts")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -247,6 +248,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if runStr.lower() == "bsse":
 			outDict["runType".lower()] = "bsse"
 			outDict["fragmentsBSSE".lower()] = self.fragmentsBSSE
+
+		if runStr.lower() == "md":
+			outDict = self.mdOpts.optDict
 
 		return outDict
 

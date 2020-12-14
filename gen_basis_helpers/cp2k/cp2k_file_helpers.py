@@ -126,6 +126,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnDispNonLocalCorr)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnScfOptDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnSurfDipoleCorrOptDict)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnMolecularDynamicsOptDict)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -220,6 +221,22 @@ def _modCp2kObjBasedOnSurfDipoleCorrOptDict(cp2kObj, useDict):
 
 	if useDict.get("surf_dipole_corr_surfDipoleDir".lower(),None) is not None:
 		dftSection.Surf_dip_dir = useDict["surf_dipole_corr_surfDipoleDir".lower()].upper()
+
+
+def _modCp2kObjBasedOnMolecularDynamicsOptDict(cp2kObj, useDict):
+	mdSection = cp2kObj.CP2K_INPUT.MOTION.MD
+
+	if useDict.get("mdEnsemble".lower(),None) is not None:
+		mdSection.Ensemble = useDict["mdEnsemble".lower()]
+
+	if useDict.get("mdSteps".lower(),None) is not None:
+		mdSection.Steps = useDict["mdSteps".lower()]
+
+	if useDict.get("mdTimeStep".lower(),None) is not None:
+		mdSection.Timestep = useDict["mdTimeStep".lower()]
+
+	if useDict.get("mdTemperature".lower(),None) is not None:
+		mdSection.Temperature = useDict["mdTemperature".lower()]
 
 
 def _attachFunctionToModderInstance(key, function, instance):
