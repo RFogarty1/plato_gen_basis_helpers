@@ -189,11 +189,28 @@ class testModifyCp2kObj(unittest.TestCase):
 
 	def testMDSection(self):
 		kwargDict = {"mdEnsemble":"NVT", "mdSteps":"100",
-		             "mdTimeStep":"0.5", "mdTemperature":"300"}
+		             "mdTimeStep":"0.5", "mdTemperature":"300",
+		             "mdThermostatType":"nose"}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputSimpleMDOptionsA()
 		actStr = self.startCP2KObj.get_input_string()
 		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
+
+	#Random couple of kwargs to do with MD generally
+	def testMiscOptsA(self):
+		kwargDict = {"scfPrintRestart":False, "qsExtrapolationMethod":"LINEAR_P", "walltime":2500}
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
+		expStr = _loadExpectedOutputMiscOptsA()
+		actStr = self.startCP2KObj.get_input_string()
+		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
+
+	def testTrajPrintOptsA(self):
+		kwargDict = {"trajPrintEachMd":50, "trajPrintEachScf":100}
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
+		expStr = _loadExpectedOutputTrajPrintOptsA()
+		actStr = self.startCP2KObj.get_input_string()
+		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
+
 
 def _getDefObjInputStr():
 	defStr = '&GLOBAL\n  PROJECT_NAME cp2k_file\n  PRINT_LEVEL MEDIUM\n  RUN_TYPE ENERGY\n&END GLOBAL\n&FORCE_EVAL\n  METHOD Quickstep\n  &DFT\n    POTENTIAL_FILE_NAME GTH_POTENTIALS\n    BASIS_SET_FILE_NAME BASIS_SET\n    &QS\n      EPS_DEFAULT 1.0E-10\n    &END QS\n    &XC\n      &XC_FUNCTIONAL PBE\n      &END XC_FUNCTIONAL\n    &END XC\n    &KPOINTS\n      SCHEME MONKHORST-PACK 1 1 1\n    &END KPOINTS\n    &MGRID\n      NGRIDS 4\n      REL_CUTOFF [eV] 50000\n      CUTOFF [eV] 5000\n    &END MGRID\n    &SCF\n      SCF_GUESS ATOMIC\n      ADDED_MOS 4\n      EPS_SCF 1.0E-7\n      MAX_SCF 300\n      &MIXING T\n        NBUFFER 8\n        ALPHA 0.4\n        METHOD BROYDEN_MIXING\n      &END MIXING\n      &SMEAR ON\n        ELECTRONIC_TEMPERATURE [K] 157.9\n        METHOD FERMI_DIRAC\n      &END SMEAR\n      &DIAGONALIZATION ON\n        ALGORITHM Standard\n      &END DIAGONALIZATION\n    &END SCF\n  &END DFT\n  &PRINT\n    &FORCES On\n    &END FORCES\n  &END PRINT\n&END FORCE_EVAL\n'
@@ -349,8 +366,35 @@ def _loadExpectedOutputSimpleMDOptionsA():
 	newStr += "    STEPS 100\n"
 	newStr += "    TIMESTEP 0.5\n"
 	newStr += "    TEMPERATURE 300\n"
+	newStr += "    &THERMOSTAT\n"
+	newStr += "      TYPE NOSE\n"
+	newStr += "    &END THERMOSTAT\n"
 	newStr += "  &END MD\n"
 	newStr += "&END MOTION\n"
 	return newStr + outStr 
 
-  
+def _loadExpectedOutputMiscOptsA():
+	outStr = _getDefObjInputStr()
+	newScfPart = "    &SCF\n      &PRINT\n        &RESTART OFF\n        &END RESTART\n      &END PRINT\n"
+	newQsPart = "    &QS\n      EXTRAPOLATION LINEAR_P\n"
+	newGlobalPart = "&GLOBAL\n  WALLTIME 2500\n"
+	outStr = outStr.replace("    &QS\n" ,  newQsPart)
+	outStr = outStr.replace("    &SCF\n", newScfPart)
+	outStr = outStr.replace("&GLOBAL\n", newGlobalPart)
+	return outStr
+
+def _loadExpectedOutputTrajPrintOptsA():
+	outStr = _getDefObjInputStr()
+	newStr = "&MOTION\n"
+	newStr += "  &PRINT\n"
+	newStr += "    &TRAJECTORY\n"
+	newStr += "      &EACH\n"
+	newStr += "        MD 50\n"
+	newStr += "        QS_SCF 100\n"
+	newStr += "      &END EACH\n"
+	newStr += "    &END TRAJECTORY\n"
+	newStr += "  &END PRINT\n"
+	newStr += "&END MOTION\n"
+	return newStr + outStr
+
+

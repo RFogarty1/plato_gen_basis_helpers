@@ -67,6 +67,10 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("nonLocalDisp")
 	registeredKwargs.add("surfaceDipoleCorr")
 	registeredKwargs.add("mdOpts")
+	registeredKwargs.add("walltime")
+	registeredKwargs.add("extrapolationMethod")
+	registeredKwargs.add("print_every_n_md_steps")
+	registeredKwargs.add("print_every_n_scf_steps")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -201,6 +205,15 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if self.surfaceDipoleCorr is not None:
 			currDict = self.surfaceDipoleCorr.modPyCP2KDict
 			modDict.update(currDict)
+		if self.walltime is not None:
+			modDict["walltime"] = self.walltime
+		if self.extrapolationMethod is not None:
+			modDict["qsExtrapolationMethod"] = self.extrapolationMethod
+		if self.print_every_n_md_steps is not None:
+			modDict["trajPrintEachMd"] = self.print_every_n_md_steps
+		if self.print_every_n_scf_steps is not None:
+			modDict["trajPrintEachScf"] =  self.print_every_n_scf_steps
+
 
 		runTypeModDict = self._getModDictBasedOnRunType()
 		modDict.update(runTypeModDict)
@@ -251,6 +264,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 
 		if runStr.lower() == "md":
 			outDict = self.mdOpts.optDict
+			outDict["runType".lower()] = "md"
+			outDict["scfPrintRestart".lower()] = False
 
 		return outDict
 

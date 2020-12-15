@@ -1,4 +1,5 @@
 
+import copy
 import os
 
 import types
@@ -25,6 +26,10 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.runType = None
 		self.printAOMullikenPop = False
 		self.mdOpts = None
+		self.walltime = None
+		self.extrapolationMethod = None
+		self.print_every_n_md_steps = None
+		self.print_every_n_scf_steps = None
 		self.createTestObjs()
 
 	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
@@ -34,7 +39,9 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        basisObjs=self.basisObj, folderPath=self.workFolder,
 		                                                        fileName=self.fileName, workFolder=None, printAOMullikenPop=self.printAOMullikenPop,
 		                                                        runType=self.runType, fragmentsBSSE=self.fragmentsBSSE, xcFunctional=self.xcFunctional,
-		                                                        grimmeDisp=self.grimmeDisp, mdOpts=self.mdOpts)
+		                                                        grimmeDisp=self.grimmeDisp, mdOpts=self.mdOpts, walltime=self.walltime,
+		                                                        extrapolationMethod=self.extrapolationMethod, print_every_n_md_steps=self.print_every_n_md_steps,
+		                                                        print_every_n_scf_steps=self.print_every_n_scf_steps)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -166,14 +173,36 @@ class TestStandardCreationObj(unittest.TestCase):
 		actArgDict = self.testCreatorObjA._getModDictBasedOnRunType()
 		self.assertEqual(expArgDict, actArgDict)
 
+	#TODO: Want scf restart false to go in here always
 	def testExpectedExtraMDOptsForMdRun(self):
 		self.runType = "md"
 		self.mdOpts = mock.Mock()
-		expDict = {"fake_key_a":"fake_val_a"}
-		self.mdOpts.optDict = expDict
+		mdDict = {"fake_key_a":"fake_val_a"}
+		self.mdOpts.optDict = mdDict
+		expDict = copy.deepcopy(mdDict)
+		expDict["runType".lower()] = "md"
+		expDict["scfPrintRestart".lower()] = False
 		self.createTestObjs()
 		actDict = self.testCreatorObjA._getModDictBasedOnRunType()
 		self.assertEqual(expDict, actDict)
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
+	def testExpectedMiscOptsAPassedToFileHelpers(self, mockMethReg, mockFileHelpers):
+		self.walltime = 20
+		self.extrapolationMethod = "fake_extrapolation_method"
+		self.print_every_n_md_steps = 45
+		self.print_every_n_scf_steps = 20
+		self.createTestObjs()
+		expArgDict = {"qsExtrapolationMethod".lower(): self.extrapolationMethod, "walltime": self.walltime,
+		               "trajPrintEachMd".lower(): self.print_every_n_md_steps,
+		               "trajPrintEachScf".lower(): self.print_every_n_scf_steps}
+		self.testCreatorObjA.create()
+		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
+		actArgDict = {k.lower():v for k,v in args[1].items()}
+
+		for key in expArgDict:
+			self.assertEqual( expArgDict[key], actArgDict[key] )
 
 
 #TODO: Probably test atomic positions and cell constraints separately

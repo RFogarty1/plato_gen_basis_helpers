@@ -127,6 +127,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnScfOptDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnSurfDipoleCorrOptDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnMolecularDynamicsOptDict)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnTrajPrintDict)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -238,6 +239,23 @@ def _modCp2kObjBasedOnMolecularDynamicsOptDict(cp2kObj, useDict):
 	if useDict.get("mdTemperature".lower(),None) is not None:
 		mdSection.Temperature = useDict["mdTemperature".lower()]
 
+	if useDict.get("mdThermostatType".lower(),None) is not None:
+		mdSection.THERMOSTAT.Type = useDict["mdThermostatType".lower()].upper()
+
+
+def _modCp2kObjBasedOnTrajPrintDict(cp2kObj, useDict):
+	motionPart = cp2kObj.CP2K_INPUT.MOTION
+	def initIfNeeded():
+		if len(motionPart.PRINT_list)==0:
+			motionPart.PRINT_add()
+
+	if useDict.get("trajPrintEachMd".lower(),None) is not None:
+		initIfNeeded()
+		motionPart.PRINT_list[-1].TRAJECTORY.EACH.Md = str( useDict["trajPrintEachMd".lower()] )
+
+	if useDict.get("trajPrintEachScf".lower(),None) is not None:
+		initIfNeeded()
+		motionPart.PRINT_list[-1].TRAJECTORY.EACH.Qs_scf = str( useDict["trajPrintEachScf".lower()] )
 
 def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)
@@ -334,6 +352,15 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 		else:
 			raise ValueError("Constraining angles to {} is not currently supported".format(angleConstraints))
 
+	if useDict.get("scfPrintRestart".lower(),None) is not None:
+		val = "ON" if useDict["scfPrintRestart".lower()] is True else "OFF"
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.PRINT.RESTART.Section_parameters = val
+
+	if useDict.get("qsExtrapolationMethod".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Extrapolation = useDict["qsExtrapolationMethod".lower()]
+
+	if useDict.get("walltime",None) is not None:
+		cp2kObj.CP2K_INPUT.GLOBAL.Walltime = useDict["walltime"]
 
 	if useDict.get("useSmearing".lower(),True) is False:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.SMEAR.Section_parameters = False
