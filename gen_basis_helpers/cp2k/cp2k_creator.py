@@ -170,7 +170,11 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	def _createOutputObj(self):
 		basicObj = methRegister.createCP2KObjFromMethodStr(self.methodStr)
 		self._modPycp2kObj(basicObj)
-		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=self.saveRestartFile)
+		if self.runType is None:
+			md = False
+		else:
+			md = True if self.runType.lower()=="md" else False
+		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=self.saveRestartFile, md=md)
 		return outputObj
 
 	def _modPycp2kObj(self,pycp2kObj):

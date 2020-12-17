@@ -11,13 +11,14 @@ from . import cp2k_file_helpers as pyCP2KHelpers
 #NOTE: Loads of descriptors are added below (at the bottom of the file)
 class CP2KCalcObj(methodObjs.CalcMethod):
 
-	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=False):
+	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=False, md=False):
 		self.cp2kObj = pycp2kObj
 		if basePath is None:
 			self.basePath = os.path.abspath( os.path.join( os.getcwd(), "cp2k_file" ) )
 		else:
 			self.basePath = os.path.abspath( os.path.splitext(basePath)[0] )
 		self.saveRestartFile = saveRestartFile
+		self.md = md
 	
 	def writeFile(self):
 		self.cp2kObj.project_name = os.path.split(self.basePath)[1]
@@ -52,12 +53,13 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 	def parsedFile(self):
 		parsedDict = parseCP2K.parseCpout(self.outFilePath)
 		outObj = types.SimpleNamespace(**parsedDict)
-		try:
-			outCartCoords = self._getFinalCartCoordsFromOpt()
-			outObj.unitCell.cartCoords = outCartCoords
-		except FileNotFoundError:
-			pass
-		outObj.unitCell.convAngToBohr()
+		if self.md is False:
+			try:
+				outCartCoords = self._getFinalCartCoordsFromOpt()
+				outObj.unitCell.cartCoords = outCartCoords
+			except FileNotFoundError:
+				pass
+			outObj.unitCell.convAngToBohr()
 		return outObj
 
 	def _getFinalCartCoordsFromOpt(self):
