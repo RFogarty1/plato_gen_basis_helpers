@@ -44,6 +44,11 @@ class TestStandardBasisObj(unittest.TestCase):
 		self.assertNotEqual( objA.element, objB.element )
 		self.assertNotEqual(objA,objB)
 
+	def testToDictAndFromDictConsistent(self):
+		expObj = copy.deepcopy( self.testObjA )
+		objDict = self.testObjA.toDict()
+		actObj = tCode.CP2KBasisObjStandard.fromDict(objDict)
+		self.assertEqual(expObj, actObj)
 
 class TestGetGhostVersionsOfInputBasisObjs(unittest.TestCase):
 

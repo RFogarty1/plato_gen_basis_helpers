@@ -127,6 +127,13 @@ class CP2KBasisObjStandard(CP2KBasisObjBase):
 	def kind(self, val):
 		self._kind = val
 
+	def toDict(self):
+		return {k: getattr(self,k) for k in self.allArgs}
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		return cls(**inpDict)
+
 	def __eq__(self,other):
 		for arg in self.allArgs:
 			if getattr(self,arg) != getattr(other,arg):
