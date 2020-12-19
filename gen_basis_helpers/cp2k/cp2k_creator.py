@@ -218,6 +218,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if self.print_every_n_scf_steps is not None:
 			modDict["trajPrintEachScf"] =  self.print_every_n_scf_steps
 
+		modDict["scfPrintRestart".lower()] = False
 
 		runTypeModDict = self._getModDictBasedOnRunType()
 		modDict.update(runTypeModDict)
@@ -269,7 +270,6 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if runStr.lower() == "md":
 			outDict = self.mdOpts.optDict
 			outDict["runType".lower()] = "md"
-			outDict["scfPrintRestart".lower()] = False
 
 		return outDict
 

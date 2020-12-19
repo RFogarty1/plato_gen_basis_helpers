@@ -173,7 +173,6 @@ class TestStandardCreationObj(unittest.TestCase):
 		actArgDict = self.testCreatorObjA._getModDictBasedOnRunType()
 		self.assertEqual(expArgDict, actArgDict)
 
-	#TODO: Want scf restart false to go in here always
 	def testExpectedExtraMDOptsForMdRun(self):
 		self.runType = "md"
 		self.mdOpts = mock.Mock()
@@ -181,7 +180,6 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.mdOpts.optDict = mdDict
 		expDict = copy.deepcopy(mdDict)
 		expDict["runType".lower()] = "md"
-		expDict["scfPrintRestart".lower()] = False
 		self.createTestObjs()
 		actDict = self.testCreatorObjA._getModDictBasedOnRunType()
 		self.assertEqual(expDict, actDict)
