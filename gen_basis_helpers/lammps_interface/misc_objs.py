@@ -65,6 +65,38 @@ class NVTEnsemble(Ensemble):
 			raise ValueError("{} is an invalid value for thermostat".format(self.thermostat))
 
 
+class NPTEnsembleNoseHooverStandard(Ensemble):
+
+	def __init__(self, startTemp, startPressure, pressureDims=None, endTemp=None,  endPressure=None, dampTimeTemp=None, dampTimePressure=None,
+	             numbFmtTime="{:.1f}", numbFmtPressure="{:.1f}", numbFmtTemp="{:.1f}"):
+		self.startTemp = startTemp
+		self.startPressure = startPressure
+		self.pressureDims = "iso" if pressureDims is None else pressureDims
+		self.endTemp = startTemp if endTemp is None else endTemp
+		self.endPressure = startPressure if endPressure is None else endPressure
+		self.dampTimeTemp = dampTimeTemp
+		self.dampTimePressure = dampTimePressure
+		self.numbFmtTime = numbFmtTime
+		self.numbFmtPressure = numbFmtPressure
+		self.numbFmtTemp = numbFmtTemp
+
+	def _checkAttrsValid(self):
+		if self.dampTimePressure is None:
+			raise ValueError("{} is an invalid value for dampTimePressure".format(self.dampTimePressure))
+		if self.dampTimeTemp is None:
+			raise ValueError("{} is an invalid value for dampTimeTemp".format(self.dampTimeTemp))
+
+	@property
+	def fixStr(self):
+		self._checkAttrsValid()
+		startTempStr, endTempStr = [self.numbFmtTemp.format(x) for x in [self.startTemp, self.endTemp]]
+		startPressStr, endPressStr = [self.numbFmtPressure.format(x) for x in [self.startPressure,self.endPressure]]
+		dampTimePress, dampTimeTemp = [self.numbFmtTime.format(x) for x in [self.dampTimePressure,self.dampTimeTemp]]
+		outStrFmt = "all npt temp {sTemp:} {eTemp:} {dampTemp:} {pressDims:} {sPress:} {ePress:} {dampPress:}"
+		outKwargs = {"sTemp":startTempStr, "eTemp":endTempStr, "dampTemp":dampTimeTemp, "pressDims":self.pressureDims,
+		             "sPress":startPressStr, "ePress":endPressStr, "dampPress":dampTimePress }
+		return outStrFmt.format(**outKwargs)
+
 
 class VelocityCreateCommObj():
 

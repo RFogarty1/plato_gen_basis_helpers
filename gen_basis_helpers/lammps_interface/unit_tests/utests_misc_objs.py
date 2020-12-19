@@ -31,6 +31,48 @@ class TestNVTEnsemble(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			self.testObjA.fixStr
 
+
+class TestNPTEnsemble(unittest.TestCase):
+
+	def setUp(self):
+		self.startTemp = 300
+		self.finalTemp = 500
+		self.dampTimeTemp = 200
+		self.pressureDims = "z"
+		self.startPressure  = 10
+		self.endPressure = 20
+		self.dampTimePressure = 2000
+		self.numbFmtTemp = "{:.2f}"
+		self.numbFmtPressure = "{:.2f}"
+		self.numbFmtTime = "{:.2f}"
+		self.numbFmtAll = "{:.2f}"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"pressureDims":self.pressureDims, "endTemp":self.finalTemp,
+		             "endPressure":self.endPressure, "dampTimeTemp":self.dampTimeTemp,
+		             "dampTimePressure":self.dampTimePressure, "numbFmtTime":self.numbFmtTime,
+		             "numbFmtPressure":self.numbFmtPressure, "numbFmtTemp":self.numbFmtTemp}
+		self.testObjA = tCode.NPTEnsembleNoseHooverStandard(self.startTemp, self.startPressure, **kwargDict)
+
+	def testExpStrFromSimpleOptsA(self):
+		expStr = "all npt temp 300.00 500.00 200.00 z 10.00 20.00 2000.00"
+		actStr = self.testObjA.fixStr
+		self.assertEqual(expStr, actStr)
+
+	def testRaiseIfPressureDampTimeNotSet(self):
+		self.dampTimePressure = None
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			self.testObjA.fixStr
+
+	def testRaisesIfTempDampTimeNotSet(self):
+		self.dampTimeTemp = None
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			self.testObjA.fixStr
+
+
 class TestCreateVelocityObj(unittest.TestCase):
 
 	def setUp(self):
