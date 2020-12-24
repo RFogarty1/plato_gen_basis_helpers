@@ -9,6 +9,98 @@ import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.special_builders.fill_box as tCode
 
+
+
+class TestGetCommonTripletOfFactors(unittest.TestCase):
+
+	def setUp(self):
+		self.testVal = 17
+
+	def _runTestFunct(self):
+		return tCode.getCommonTripletOfFactors(self.testVal)
+
+	def testCaseForPrimeNumberA(self):
+		expVals = [ [17,1,1], [1,17,1], [1,1,17] ]
+		actVals = self._runTestFunct()
+		self.assertEqual( sorted(expVals), sorted(actVals) )
+
+	def testCaseForVal4(self):
+		self.testVal = 4
+		expVals = [ [4,1,1], [1,4,1], [1,1,4],
+		            [2,2,1], [1,2,2], [2,1,2] ]
+		actVals = self._runTestFunct()
+		self.assertEqual( sorted(expVals), sorted(actVals) )
+
+	def testForLargerCase(self):
+		self.testVal = 12
+		expVals = [ [12,1,1], [1,12,1], [1,1,12],
+		            [6,2,1], [6,1,2], [2,6,1], [2,1,6], [1,6,2], [1,2,6],
+		            [4,3,1], [4,1,3], [3,4,1], [3,1,4], [1,3,4], [1,4,3],
+		            [3,2,2], [2,3,2], [2,2,3] ]
+		actVals = self._runTestFunct()
+		self.assertEqual( sorted(expVals), sorted(actVals) )
+
+	def testFor24(self):
+		self.testVal = 24
+		expVals = [ [24,1,1], [1,24,1], [1,1,24],
+		            [12,2,1], [12,1,2], [1,12,2], [1,2,12], [2,1,12], [2,12,1],
+		            [8,3,1], [8,1,3], [3,8,1], [3,1,8], [1,3,8], [1,8,3],
+		            [6,4,1], [6,1,4], [1,6,4], [1,4,6], [4,6,1], [4,1,6],
+		            [4,3,2], [4,2,3], [3,2,4], [3,4,2], [2,3,4], [2,4,3], #breakdown of [12,2,1]
+		            [6,2,2], [2,6,2], [2,2,6] ] #Breakdown of [12,2,1]
+
+		actVals = self._runTestFunct()
+		self.assertEqual( sorted(expVals), sorted(actVals) )
+
+	def testForProductThreePrimes(self):
+		self.testVal = 105
+		self.assertEqual( self.testVal, 3*5*7 )
+		expVals = [ [105,1,1], [1,105,1], [1,1,105],
+		            [35,3,1], [35,1,3], [3,35,1], [3,1,35], [1,35,3], [1,3,35],
+		            [21,5,1], [21,1,5], [5,1,21], [5,21,1], [1,5,21], [1,21,5],
+		            [15,7,1], [15,1,7], [7,15,1], [7,1,15], [1,7,15], [1,15,7],
+		            [7,5,3], [7,3,5], [5,7,3], [5,3,7], [3,5,7], [3,7,5] ]  #Breakdown of [35,3,1]/[21,5,1]/[15,7,1]
+
+		actVals = self._runTestFunct()
+		self.assertEqual( sorted(expVals), sorted(actVals) )
+
+class TestMapPrimToInpCellMinimisingAverageLatticeParamDev(unittest.TestCase):
+
+	def setUp(self):
+		self.primLattParamsA = [1,1,1]
+		self.primAnglesA = [90,90,90]
+		self.inpCellLattParamsA = [2,2,12]
+		self.inpCellLattAnglesA = [90,90,90]
+		self.primFractCoordsA = [[0.5,0.5,0.5,"X"],
+		                         [0.7,0.7,0.7,"X"]]
+		self.targNAtoms = 120
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"lattParams":self.primLattParamsA, "lattAngles":self.primAnglesA}
+		self.primCellA = uCellHelp.UnitCell(**currKwargs)
+		self.primCellA.fractCoords = self.primFractCoordsA
+		currKwargs = {"lattParams":self.inpCellLattParamsA, "lattAngles":self.inpCellLattAnglesA}
+		self.inpCellA = uCellHelp.UnitCell(**currKwargs)
+		self.inpCellA.fractCoords = self.primFractCoordsA
+		self.testObjA = tCode.MapPrimToInpCellToMinimiseAverageLatticeParamDeviation()
+
+	#Example comes from a real problem found with old algorithm, whereby a 
+	#5x1x12 cell was constructued which led to ridic. small z-gaps
+	def testGetNumbImagesC_perfectCellMatchGivesOddAbMatch(self):
+		expDims = [2,2,15] # [5,1,12] would be given based purely on old algorithm; which considered match to c lattice vector in isolation
+		actDims = self.testObjA(self.targNAtoms, self.primCellA, self.inpCellA)
+		self.assertEqual(expDims, actDims)
+
+	def testGetNumbImages_multipleDegenerateOptions(self):
+		self.inpCellLattParamsA = [4,2,4]
+		self.targNAtoms = (2)*(4*2*2)
+		self.createTestObjs()
+		expDims = [2,2,4] #
+		actDims = self.testObjA(self.targNAtoms, self.primCellA, self.inpCellA)
+		self.assertEqual(expDims, actDims)
+
+
 class TestStandardGetCartCoordsToFillUpToNAtoms(unittest.TestCase):
 
 	def setUp(self):

@@ -133,7 +133,7 @@ class TestGetWaterBoxForMD(unittest.TestCase):
 		actCell = self.testObjA(self.emptyCellA, self.nWater)
 		self.assertEqual(expCell,actCell)
 
-	@mock.patch("gen_basis_helpers.special_builders.water_box.boxFillHelp.CellFillerStandard")
+	@mock.patch("gen_basis_helpers.special_builders.water_box.boxFillHelp.CellFillerImproved")
 	def testExpectedCallsForSimpleWithAdsGap(self, mockedCellFiller):
 		self.waterAdsGapA = 1
 		self.createTestObjs()

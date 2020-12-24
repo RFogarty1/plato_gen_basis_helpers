@@ -61,22 +61,24 @@ class GetWaterBoxForMDFromEmptyBoxStandard():
 
 	"""
 
-	def __init__(self, primCell, waterAdsObjs, waterAdsGap=0):
+	def __init__(self, primCell, waterAdsObjs, waterAdsGap=0, cellFillerCls=None):
 		""" Initializer
 		
 		Args:
 			waterAdsGap: (float) Gap between an adsorbate layer and bulk water. This gets subtraced from BOTH ends of the cell (so set to 0.5*excludeDist where excludeDist is the total amount you want the cell shortened by)
 			primCell: (plato_pylib UnitCell object) This represents the smallest unit cell of the bulk system with each co-ordinate representing a lattice site (symbol is irrelevant). 
-			waterAdsObjs: (list of Adsorbate objects) The length of this needs to match the length of singleHexCell
+			waterAdsObjs: (list of Adsorbate objects) 
+			cellFillerClass: (Optional) Class (NOT INSTANCE) initiated from primCell and has f(nAtoms, inpCell) Takes an empty cell and a number of lattice sites and fills it with atoms at each lattice site (creates a supercell from primCell) 
 
 		"""
 		self.primCell = primCell
 		self.waterAdsObjs = waterAdsObjs
 		self.waterAdsGap = waterAdsGap
+		self.cellFillerCls = None
 
 
 	def getMDCell(self, emptyCell, numbWater, waterAdsGap=None):
-		cellFiller = boxFillHelp.CellFillerStandard(self.primCell)
+		cellFiller = boxFillHelp.CellFillerImproved(self.primCell) if self.cellFillerCls is None else self.cellFillerCls(self.primCell)
 		outCell = self._getEmptyCellToUseFromInpCell(emptyCell, waterAdsGap=waterAdsGap)
 		lattSites = cellFiller(numbWater, outCell)
 		outCoords = self._getCartCoordsForAdsorbatesAtLattSites(lattSites)
