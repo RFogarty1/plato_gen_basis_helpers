@@ -265,7 +265,16 @@ def _attachFunctionToModderInstance(key, function, instance):
 def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 
 	if useDict.get("kpts",None) is not None:
-		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.KPOINTS.Scheme = "MONKHORST-PACK " + " ".join([str(x) for x in useDict["kpts"]])
+		val = useDict["kpts"]
+		try:
+			lowerCaseVal = val.lower()
+		except AttributeError:
+			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.KPOINTS.Scheme = "MONKHORST-PACK " + " ".join([str(x) for x in val])
+		else:
+			if lowerCaseVal=="none":
+				cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.KPOINTS.Scheme = val
+			else:
+				raise ValueError("{} is an invalid value for kpts".format(val))
 
 	if useDict.get("outdir",None) is not None:
 		cp2kObj.working_directory = os.path.abspath( useDict["outdir"] )
