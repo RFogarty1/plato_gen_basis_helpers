@@ -71,6 +71,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("extrapolationMethod")
 	registeredKwargs.add("print_every_n_md_steps")
 	registeredKwargs.add("print_every_n_scf_steps")
+	registeredKwargs.add("restart_file_every_n_md_steps")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -217,6 +218,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["trajPrintEachMd"] = self.print_every_n_md_steps
 		if self.print_every_n_scf_steps is not None:
 			modDict["trajPrintEachScf"] =  self.print_every_n_scf_steps
+		if self.restart_file_every_n_md_steps is not None:
+			modDict["restartPrintEachMd"] = self.restart_file_every_n_md_steps
 
 		modDict["scfPrintRestart".lower()] = False
 

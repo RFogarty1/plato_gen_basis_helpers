@@ -128,6 +128,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnSurfDipoleCorrOptDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnMolecularDynamicsOptDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnTrajPrintDict)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnRestartPrintDict)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -256,6 +257,18 @@ def _modCp2kObjBasedOnTrajPrintDict(cp2kObj, useDict):
 	if useDict.get("trajPrintEachScf".lower(),None) is not None:
 		initIfNeeded()
 		motionPart.PRINT_list[-1].TRAJECTORY.EACH.Qs_scf = str( useDict["trajPrintEachScf".lower()] )
+
+
+def _modCp2kObjBasedOnRestartPrintDict(cp2kObj, useDict):
+	motionPart = cp2kObj.CP2K_INPUT.MOTION
+
+	def initIfNeeded():
+		if len(motionPart.PRINT_list)==0:
+			motionPart.PRINT_add()
+
+	if useDict.get("restartPrintEachMd".lower(),None) is not None:
+		initIfNeeded()
+		motionPart.PRINT_list[-1].RESTART.EACH.Md = str( useDict["restartPrintEachMd".lower()] )
 
 def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)
