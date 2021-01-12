@@ -31,6 +31,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.print_every_n_md_steps = None
 		self.print_every_n_scf_steps = None
 		self.restart_file_every_n_md_steps = None
+		self.prefDiagLib = None
 		self.createTestObjs()
 
 	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
@@ -43,7 +44,8 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        grimmeDisp=self.grimmeDisp, mdOpts=self.mdOpts, walltime=self.walltime,
 		                                                        extrapolationMethod=self.extrapolationMethod, print_every_n_md_steps=self.print_every_n_md_steps,
 		                                                        print_every_n_scf_steps=self.print_every_n_scf_steps,
-		                                                        restart_file_every_n_md_steps=self.restart_file_every_n_md_steps)
+		                                                        restart_file_every_n_md_steps=self.restart_file_every_n_md_steps,
+		                                                        prefDiagLib=self.prefDiagLib)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -194,11 +196,13 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.print_every_n_md_steps = 45
 		self.print_every_n_scf_steps = 20
 		self.restart_file_every_n_md_steps = 40
+		self.prefDiagLib = "SL"
 		self.createTestObjs()
 		expArgDict = {"qsExtrapolationMethod".lower(): self.extrapolationMethod, "walltime": self.walltime,
 		               "trajPrintEachMd".lower(): self.print_every_n_md_steps,
 		               "trajPrintEachScf".lower(): self.print_every_n_scf_steps,
-		               "restartPrintEachMd".lower(): self.restart_file_every_n_md_steps}
+		               "restartPrintEachMd".lower(): self.restart_file_every_n_md_steps,
+		               "prefDiagLib".lower(): "SL" }
 		self.testCreatorObjA.create()
 		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
 		actArgDict = {k.lower():v for k,v in args[1].items()}

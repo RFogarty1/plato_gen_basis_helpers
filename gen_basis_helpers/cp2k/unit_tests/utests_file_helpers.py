@@ -198,7 +198,7 @@ class testModifyCp2kObj(unittest.TestCase):
 
 	#Random couple of kwargs to do with MD generally
 	def testMiscOptsA(self):
-		kwargDict = {"scfPrintRestart":False, "qsExtrapolationMethod":"LINEAR_P", "walltime":2500}
+		kwargDict = {"scfPrintRestart":False, "qsExtrapolationMethod":"LINEAR_P", "walltime":2500, "prefDiagLib":"sl"}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputMiscOptsA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -383,7 +383,7 @@ def _loadExpectedOutputMiscOptsA():
 	outStr = _getDefObjInputStr()
 	newScfPart = "    &SCF\n      &PRINT\n        &RESTART OFF\n        &END RESTART\n      &END PRINT\n"
 	newQsPart = "    &QS\n      EXTRAPOLATION LINEAR_P\n"
-	newGlobalPart = "&GLOBAL\n  WALLTIME 2500\n"
+	newGlobalPart = "&GLOBAL\n  WALLTIME 2500\n  PREFERRED_DIAG_LIBRARY SL\n"
 	outStr = outStr.replace("    &QS\n" ,  newQsPart)
 	outStr = outStr.replace("    &SCF\n", newScfPart)
 	outStr = outStr.replace("&GLOBAL\n", newGlobalPart)

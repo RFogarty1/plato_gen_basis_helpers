@@ -387,6 +387,12 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 	if useDict.get("useSmearing".lower(),True) is False:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.SMEAR.Section_parameters = False
 
+	if useDict.get("prefDiagLib".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.GLOBAL.Preferred_diag_library = useDict["prefDiagLib".lower()].upper()
+
+	
+
+
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work
