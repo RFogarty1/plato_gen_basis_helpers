@@ -71,3 +71,32 @@ class TestThermoDataStandard(unittest.TestCase):
 		objB = tCode.ThermoDataStandard.fromDict(dictA)
 		self.assertEqual(objA,objB)
 
+
+class TestThermoDataStandard_listLengthsChecker(unittest.TestCase):
+
+	def setUp(self):
+		self.steps = [1,2,3]
+		self.time = [4,5,6]
+		self.eTotal = [7,8,9]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.propDict = {"step":self.steps, "time":self.time, "eTotal":self.eTotal}
+		self.testObjA = tCode.ThermoDataStandard(self.propDict)
+
+	def testReturnsTrueWhenAllListsEqual(self):
+		self.assertTrue( self.testObjA.dataListLengthsAllEqual )
+
+	def testReturnsFalseWhenOneListLonger(self):
+		self.steps.append(4)
+		self.createTestObjs()
+		self.assertFalse( self.testObjA.dataListLengthsAllEqual )
+
+
+
+
+
+
+
+
+

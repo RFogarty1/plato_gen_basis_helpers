@@ -64,11 +64,18 @@ class ThermoDataStandard(ThermoDataInterface):
 	def props(self):
 		return self.dataDict.keys()
 
-
 	def getPropsArray(self, props):
 		inpList = [self.dataDict[prop] for prop in props]
 		outVals = np.array( (inpList) ).transpose()
 		return outVals
+
+	@property
+	def dataListLengthsAllEqual(self):
+		listLengths = [len( self.dataDict[k] ) for k in self.props]
+		if all( [x==listLengths[0] for x in listLengths] ):
+			return True
+		else:
+			return False
 
 	def __eq__(self, other):
 		eqTol = min(self._eqTol, other._eqTol)
@@ -87,7 +94,6 @@ class ThermoDataStandard(ThermoDataInterface):
 		arrayB = other.getPropsArray(ourProps)
 		if np.allclose(arrayA,arrayB, atol=eqTol) is False:
 			return False
-
 
 		return True
 
