@@ -161,3 +161,39 @@ class TestTrajStepBase(unittest.TestCase):
 		actObj = tCode.TrajStepBase.fromDict(outDict)
 		self.assertEqual(expObj,actObj)
 
+
+class TestMergeTrajInMemory(unittest.TestCase):
+
+	def setUp(self):
+		self.stepsA = [1,2,3]
+		self.stepsB = [4,5,6]
+		self.stepsC = [7,8,9]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.trajA = tCode.TrajectoryInMemory( [tCode.TrajStepBase(step=x) for x in self.stepsA] )
+		self.trajB = tCode.TrajectoryInMemory( [tCode.TrajStepBase(step=x) for x in self.stepsB] )
+		self.trajC = tCode.TrajectoryInMemory( [tCode.TrajStepBase(step=x) for x in self.stepsC] )
+		self.trajListA = [self.trajA, self.trajB, self.trajC]
+
+		allSteps = self.stepsA + self.stepsB + self.stepsC
+		self.expTrajStd = tCode.TrajectoryInMemory( [tCode.TrajStepBase(step=x) for x in allSteps] )
+
+	def testExpectedFromMergingWhenAlreadyOrdered(self):
+		expTraj = self.expTrajStd
+		actTraj = tCode.getMergedTrajInMemory(self.trajListA)
+		self.assertEqual(expTraj,actTraj)
+
+	def testExpectedWhenMergingOutOfOrderCases(self):
+		self.trajListA = [self.trajB, self.trajA, self.trajC]
+		expTraj = self.expTrajStd
+		actTraj = tCode.getMergedTrajInMemory(self.trajListA)
+		self.assertEqual(expTraj, actTraj)
+
+	def testRaisesIfTrajectoriesOverlap(self):
+		self.stepsA.append(self.stepsB[-1])
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			tCode.getMergedTrajInMemory(self.trajListA)
+
+

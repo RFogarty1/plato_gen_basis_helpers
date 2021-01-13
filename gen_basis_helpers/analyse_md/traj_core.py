@@ -185,3 +185,50 @@ def getFinalNLinesFromFileObj(f, lines=1, _buffer=4098):
     return lines_found[-lines:]
 
 
+
+def getMergedTrajInMemory(trajList):
+	""" Returns a TrajectoryInMemory which is the merge of trajectories in trajList
+	
+	Args:
+		trajList: (iter of TrajectoryInMemory objects)
+			 
+	Returns
+		outTraj: (TrajectoryInMemory) Contains all the ordered trajectories in trajList
+ 
+	WARNING:
+		This function doesnt involve COPYING anything, since that would be too inefficient for many typical cases. Thus modifying the output from this function will also modify the trajSteps in trajList.
+
+	Raises:
+		 ValueError: If step numbers in trajList overlap between two trajectories (e.g. if theres a "step 5" in two of the input trajectories)
+	"""
+	#Step 1 = order by step number
+
+	startSteps = [ min(x.trajSteps,key=lambda a:a.step).step for x in trajList ]
+	endSteps = [ max(x.trajSteps, key=lambda a:a.step).step for x in trajList ]
+
+#	startSteps = min([x for x in trajList], key=lambda x: x.trajSteps.step)
+#	endSteps = max([x for x in trajList], key=lambda x: x.trajSteps.step)
+
+	orderedIdxVsStartSteps = sorted( [x for x in enumerate(startSteps)], key=lambda x:x[1] )
+
+	orderedTrajs = list()
+	stepIndices = list()
+
+	for idx,unused in orderedIdxVsStartSteps:
+		orderedTrajs.append( trajList[idx] )
+		stepIndices.append( startSteps[idx] )
+		stepIndices.append( endSteps[idx] )
+
+
+	#Step 2 = Deal with overlapping steps between trajectories
+	for idx,unused in enumerate(stepIndices[1:],start=1):
+		if (stepIndices[idx]-stepIndices[idx-1]) < 1:
+			stepA, stepB = stepIndices[idx-1], stepIndices[idx] 
+			raise ValueError("Overlapping trajectories appear; the problem is in steps {} and {}".format(stepA, stepB))
+
+	#Step 3 = create a new object with merged trajectories
+	outTrajSteps = list()
+	for currTraj in orderedTrajs:
+		outTrajSteps.extend( currTraj.trajSteps )
+
+	return TrajectoryInMemory(outTrajSteps)
