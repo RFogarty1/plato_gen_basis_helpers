@@ -161,7 +161,9 @@ class TestTrajStepBase(unittest.TestCase):
 		actObj = tCode.TrajStepBase.fromDict(outDict)
 		self.assertEqual(expObj,actObj)
 
-
+#Tough case:
+# [  [1,3], [4,8], [5,7] ] -> [ [1,3], [4,8] ] BUT very tough to pull off
+# Alternatively, I could just raise in that case
 class TestMergeTrajInMemory(unittest.TestCase):
 
 	def setUp(self):
@@ -190,10 +192,18 @@ class TestMergeTrajInMemory(unittest.TestCase):
 		actTraj = tCode.getMergedTrajInMemory(self.trajListA)
 		self.assertEqual(expTraj, actTraj)
 
-	def testRaisesIfTrajectoriesOverlap(self):
+	def testRaisesIfTrajectoriesOverlap_overlapStratNone(self):
 		self.stepsA.append(self.stepsB[-1])
 		self.createTestObjs()
 		with self.assertRaises(ValueError):
-			tCode.getMergedTrajInMemory(self.trajListA)
+			tCode.getMergedTrajInMemory(self.trajListA, overlapStrat=None)
+
+	def testExpectedStepsWithUnitOverlap_overlapStratSimple(self):
+		self.stepsA.append(4)
+		self.createTestObjs()
+		expSteps = [1,2,3,4,5,6,7,8,9]
+		expTraj = tCode.TrajectoryInMemory( [tCode.TrajStepBase(step=x) for x in expSteps] )
+		actTraj = tCode.getMergedTrajInMemory(self.trajListA, overlapStrat="simple")
+		self.assertEqual(expTraj,actTraj)
 
 

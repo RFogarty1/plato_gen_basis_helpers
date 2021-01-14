@@ -94,9 +94,38 @@ class TestThermoDataStandard_listLengthsChecker(unittest.TestCase):
 
 
 
+class TestMergingThermoDataStandard(unittest.TestCase):
 
+	def setUp(self):
+		self.stepsA = [0,5]
+		self.stepsB = [10,15]
+		self.tempA = [200,210]
+		self.tempB = [220,230]
+		self.overlapStrat = None
+		self.createTestObjs()
 
+	def createTestObjs(self):
+		kwargDictA = {"step":self.stepsA, "temp":self.tempA}
+		kwargDictB = {"step":self.stepsB, "temp":self.tempB}
+		self.thermoObjA = tCode.ThermoDataStandard(kwargDictA)
+		self.thermoObjB = tCode.ThermoDataStandard(kwargDictB)
+		self.dataList = [self.thermoObjA, self.thermoObjB]
 
+	def testExpectedFromMergingOrderedStructs(self):
+		expKwargDict = {"step": self.stepsA + self.stepsB,
+		                "temp": self.tempA + self.tempB}
+		expObj = tCode.ThermoDataStandard( expKwargDict )
+		actObj = tCode.getMergedStandardThermoData( self.dataList, overlapStrat=self.overlapStrat )
+		self.assertEqual(expObj,actObj)
 
+	def testRaisesIfPropsNotTheSame(self):
+		self.dataList[1].dataDict["fake_prop"] = list()
+		with self.assertRaises(ValueError):
+			tCode.getMergedStandardThermoData( self.dataList, overlapStrat=self.overlapStrat )
+
+	def testRaisesIfDataListsNotAllTheSame(self):
+		self.stepsB.append(20)
+		with self.assertRaises(AssertionError):
+			tCode.getMergedStandardThermoData( self.dataList, overlapStrat=self.overlapStrat )
 
 

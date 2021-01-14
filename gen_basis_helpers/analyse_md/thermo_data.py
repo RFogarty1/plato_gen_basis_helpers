@@ -1,6 +1,9 @@
 
 import numpy as np
 
+from . import shared_misc as miscHelp
+
+
 class ThermoDataInterface():
 	""" Goal  of this object is to store thermodynamic data (e.g. pressure/temperature) for varying steps in the simulation
 
@@ -98,5 +101,53 @@ class ThermoDataStandard(ThermoDataInterface):
 		return True
 
 
+
+def getMergedStandardThermoData(dataList, overlapStrat="simple"):
+	""" Returns a ThermoDataStandard object made by merging those in dataList
+	
+	Args:
+		dataList: (iter of ThermoDataStandard objs) They should all have the same properties
+		overlapStrat: Keyword for how to deal with overlapping steps; details handled by miscHelp.getSlicesForMergingTrajectories	
+ 
+	Returns
+		 outData: Single ThermoDataStandard object. Note we DONT COPY ANY DATA. Thus, care should be taken if objects in dataList are kept around
+ 
+	"""
+
+	#Step 1 = order by step number.
+	startSteps = [ min(x.dataDict["step"]) for x in dataList ]
+	endSteps = [ max(x.dataDict["step"]) for x in dataList ]
+
+	orderedIdxVsStartSteps = sorted( [x for x in enumerate(startSteps)], key=lambda x:x[1] )
+
+	orderedTrajs = list()
+	stepIndices = list()
+
+	for idx,unused in orderedIdxVsStartSteps:
+		orderedTrajs.append( dataList[idx] )
+		stepIndices.append( (startSteps[idx],endSteps[idx]) )
+
+	nSteps = [len(x.dataDict["step"]) for x in orderedTrajs]
+
+
+	#Step 1.5 - check all ThermoData is consistent
+	if not all(  [set(x.props)==set(dataList[0].props) for x in orderedTrajs] ):
+		raise ValueError("Not all objects in datalist have the same .prop values")
+	for obj in dataList:
+		assert obj.dataListLengthsAllEqual
+
+
+	#Step 2 = figure out based on step number
+	stepSlices = miscHelp.getSlicesForMergingTrajectories(stepIndices, nSteps, overlapStrat=overlapStrat)
+
+	#Step 3 = create a new object with merged trajectories
+	outKwargDict = dict()
+	for prop in orderedTrajs[0].props:
+		currArray = list()
+		for thermoObj,stepSlice in zip(orderedTrajs,stepSlices):
+			currArray.extend( thermoObj.dataDict[prop][slice(*stepSlice)] )
+		outKwargDict[prop] = currArray
+
+	return ThermoDataStandard(outKwargDict)
 
 

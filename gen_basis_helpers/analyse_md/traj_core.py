@@ -4,6 +4,8 @@ import os
 import pathlib
 import plato_pylib.shared.ucell_class as uCellHelp
 
+from . import shared_misc as miscHelp
+
 class TrajectoryBase():
 	"""Object representing the total trajectory of a simulation. Main job is to yield a generator/iterable of TrajStepBase objects
 
@@ -186,12 +188,16 @@ def getFinalNLinesFromFileObj(f, lines=1, _buffer=4098):
 
 
 
-def getMergedTrajInMemory(trajList):
+def getMergedTrajInMemory(trajList, overlapStrat="simple"):
 	""" Returns a TrajectoryInMemory which is the merge of trajectories in trajList
 	
 	Args:
 		trajList: (iter of TrajectoryInMemory objects)
-			 
+		mergeStrat: (str or None) How to handle the cases where some steps are present in multiple trajectories. None means just throw an error if this is the case
+
+	mergeStrat values:
+		"simple": Allows the start step of one trajectory to be EQUAL or greater than the end step of the previous. For example for steps=[0,5], [5,10] we use step 5 from only the second object 
+ 
 	Returns
 		outTraj: (TrajectoryInMemory) Contains all the ordered trajectories in trajList
  
@@ -199,15 +205,11 @@ def getMergedTrajInMemory(trajList):
 		This function doesnt involve COPYING anything, since that would be too inefficient for many typical cases. Thus modifying the output from this function will also modify the trajSteps in trajList.
 
 	Raises:
-		 ValueError: If step numbers in trajList overlap between two trajectories (e.g. if theres a "step 5" in two of the input trajectories)
+		 ValueError: If step numbers in trajList overlap between two trajectories (e.g. if theres a "step 5" in two of the input trajectories) AND mergestrat=None
 	"""
-	#Step 1 = order by step number
-
+	#Step 1 = order by step number.
 	startSteps = [ min(x.trajSteps,key=lambda a:a.step).step for x in trajList ]
 	endSteps = [ max(x.trajSteps, key=lambda a:a.step).step for x in trajList ]
-
-#	startSteps = min([x for x in trajList], key=lambda x: x.trajSteps.step)
-#	endSteps = max([x for x in trajList], key=lambda x: x.trajSteps.step)
 
 	orderedIdxVsStartSteps = sorted( [x for x in enumerate(startSteps)], key=lambda x:x[1] )
 
@@ -216,19 +218,16 @@ def getMergedTrajInMemory(trajList):
 
 	for idx,unused in orderedIdxVsStartSteps:
 		orderedTrajs.append( trajList[idx] )
-		stepIndices.append( startSteps[idx] )
-		stepIndices.append( endSteps[idx] )
+		stepIndices.append( (startSteps[idx],endSteps[idx]) )
 
+	nSteps = [len(traj.trajSteps) for traj in orderedTrajs]
 
 	#Step 2 = Deal with overlapping steps between trajectories
-	for idx,unused in enumerate(stepIndices[1:],start=1):
-		if (stepIndices[idx]-stepIndices[idx-1]) < 1:
-			stepA, stepB = stepIndices[idx-1], stepIndices[idx] 
-			raise ValueError("Overlapping trajectories appear; the problem is in steps {} and {}".format(stepA, stepB))
+	stepSlices = miscHelp.getSlicesForMergingTrajectories(stepIndices, nSteps, overlapStrat=overlapStrat)
 
 	#Step 3 = create a new object with merged trajectories
 	outTrajSteps = list()
-	for currTraj in orderedTrajs:
-		outTrajSteps.extend( currTraj.trajSteps )
+	for stepSlice,currTraj in zip(stepSlices,orderedTrajs):
+		outTrajSteps.extend( currTraj.trajSteps[slice(*stepSlice)] )
 
 	return TrajectoryInMemory(outTrajSteps)
