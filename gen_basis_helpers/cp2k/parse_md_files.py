@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 
 import plato_pylib.parseOther.parse_cp2k_files as parseCP2KHelp
 import plato_pylib.shared.ucell_class as uCellHelp
@@ -9,6 +10,27 @@ import plato_pylib.shared.unit_convs as uConvHelp
 import gen_basis_helpers.analyse_md.thermo_data as thermoDataHelp
 import gen_basis_helpers.analyse_md.traj_core as trajHelp
 
+
+def parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths, xyzPaths):
+	outDict = dict()
+
+	#1) Get all the dicts
+	parsedDicts = list()
+	for cpoutPath, xyzPath in it.zip_longest(cpoutPaths, xyzPaths):
+		currDict = parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath)
+		parsedDicts.append(currDict)
+
+	#2) Merge all the trajectories
+	allTraj = [ currDict["trajectory"] for currDict in parsedDicts ]
+	mergedTraj = trajHelp.getMergedTrajInMemory(allTraj)
+	outDict["trajectory"] = mergedTraj
+
+	#3) Merge the thermo data
+	allThermoData = [currDict["thermo_data"] for currDict in parsedDicts]
+	mergedThermo = thermoDataHelp.getMergedStandardThermoData(allThermoData)
+	outDict["thermo_data"] = mergedThermo
+
+	return outDict
 
 def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath):
 	outDict = parseCpoutForMDJob(cpoutPath)
@@ -71,6 +93,8 @@ def _parseMDInitSection(fileAsList, lineIdx):
 			outDict["eKinetic"] = float( currLine.strip().split()[-1] )*haToEv
 		if "TEMPERATURE" in currLine:
 			outDict["temp"] = float( currLine.strip().split()[-1] )
+		if "INITIAL PRESSURE[bar]" in currLine:
+			outDict["pressure"] = float( currLine.strip().split()[-1] )
 
 		lineIdx+=1
 

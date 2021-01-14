@@ -12,6 +12,70 @@ import gen_basis_helpers.analyse_md.thermo_data as thermoHelp
 import gen_basis_helpers.cp2k.parse_md_files as tCode
 
 
+
+class TestParseMultipleCP2kFull(unittest.TestCase):
+
+	def setUp(self):
+		self.stepsA = [1,2]
+		self.stepsB = [3,4]
+		self.testXyzPaths = ["fake_xyz_path_a","fake_xyz_path_b"]
+		self.testCpoutPaths = ["fake_cpout_path_a", "fake_cpout_path_b"]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.thermoDataA = thermoHelp.ThermoDataStandard( {"step":self.stepsA} )
+		self.thermoDataB = thermoHelp.ThermoDataStandard( {"step":self.stepsB} )
+		self.trajA = trajHelp.TrajectoryInMemory( [trajHelp.TrajStepBase(step=x) for x in self.stepsA] )
+		self.trajB = trajHelp.TrajectoryInMemory( [trajHelp.TrajStepBase(step=x) for x in self.stepsB] )
+		self.retDictA = {"trajectory":self.trajA, "thermo_data":self.thermoDataA}
+		self.retDictB = {"trajectory":self.trajB, "thermo_data":self.thermoDataB}
+
+		self.expThermoData = thermoHelp.ThermoDataStandard( {"step":self.stepsA + self.stepsB} )
+		self.expTraj = trajHelp.TrajectoryInMemory(  [trajHelp.TrajStepBase(step=x) for x in self.stepsA+self.stepsB] )
+		self.expDictA = {"trajectory":self.expTraj, "thermo_data":self.expThermoData}
+
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseFullMdInfoFromCpoutAndXyzFilePaths")
+	def testExpectedResultGivenA(self, mockedParseCpoutAndXyz):
+		def fake_parser(inpCpout, inpXyz):
+			if (inpCpout == self.testCpoutPaths[0]) and (inpXyz == self.testXyzPaths[0]):
+				return self.retDictA
+			elif (inpCpout == self.testCpoutPaths[1]) and (inpXyz == self.testXyzPaths[1]):
+				return self.retDictB
+			else:
+				return None
+
+
+		mockedParseCpoutAndXyz.side_effect = fake_parser
+		actResult = tCode.parseMdInfoFromMultipleCpoutAndXyzPaths(self.testCpoutPaths, self.testXyzPaths)
+
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0])
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1])
+
+		for key in self.expDictA:
+			self.assertEqual( self.expDictA[key], actResult[key] )	
+
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseFullMdInfoFromCpoutAndXyzFilePaths")
+	def testExpectedWhenOrderSwitched(self, mockedParseCpoutAndXyz):
+		def fake_parser(inpCpout, inpXyz):
+			if (inpCpout == self.testCpoutPaths[0]) and (inpXyz == self.testXyzPaths[0]):
+				return self.retDictA
+			elif (inpCpout == self.testCpoutPaths[1]) and (inpXyz == self.testXyzPaths[1]):
+				return self.retDictB
+			else:
+				return None
+
+		mockedParseCpoutAndXyz.side_effect = fake_parser
+		self.testCpoutPaths = [x for x in reversed(self.testCpoutPaths)]
+		self.testXyzPaths = [x for x in reversed(self.testXyzPaths)]
+		actResult = tCode.parseMdInfoFromMultipleCpoutAndXyzPaths(self.testCpoutPaths, self.testXyzPaths)
+
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0])
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1])
+
+		for key in self.expDictA:
+			self.assertEqual( self.expDictA[key], actResult[key] )	
+
+
 class TestParseCp2kMdFull(unittest.TestCase):
 
 	def setUp(self):
