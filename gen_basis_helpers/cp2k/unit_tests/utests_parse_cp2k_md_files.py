@@ -90,7 +90,7 @@ class TestParseInitMDThermoSection(unittest.TestCase):
 
 	def testExpectedSectionA(self):
 		expEndIdx = 11
-		expDict = {"lattAngles":[90,90,120], "lattParams":[6.04,6.04,9.77]}
+		expDict = {"lattAngles":[90,90,120], "lattParams":[x*uConvHelp.BOHR_TO_ANG for x in [6.04,6.04,9.77]]}
 		actDict, actEndIdx = tCode._parseMDInitSection(self.fileAsListA, self.startIdxA)
 		expCell = uCellHelp.UnitCell(lattParams=expDict["lattParams"], lattAngles=expDict["lattAngles"])
 		actCell = uCellHelp.UnitCell(lattParams=actDict["lattParams"], lattAngles=actDict["lattAngles"])

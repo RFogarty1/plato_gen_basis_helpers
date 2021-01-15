@@ -83,7 +83,7 @@ def _parseMDInitSection(fileAsList, lineIdx):
 			break
 		if "INITIAL CELL LNTHS[bohr]" in currLine:
 			splitLine = currLine.strip().split()
-			outDict["lattParams"] = [float(x) for x in splitLine[-3:]]
+			outDict["lattParams"] = [float(x)*uConvHelp.BOHR_TO_ANG for x in splitLine[-3:]]
 		if "INITIAL CELL ANGLS[deg]" in currLine:
 			splitLine = currLine.strip().split()
 			outDict["lattAngles"] = [float(x) for x in splitLine[-3:]]
