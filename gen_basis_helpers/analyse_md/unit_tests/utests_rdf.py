@@ -9,6 +9,38 @@ import plato_pylib.shared.ucell_class as uCellHelp
 import gen_basis_helpers.analyse_md.traj_core as trajHelp
 import gen_basis_helpers.analyse_md.calc_rdfs as tCode
 
+
+class TestStaticGroupToGroupRdf(unittest.TestCase):
+
+	def setUp(self):
+		self.oxyDistA = 2
+		self.oxyDistB = 4
+		self.nBins = 2
+		self.range = [0,6]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = _getWaterDimerCellFromOxygenOxygenSep(self.oxyDistA)
+		self.cellB = _getWaterDimerCellFromOxygenOxygenSep(self.oxyDistB)
+		trajA = trajHelp.TrajStepBase(unitCell=self.cellA, step=0)
+		trajB = trajHelp.TrajStepBase(unitCell=self.cellB, step=50)
+		self.trajObj = trajHelp.TrajectoryInMemory([trajA,trajB])
+
+	def testExpectedEleEleRdfGiven(self):
+		""" Check we get the expected ele-ele rdf when using group definitions """
+		indicesGroupA = [0,1,2,3]
+		indicesGroupB = [4,5]
+		expRdf = tCode.getSimpleEleEleRdf(self.trajObj, "O", "H", self.range, nBins=self.nBins)
+		actRdf = tCode.getStaticGroupToGroupRdf(self.trajObj, indicesGroupA, indicesGroupB, self.range, nBins=self.nBins)
+		self.assertEqual(expRdf,actRdf)
+
+	def testRaisesIfGroupsOverlap(self):
+		indicesGroupA = [4,5]
+		indicesGroupB = [4,5]
+		with self.assertRaises(ValueError):
+			tCode.getStaticGroupToGroupRdf(self.trajObj, indicesGroupA, indicesGroupB, self.range, nBins=self.nBins)
+
+
 class TestEleToEleRdfWaterDimer(unittest.TestCase):
 
 	def setUp(self):
@@ -19,22 +51,11 @@ class TestEleToEleRdfWaterDimer(unittest.TestCase):
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		self.cellA = self._getCellFromOxyDist(self.oxyDistA)
-		self.cellB = self._getCellFromOxyDist(self.oxyDistB)
+		self.cellA = _getWaterDimerCellFromOxygenOxygenSep(self.oxyDistA)
+		self.cellB = _getWaterDimerCellFromOxygenOxygenSep(self.oxyDistB)
 		trajA = trajHelp.TrajStepBase(unitCell=self.cellA, step=0)
 		trajB = trajHelp.TrajStepBase(unitCell=self.cellB, step=50)
 		self.trajObj = trajHelp.TrajectoryInMemory([trajA,trajB])
-
-	def _getCellFromOxyDist(self, oxyDist):
-		outCell = uCellHelp.UnitCell(lattParams=[30,30,30], lattAngles=[90,90,90])
-		outCoords = [ [14, 14, 14        ,"H"],
-		              [13, 13, 13        ,"H"],
-		              [16, 16, 16        ,"H"],
-		              [17, 17, 17        ,"H"],
-		              [15, 15, 15        ,"O"],
-		              [15, 15, 15+oxyDist,"O"] ]
-		outCell.cartCoords = outCoords
-		return outCell
 
 	def testExpectedRdfForWaterDimerInLargeBoxTwoSnapshots_twoBins(self):
 		#Construct the expected object (need to 2x check we know what boxes MDAnalysis will choose)
@@ -56,6 +77,16 @@ class TestEleToEleRdfWaterDimer(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			outObj = tCode.getSimpleEleEleRdf(self.trajObj, "O", "O", self.range)
 
+def _getWaterDimerCellFromOxygenOxygenSep(oxyDist):
+		outCell = uCellHelp.UnitCell(lattParams=[30,30,30], lattAngles=[90,90,90])
+		outCoords = [ [14, 14, 14        ,"H"],
+		              [13, 13, 13        ,"H"],
+		              [16, 16, 16        ,"H"],
+		              [17, 17, 17        ,"H"],
+		              [15, 15, 15        ,"O"],
+		              [15, 15, 15+oxyDist,"O"] ]
+		outCell.cartCoords = outCoords
+		return outCell
 
 class TestRdfBinnedResultsClass(unittest.TestCase):
 

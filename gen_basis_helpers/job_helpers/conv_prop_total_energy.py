@@ -22,7 +22,7 @@ class CodeSpecificStandardInputCreatorTemplate(baseCreator.CreatorWithResetableK
 	registeredKwargs.add("mapConvValToNumber") #Only needed if the convergence values arent single numbers
 	registeredKwargs.add("baseCreatorObj")
 	registeredKwargs.add("convVals")
-	registeredKwargs.add("modCreatorFunct")
+#	registeredKwargs.add("modCreatorFunct")
 	registeredKwargs.add("convKwarg")
 
 	def _createFromSelf(self):
