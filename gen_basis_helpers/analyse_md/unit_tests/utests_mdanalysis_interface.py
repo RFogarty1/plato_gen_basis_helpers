@@ -106,3 +106,31 @@ class TestGetMemoryReaderFromTrajObj(unittest.TestCase):
 		cartListB = [x[:3] for x in self.cartCoordsB]
 		outArray = np.array( [np.array(cartListA), np.array(cartListB)] )
 		return outArray
+
+
+class TestAddMassesToUniverseObj(unittest.TestCase):
+
+	def setUp(self):
+		self.atomNames = ["H","O","H","H","O"]
+		self.massDict = {"H":2, "O":7}
+		self.universeObj = mock.Mock()
+		self.createTestObjs()
+
+	def _runTestFunct(self):
+		tCode.addMassesToUniverseObj(self.universeObj, eleToMassDict=self.massDict)
+
+	def createTestObjs(self):
+		self.universeObj.atoms.names = self.atomNames
+
+	def testExpectedMassesPassedA(self):
+		expVals = [2,7,2,2,7]
+		self._runTestFunct()
+		self.universeObj.add_TopologyAttr.assert_called_with("masses", values=expVals)
+
+	def testExpectedWhenUsingLowerCaseDict(self):
+		self.massDict = {"h":2, "o":7}
+		expVals = [2,7,2,2,7]
+		self._runTestFunct()
+		self.universeObj.add_TopologyAttr.assert_called_with("masses", values=expVals)
+
+
