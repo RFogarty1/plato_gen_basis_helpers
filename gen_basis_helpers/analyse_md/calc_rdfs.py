@@ -30,22 +30,11 @@ def getStaticGroupToGroupRdf(traj, indicesA, indicesB, distRange, nBins=None):
 	if anySharedIndices:
 		raise ValueError("indicesA and indicesB must not contain overlapping values")
 
-	#Get group selections
-	selectArgsA = list()
-	selectArgsB = list()
-
-	for idx in indicesA:
-		currComm = "index {}".format(idx)
-		selectArgsA.append(currComm)
-
-	for idx in indicesB:
-		currComm = "index {}".format(idx)
-		selectArgsB.append(currComm)
-
 	#Convert to MDAnalysis format(TODO: Probably want an option to skip this step and just pass a Universe Trajectory in)
 	universeObj = mdAnalysisInter.getSimpleAtomicUniverseObjFromTrajObj(traj)
-	groupA = universeObj.select_atoms(*selectArgsA)
-	groupB = universeObj.select_atoms(*selectArgsB)
+	groupA = mdAnalysisInter.getSelectAtomsObjFromIndices(universeObj, indicesA)
+	groupB = mdAnalysisInter.getSelectAtomsObjFromIndices(universeObj, indicesB)
+
 
 	#Calculate the rdf
 	rdfObj = rdfHelp.InterRDF(groupA, groupB, nbins=nBins, range=distRange)

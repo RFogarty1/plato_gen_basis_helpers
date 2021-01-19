@@ -98,3 +98,10 @@ def getMDAMemoryReaderTrajFromTrajInMemoryObj(trajObj):
 	outObj = mdAnalysisLib.coordinates.memory.MemoryReader( np.array(outGeomArrays), dimensions=outGeomDims )
 	return outObj
 
+
+def getSelectAtomsObjFromIndices(uniObj, atomIndices):
+	selectArgs = list()
+	for idx in atomIndices:
+		currComm = "index {}".format(idx)
+		selectArgs.append(currComm)
+	return uniObj.select_atoms(*selectArgs)
