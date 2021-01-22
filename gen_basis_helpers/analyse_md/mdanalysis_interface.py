@@ -105,3 +105,14 @@ def getSelectAtomsObjFromIndices(uniObj, atomIndices):
 		currComm = "index {}".format(idx)
 		selectArgs.append(currComm)
 	return uniObj.select_atoms(*selectArgs)
+
+#Note: This has to be cast to float32 currently to work with the pbc-mapping used
+#(which i imagine is an optimised C-function)
+def getMDAnalysisDimsFromUCellObj(inpCell, dtype=None):
+	dtype = np.float32 if dtype is None else dtype
+	lattParams = inpCell.getLattParamsList()
+	lattAngles = inpCell.getLattAnglesList()
+	return np.array( lattParams + lattAngles, dtype=dtype)
+
+
+
