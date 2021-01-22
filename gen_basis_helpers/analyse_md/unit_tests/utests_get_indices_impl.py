@@ -32,3 +32,60 @@ class TestGetSurfaceIndicesStandard(unittest.TestCase):
 		self.assertEqual(expIndices, actIndices)
 
 
+
+class TestGetWaterMoleculeIndicesStandard(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [10,10,10]
+		self.lattAngles = [90,90,90]
+		self.coordsA = [ [5,5,5,"O"],
+		                 [5,6,6,"H"],
+		                 [5,4,6,"H"],
+		                 [1,1,8,"O"],
+		                 [9,9,1,"O"] ]
+
+		#Parameters for the "molecule finder"
+		self.minOH = 0.5
+		self.maxOH = 2.0
+		self.minAngle = 40
+		self.maxAngle = 50
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=[10,10,10], lattAngles=[90,90,90])
+		self.cellA.cartCoords = self.coordsA
+
+		kwargDict = {"minOH":self.minOH, "maxOH":self.maxOH, "minAngle":self.minAngle, "maxAngle":self.maxAngle}
+		self.testObjA = tCode.GetWaterMoleculeIndicesFromGeomStandard(**kwargDict)
+
+	def _runTestFunct(self):
+		return self.testObjA.getIndicesFromInpGeom(self.cellA)
+
+	def testExpected_pbcsNotImportant(self):
+		expOutput = [ [0,1,2] ]
+		actOutput = self._runTestFunct()
+		self.assertEqual(expOutput, actOutput)
+
+	def testExpected_pbcsImportant(self):
+		self.coordsA[0][-2] += self.lattParams[-1]
+		self.createTestObjs()
+		expOutput = [ [0,1,2] ]
+		actOutput = self._runTestFunct()
+		self.assertEqual(expOutput, actOutput)
+
+	def testExpected_angleWrong(self):
+		self.minAngle = 90
+		self.maxAngle = 150
+		self.createTestObjs()
+		expOutput = list()
+		actOutput = self._runTestFunct()
+		self.assertEqual(expOutput,actOutput)
+
+
+
+
+
+
+
+
