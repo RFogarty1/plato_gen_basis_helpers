@@ -76,3 +76,39 @@ class TestCalcSingleAngle(unittest.TestCase):
 		self.assertAlmostEqual(expVal, actVal, places=5)
 
 
+class TestGetNearestImageNebCoords(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [10,10,10]
+		self.lattAngles = [90,90,90]
+		self.coordA = [7,7,7]
+		self.coordB = [7,7,8]
+		self.cartToFractMatrix = None
+		self.fractToCartMatrix = None
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testCell = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		
+	def _runTestFunct(self):
+		kwargs = {"cartToFractMatrix":self.cartToFractMatrix, "fractToCartMatrix":self.fractToCartMatrix}
+#		return tCode.getNearestImageNebCoordsBasic(self.testCell, self.coordA, self.coordB,**kwargs) 
+		return tCode.getNearestImageNebCoordsBasic(self.testCell, self.coordA, self.coordB) 
+
+	def _checkExpAndActCoordsEqual(self, exp, act):
+		self.assertEqual( len(exp), len(act) )
+		for e,a in zip(exp,act):
+			self.assertAlmostEqual(e,a)
+
+	def testSimpleCaseWherePBCsIrrelevant(self):
+		expCoord = self.coordB
+		actCoord = self._runTestFunct()
+		self._checkExpAndActCoordsEqual(expCoord,actCoord)
+
+	def testWhenPBCsMatter(self):
+		self.coordB[-1] += self.lattParams[-1]*-2
+		self.createTestObjs()
+		expCoord = [7,7,8]
+		actCoord = self._runTestFunct()
+		self._checkExpAndActCoordsEqual(expCoord,actCoord)
+
