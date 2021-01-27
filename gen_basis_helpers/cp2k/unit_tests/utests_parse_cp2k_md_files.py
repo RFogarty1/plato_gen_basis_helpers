@@ -73,6 +73,8 @@ class TestParseInitMDThermoSection(unittest.TestCase):
 	def createTestObjs(self):
 		self.fileAsListA = self._loadFileStrA().split("\n")
 		self.startIdxA = 1
+		self.fileAsListB = self._loadFileStrB().split("\n")
+		self.startIdxB = 1
 
 	def _loadFileStrA(self):
 		return """
@@ -88,6 +90,26 @@ class TestParseInitMDThermoSection(unittest.TestCase):
  ******************************** GO CP2K GO! **********************************
 """
 
+	def _loadFileStrB(self):
+		return """
+ MD_INI| MD initialization
+ MD_INI| Potential energy [hartree]                          -0.108668546338E+04
+ MD_INI| Kinetic energy [hartree]                             0.332040588744E+00
+ MD_INI| Temperature [K]                                              300.000000
+ MD_INI| Cell volume [bohr^3]                                 1.928240693936E+04
+ MD_INI| Cell volume [ang^3]                                  2.857357871329E+03
+ MD_INI| Cell lengths [bohr]      1.81980613E+01  1.81980613E+01  6.72326712E+01
+ MD_INI| Cell lengths [ang]       9.62999926E+00  9.62999927E+00  3.55779973E+01
+ MD_INI| Cell angles [deg]        9.00000000E+01  9.00000000E+01  1.20000000E+02
+
+"""
+
+	def _loadExpDictB(self):
+		outDict = {"lattAngles":[90,90,120], "lattParams":[x*uConvHelp.BOHR_TO_ANG for x in [18.1980613,18.1980613,67.2326712]],
+		           "ePot": -0.108668546338E+04*uConvHelp.RYD_TO_EV*2, "eKinetic":0.332040588744*uConvHelp.RYD_TO_EV*2,
+		           "temp": 300.000000}
+		return outDict
+
 	def testExpectedSectionA(self):
 		expEndIdx = 11
 		expDict = {"lattAngles":[90,90,120], "lattParams":[x*uConvHelp.BOHR_TO_ANG for x in [6.04,6.04,9.77]]}
@@ -96,6 +118,20 @@ class TestParseInitMDThermoSection(unittest.TestCase):
 		actCell = uCellHelp.UnitCell(lattParams=actDict["lattParams"], lattAngles=actDict["lattAngles"])
 		self.assertEqual(expEndIdx, actEndIdx)
 		self.assertEqual(expCell,actCell)
+
+	def testExpectedSectionB(self):
+		expEndIdx = 10
+		expDict = self._loadExpDictB()
+		actDict, actEndIdx = tCode._parseMDInitSection_secondFmt(self.fileAsListB, self.startIdxB)
+
+		self.assertEqual(expEndIdx, actEndIdx)
+		#Compare expected and actual dicts
+		expCell = uCellHelp.UnitCell(lattParams=expDict["lattParams"], lattAngles=expDict["lattAngles"])
+		actCell = uCellHelp.UnitCell(lattParams=actDict["lattParams"], lattAngles=actDict["lattAngles"])
+		self.assertEqual(expCell, actCell)
+		expFloatKeys = ["ePot", "eKinetic", "temp"]
+		for key in expFloatKeys:
+			self.assertAlmostEqual( expDict[key], actDict[key] )
 
 
 class TestParseMdStepGenInfo(unittest.TestCase):

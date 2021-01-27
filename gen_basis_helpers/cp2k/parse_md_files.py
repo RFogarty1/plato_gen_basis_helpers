@@ -57,8 +57,13 @@ def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath):
 
 	return outDict
 
-def parseCpoutForMDJob(outFile, parser=None):
+def parseCpoutForMDJob(outFile, parser=None, raiseIfTerminateFlagMissing=False):
 	parser = _getStandardCpoutMDParser() if parser is None else parser
+	if raiseIfTerminateFlagMissing is False:
+		def _setTerminateFlagToTrue(instance):
+			instance.outDict["terminate_flag_found"] = True
+		parser.finalStepsFunctions.append(_setTerminateFlagToTrue)
+
 	fileAsList = parseCP2KHelp._getFileAsListFromInpFile(outFile)
 	outDict = parser.getOutDictFromFileAsList(fileAsList)
 	return outDict
@@ -67,7 +72,9 @@ def _getStandardCpoutMDParser():
 	outObj = parseCP2KHelp.CpoutFileParser()
 	outObj = parseCP2KHelp.CpoutFileParser( )
 	parseCP2KHelp._addSearchWordAndFunctToParserObj("GO CP2K GO", _parseMDInitSection, outObj, handleParsedDictFunct=_mdInitSectionParseDictHandler)
-	parseCP2KHelp._addSearchWordAndFunctToParserObj("ENSEMBLE TYPE                =", _parseMdStepInfo, outObj, handleParsedDictFunct=_mdStepsParseDictHandler)
+	parseCP2KHelp._addSearchWordAndFunctToParserObj("MD_INI| MD initialization", _parseMDInitSection_secondFmt, outObj, handleParsedDictFunct=_mdInitSectionParseDictHandler)
+	parseCP2KHelp._addSearchWordAndFunctToParserObj("STEP NUMBER", _parseMdStepInfo, outObj, handleParsedDictFunct=_mdStepsParseDictHandler)
+	parseCP2KHelp._addSearchWordAndFunctToParserObj("Step number", _parseMdStepInfo, outObj, handleParsedDictFunct=_mdStepsParseDictHandler)
 	outObj.finalStepsFunctions.append(_mdStepsFinalStepFunct)
 	return outObj
 
@@ -101,6 +108,32 @@ def _parseMDInitSection(fileAsList, lineIdx):
 	return outDict, lineIdx+1
 
 
+def _parseMDInitSection_secondFmt(fileAsList, lineIdx):
+	outDict = dict()
+	lineIdx += 1
+	haToEv = uConvHelp.RYD_TO_EV*2
+
+	while lineIdx <len(fileAsList):
+		currLine = fileAsList[lineIdx]
+		if "MD_INI" not in currLine:
+			break
+		if "Cell lengths [bohr]" in currLine:
+			splitLine = currLine.strip().split()
+			outDict["lattParams"] = [float(x)*uConvHelp.BOHR_TO_ANG for x in splitLine[-3:]]
+		if "Cell angles [deg]" in currLine:
+			splitLine = currLine.strip().split()
+			outDict["lattAngles"] = [float(x) for x in splitLine[-3:]]
+		if "Potential energy [hartree]" in currLine:
+			outDict["ePot"] = float( currLine.strip().split()[-1] )*haToEv
+		if "Kinetic energy [hartree]" in currLine:
+			outDict["eKinetic"] = float( currLine.strip().split()[-1] )*haToEv
+		if "Temperature [K]" in currLine:
+			outDict["temp"] = float( currLine.strip().split()[-1] )
+		lineIdx += 1
+
+	return outDict, lineIdx
+
+
 def _mdInitSectionParseDictHandler(parserInstance, outDict):
 	cellDict = {"lattParams": outDict["lattParams"], "lattAngles": outDict["lattAngles"]}
 	initCell = uCellHelp.UnitCell(**cellDict)
@@ -114,6 +147,9 @@ def _mdInitSectionParseDictHandler(parserInstance, outDict):
 	parserInstance.outDict["traj_geoms"] = list()
 
 def _mdStepsParseDictHandler(parserInstance, outDict):
+#	import pdb
+#	pdb.set_trace()
+
 	#1) Deal with the thermal info stuff
 	possibleKeysThermo = ["ePot", "eKinetic", "pressure", "step", "time", "temp"]
 
@@ -161,24 +197,24 @@ def _parseMdStepInfo(fileAsList, lineIdx):
 
 	haToEv = uConvHelp.RYD_TO_EV*2
 	while lineIdx<len(fileAsList):
-		currLine = fileAsList[lineIdx]
+		currLine = fileAsList[lineIdx].upper()
 		if endStr in currLine:
 			break
-		if "POTENTIAL ENERGY[hartree]" in currLine:
+		if "POTENTIAL ENERGY" in currLine:
 			outDict["ePot"] = float(currLine.strip().split()[-2])*haToEv
-		if "KINETIC ENERGY [hartree]" in currLine:
+		if "KINETIC ENERGY" in currLine:
 			outDict["eKinetic"] = float(currLine.strip().split()[-2])*haToEv
-		if "PRESSURE [bar]" in currLine:
+		if "PRESSURE" in currLine:
 			outDict["pressure"] = float(currLine.strip().split()[-2])
 		if "STEP NUMBER" in currLine:
 			outDict["step"] = int(currLine.strip().split()[-1])
-		if "TIME [fs]" in currLine:
+		if "TIME [FS]" in currLine:
 			outDict["time"] = float(currLine.strip().split()[-1])
 		if "TEMPERATURE [K]" in currLine:
 			outDict["temp"] = float(currLine.strip().split()[-2])
-		if "CELL LNTHS[bohr]             " in currLine:
+		if "CELL LNTHS[BOHR]             " in currLine:
 			outDict["lattParams"] = [float(x) for x in currLine.strip().split()[-3:]]
-		if "CELL ANGLS[deg]" in currLine: 
+		if "CELL ANGLS[DEG]" in currLine: 
 			outDict["lattAngles"] = [float(x) for x in currLine.strip().split()[-3:]]
 		lineIdx += 1
 
