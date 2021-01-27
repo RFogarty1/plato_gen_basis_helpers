@@ -43,12 +43,8 @@ def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath):
 		for key in outDict["thermo_data"].dataDict:
 			outDict["thermo_data"].dataDict[key].insert(0, outDict["init_thermo_dict"][key])
 
-	assert len(outSteps)==len(outDict["trajectory"].trajSteps)
-	for tStep, xyzStep in zip(outDict["trajectory"].trajSteps, outSteps):
-		if tStep.step == xyzStep["step"]:
-			tStep.unitCell.cartCoords = xyzStep["coords"]
-		else:
-			raise ValueError("Step number mismatch between cpout and xyz files: tStep.step = {} but xyzStep[\"step\"] = {}".format(tStep.step,xyzStep["step"]))
+
+	outDict["trajectory"] = _getMergedTrajectoryFromParsedCpoutAndXyz(outDict, outSteps)
 
 	assert outDict["thermo_data"].dataListLengthsAllEqual
 
@@ -56,6 +52,32 @@ def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath):
 	outDict.pop("init_md_cell")
 
 	return outDict
+
+#Also modifies in place
+#Relies on step numbers being in order for both parsedCpout and parsedXyz
+def _getMergedTrajectoryFromParsedCpoutAndXyz(parsedCpout, parsedXyz):
+	trajCpout, trajXyz = parsedCpout["trajectory"].trajSteps, parsedXyz
+	outList = list()
+
+	assert len(trajXyz)<=len(trajCpout)
+
+	idxCpout, idxXyz = 0, 0
+
+	#Will throw an index error if we reach the end of cpout without finding the expected unit cell
+	while idxXyz<len(parsedXyz):
+		while idxCpout<len(trajCpout):
+			if (trajCpout[idxCpout].step == parsedXyz[idxXyz]["step"]):
+				trajCpout[idxCpout].unitCell.cartCoords = parsedXyz[idxXyz]["coords"]
+				outList.append( trajCpout[idxCpout] )
+				break
+			else:
+				idxCpout+=1
+
+		idxXyz+=1
+
+	return trajHelp.TrajectoryInMemory( outList )
+
+
 
 def parseCpoutForMDJob(outFile, parser=None, raiseIfTerminateFlagMissing=False):
 	parser = _getStandardCpoutMDParser() if parser is None else parser

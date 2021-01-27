@@ -1,11 +1,11 @@
 
 import copy
-
-import plato_pylib.shared.ucell_class as uCellHelp
-
+import itertools as it
 import unittest
 import unittest.mock as mock
+import types
 
+import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.analyse_md.traj_core as trajHelp
 import gen_basis_helpers.analyse_md.thermo_data as thermoHelp
@@ -76,6 +76,7 @@ class TestParseMultipleCP2kFull(unittest.TestCase):
 			self.assertEqual( self.expDictA[key], actResult[key] )	
 
 
+#See also TestGetMergedTrajectoryCpoutAndXyz
 class TestParseCp2kMdFull(unittest.TestCase):
 
 	def setUp(self):
@@ -165,21 +166,6 @@ class TestParseCp2kMdFull(unittest.TestCase):
 
 	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCp2kMdXyzFile")
 	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCpoutForMDJob")
-	def testRaisesWhenTrajAndThermoStepNumbersDiffer(self, mockedParseCpout, mockedParseXyz):
-		#Modify
-		self.parsedXyz[1]["step"] = self.parsedXyz[1]["step"] + 1
-
-		#Set mocks
-		expCpoutPath, expXyzPath = "fake_cpout_path", "fake_xyz_path"
-		mockedParseCpout.side_effect = lambda *args,**kwargs: self.parsedCpout
-		mockedParseXyz.side_effect = lambda *args,**kwargs: self.parsedXyz
-
-		with self.assertRaises(ValueError):
-			tCode.parseFullMdInfoFromCpoutAndXyzFilePaths(expCpoutPath, expXyzPath)
-
-
-	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCp2kMdXyzFile")
-	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCpoutForMDJob")
 	def testRaisesWhenNumberOfStepsDiffer(self, mockedParseCpout, mockedParseXyz):
 		#Set mocks
 		expCpoutPath, expXyzPath = "fake_cpout_path", "fake_xyz_path"
@@ -188,6 +174,37 @@ class TestParseCp2kMdFull(unittest.TestCase):
 		self.parsedXyz.append( copy.deepcopy(self.parsedXyz[0]) )
 		with self.assertRaises(AssertionError):
 			tCode.parseFullMdInfoFromCpoutAndXyzFilePaths(expCpoutPath, expXyzPath)
+
+
+class TestGetMergedTrajectoryCpoutAndXyz(unittest.TestCase):
+
+	def setUp(self):
+		self.stepsCpout = [1, 2  , 3  , 4  ,5]
+		self.timesCpout = [2, 2.5, 4  , 5  ,6]
+		self.stepsXyz = [1,3,5]
+		self.timesXyz = [2,4,6]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cartXyz   = [mock.Mock() for x in range(len(self.stepsXyz))]
+		self.cellCpout = [mock.Mock() for x in range(len(self.stepsCpout))]
+		self.cpoutTSteps = [types.SimpleNamespace(step=s, time=t, unitCell=g) for s,t,g in zip(self.stepsCpout, self.timesCpout, self.cellCpout)]
+		self.parsedCpoutA = { "trajectory": trajHelp.TrajectoryInMemory(self.cpoutTSteps) }
+		self.parsedXyz = [ {"step":s, "time":t, "coords":g} for s,t,g in zip(self.stepsXyz, self.timesXyz, self.cartXyz) ]
+
+	def testExpected_parsedXyzHasLessSteps(self):
+		outObj = tCode._getMergedTrajectoryFromParsedCpoutAndXyz(self.parsedCpoutA, self.parsedXyz)
+
+		self.assertEqual( len(outObj.trajSteps), len(self.stepsXyz) )
+		expModified = [self.cpoutTSteps[idx] for idx in [0,2,4]]
+		for trajStep, cart in it.zip_longest(expModified, self.cartXyz):
+			self.assertEqual(trajStep.unitCell.cartCoords,cart)
+
+
+
+
+
+
 
 
 
