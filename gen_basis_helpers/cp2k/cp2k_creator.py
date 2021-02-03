@@ -74,6 +74,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("restart_file_every_n_md_steps")
 	registeredKwargs.add("prefDiagLib")
 	registeredKwargs.add("epsDef")
+	registeredKwargs.add("nGrids")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -227,6 +228,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["prefDiagLib"] = self.prefDiagLib
 		if self.epsDef is not None:
 			modDict["epsDef"] = self.epsDef
+		if self.nGrids is not None:
+			modDict["nGrids"] = self.nGrids
 
 		modDict["scfPrintRestart".lower()] = False
 

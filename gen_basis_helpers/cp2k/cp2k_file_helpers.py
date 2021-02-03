@@ -301,6 +301,9 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 	if useDict.get("gridCutRel".lower()) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.MGRID.Rel_cutoff = "[eV] " + str(useDict["gridCutRel".lower()])
 
+	if useDict.get("nGrids".lower()) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.MGRID.Ngrids = useDict.get("nGrids".lower())
+
 	if useDict.get("basisfile") is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Basis_set_file_name = useDict["basisfile"]
 
