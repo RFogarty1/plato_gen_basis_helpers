@@ -11,7 +11,7 @@ from . import cp2k_file_helpers as pyCP2KHelpers
 #NOTE: Loads of descriptors are added below (at the bottom of the file)
 class CP2KCalcObj(methodObjs.CalcMethod):
 
-	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=False, md=False):
+	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=True, md=False):
 		self.cp2kObj = pycp2kObj
 		if basePath is None:
 			self.basePath = os.path.abspath( os.path.join( os.getcwd(), "cp2k_file" ) )

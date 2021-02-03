@@ -177,7 +177,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			md = False
 		else:
 			md = True if self.runType.lower()=="md" else False
-		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=self.saveRestartFile, md=md)
+		keepRestartFile = True if self.saveRestartFile is None else self.saveRestartFile #Usually not ever written, so passing False can cause issues (attempt to rm a non-existent file can throw an error)
+		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=keepRestartFile, md=md)
 		return outputObj
 
 	def _modPycp2kObj(self,pycp2kObj):
