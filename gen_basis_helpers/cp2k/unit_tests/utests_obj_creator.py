@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 import os
 
 import types
@@ -220,9 +221,8 @@ class TestStandardCreationObj(unittest.TestCase):
 #TODO: Probably test atomic positions and cell constraints separately
 class TestModDictBasedOnGeomConstraints(unittest.TestCase):
 
-
 	def runTestFunct(self):
-		return tCode.getCP2KModDictBasedOnGeomConstraints(self.testConstrObj)
+		return tCode.getGeoOptCP2KModDictBasedOnCellConstraints(self.testConstrObj.cellConstraints)
 
 	def testNoConstraintsPresent(self):
 		expDict = {"runType".lower():"cell_opt"} #Full optimisation, all variables free
@@ -256,5 +256,32 @@ class TestModDictBasedOnGeomConstraints(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			self.runTestFunct()
 
-		
+
+class TestGetCP2KModDictBasedOnAtomicPosConstraints(unittest.TestCase):
+
+	def setUp(self):
+		self.atomsToFix = [0,1,2,3] #NOTE: We want to convert these into index-1 form
+		self.componentsToFix = ["X","XY","XYZ","Z"]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.geomConstrA = geomConstr.GeomConstraints.initWithNoConstraints()
+		atomicCartConstr = list()
+		for idx, comps in it.zip_longest(self.atomsToFix, self.componentsToFix):
+			fixX = True if "X" in comps else False
+			fixY = True if "Y" in comps else False
+			fixZ = True if "Z" in comps else False
+			currConstr = geomConstr.AtomicCartesianConstraint(idx, fixX=fixX, fixY=fixY, fixZ=fixZ)
+			atomicCartConstr.append(currConstr)
+		self.geomConstrA.atomicPositionConstraints.atomicCartConstraints = atomicCartConstr
+
+	def _runTestFunct(self):
+		return tCode._getModDictBasedOnAtomicPosConstraints(self.geomConstrA.atomicPositionConstraints)
+
+	def testExpectedDictA(self):
+		expDict = {"atPosConstraint_fixIdxPositions":[x+1 for x in self.atomsToFix],
+		           "atPosConstraint_fixComponents":self.componentsToFix}
+		actDict = self._runTestFunct()
+		self.assertEqual(expDict, actDict)
+
 

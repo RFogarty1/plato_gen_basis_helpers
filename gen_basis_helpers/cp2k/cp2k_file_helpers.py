@@ -129,6 +129,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnMolecularDynamicsOptDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnTrajPrintDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnRestartPrintDict)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnAtomicConstraints)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -269,6 +270,23 @@ def _modCp2kObjBasedOnRestartPrintDict(cp2kObj, useDict):
 	if useDict.get("restartPrintEachMd".lower(),None) is not None:
 		initIfNeeded()
 		motionPart.PRINT_list[-1].RESTART.EACH.Md = str( useDict["restartPrintEachMd".lower()] )
+
+
+def _modCp2kObjBasedOnAtomicConstraints(cp2kObj, useDict):
+	constraintPart = cp2kObj.CP2K_INPUT.MOTION.CONSTRAINT
+
+#	def initIfNeeded():
+#		if len(constraintPart.FIXED_ATOMS_list)==0:
+#			constraintPart.FIXED_ATOMS_add()
+
+	fixedIndices = useDict.get("atPosConstraint_fixIdxPositions".lower(), None)
+	if fixedIndices is not None:
+		fixComponents = useDict.get("atPosConstraint_fixComponents".lower())
+		assert len(fixedIndices)==len(fixComponents)
+		for indices, comps in zip(fixedIndices, fixComponents):
+			constraintPart.FIXED_ATOMS_add()
+			constraintPart.FIXED_ATOMS_list[-1].List = indices
+			constraintPart.FIXED_ATOMS_list[-1].Components_to_fix = comps
 
 def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)

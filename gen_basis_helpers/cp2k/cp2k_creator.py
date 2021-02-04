@@ -230,6 +230,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["epsDef"] = self.epsDef
 		if self.nGrids is not None:
 			modDict["nGrids"] = self.nGrids
+		if self.geomConstraints is not None:
+			currDict = _getModDictBasedOnAtomicPosConstraints(self.geomConstraints.atomicPositionConstraints)
+			modDict.update(currDict)
 
 		modDict["scfPrintRestart".lower()] = False
 
@@ -273,7 +276,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			if self.geomConstraints is None:
 				outDict["runType".lower()] = "cell_opt" #Later, may need to pass geo_opt (or similar) if constraints set a certain way
 			else:
-				geomOptDict = getCP2KModDictBasedOnGeomConstraints(self.geomConstraints)
+				geomOptDict = getGeoOptCP2KModDictBasedOnCellConstraints(self.geomConstraints.cellConstraints)
 				outDict.update(geomOptDict)
 
 		if runStr.lower() == "bsse":
@@ -286,14 +289,14 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 
 		return outDict
 
-
-def getCP2KModDictBasedOnGeomConstraints(geomConstraints):
+#TODO: Make this specific to the geom_opt case; use something else for general constraints (i.e. just make this for CELL constraints)
+def getGeoOptCP2KModDictBasedOnCellConstraints(cellConstraints):
 	outDict = dict()
-	if geomConstraints.constraintsPresent is False:
+	if cellConstraints.constraintsPresent is False:
 		outDict["runtype"] = "cell_opt"
 		return outDict
 
-	outDict = _getModDictBasedOnCellConstraints(geomConstraints.cellConstraints)
+	outDict = _getModDictBasedOnCellConstraints(cellConstraints)
 
 	if outDict == dict():
 		raise ValueError("Cant handle geomConstraints object")
@@ -309,4 +312,28 @@ def _getModDictBasedOnCellConstraints(cellConstraints):
 		outDict["geo_constrain_cell_angles"] = [True,True,True] #Constrain all angles case
 		outDict["runtype"] = "cell_opt"
 	return outDict
+
+
+def _getModDictBasedOnAtomicPosConstraints(atomicConstraints):
+	if len(atomicConstraints.atomicCartConstraints) == 1:
+		return dict()
+
+	def _getCompStrFromCartConstraint(cartConstr):
+		outStr = ""
+		if cartConstr.fixX:
+			outStr += "X"
+		if cartConstr.fixY:
+			outStr += "Y"
+		if cartConstr.fixZ:
+			outStr += "Z"
+		return outStr
+
+	outIndices, outComponents = list(), list()
+	for constr in atomicConstraints.atomicCartConstraints:
+		outIndices.append( constr.atomIdx+1 ) #zero-indexing to 1-indexing
+		outComponents.append( _getCompStrFromCartConstraint(constr) )
+
+	return {"atPosConstraint_fixIdxPositions":outIndices, "atPosConstraint_fixComponents":outComponents}
+
+
 
