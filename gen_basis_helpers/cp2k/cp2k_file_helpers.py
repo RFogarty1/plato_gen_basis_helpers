@@ -130,6 +130,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnTrajPrintDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnRestartPrintDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnAtomicConstraints)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnCollectiveVariables)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -275,10 +276,6 @@ def _modCp2kObjBasedOnRestartPrintDict(cp2kObj, useDict):
 def _modCp2kObjBasedOnAtomicConstraints(cp2kObj, useDict):
 	constraintPart = cp2kObj.CP2K_INPUT.MOTION.CONSTRAINT
 
-#	def initIfNeeded():
-#		if len(constraintPart.FIXED_ATOMS_list)==0:
-#			constraintPart.FIXED_ATOMS_add()
-
 	fixedIndices = useDict.get("atPosConstraint_fixIdxPositions".lower(), None)
 	if fixedIndices is not None:
 		fixComponents = useDict.get("atPosConstraint_fixComponents".lower())
@@ -287,6 +284,14 @@ def _modCp2kObjBasedOnAtomicConstraints(cp2kObj, useDict):
 			constraintPart.FIXED_ATOMS_add()
 			constraintPart.FIXED_ATOMS_list[-1].List = indices
 			constraintPart.FIXED_ATOMS_list[-1].Components_to_fix = comps
+
+def _modCp2kObjBasedOnCollectiveVariables(cp2kObj, useDict):
+	colVars = useDict.get("colVars".lower(),None)
+	if colVars is not None:
+		for var in colVars:
+			var.addColVarToSubsys(cp2kObj)
+
+
 
 def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)

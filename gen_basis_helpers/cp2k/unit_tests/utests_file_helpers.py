@@ -1,6 +1,8 @@
 
 
 import unittest
+import unittest.mock as mock
+
 import gen_basis_helpers.cp2k.method_register as methods
 import gen_basis_helpers.cp2k.basis_register as basis
 import plato_pylib.shared.ucell_class as UCell
@@ -226,6 +228,14 @@ class testModifyCp2kObj(unittest.TestCase):
 		expStr = _loadExpectedOutputAtomicPosConstraintsA()
 		actStr = self.startCP2KObj.get_input_string()
 		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
+
+	def testAddColVars(self):
+		colVarA, colVarB = mock.Mock(), mock.Mock()
+		kwargDict = {"colVars": [colVarA, colVarB]}
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
+		colVarA.addColVarToSubsys.assert_called_with(self.startCP2KObj)
+		colVarB.addColVarToSubsys.assert_called_with(self.startCP2KObj)
+
 
 
 def _getDefObjInputStr():
