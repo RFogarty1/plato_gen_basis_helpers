@@ -8,6 +8,23 @@ class MolDynamicsOptsCP2KBase():
 		raise NotImplementedError("")
 
 
+class ThermostatOptsBase():
+	""" Object representing options for the thermostat. See addToPyCp2kObj for interface """
+
+	def addToPyCp2kObj(self, pyCp2kObj):
+		""" Adds the thermostat info to the pycp2k obj
+		
+		Args:
+			pyCp2kObj: Backend object used to generate input files
+				 
+		Returns
+			Nothing but adds the thermostat info to the pycp2k obj
+	 
+		Raises:
+			Errors
+		"""
+		raise NotImplementedError("")
+
 
 
 class MolDynamicsOptsCP2KStandard():
@@ -80,4 +97,30 @@ class MetaDynamicsOptsCP2KStandard():
 		outDict = {k:v for k,v in outDict.items() if v is not None}
 
 		return outDict
+
+
+class NoseThermostatOpts(ThermostatOptsBase):
+
+	def __init__(self, length=None, mts=None, yoshida=None, timeCon=None, timeConFmt="{:.1f}"):
+		""" Initializer
+		
+		Args:
+		Most map directly to a cp2k keyword. Leaving as None means dont specifiy in the input file 
+		(and therefore use the CP2K defaults)
+			timeConFmt: (str) Format string for the 
+				 
+		"""
+		self.length = length
+		self.mts = mts
+		self.yoshida = yoshida
+		self.timeCon = timeCon
+		self.timeConFmt = timeConFmt
+
+	def addToPyCp2kObj(self, pyCp2kObj):
+		thermoSect = pyCp2kObj.CP2K_INPUT.MOTION.MD.THERMOSTAT
+		thermoSect.Type = "nose"
+		thermoSect.NOSE.Length = self.length
+		thermoSect.NOSE.Mts = self.mts
+		thermoSect.NOSE.Timecon = self.timeConFmt.format(self.timeCon)
+
 

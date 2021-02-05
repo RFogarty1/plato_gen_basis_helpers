@@ -246,6 +246,10 @@ def _modCp2kObjBasedOnMolecularDynamicsOptDict(cp2kObj, useDict):
 	if useDict.get("mdThermostatType".lower(),None) is not None:
 		mdSection.THERMOSTAT.Type = useDict["mdThermostatType".lower()].upper()
 
+	if useDict.get("mdThermoStatOpts".lower(),None) is not None:
+		thermoOpts = useDict["mdThermoStatOpts".lower()]
+		thermoOpts.addToPyCp2kObj(cp2kObj)
+
 
 def _modCp2kObjBasedOnTrajPrintDict(cp2kObj, useDict):
 	motionPart = cp2kObj.CP2K_INPUT.MOTION

@@ -77,6 +77,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("nGrids")
 	registeredKwargs.add("colVars")
 	registeredKwargs.add("metaDynOpts")
+	registeredKwargs.add("thermostatOpts")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -240,7 +241,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if self.metaDynOpts is not None:
 			currDict = self.metaDynOpts.optDict
 			modDict.update(currDict)
-
+		if self.thermostatOpts is not None:
+			modDict["mdThermoStatOpts"] = self.thermostatOpts
 
 		modDict["scfPrintRestart".lower()] = False
 

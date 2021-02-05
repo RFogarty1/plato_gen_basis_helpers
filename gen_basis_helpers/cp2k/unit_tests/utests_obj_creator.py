@@ -37,6 +37,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.nGrids = None
 		self.colVars = None
 		self.metaDynOpts = None
+		self.thermostatOpts = None
 		self.createTestObjs()
 
 	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
@@ -51,7 +52,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        print_every_n_scf_steps=self.print_every_n_scf_steps,
 		                                                        restart_file_every_n_md_steps=self.restart_file_every_n_md_steps,
 		                                                        prefDiagLib=self.prefDiagLib, epsDef=self.epsDef, nGrids=self.nGrids,
-		                                                        colVars=self.colVars, metaDynOpts=self.metaDynOpts)
+		                                                        colVars=self.colVars, metaDynOpts=self.metaDynOpts, thermostatOpts=self.thermostatOpts)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -206,6 +207,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.prefDiagLib = "SL"
 		self.nGrids = 8
 		self.colVars = mock.Mock()
+		self.thermostatOpts = mock.Mock()
 		self.createTestObjs()
 		expArgDict = {"qsExtrapolationMethod".lower(): self.extrapolationMethod, "walltime": self.walltime,
 		               "trajPrintEachMd".lower(): self.print_every_n_md_steps,
@@ -214,7 +216,8 @@ class TestStandardCreationObj(unittest.TestCase):
 		               "prefDiagLib".lower(): "SL",
 		               "epsDef".lower():1e-14,
 		               "nGrids".lower():self.nGrids,
-		               "colVars".lower():self.colVars}
+		               "colVars".lower():self.colVars,
+		               "mdThermoStatOpts".lower():self.thermostatOpts}
 		self.testCreatorObjA.create()
 		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
 		actArgDict = {k.lower():v for k,v in args[1].items()}

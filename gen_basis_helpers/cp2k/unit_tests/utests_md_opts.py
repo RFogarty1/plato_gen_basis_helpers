@@ -3,6 +3,8 @@
 import unittest
 import unittest.mock as mock
 
+
+import gen_basis_helpers.cp2k.method_register as methReg
 import gen_basis_helpers.cp2k.cp2k_md_options as tCode
 
 class TestStandardMDOptsObject(unittest.TestCase):
@@ -88,6 +90,35 @@ class TestMetaDynOptsObject(unittest.TestCase):
 
 		for key in expMissingKeys:
 			self.assertTrue( key not in actDict.keys() )
+
+
+
+class TestThermostatOpts(unittest.TestCase):
+
+	def setUp(self):
+		self.length = 8
+		self.mts = 4
+		self.timeCon = 20
+		self.timeConFmt = "{:.2f}"
+		self.yoshida = None
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.pycp2kObj = methReg.createCP2KObjFromMethodStr("cp2k_test_object") 
+		kwargs = {"length":self.length, "mts":self.mts, "yoshida":self.yoshida,
+		          "timeCon":self.timeCon, "timeConFmt":self.timeConFmt}
+		self.testObjA = tCode.NoseThermostatOpts(**kwargs)
+
+	def testExpectedModsToPycp2kObj(self):
+		thermostatSection = self.pycp2kObj.CP2K_INPUT.MOTION.MD.THERMOSTAT
+		expType, expLength, expMts = "nose", self.length, self.mts
+		expTimeCon = self.timeConFmt.format(self.timeCon)
+		self.testObjA.addToPyCp2kObj(self.pycp2kObj)
+
+		self.assertEqual(expType, thermostatSection.Type)
+		self.assertEqual(expLength, thermostatSection.NOSE.Length)
+		self.assertEqual(expMts, thermostatSection.NOSE.Mts)
+		self.assertEqual(expTimeCon, thermostatSection.NOSE.Timecon)
 
 
 
