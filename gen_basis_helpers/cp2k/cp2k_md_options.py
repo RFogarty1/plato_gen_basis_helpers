@@ -48,3 +48,36 @@ class MolDynamicsOptsCP2KStandard():
 		outDict = {k:v for k,v in outDict.items() if v is not None}
 
 		return outDict
+
+
+class MetaDynamicsOptsCP2KStandard():
+
+	def __init__(self, metaVars, ntHills=None, doHills=True, hillHeight=None, printColvarCommonIter=3, heightNumbFmt="{:.4f}"):
+		""" Initializer
+		
+		Args:
+			metaVars: (iter of MetaVarStandard objects)
+			ntHills: (int) create a hill at most every N steps
+			doHills: (Bool) True means create hills during the simulation; basically should always be true (maybe false when reading hills in)
+			hillHeight: (float) Hill height in Ha (default CP2K units for this)
+			heightNumbFmt: (str) format string for converting hillHeight into a string 
+
+		"""
+		self.metaVars = metaVars
+		self.ntHills = ntHills
+		self.doHills = doHills
+		self.hillHeight = hillHeight
+		self.printColvarCommonIter = printColvarCommonIter
+		self.heightNumbFmt = heightNumbFmt
+
+	@property
+	def optDict(self):
+		outDict = {"metaVars":self.metaVars, "metaDyn_doHills":self.doHills, 
+		           "metaDyn_hillHeight": self.heightNumbFmt.format(self.hillHeight) if self.hillHeight is not None else None,
+		           "metaDyn_printColvarCommonIterLevels": self.printColvarCommonIter,
+		           "metaDyn_ntHills":self.ntHills}
+
+		outDict = {k:v for k,v in outDict.items() if v is not None}
+
+		return outDict
+

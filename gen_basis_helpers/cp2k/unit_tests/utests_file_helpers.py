@@ -6,10 +6,10 @@ import unittest.mock as mock
 import gen_basis_helpers.cp2k.method_register as methods
 import gen_basis_helpers.cp2k.basis_register as basis
 import plato_pylib.shared.ucell_class as UCell
-import gen_basis_helpers.cp2k.cp2k_file_helpers as tCode
-
+import gen_basis_helpers.cp2k.collective_vars as colVarHelp
 import gen_basis_helpers.cp2k.cp2k_misc_objs as miscObjs
 
+import gen_basis_helpers.cp2k.cp2k_file_helpers as tCode
 
 #TODO: Figure out why this test seems to run relatively slow compared to others
 class testModifyCp2kObj(unittest.TestCase):
@@ -236,6 +236,14 @@ class testModifyCp2kObj(unittest.TestCase):
 		colVarA.addColVarToSubsys.assert_called_with(self.startCP2KObj)
 		colVarB.addColVarToSubsys.assert_called_with(self.startCP2KObj)
 
+	def testMetadynSection(self):
+		metaVar = colVarHelp.MetaVarStandard(index=2, scale=3)
+		kwargDict = {"metaVars":[metaVar], "metaDyn_doHills":True, "metaDyn_ntHills":5,
+		             "metaDyn_hillHeight":7, "metaDyn_printColvarCommonIterLevels":3}
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
+		expStr = _loadExpectedOutputMetadynSectionA()
+		actStr = self.startCP2KObj.get_input_string()
+		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
 
 
 def _getDefObjInputStr():
@@ -456,6 +464,43 @@ def _loadExpectedOutputAtomicPosConstraintsA():
 	newStr += "  &END CONSTRAINT\n"
 	newStr += "&END MOTION\n"
 	return newStr + outStr
+
+def _loadExpectedOutputMetadynSectionA():
+	outStr = _getDefObjInputStr()
+	newStr =  "&MOTION\n"
+	newStr += "  &FREE_ENERGY\n"
+	newStr += "    &METADYN\n"
+	newStr += "      DO_HILLS TRUE\n"
+	newStr += "      NT_HILLS 5\n"
+	newStr += "      WW 7\n"
+	newStr += "      &METAVAR\n"
+	newStr += "        COLVAR 2\n"
+	newStr += "        SCALE 3\n"
+	newStr += "      &END METAVAR\n"
+	newStr += "      &PRINT\n"
+	newStr += "        &COLVAR\n"
+	newStr += "          COMMON_ITERATION_LEVELS 3\n"
+	newStr += "        &END COLVAR\n"
+	newStr += "      &END PRINT\n"
+	newStr += "    &END METADYN\n"
+	newStr += "  &END FREE_ENERGY\n"
+	newStr += "&END MOTION\n"
+	return newStr + outStr
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

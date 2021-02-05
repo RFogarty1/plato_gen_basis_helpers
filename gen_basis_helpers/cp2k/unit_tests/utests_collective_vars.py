@@ -5,6 +5,27 @@ import unittest.mock as mock
 import gen_basis_helpers.cp2k.method_register as methReg
 import gen_basis_helpers.cp2k.collective_vars as tCode
 
+
+class TestMetaVarStandard(unittest.TestCase):
+
+	def setUp(self):
+		self.index = 4
+		self.scale = 2
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.MetaVarStandard(index=self.index, scale=self.scale)
+		self.pyCp2kObj = methReg.createCP2KObjFromMethodStr("spe_standard")
+
+	def testExpectedCaseA(self):
+		self.testObjA.addMetaVarToPyCp2kObj(self.pyCp2kObj)
+		actMetaVar = self.pyCp2kObj.CP2K_INPUT.MOTION.FREE_ENERGY.METADYN.METAVAR_list[-1]
+		actIdx = actMetaVar.Colvar
+		actScale = actMetaVar.Scale	
+		self.assertEqual(self.index, actIdx)
+		self.assertEqual(self.scale, actScale)
+
+
 class TestDistancePointPlaneColVar(unittest.TestCase):
 
 	def setUp(self):

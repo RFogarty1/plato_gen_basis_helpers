@@ -75,6 +75,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("prefDiagLib")
 	registeredKwargs.add("epsDef")
 	registeredKwargs.add("nGrids")
+	registeredKwargs.add("colVars")
+	registeredKwargs.add("metaDynOpts")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -233,6 +235,12 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if self.geomConstraints is not None:
 			currDict = _getModDictBasedOnAtomicPosConstraints(self.geomConstraints.atomicPositionConstraints)
 			modDict.update(currDict)
+		if self.colVars is not None:
+			modDict["colVars"] = self.colVars
+		if self.metaDynOpts is not None:
+			currDict = self.metaDynOpts.optDict
+			modDict.update(currDict)
+
 
 		modDict["scfPrintRestart".lower()] = False
 

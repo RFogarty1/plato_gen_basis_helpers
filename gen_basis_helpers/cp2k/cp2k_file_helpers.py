@@ -131,6 +131,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnRestartPrintDict)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnAtomicConstraints)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnCollectiveVariables)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnMetadynamicsOptions)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -291,7 +292,29 @@ def _modCp2kObjBasedOnCollectiveVariables(cp2kObj, useDict):
 		for var in colVars:
 			var.addColVarToSubsys(cp2kObj)
 
+def _modCp2kObjBasedOnMetadynamicsOptions(cp2kObj, useDict):
+	metaDynSection = cp2kObj.CP2K_INPUT.MOTION.FREE_ENERGY.METADYN
 
+	def _initPrintListIfNeeded():
+		if len(metaDynSection.PRINT_list)==0:
+			metaDynSection.PRINT_add()
+
+	if useDict.get("metaDyn_doHills".lower(),None) is not None:
+		metaDynSection.Do_hills = useDict["metaDyn_doHills".lower()]
+
+	if useDict.get("metaDyn_hillHeight".lower(),None) is not None:
+		metaDynSection.Ww = useDict["metaDyn_hillHeight".lower()]
+
+	if useDict.get("metaDyn_ntHills".lower(),None) is not None:
+		metaDynSection.Nt_hills = int(useDict["metaDyn_ntHills".lower()])
+
+	if useDict.get("metaDyn_printColvarCommonIterLevels".lower(),None) is not None:
+		_initPrintListIfNeeded()
+		metaDynSection.PRINT_list[-1].COLVAR.Common_iteration_levels = int(useDict["metaDyn_printColvarCommonIterLevels".lower()])
+
+	if useDict.get("metaVars".lower(),None) is not None:
+		for mVar in useDict.get("metaVars".lower()):
+			mVar.addMetaVarToPyCp2kObj(cp2kObj)
 
 def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)
