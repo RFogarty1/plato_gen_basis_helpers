@@ -94,3 +94,32 @@ class TestThreeDimPlaneEqn(unittest.TestCase):
 		planeB.d += 1
 		self.assertNotEqual(planeA,planeB)
 
+
+class TestGetOutOfPlaneDistTwoPoints(unittest.TestCase):
+
+	def setUp(self):
+		self.posA = [3, 5, 5]
+		self.posB = [3, 7, 8]
+		self.planeEqnA = tCode.ThreeDimPlaneEquation(0,0,1,6) #Put in the centre so that we need signed distances
+
+	def _runTestFunct(self):
+		return tCode.getOutOfPlaneDistTwoPoints(self.posA, self.posB, self.planeEqnA)
+
+	def testCase_zNormalVector(self):
+		expDist = 2
+		actDist = self._runTestFunct()
+		self.assertAlmostEqual(expDist, actDist)
+
+	def testCase_yNormalVector(self):
+		self.planeEqnA = tCode.ThreeDimPlaneEquation(0,1,0,0)
+		expDist = 3
+		actDist = self._runTestFunct()
+		self.assertAlmostEqual(expDist, actDist)
+
+	def testCase_xNormalVector(self):
+		self.planeEqnA = tCode.ThreeDimPlaneEquation(1,0,0,0)
+		expDist = math.sqrt( (2**2) + (3**2) )
+		actDist = self._runTestFunct()
+		self.assertAlmostEqual(expDist, actDist)
+
+

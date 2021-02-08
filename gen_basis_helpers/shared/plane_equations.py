@@ -127,3 +127,25 @@ class ThreeDimPlaneEquation():
 	def coeffs(self,val):
 		self.a, self.b, self.c, self.d = val
 
+
+
+def getOutOfPlaneDistTwoPoints(posA, posB, planeEqn):
+	""" Description of function
+	
+	Args:
+		posA: (len-3 iter) [x,y,z]
+		posB: (len-3 iter) [x,y,z]
+		planeEqn: (ThreeDimPlaneEquation)
+			 
+	Returns
+		 outDist: The out of plane distance between the two points. This is the distance that would remain if we shifted posA along the surface normal such that it was in the same plane (with planeEqn) as posB 
+ 
+	"""
+	distFromPlaneA = planeEqn.getSignedDistanceOfPointFromPlane(posA[:3])
+	distFromPlaneB = planeEqn.getSignedDistanceOfPointFromPlane(posB[:3])
+	interPlaneDist = abs( distFromPlaneA-distFromPlaneB)
+	totalDist = vectHelp.getDistTwoVectors(posA[:3], posB[:3])
+	outOfPlaneDist = math.sqrt( (totalDist**2) - (interPlaneDist**2) )
+	return outOfPlaneDist
+
+
