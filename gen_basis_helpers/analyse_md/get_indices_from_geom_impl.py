@@ -10,6 +10,7 @@ from . import get_neb_lists as nebListHelp
 from . import calc_dists as calcDistHelp
 
 from ..shared import cart_coord_utils as cartHelp
+from ..shared import plane_equations as planeEqnHelp
 
 class GetSurfaceIndicesFromGeomStandard(getIdxCore.GetSpecialIndicesFromInpGeomTemplate):
 
@@ -112,4 +113,78 @@ class GetWaterMoleculeIndicesFromGeomStandard():
 
 
 
+#TODO:
+#			waterDetector: (Optional, GetWaterMoleculeIndicesFromGeomStandard object) This is used to filter out water molecules before looking for surface atoms, only needed if the surface contains oxygen and/or hydrogen atoms
+class GetIndicesForVaryTypesOfSurfAtom_waterBilayerAdsorbedSimple():
+	""" Gets indices of surface atoms separated by type when a water bilayer exists above the surface
+
+	Original use is the Mg-water system, where 3 types of surface atom exist; "free" which has no water above it,
+	"close" which has an oxygen directly adsorbed (usually the water lies ~flat and parralel) and "far" whereby water
+	 sits directly above/below the site but too far away to be "close"
+
+	 Note that these sites are mutually exclusive (an atom can only belong to ONE of them)
+
+	"""
+
+	def __init__(self, surfaceDetector, surfEles, maxWaterPlaneDist, maxCloseDist, maxHozDist, waterOxyLabel="O"):
+		""" Initializer
+		
+		Args:
+			surfaceDetector: (GetSurfaceIndicesFromGeomStandard) Gets indices of surface atoms; should be set to either top/bottom surface
+			surfEles: (iter of str) Elements that could be in the surface. This CANNOT contain waterOxyLabel
+			maxWaterPlaneDist: (float) The maximum distance of water from the surface plane (used to limit to the first bilayer). Note the plane position will be set to the middle of the surface atoms
+			maxCloseDist: (float) Maximum Surface-O distance for that surface site to be considered "close"
+			maxHozDist: (float) Maximum out-of-plane Surface-O distance for a surface site to be considered as a "far" site
+			waterOxyLabel: (str) The label for the oxygen in water
+		 
+		"""
+		self.surfaceDetector = surfaceDetector
+		self.surfEles = surfEles
+		self.maxWaterPlaneDist = maxWaterPlaneDist
+		self.maxCloseDist = maxCloseDist
+		self.maxHozDist = maxHozDist
+		self.waterOxyLabel = waterOxyLabel
+
+
+	def getIndicesFromInpGeom(self, inpGeom):
+		startCoords = inpGeom.cartCoords
+		inpIndices = [x for x in range(len(startCoords))]
+		dudGetIndicesInstance = None
+
+		#Step 1 - get indices of the surface atoms
+		surfIndices = self.surfaceDetector.getIndicesFromInpGeom(inpGeom)
+
+		#Step 2 - get the average surface plane equation
+		planeEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpGeom) #Direction shouldnt matter
+		dVals = list()
+		for idx in surfIndices:
+			currXyz = startCoords[idx][:3]
+			currDVal = planeEqn.calcDForInpXyz(currXyz)
+			dVals.append(currDVal)
+		surfDVal = sum(dVals)/len(dVals)
+		surfPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(*(planeEqn.coeffs[:3] + [surfDVal]))
+
+		#Step 3 - get indices of the closest adsorbed bilayer
+		currFilterFunct = getIdxCore.FilterToAtomsWithinDistanceOfSurfacePlane(surfPlaneEqn, self.maxWaterPlaneDist)
+		bilayerIndices = currFilterFunct(dudGetIndicesInstance, inpGeom, inpIndices)
+		bilayerIndices = [x for x in bilayerIndices if x not in surfIndices]
+		bilayerIndices = [x for x in bilayerIndices if startCoords[x][-1].upper()==self.waterOxyLabel.upper()]
+
+		#Step 4 - Get the "close" layer based on distance to oxygen atoms
+		if self.waterOxyLabel in self.surfEles:
+			raise ValueError("{} (waterOxyLabel) found in surfEles; this wont work. Please rename either surface-oxygen atoms or water oxygen atoms".format(self.waterOxyLabel))
+
+		nebPairs = [ [self.waterOxyLabel,x] for x in self.surfEles ]
+		closeFilterFunct = getIdxCore.FilterToExcludeIndicesWithoutNebsAmongstRemaning(self.maxCloseDist, restrictToPairs=nebPairs)
+		closeSurfIndices = [x for x in closeFilterFunct(dudGetIndicesInstance, inpGeom, surfIndices+bilayerIndices) if x in surfIndices]
+
+		#Step 5 - Get the Hup/Hdown sites based on horizontal distance criteria
+		inpCoords = [ startCoords[idx][:3] for idx in bilayerIndices ]
+		hozDistFilterFunct = getIdxCore.FilterToExcludeIndicesFurtherOutOfPlaneThanCutoff(self.maxHozDist, surfPlaneEqn, inpCoords)
+		farSurfIndices = [idx for idx in hozDistFilterFunct(dudGetIndicesInstance, inpGeom, surfIndices) if idx not in closeSurfIndices]
+
+		#Step 6 - The remainig surface atoms must be "free"
+		freeSurfIndices = [idx for idx in surfIndices if (idx not in closeSurfIndices) and (idx not in farSurfIndices)]
+
+		return {"free":freeSurfIndices, "far":farSurfIndices, "close":closeSurfIndices}
 

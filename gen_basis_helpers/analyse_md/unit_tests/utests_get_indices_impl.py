@@ -2,6 +2,7 @@
 import unittest
 import unittest.mock as mock
 
+import plato_pylib.shared.unit_convs as uConvHelp
 import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.analyse_md.get_indices_from_geom_impl as tCode
@@ -152,5 +153,90 @@ class TestGetTopWaterLayerIndicesA(unittest.TestCase):
 		actIndices = self._runTestFunct()
 		self.assertEqual(expIndices,actIndices)
 
+class TestGetIndicesForVaryTypesOfSurfAtom_waterBilayersSimple(unittest.TestCase):
+
+	def setUp(self):
+		self.cellA = _loadGeomTestVaryTypesOfSurfAtomA()
+		self.surfEles = ["Mg"]
+		self.surfDetector = tCode.GetSurfaceIndicesFromGeomStandard(["Mg"], top=True, bottom=False, distTol=2.0)
+		self.maxWaterPlaneDist = 3.5*uConvHelp.ANG_TO_BOHR
+		self.maxCloseDist = 2.5*uConvHelp.ANG_TO_BOHR
+		self.maxHozDist = 1*uConvHelp.ANG_TO_BOHR
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		args = [self.surfDetector, self.surfEles, self.maxWaterPlaneDist, self.maxCloseDist, self.maxHozDist]
+		self.testObjA = tCode.GetIndicesForVaryTypesOfSurfAtom_waterBilayerAdsorbedSimple(*args)
+
+	def _runTestFunct(self):
+		return self.testObjA.getIndicesFromInpGeom(self.cellA)
+
+	def testExpCaseA(self):
+		#Figured out by looking in VESTA...
+		expIndices = {"free":[1,15,16], "close":[5,9,14], "far":[4,8,17]} 
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
 
 
+def _loadGeomTestVaryTypesOfSurfAtomA():
+	lattVects = [ [18.19806, 0, 0],
+	              [-9.099031, 15.75998, 0],
+	              [0, 0, 63.85384] ]
+
+	fractCoords = [ [-0.027588, -0.002342, 0.587224, "Mg"],
+	                [0.079539, 0.217771, 0.667214, "Mg"],
+	                [0.300281, -0.004826, 0.587257, "Mg"],
+	                [0.636574, -0.001089, 0.586709, "Mg"],
+	                [0.414056, 0.220636, 0.661339, "Mg"],
+	                [0.746687, 0.219854, 0.684787, "Mg"],
+	                [-0.033513, 0.326386, 0.587223, "Mg"],
+	                [-0.031496, 0.665902, 0.588190, "Mg"],
+	                [0.076254, 0.548272, 0.661229, "Mg"],
+	                [0.076750, 0.884194, 0.680762, "Mg"],
+	                [0.301607, 0.332359, 0.587536, "Mg"],
+	                [0.303572, 0.662784, 0.587134, "Mg"],
+	                [0.639368, 0.330226, 0.587770, "Mg"],
+	                [0.633157, 0.660160, 0.588158, "Mg"],
+	                [0.413768, 0.553394, 0.675142, "Mg"],
+	                [0.415103, 0.887354, 0.662140, "Mg"],
+	                [0.747242, 0.550726, 0.667078, "Mg"],
+	                [0.750572, 0.888935, 0.661048, "Mg"],
+	                [0.393481, 0.145364, 0.763020, "O"],
+	                [0.692287, 0.144888, 0.750652, "O"],
+	                [0.119679, 0.576804, 0.759279, "O"],
+	                [0.112905, 0.868882, 0.745192, "O"],
+	                [0.421279, 0.590298, 0.742401, "O"],
+	                [0.703571, 0.863535, 0.760277, "O"],
+	                [0.468150, 0.229714, 0.848836, "O"],
+	                [0.230949, 0.661875, 0.833297, "O"],
+	                [0.739291, 0.885323, 0.839228, "O"],
+	                [0.730688, 0.174989, 0.834800, "O"],
+	                [0.201793, 0.934010, 0.835390, "O"],
+	                [0.475415, 0.585704, 0.837642, "O"],
+	                [0.490333, 0.136773, 0.757922, "H"],
+	                [0.389613, 0.205628, 0.739703, "H"],
+	                [0.742192, 0.196035, 0.776193, "H"],
+	                [0.688831, 0.039443, 0.752018, "H"],
+	                [0.220775, 0.584559, 0.749718, "H"],
+	                [0.035773, 0.494984, 0.741960, "H"],
+	                [0.221143, 0.961875, 0.751903, "H"],
+	                [0.119960, 0.770566, 0.749472, "H"],
+	                [0.523562, 0.690244, 0.749931, "H"],
+	                [0.421235, 0.504708, 0.758125, "H"],
+	                [0.741290, 0.873071, 0.788386, "H"],
+	                [0.787272, 0.866253, 0.742869, "H"],
+	                [0.373530, 0.133857, 0.837371, "H"],
+	                [0.477063, 0.321318, 0.834104, "H"],
+	                [0.162038, 0.601881, 0.810493, "H"],
+	                [0.237896, 0.768249, 0.831684, "H"],
+	                [0.635529, 0.780647, 0.839557, "H"],
+	                [0.714354, 0.973671, 0.840412, "H"],
+	                [0.805502, 0.232381, 0.857004, "H"],
+	                [0.638573, 0.191286, 0.839749, "H"],
+	                [0.150681, 0.909521, 0.862192, "H"],
+	                [0.120598, 0.918610, 0.815761, "H"],
+	                [0.464175, 0.560176, 0.866494, "H"],
+	                [0.388747, 0.610459, 0.832578, "H"] ]
+
+	outCell = uCellHelp.UnitCell.fromLattVects(lattVects, fractCoords=fractCoords)
+	return outCell

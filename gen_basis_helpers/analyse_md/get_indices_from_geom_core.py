@@ -1,7 +1,11 @@
 
+
+import copy
 import plato_pylib.shared.ucell_class as uCellHelp
 
+from . import get_neb_lists as nebListHelp
 from ..shared import cart_coord_utils as cartHelp
+from ..shared import plane_equations as planeEqnHelp
 
 class GetSpecialIndicesFromInpGeomTemplate():
 
@@ -96,6 +100,117 @@ class FilterToOuterSurfaceAtoms(FilterIndicesFunction):
 		distsFromPlane = [planeEqn.getDistanceOfPointFromPlane(x[:3]) for x in inpGeom.cartCoords]
 		indicesInGeom = [idx for idx,dist in enumerate(distsFromPlane) if dist<self.distTol]
 		outIndices = [inpIndices[idx] for idx in indicesInGeom]
+		return outIndices
+
+
+class FilterToAtomsWithinDistanceOfSurfacePlane(FilterIndicesFunction):
+	""" Return only indices for atoms within a certain distance from a given surface plane """
+
+
+	def __init__(self, planeEqn, maxDist, distTol=1e-1, top=True, bottom=True):
+		""" Initializer
+		
+		Args:
+			planeEqn: (ThreeDimPlaneEquation) Defines the plane to use
+			maxDist: (float) Will filter to atoms CLOSER to the plane than this (e.g. distTol=1 means we filter to distance <1)
+			top: (Bool) Whether to include atoms ABOVE the plane
+			bottom: (Bool) Whether to include atoms BELOW the plane
+			distTol: (float) If a distance is <= to this value of the plane it is considered "on the plane" and that index will be always be returned regardless of the top/bottom parameter values (e.g. if bottom=False and an index was found at -0.5*distTol it would be returned)
+				 
+		"""
+		self.planeEqn = planeEqn
+		self.maxDist = maxDist
+		self.distTol = distTol
+		self.top = top
+		self.bottom = bottom
+
+	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
+		relCoords = [x[:3] for idx,x in enumerate(inpGeom.cartCoords) if idx in inpIndices]
+		signedDists = [self.planeEqn.getSignedDistanceOfPointFromPlane(x) for x in relCoords]
+
+		outIndices = list()
+		for idx,sDist in enumerate(signedDists):
+			absDist = abs(sDist)
+			if absDist<self.distTol:
+				outIndices.append(idx)
+			else:
+				if self.top:
+					if (sDist>0) and (absDist<self.maxDist):
+						outIndices.append(idx)
+				if self.bottom:
+					if (sDist<0) and (absDist<self.maxDist):
+						outIndices.append(idx)
+
+		return outIndices
+
+
+class FilterToExcludeIndicesWithoutNebsAmongstRemaning(FilterIndicesFunction):
+	""" Returns only the indices for atoms which have neighbours amongst inpIndices """
+
+	def __init__(self, maxDist, restrictToPairs=None):
+		""" Initializer
+		
+		Args:
+			maxDist: (float) Maximum distance between atoms for them to be considered neighbours
+			restrictToPairs: (Optional, iter of len-2 iters) If this is set then only include these pairs of elements in the neighbour lists. E.g. if restrictToPairs = [ ["Mg","O"] ] then an Mg atom with only Mg neighbours will be filtered out
+				 
+		"""
+		self.maxDist = maxDist
+		self.restrictToPairs = restrictToPairs
+
+	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
+
+		if self.restrictToPairs is not None:
+			sortedRestrictions = [sorted(x) for x in self.restrictToPairs]
+
+		cellForNebs = copy.deepcopy(inpGeom)
+		nebCellCartCoords = [x for idx,x in enumerate(inpGeom.cartCoords) if idx in inpIndices]
+		cellForNebs.cartCoords = nebCellCartCoords
+
+		nebLists = nebListHelp.getNeighbourListsForInpCell_imagesMappedToCentral(cellForNebs, self.maxDist)
+
+		outIndices = list()
+		for idx,nList in enumerate(nebLists):
+			if len(nList)>0:
+				if self.restrictToPairs is None:
+					outIndices.append( inpIndices[idx] )
+				else:
+					pairLists = [ sorted([nebCellCartCoords[idx][-1], nebCellCartCoords[x][-1]]) for x in nList ]
+					filteredList = [x for x in pairLists if x in sortedRestrictions]
+					if len(filteredList)>0:
+						outIndices.append( inpIndices[idx] )
+
+		return outIndices
+
+
+class FilterToExcludeIndicesFurtherOutOfPlaneThanCutoff(FilterIndicesFunction):
+	""" Returns only the indices for atoms with out-of-plane distances within a cutoff of a list of input points.
+
+	Original use case was to get indices of atoms with adsorbates above them (which meant a horizontal distance was needed rather than the total distance) """
+
+	def __init__(self, maxDist, planeEqn, inpPoints):
+		""" Initializer
+		
+		Args:
+			maxDist: (float)
+			planeEqn: (ThreeDimPlaneEquation) Defines the plane to use
+			inpPoints: (iter of len-3 iters) out-of-plane distance will be determined from these points
+ 
+		"""
+		self.maxDist = maxDist
+		self.planeEqn = planeEqn
+		self.inpPoints = inpPoints
+
+	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
+		relCoords = [x[:3] for idx,x in enumerate(inpGeom.cartCoords) if idx in inpIndices]
+
+		outIndices = list()
+		for idx,coord in enumerate(relCoords):
+			currDists = [ planeEqnHelp.getOutOfPlaneDistTwoPoints(coord,x,self.planeEqn) for x in self.inpPoints]
+			if any([x<self.maxDist for x in currDists]):
+				outIndices.append( inpIndices[idx] )
+
+
 		return outIndices
 
 
