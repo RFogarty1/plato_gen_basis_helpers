@@ -443,7 +443,11 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 	if useDict.get("prefDiagLib".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.GLOBAL.Preferred_diag_library = useDict["prefDiagLib".lower()].upper()
 
-	
+	if useDict.get("rsGrid_distrib".lower(),None) is not None:
+		if len(cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.MGRID.RS_GRID_list)==0:
+			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.MGRID.RS_GRID_add()
+		currVal = useDict.get("rsGrid_distrib".lower())
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.MGRID.RS_GRID_list[-1].Distribution_layout = currVal
 
 
 
