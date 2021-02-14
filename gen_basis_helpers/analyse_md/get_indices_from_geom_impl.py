@@ -14,16 +14,27 @@ from ..shared import plane_equations as planeEqnHelp
 
 class GetSurfaceIndicesFromGeomStandard(getIdxCore.GetSpecialIndicesFromInpGeomTemplate):
 
-	def __init__(self, surfEles, top=True, bottom=True, distTol=1e-1):
+	def __init__(self, surfEles, top=True, bottom=True, distTol=1e-1, nLayers=1):
+		""" Initializer
+		
+		Args:
+			surfEles: (iter of str) The elements that may be present in the surface
+			top: (Bool) If true return indices at the top surface
+			bottom: (Bool) If true return indices at the bottom surface
+			distTol: (float) Distance from outer surface plane an atom can be 
+			nLayers: (int) The number of layers to restrict to. e.g. 2 will return indices for the first TWO layers
+
+		"""
 		self.surfEles = list(surfEles)
 		self.top = top
 		self.bottom = bottom
 		self.distTol = distTol
+		self.nLayers = nLayers
 
 	@property
 	def filterFuncts(self):
 		eleFilter = getIdxCore.FilterToExcludeElesNotInList(self.surfEles)
-		surfFilter = getIdxCore.FilterToOuterSurfaceAtoms(top=self.top, bottom=self.bottom, distTol=self.distTol)
+		surfFilter = getIdxCore.FilterToOuterSurfaceAtoms(top=self.top, bottom=self.bottom, distTol=self.distTol, nLayers=self.nLayers)
 		return [eleFilter, surfFilter]
 
 

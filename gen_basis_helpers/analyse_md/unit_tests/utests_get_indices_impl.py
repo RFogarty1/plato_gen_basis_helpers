@@ -15,11 +15,12 @@ class TestGetSurfaceIndicesStandard(unittest.TestCase):
 		self.top = True
 		self.bottom = True
 		self.distTol = 1e-1
+		self.nLayers = 1
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		self.cellA = self._createCellA()
-		currKwargs = {"top":self.top, "bottom":self.bottom, "distTol":self.distTol}
+		currKwargs = {"top":self.top, "bottom":self.bottom, "distTol":self.distTol, "nLayers":self.nLayers}
 		self.testObjA = tCode.GetSurfaceIndicesFromGeomStandard(self.surfEles, **currKwargs)
 
 	def _createCellA(self):
@@ -27,12 +28,29 @@ class TestGetSurfaceIndicesStandard(unittest.TestCase):
 		cellA.cartCoords = self.coordsA
 		return cellA
 
+	def _runTestFunct(self):
+		return self.testObjA.getIndicesFromInpGeom(self.cellA)
+
 	def testTopAndBottomSimple(self):
 		expIndices = [1,3]
-		actIndices = self.testObjA.getIndicesFromInpGeom(self.cellA)
+		actIndices = self._runTestFunct()
 		self.assertEqual(expIndices, actIndices)
 
+	def testTwoLayers_top(self):
+		self.nLayers = 2
+		self.top, self.bottom = True, False
+		self.createTestObjs()
+		expIndices = [2,3]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
 
+	def testTwoLayers_topAndBottom(self):
+		self.nLayers = 2
+		self.surfEles = ["X","Y"]
+		self.createTestObjs()
+		expIndices = [0,1,2,3]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
 
 class TestGetWaterMoleculeIndicesStandard(unittest.TestCase):
 

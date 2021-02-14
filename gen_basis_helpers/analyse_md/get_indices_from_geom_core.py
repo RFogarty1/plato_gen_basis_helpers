@@ -63,38 +63,47 @@ class FilterToExcludeElesNotInList(FilterIndicesFunction):
 class FilterToOuterSurfaceAtoms(FilterIndicesFunction):
 	""" Return only indices for atoms on the outer surface planes """
 
-	def __init__(self, top=True, bottom=True, distTol=1e-1):
+	def __init__(self, top=True, bottom=True, distTol=1e-1, nLayers=1):
 		""" Initializer
 		
 		Args:
 			top: (Bool) Whether to include atoms on the bottom surface plane
 			bottom:	 (Bool) Whether to include atoms on the top surface plane
-			distTol: (float) Distance from outer surface plane an option can be 
-
+			distTol: (float) Distance from outer surface plane an atom can be 
+			nLayers: (int) The number of layers to restrict to. e.g. 2 will return indices for the first TWO layers
 		"""
 		self.top = top
 		self.bottom = bottom
 		self.distTol = distTol
+		self.nLayers = nLayers
 
 	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
-		#Get a cell with filtered coordinates
-		lattParams, lattAngles = inpGeom.getLattParamsList(), inpGeom.getLattAnglesList()
-		tempCell = uCellHelp.UnitCell(lattParams=lattParams, lattAngles=lattAngles)
-		tempCell.fractCoords = [x for idx,x in enumerate(inpGeom.fractCoords) if idx in inpIndices] 
-
 		#filter to atoms at the top/bottom surface
 		outIndices = list()
 		if self.top:
-			currPlaneEqn = cartHelp.getPlaneEqnForOuterSurfaceAtoms(tempCell, top=True)
-			topIndices = self._getFilteredIndicesForPlaneEqn(currPlaneEqn, tempCell, inpIndices)
+			topIndices = self._getIndicesForOneSide(inpGeom, inpIndices, top=True)
 			outIndices.extend(topIndices)
 
 		if self.bottom:
-			currPlaneEqn = cartHelp.getPlaneEqnForOuterSurfaceAtoms(tempCell, top=False)
-			bottomIndices = self._getFilteredIndicesForPlaneEqn(currPlaneEqn, tempCell, inpIndices)
-			outIndices.extend(bottomIndices)
+			botIndices = self._getIndicesForOneSide(inpGeom, inpIndices, top=False)
+			outIndices.extend(botIndices)
 
 		return sorted(list(set(outIndices)))
+
+
+	def _getIndicesForOneSide(self, inpGeom, inpIndices, top=True):
+		lattParams, lattAngles = inpGeom.getLattParamsList(), inpGeom.getLattAnglesList()
+		tempCell = uCellHelp.UnitCell(lattParams=lattParams, lattAngles=lattAngles)
+
+		outIndices = list()
+		nextIndices = inpIndices
+		for unused in range(self.nLayers):
+			tempCell.fractCoords = [x for idx,x in enumerate(inpGeom.fractCoords) if idx in nextIndices]
+			currPlaneEqn = cartHelp.getPlaneEqnForOuterSurfaceAtoms(tempCell, top=top) 
+			currIndices = self._getFilteredIndicesForPlaneEqn(currPlaneEqn, tempCell, nextIndices)
+			nextIndices = [x for x in nextIndices if x not in currIndices]
+			outIndices.extend(currIndices)
+		return outIndices
 
 	def _getFilteredIndicesForPlaneEqn(self, planeEqn, inpGeom, inpIndices):
 		distsFromPlane = [planeEqn.getDistanceOfPointFromPlane(x[:3]) for x in inpGeom.cartCoords]

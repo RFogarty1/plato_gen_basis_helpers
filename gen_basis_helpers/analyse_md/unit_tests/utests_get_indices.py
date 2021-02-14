@@ -71,6 +71,7 @@ class TestFilterToOuterPlanes(unittest.TestCase):
 
 	def setUp(self):
 		self.instance = mock.Mock()
+		self.nLayers = 1
 		self.coordsA =  [ [0,0,1,"X"], [0,0,1.1], [1,2,3,"Y"], [4,5,6,"Z"], [7,8,9,"Y"] ]
 		self.distTol = 1e-2
 		self.top = True
@@ -79,7 +80,7 @@ class TestFilterToOuterPlanes(unittest.TestCase):
 
 	def createTestObjs(self):
 		self.cellA = self._createUCellA()
-		self.testFunctA = tCode.FilterToOuterSurfaceAtoms(top=self.top, bottom=self.bottom, distTol=self.distTol)
+		self.testFunctA = tCode.FilterToOuterSurfaceAtoms(top=self.top, bottom=self.bottom, distTol=self.distTol, nLayers=self.nLayers)
 
 	def _createUCellA(self):
 		outCell = uCellHelp.UnitCell(lattParams=[10,10,10], lattAngles=[90,90,90])
@@ -126,6 +127,24 @@ class TestFilterToOuterPlanes(unittest.TestCase):
 	def testSensibleReturnedForSingleAtomCase(self):
 		inpIndices = [1]
 		expIndices = [1]
+		actIndices = self.testFunctA(self.instance, self.cellA, inpIndices)
+		self.assertEqual(expIndices, actIndices)
+
+	def testFilterToOuterTwoSurfacePlanes_topOnly(self):
+		self.nLayers = 2
+		self.bottom = False
+		self.createTestObjs()
+		inpIndices = [x for x in range(len(self.coordsA))]
+		expIndices = [3,4]
+		actIndices = self.testFunctA(self.instance, self.cellA, inpIndices)
+		self.assertEqual(expIndices, actIndices)
+
+	def testFilterToOuterTwoSurface_botOnly(self):
+		self.nLayers = 2
+		self.top = False
+		self.createTestObjs()
+		inpIndices =  [x for x in range(len(self.coordsA))]
+		expIndices = [0,1]
 		actIndices = self.testFunctA(self.instance, self.cellA, inpIndices)
 		self.assertEqual(expIndices, actIndices)
 
