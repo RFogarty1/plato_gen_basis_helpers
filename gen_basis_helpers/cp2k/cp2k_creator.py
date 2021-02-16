@@ -79,6 +79,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("metaDynOpts")
 	registeredKwargs.add("thermostatOpts")
 	registeredKwargs.add("rsGridDistrib")
+	registeredKwargs.add("scfMixAlpha")
+	registeredKwargs.add("scfMixMethod")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -246,6 +248,10 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["mdThermoStatOpts"] = self.thermostatOpts
 		if self.rsGridDistrib is not None:
 			modDict["rsGrid_distrib"] = self.rsGridDistrib
+		if self.scfMixAlpha is not None:
+			modDict["scfMixAlpha"] = self.scfMixAlpha
+		if self.scfMixMethod is not None:
+			modDict["scfMixMethod"] = self.scfMixMethod
 
 		modDict["scfPrintRestart".lower()] = False
 

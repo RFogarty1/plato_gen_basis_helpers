@@ -39,6 +39,8 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.metaDynOpts = None
 		self.thermostatOpts = None
 		self.rsGridDistrib = None
+		self.scfMixAlpha = None
+		self.scfMixMethod = None
 		self.createTestObjs()
 
 	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
@@ -54,7 +56,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        restart_file_every_n_md_steps=self.restart_file_every_n_md_steps,
 		                                                        prefDiagLib=self.prefDiagLib, epsDef=self.epsDef, nGrids=self.nGrids,
 		                                                        colVars=self.colVars, metaDynOpts=self.metaDynOpts, thermostatOpts=self.thermostatOpts,
-		                                                        rsGridDistrib=self.rsGridDistrib)
+		                                                        rsGridDistrib=self.rsGridDistrib, scfMixAlpha=self.scfMixAlpha, scfMixMethod=self.scfMixMethod)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -211,6 +213,8 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.colVars = mock.Mock()
 		self.thermostatOpts = mock.Mock()
 		self.rsGridDistrib = [-1,-1,24]
+		self.scfMixAlpha = 5
+		self.scfMixMethod = "pulay"
 		self.createTestObjs()
 		expArgDict = {"qsExtrapolationMethod".lower(): self.extrapolationMethod, "walltime": self.walltime,
 		               "trajPrintEachMd".lower(): self.print_every_n_md_steps,
@@ -221,7 +225,10 @@ class TestStandardCreationObj(unittest.TestCase):
 		               "nGrids".lower():self.nGrids,
 		               "colVars".lower():self.colVars,
 		               "mdThermoStatOpts".lower():self.thermostatOpts,
-		               "rsGrid_distrib".lower():self.rsGridDistrib}
+		               "rsGrid_distrib".lower():self.rsGridDistrib,
+		               "scfMixAlpha".lower(): self.scfMixAlpha,
+		               "scfMixMethod".lower(): self.scfMixMethod}
+
 		self.testCreatorObjA.create()
 		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
 		actArgDict = {k.lower():v for k,v in args[1].items()}
