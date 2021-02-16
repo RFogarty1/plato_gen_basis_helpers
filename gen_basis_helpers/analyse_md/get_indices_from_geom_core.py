@@ -215,10 +215,9 @@ class FilterToExcludeIndicesFurtherOutOfPlaneThanCutoff(FilterIndicesFunction):
 
 		outIndices = list()
 		for idx,coord in enumerate(relCoords):
-			currDists = [ planeEqnHelp.getOutOfPlaneDistTwoPoints(coord,x,self.planeEqn) for x in self.inpPoints]
+			currDists = cartHelp.getDistancesFromPointAlongPlane(coord, self.inpPoints, self.planeEqn)
 			if any([x<self.maxDist for x in currDists]):
 				outIndices.append( inpIndices[idx] )
-
 
 		return outIndices
 

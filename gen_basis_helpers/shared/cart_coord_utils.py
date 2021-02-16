@@ -86,6 +86,20 @@ def getCVectorCorrespondingToSurfHeightShift(heightShift, surfNormal, cVector):
 	return outVector
 
 
+def getDistancesFromPointAlongPlane(inpPoint, otherPoints, planeEqn):
+	""" Get "horizontal" distances (distance along a plane) of a set of points from an input point. By along plane i mean the second term in tVector = tVect(between-planes) + tVect(within-plane). If your plane equation happens to be [0,0,1] = N then this will correspond to the separation along the xy directions
+
+	Args:
+		inpPoint: [x,y,z]
+		otherPoints: iter of [x,y,z]
+		planeEqn: (ThreeDimPlaneEquation)
+
+	Returns
+		outDists: (iter of floats) Distances along the plane
+ 
+	"""
+	return [planeEqnHelp.getOutOfPlaneDistTwoPoints(inpPoint, x, planeEqn) for x in otherPoints]
+
 #Functions including interfaces to unitCell class
 def getNearestInPlaneDistanceGivenInpCellAndAtomIdx(inpCell, atomIdx, planeEqn, includeImages=True, planeTolerance=1e-2):
 	""" Returns the nearest in-plane neighbour distance for atomIdx.
