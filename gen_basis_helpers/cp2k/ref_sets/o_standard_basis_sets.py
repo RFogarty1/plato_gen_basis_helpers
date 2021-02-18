@@ -49,3 +49,25 @@ def _getOxygenMolOptUclTZV2P_plusFOribtal_Basis():
 	return basObj.CP2KBasisObjStandard( element="O", basis="TZV2PX-MOLOPT-GTH-q6",
 	                             potential="GTH-PBE-q6", potFile="GTH_POTENTIALS", basisFile="BASIS_MOLOPT" )
 
+
+
+
+#GTH (non-molopt) basis sets
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("O-GTH-PADE-q6-DZVP".lower())
+def _():
+	return basObj.CP2KBasisObjStandard( element="O", basis="DZVP-GTH-q6",
+	                                    potential="GTH-PADE-q6", potFile="GTH_POTENTIALS", basisFile="GTH_BASIS_SETS" )
+
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("O-GTH-PBE-q6-DZVP".lower())
+def _():
+	return basObj.CP2KBasisObjStandard( element="O", basis="DZVP-GTH-q6",
+	                                    potential="GTH-PBE-q6", potFile="GTH_POTENTIALS", basisFile="GTH_BASIS_SETS" )
+
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("O-GTH-PBE-q6-TZV2P".lower())
+def _():
+	return basObj.CP2KBasisObjStandard( element="O", basis="TZV2P-GTH-q6",
+	                                    potential="GTH-PBE-q6", potFile="GTH_POTENTIALS", basisFile="GTH_BASIS_SETS" )
+
+

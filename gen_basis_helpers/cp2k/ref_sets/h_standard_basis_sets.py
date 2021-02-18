@@ -48,3 +48,23 @@ def _getHydrogenMolOptTZV2PXBasis():
 	return basObj.CP2KBasisObjStandard( element="H", basis="TZV2PX-MOLOPT-GTH",
 	                             potential="GTH-PBE-q1", potFile="GTH_POTENTIALS", basisFile="BASIS_MOLOPT" )
 
+
+
+#GTH (non-molopt) basis sets
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("H-GTH-PADE-q1-DZVP".lower())
+def _():
+	return basObj.CP2KBasisObjStandard( element="H", basis="DZVP-GTH-q1",
+	                                    potential="GTH-PADE-q1", potFile="GTH_POTENTIALS", basisFile="GTH_BASIS_SETS" )
+
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("H-GTH-PBE-q1-DZVP".lower())
+def _():
+	return basObj.CP2KBasisObjStandard( element="H", basis="DZVP-GTH-q1",
+	                                    potential="GTH-PBE-q1", potFile="GTH_POTENTIALS", basisFile="GTH_BASIS_SETS" )
+
+
+@basRegister.decoRegisterCP2KBasisCreatorToMethodStr("H-GTH-PBE-q1-TZV2P".lower())
+def _():
+	return basObj.CP2KBasisObjStandard( element="H", basis="TZV2P-GTH-q1",
+	                                    potential="GTH-PBE-q1", potFile="GTH_POTENTIALS", basisFile="GTH_BASIS_SETS" )
+
