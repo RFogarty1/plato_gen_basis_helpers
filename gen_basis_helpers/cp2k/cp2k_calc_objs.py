@@ -104,7 +104,7 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 		assert len(cpoutPaths) == len(xyzPaths)
 
 		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths)
-		return types.SimpleNamespace(parsedDict)
+		return types.SimpleNamespace(**parsedDict)
 
 	def _checkStringMatchesRunFormat(self, inpStr):
 		pattern = "run_[0-9]+"

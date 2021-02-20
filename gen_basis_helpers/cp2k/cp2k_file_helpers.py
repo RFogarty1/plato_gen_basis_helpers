@@ -533,7 +533,8 @@ def addBasisInfoToSimpleCP2KObj(cp2kObj, elementBasisInfo):
 	modCp2kObjBasedOnDict(cp2kObj,modDict)
 
 def addGeomInfoToSimpleCP2KObj(cp2kObj, uCell):
-	addSubSysSectionCp2kObjFromUCell(cp2kObj, uCell)
+	subSys = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS
+	_addCellSectionToSubSysFromMinimalInterface(uCell.lattVects, uCell.fractCoords, subSys)
 
 
 def addSubSysSectionCp2kObjFromUCell(cp2kObj, uCell, elementBasisInfo:"obj list each with .element,.basis,.potential" , section="forceEval".lower()):
