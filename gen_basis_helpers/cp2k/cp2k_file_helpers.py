@@ -210,13 +210,54 @@ def _modCp2kObjBasedOnDispNonLocalCorr(cp2kObj, useDict):
 
 def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 
-	mixSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.MIXING
+	scfSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF
+	mixSection = scfSection.MIXING
 	if useDict.get("scfMixAlpha".lower(),None) is not None:
 		mixSection.Alpha = useDict["scfMixAlpha".lower()]
 	
 	if useDict.get("scfMixMethod".lower(),None) is not None:
 		mixSection.Method = useDict["scfMixMethod".lower()]
 
+	if useDict.get("scfMixingOn".lower(),None) is not None:
+		currVal = "T" if useDict["scfMixingOn".lower()] else "F"
+		mixSection.Section_parameters = currVal
+
+	if useDict.get("scfDiagAlgorithm".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.DIAGONALIZATION.Algorithm = useDict["scfDiagAlgorithm".lower()].upper()
+
+	if useDict.get("scfOTMinimizer".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.OT.Minimizer = useDict["scfOTMinimizer".lower()]
+
+	if useDict.get("scfOTEnergies".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.OT.Energies = useDict["scfOTEnergies".lower()]
+
+	if useDict.get("scfOTRotation".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.OT.Rotation = useDict["scfOTRotation".lower()]
+
+	if useDict.get("scfGuess".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Scf_guess = useDict["scfGuess".lower()].upper()
+
+	if useDict.get("scfPrintRestartHistoryOn".lower(),None) is not None:
+		val = "ON" if useDict["scfPrintRestartHistoryOn".lower()] is True else "OFF"
+		scfSection.PRINT.RESTART_HISTORY.Section_parameters = val
+
+	if useDict.get("scfPrintRestartHistory_eachMD".lower(),None) is not None:
+		scfSection.PRINT.RESTART_HISTORY.EACH.Md = int(useDict["scfPrintRestartHistory_eachMD".lower()])
+
+	if useDict.get("scfPrintRestartHistory_eachSCF".lower(),None) is not None:
+		scfSection.PRINT.RESTART_HISTORY.EACH.Qs_scf = int(useDict["scfPrintRestartHistory_eachSCF".lower()])
+
+	if useDict.get("scfDiagOn".lower(),None) is not None:
+		scfSection.DIAGONALIZATION.Section_parameters = useDict["scfDiagOn".lower()]
+
+	if useDict.get("scfOuterEps".lower(),None) is not None:
+		scfSection.OUTER_SCF.Eps_scf = useDict["scfOuterEps".lower()]
+
+	if useDict.get("scfOuterMaxIters".lower(),None) is not None:
+		scfSection.OUTER_SCF.Max_scf = useDict["scfOuterMaxIters".lower()]
+
+	if useDict.get("scfMaxIterAfterHistoryFull".lower(),None) is not None:
+		scfSection.Max_scf_history = useDict["scfMaxIterAfterHistoryFull".lower()]
 
 def _modCp2kObjBasedOnSurfDipoleCorrOptDict(cp2kObj, useDict):
 
@@ -434,6 +475,9 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 	if useDict.get("qsExtrapolationMethod".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Extrapolation = useDict["qsExtrapolationMethod".lower()]
 
+	if useDict.get("qsExtrapolationOrder".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.QS.Extrapolation_order = useDict["qsExtrapolationOrder".lower()]
+
 	if useDict.get("walltime",None) is not None:
 		cp2kObj.CP2K_INPUT.GLOBAL.Walltime = useDict["walltime"]
 
@@ -449,6 +493,8 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 		currVal = useDict.get("rsGrid_distrib".lower())
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.MGRID.RS_GRID_list[-1].Distribution_layout = currVal
 
+	if useDict.get("extRestartName".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.EXT_RESTART.Restart_file_name = useDict["extRestartName".lower()]
 
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
@@ -475,9 +521,24 @@ def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section
 
 	return None
 
+def addBasisInfoToSimpleCP2KObj(cp2kObj, elementBasisInfo):
+	subSys = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS
+	_addBasisInfoSectionToSubSys(elementBasisInfo,subSys)
+	basisFileStrs = [x.basisFile for x in elementBasisInfo]
+	potFileStrs = list(set([x.potFile for x in elementBasisInfo])) #Should all be identical; CP2K cant support multiple PP files for one calculation
+
+	assert len(potFileStrs)==1, "Only 1 psuedopotential datafile allowed; this is a restriction within CP2K (not just this python code"
+
+	modDict = {"basisfile":basisFileStrs, "potfile":potFileStrs}
+	modCp2kObjBasedOnDict(cp2kObj,modDict)
+
+def addGeomInfoToSimpleCP2KObj(cp2kObj, uCell):
+	addSubSysSectionCp2kObjFromUCell(cp2kObj, uCell)
+
+
 def addSubSysSectionCp2kObjFromUCell(cp2kObj, uCell, elementBasisInfo:"obj list each with .element,.basis,.potential" , section="forceEval".lower()):
 	if section.lower() == "forceEval".lower():
-		subSys = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS	
+		subSys = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS
 	else:
 		raise ValueError("{} is an invalid option for section".format(section))
 

@@ -8,6 +8,11 @@ import os
 from pycp2k import CP2K
 
 
+def _createNearBlankCP2KObject():
+	outObj = CP2K()
+	outObj.working_directory = os.path.abspath(os.getcwd())
+	outObj.project_name = "cp2k_file"
+	return outObj
 
 def _createTestCP2KObject():
 
@@ -68,6 +73,7 @@ def _createStandardSPEObj_tighter_eps_def():
 #NOTE: These keys HAVE to be in lower case
 defaultMethodStrsToObjCreators = {"cp2k_test_object":_createTestCP2KObject,
                                   "spe_standard":_createStandardSPEObj,
-                                  "spe_standard_eps_def_e-12":_createStandardSPEObj_tighter_eps_def}
+                                  "spe_standard_eps_def_e-12":_createStandardSPEObj_tighter_eps_def,
+                                  "near_blank": _createNearBlankCP2KObject}
 
 

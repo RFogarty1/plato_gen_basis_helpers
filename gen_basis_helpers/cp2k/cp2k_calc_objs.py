@@ -1,3 +1,5 @@
+
+import re
 import os
 import pathlib
 import types
@@ -6,12 +8,18 @@ import plato_pylib.parseOther.parse_cp2k_files as parseCP2K
 
 from ..shared import method_objs as methodObjs
 from . import cp2k_file_helpers as pyCP2KHelpers
-
+from . import parse_md_files as parseMdHelp
 
 #NOTE: Loads of descriptors are added below (at the bottom of the file)
 class CP2KCalcObj(methodObjs.CalcMethod):
 
-	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=True, md=False):
+	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=True, md=False, postWriteHooks=None):
+		""" Initializer
+		
+		Args:
+			postWriteHooks: (iter of f(instance)) These are called by writeFile after the main file is written. Original use is for copying restart files to a target folder
+				 
+		"""
 		self.cp2kObj = pycp2kObj
 		if basePath is None:
 			self.basePath = os.path.abspath( os.path.join( os.getcwd(), "cp2k_file" ) )
@@ -19,13 +27,16 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 			self.basePath = os.path.abspath( os.path.splitext(basePath)[0] )
 		self.saveRestartFile = saveRestartFile
 		self.md = md
+		self.postWriteHooks = list() if postWriteHooks is None else list(postWriteHooks)
 	
 	def writeFile(self):
 		self.cp2kObj.project_name = os.path.split(self.basePath)[1]
 		self.cp2kObj.working_directory = os.path.split(self.basePath)[0]
 		pathlib.Path(self.cp2kObj.working_directory).mkdir(parents=True,exist_ok=True)
 		self.cp2kObj.write_input_file()
-		
+		for f in self.postWriteHooks:
+			f(self)	
+	
 	@property
 	def outFilePath(self):
 		return self.basePath + ".cpout"
@@ -51,20 +62,58 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 	
 	@property
 	def parsedFile(self):
-		parsedDict = parseCP2K.parseCpout(self.outFilePath)
-		outObj = types.SimpleNamespace(**parsedDict)
 		if self.md is False:
+			parsedDict = parseCP2K.parseCpout(self.outFilePath)
+			outObj = types.SimpleNamespace(**parsedDict)
 			try:
 				outCartCoords = self._getFinalCartCoordsFromOpt()
 				outObj.unitCell.cartCoords = outCartCoords
 			except FileNotFoundError:
 				pass
 			outObj.unitCell.convAngToBohr()
+
+		else:
+			outObj = self._parseMdStandard()
+
 		return outObj
 
 	def _getFinalCartCoordsFromOpt(self):
 		parsedXyzDict = parseCP2K.parseXyzFromGeomOpt(self.outGeomPath)
 		return parsedXyzDict["all_geoms"][-1].cartCoords
+
+	def _parseMdStandard(self):
+		#This case should ONLY trigger if multiple runs wernt required
+		workFolder = os.path.split(self.outFilePath)[0]
+		if os.path.exists(self.outFilePath) and not(os.path.exists( os.path.join(workFolder,"run_1") )):
+			cpoutPaths = [self.outFilePath]
+			xyzPaths = [self.outGeomPath]
+		else:
+			cpoutPaths, xyzPaths = list(), list()
+			runDirs = [x for x in os.listdir(workFolder) if os.path.isdir( os.path.join(workFolder,x) )]
+			runDirs = sorted( [x for x in runDirs if self._checkStringMatchesRunFormat(x)] )
+			#NEXT: We want to check for one cpout and one xyz per path
+			for runDir in runDirs:
+				currDir = os.path.join(workFolder,runDir)
+				currXyz = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".xyz")]
+				currCpout = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".cpout")]
+				assert len(currXyz)==1
+				assert len(currCpout)==1
+				cpoutPaths += currCpout
+				xyzPaths += currXyz
+
+		assert len(cpoutPaths) == len(xyzPaths)
+
+		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths)
+		return types.SimpleNamespace(parsedDict)
+
+	def _checkStringMatchesRunFormat(self, inpStr):
+		pattern = "run_[0-9]+"
+		matchObj = re.match(pattern, inpStr)
+		if matchObj is None:
+			return False
+		if inpStr != inpStr[slice(*matchObj.span())]:
+			return False
+		return True
 
 #Optional descriptors that can be added
 def addInpPathDescriptorToCP2KCalcObjCLASS(inpCls):

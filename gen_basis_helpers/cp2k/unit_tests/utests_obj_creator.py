@@ -41,6 +41,14 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.rsGridDistrib = None
 		self.scfMixAlpha = None
 		self.scfMixMethod = None
+		self.scfOTMinimizer = None
+		self.scfOTEnergies = None
+		self.scfOTRotation = None
+		self.scfGuess = None
+		self.scfPrintRestartHistoryOn = None
+		self.scfPrintRestartHistory_eachMD = None
+		self.scfPrintRestartHistory_eachSCF = None
+
 		self.createTestObjs()
 
 	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
@@ -56,7 +64,11 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        restart_file_every_n_md_steps=self.restart_file_every_n_md_steps,
 		                                                        prefDiagLib=self.prefDiagLib, epsDef=self.epsDef, nGrids=self.nGrids,
 		                                                        colVars=self.colVars, metaDynOpts=self.metaDynOpts, thermostatOpts=self.thermostatOpts,
-		                                                        rsGridDistrib=self.rsGridDistrib, scfMixAlpha=self.scfMixAlpha, scfMixMethod=self.scfMixMethod)
+		                                                        rsGridDistrib=self.rsGridDistrib, scfMixAlpha=self.scfMixAlpha, scfMixMethod=self.scfMixMethod,
+		                                                        scfOTMinimizer=self.scfOTMinimizer, scfOTEnergies=self.scfOTEnergies,scfOTRotation=self.scfOTRotation,
+		                                                        scfGuess=self.scfGuess, scfPrintRestartHistoryOn=self.scfPrintRestartHistoryOn,
+		                                                        scfPrintRestartHistory_eachMD=self.scfPrintRestartHistory_eachMD,
+		                                                        scfPrintRestartHistory_eachSCF=self.scfPrintRestartHistory_eachSCF)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -103,9 +115,10 @@ class TestStandardCreationObj(unittest.TestCase):
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
 	def testGeomAndBasisPassedToFileHelpers(self, mockMethReg, mockFileHelpers):
 		self.testCreatorObjA.create()
-		args,kwargs = mockFileHelpers.addGeomAndBasisInfoToSimpleCP2KObj.call_args
-		self.assertEqual(self.geom,args[1])
-		self.assertEqual(self.basisObj,args[2]) 
+		geoArgs  , kwargs = mockFileHelpers.addGeomInfoToSimpleCP2KObj.call_args
+		basisArgs, kwargs = mockFileHelpers.addBasisInfoToSimpleCP2KObj.call_args
+		self.assertEqual(self.geom,geoArgs[1])
+		self.assertEqual(self.basisObj,basisArgs[1]) 
 
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
@@ -215,6 +228,15 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.rsGridDistrib = [-1,-1,24]
 		self.scfMixAlpha = 5
 		self.scfMixMethod = "pulay"
+
+		self.scfOTMinimizer = "DIIS"
+		self.scfOTEnergies = True
+		self.scfOTRotation = True
+		self.scfGuess = "restart"
+		self.scfPrintRestartHistoryOn = True
+		self.scfPrintRestartHistory_eachMD = 5
+		self.scfPrintRestartHistory_eachSCF = 7
+
 		self.createTestObjs()
 		expArgDict = {"qsExtrapolationMethod".lower(): self.extrapolationMethod, "walltime": self.walltime,
 		               "trajPrintEachMd".lower(): self.print_every_n_md_steps,
@@ -227,7 +249,13 @@ class TestStandardCreationObj(unittest.TestCase):
 		               "mdThermoStatOpts".lower():self.thermostatOpts,
 		               "rsGrid_distrib".lower():self.rsGridDistrib,
 		               "scfMixAlpha".lower(): self.scfMixAlpha,
-		               "scfMixMethod".lower(): self.scfMixMethod}
+		               "scfMixMethod".lower(): self.scfMixMethod,
+		               "scfOTMinimizer".lower():self.scfOTMinimizer,
+		               "scfOTRotation".lower():self.scfOTRotation,
+		               "scfGuess".lower():self.scfGuess,
+		               "scfPrintRestartHistoryOn".lower():self.scfPrintRestartHistoryOn,
+		               "scfPrintRestartHistory_eachMD".lower():self.scfPrintRestartHistory_eachMD,
+		               "scfPrintRestartHistory_eachSCF".lower():self.scfPrintRestartHistory_eachSCF}
 
 		self.testCreatorObjA.create()
 		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
@@ -317,4 +345,51 @@ class TestGetCP2KModDictBasedOnAtomicPosConstraints(unittest.TestCase):
 		actDict = self._runTestFunct()
 		self.assertEqual(expDict, actDict)
 
+
+class TestGetHooksForCopyRestartFiles(unittest.TestCase):
+
+	def setUp(self):
+		self.restartName = "fake_file.restart"
+		self.filePath = "fake_path.restart"
+		self.workFolder = "fake_work_folder"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"workFolder":self.workFolder, "inpRestartName":self.restartName,
+		              "inpRestartPath":self.filePath}
+		self.testObjA = tCode.CP2KCalcObjFactoryStandard(**currKwargs)
+
+	def _runTestFunct(self):
+		postWriteHooks = self.testObjA._getPostWriteFileHooks()
+		assert len(postWriteHooks)==1
+		postWriteHooks[0](mock.Mock())
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.shutil.copy2")
+	def testExpectedCopyCommandPassed_workfolderSet(self, mockedCopyFunct):
+		expOutPath = os.path.join(self.workFolder, self.restartName)
+		expInpPath = self.filePath
+		self._runTestFunct()
+		mockedCopyFunct.assert_called_with(expInpPath, expOutPath)
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.shutil.copy2")
+	def testExpected_restartNameNone(self, mockedCopyFunct):
+		self.restartName = None
+		self.createTestObjs()
+		expOutPath = os.path.join(self.workFolder, os.path.split(self.filePath)[-1])
+		expInpPath = self.filePath
+		self._runTestFunct()
+		mockedCopyFunct.assert_called_with(expInpPath, expOutPath)
+
+	def testExpected_workfolderNone(self):
+		self.workFolder = None
+		self.createTestObjs()
+		with self.assertRaises(NotImplementedError):
+			self._runTestFunct()
+
+	def testExpected_inpPathNone(self):
+		self.filePath = None
+		self.createTestObjs()
+		expVal = None
+		actVal = self.testObjA._getPostWriteFileHooks()
+		self.assertEqual(expVal, actVal)
 

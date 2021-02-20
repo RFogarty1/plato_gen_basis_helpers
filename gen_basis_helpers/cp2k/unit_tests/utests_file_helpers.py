@@ -175,7 +175,9 @@ class testModifyCp2kObj(unittest.TestCase):
 		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
 
 	def testChangeScfConvParams(self):
-		kwargDict = {"scfMixAlpha": "0.8", "scfMixMethod": "PULAY_MIXING"}
+		kwargDict = {"scfMixAlpha": "0.8", "scfMixMethod": "PULAY_MIXING", "scfMixingOn":False,
+		             "scfPrintRestartHistoryOn":True, "scfPrintRestartHistory_eachMD":8, "scfPrintRestartHistory_eachSCF":12,
+		             "scfDiagOn":False, "scfOuterEps": 1e-5, "scfOuterMaxIters":20}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputScfMixA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -202,7 +204,9 @@ class testModifyCp2kObj(unittest.TestCase):
 	def testMiscOptsA(self):
 		kwargDict = {"scfPrintRestart":False, "qsExtrapolationMethod":"LINEAR_P", "nGrids":5,
 		             "walltime":2500, "prefDiagLib":"sl",
-		             "rsGrid_distrib":[-1,-1,48]}
+		             "rsGrid_distrib":[-1,-1,48], "qsExtrapolationOrder":4, "scfDiagAlgorithm":"OT",
+		             "scfOTMinimizer": "DIIS", "scfOTEnergies":True, "scfOTRotation":True, "scfGuess":"restart",
+		             "extRestartName": "fake_restart_file.restart", "scfMaxIterAfterHistoryFull":1}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputMiscOptsA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -389,8 +393,28 @@ def _loadExpectedOutputChangeNonLocalDispCorrObjA():
 
 def _loadExpectedOutputScfMixA():
 	outStr = _getDefObjInputStr()
+	newPrintPart = "&SCF\n"
+	newPrintPart += "      &PRINT\n"
+	newPrintPart += "        &RESTART_HISTORY ON\n"
+	newPrintPart += "          &EACH\n"
+	newPrintPart += "            MD 8\n"
+	newPrintPart += "            QS_SCF 12\n"
+	newPrintPart += "          &END EACH\n"
+	newPrintPart += "        &END RESTART_HISTORY\n"
+	newPrintPart += "      &END PRINT\n"
+
+	newOuterScfPart  = "&SCF\n"
+	newOuterScfPart += "      &OUTER_SCF\n"
+	newOuterScfPart += "        EPS_SCF 1e-05\n"
+	newOuterScfPart += "        MAX_SCF 20\n"
+	newOuterScfPart += "      &END OUTER_SCF\n"
+
+	outStr = outStr.replace("MIXING T","MIXING F")
 	outStr = outStr.replace("METHOD BROYDEN_MIXING", "METHOD PULAY_MIXING")
 	outStr = outStr.replace("ALPHA 0.4", "ALPHA 0.8")
+	outStr = outStr.replace("&SCF\n",newPrintPart)
+	outStr = outStr.replace("DIAGONALIZATION ON", "DIAGONALIZATION FALSE")
+	outStr = outStr.replace("&SCF\n",newOuterScfPart)
 	return outStr
 
 def _loadExpectedOutputSurfaceDipoleOptsA():
@@ -417,14 +441,22 @@ def _loadExpectedOutputSimpleMDOptionsA():
 def _loadExpectedOutputMiscOptsA():
 	outStr = _getDefObjInputStr()
 	newScfPart = "    &SCF\n      &PRINT\n        &RESTART OFF\n        &END RESTART\n      &END PRINT\n"
-	newQsPart = "    &QS\n      EXTRAPOLATION LINEAR_P\n"
+	newQsPart = "    &QS\n      EXTRAPOLATION LINEAR_P\n      EXTRAPOLATION_ORDER 4\n"
 	newGlobalPart = "&GLOBAL\n  WALLTIME 2500\n  PREFERRED_DIAG_LIBRARY SL\n"
 	newDistribGrid = "&MGRID\n      &RS_GRID\n        DISTRIBUTION_LAYOUT -1 -1 48\n      &END RS_GRID\n"
+	newDiagPart = "ALGORITHM OT"
+	newOTPart = "EPS_SCF 1.0E-7\n      &OT\n        MINIMIZER DIIS\n        ENERGIES TRUE\n        ROTATION TRUE\n      &END OT\n"
+	newScfGuessPart = "SCF_GUESS RESTART\n      MAX_SCF_HISTORY 1\n"
+	newExtRestartPart = "&EXT_RESTART\n  RESTART_FILE_NAME fake_restart_file.restart\n&END EXT_RESTART\n&GLOBAL\n"
 	outStr = outStr.replace("    &QS\n" ,  newQsPart)
 	outStr = outStr.replace("    &SCF\n", newScfPart)
 	outStr = outStr.replace("&GLOBAL\n", newGlobalPart)
 	outStr = outStr.replace("NGRIDS 4","NGRIDS 5")
 	outStr = outStr.replace("&MGRID\n", newDistribGrid)
+	outStr = outStr.replace("ALGORITHM Standard",newDiagPart)
+	outStr = outStr.replace("EPS_SCF 1.0E-7\n",newOTPart)
+	outStr = outStr.replace("SCF_GUESS ATOMIC\n", newScfGuessPart)
+	outStr = outStr.replace("&GLOBAL\n", newExtRestartPart)
 	return outStr
 
 def _loadExpectedOutputTrajPrintOptsA():

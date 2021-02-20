@@ -3,6 +3,7 @@
 
 import contextlib
 import os
+import shutil
 
 from . import method_register as methRegister
 from . import basis_register as basRegister
@@ -69,6 +70,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("mdOpts")
 	registeredKwargs.add("walltime")
 	registeredKwargs.add("extrapolationMethod")
+	registeredKwargs.add("extrapolationOrder")
 	registeredKwargs.add("print_every_n_md_steps")
 	registeredKwargs.add("print_every_n_scf_steps")
 	registeredKwargs.add("restart_file_every_n_md_steps")
@@ -81,6 +83,22 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("rsGridDistrib")
 	registeredKwargs.add("scfMixAlpha")
 	registeredKwargs.add("scfMixMethod")
+	registeredKwargs.add("scfDiagAlgorithm")
+	registeredKwargs.add("scfOTMinimizer")
+	registeredKwargs.add("scfOTEnergies")
+	registeredKwargs.add("scfOTRotation")
+	registeredKwargs.add("scfGuess")
+	registeredKwargs.add("scfPrintRestartHistoryOn")
+	registeredKwargs.add("scfPrintRestartHistory_eachMD")
+	registeredKwargs.add("scfPrintRestartHistory_eachSCF")
+	registeredKwargs.add("scfDiagOn")
+	registeredKwargs.add("scfMaxIters") #TODO: Handle this specially
+	registeredKwargs.add("scfOuterEps")
+	registeredKwargs.add("scfOuterMaxIters")
+	registeredKwargs.add("useSmearing")
+	registeredKwargs.add("inpRestartName")
+	registeredKwargs.add("inpRestartPath")
+	registeredKwargs.add("scfMaxIterAfterHistoryFull")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -185,13 +203,40 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		else:
 			md = True if self.runType.lower()=="md" else False
 		keepRestartFile = True if self.saveRestartFile is None else self.saveRestartFile #Usually not ever written, so passing False can cause issues (attempt to rm a non-existent file can throw an error)
-		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=keepRestartFile, md=md)
+#		postWriteHooks = None
+		postWriteHooks = self._getPostWriteFileHooks()
+		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=keepRestartFile, md=md, postWriteHooks=postWriteHooks)
 		return outputObj
+
+	#TODO: I should probably be using the calcObj paths here, but this way was just easier to unit test initially
+	def _getPostWriteFileHooks(self):
+		if self.inpRestartPath is None:
+			return None
+
+		if self.workFolder is None:
+			raise NotImplementedError("Cant deal with copying restart files if self.workFolder is not set")
+
+		#1) Handle the standard restart file
+		inpPath = self.inpRestartPath
+		restartName = os.path.split(inpPath)[-1] if self.inpRestartName is None else self.inpRestartName
+		outPath = os.path.join(self.workFolder, restartName)
+		outFunct = lambda instance: shutil.copy2(inpPath,outPath)
+		return [outFunct]
 
 	def _modPycp2kObj(self,pycp2kObj):
 		#Modify basis set info and geometry; these need a special function essentially
 		basisObjs = self._getBasisObjs()
-		fileHelpers.addGeomAndBasisInfoToSimpleCP2KObj(pycp2kObj, self.geom, basisObjs)
+
+		if len(pycp2kObj.CP2K_INPUT.FORCE_EVAL_list)==0:
+			pycp2kObj.CP2K_INPUT.FORCE_EVAL_add()
+
+		if self.geom is not None:
+			fileHelpers.addGeomInfoToSimpleCP2KObj(pycp2kObj,self.geom)
+
+		if self.basisObjs is not None:
+			fileHelpers.addBasisInfoToSimpleCP2KObj(pycp2kObj, basisObjs)
+
+#		fileHelpers.addGeomAndBasisInfoToSimpleCP2KObj(pycp2kObj, self.geom, basisObjs)
 
 		#Modify any remaining properties we care about
 		modDict = dict()
@@ -224,6 +269,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["walltime"] = self.walltime
 		if self.extrapolationMethod is not None:
 			modDict["qsExtrapolationMethod"] = self.extrapolationMethod
+		if self.extrapolationOrder is not None:
+			modDict["qsExtrapolationOrder"] = self.extrapolationOrder
 		if self.print_every_n_md_steps is not None:
 			modDict["trajPrintEachMd"] = self.print_every_n_md_steps
 		if self.print_every_n_scf_steps is not None:
@@ -252,6 +299,19 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["scfMixAlpha"] = self.scfMixAlpha
 		if self.scfMixMethod is not None:
 			modDict["scfMixMethod"] = self.scfMixMethod
+		if self.scfMaxIters is not None:
+			modDict["maxscf"] = self.scfMaxIters
+		if self.inpRestartPath is not None:
+			modDict["extRestartName"] = self.inpRestartName if self.inpRestartName is not None else os.path.split(self.inpRestartPath)[-1]
+
+		#Some kwargs which directly translate to the file helpers
+		directTranslateKwargs = ["scfOTMinimizer", "scfOTEnergies", "scfOTRotation", "scfGuess", "scfPrintRestartHistoryOn",
+		                         "scfPrintRestartHistory_eachMD", "scfPrintRestartHistory_eachSCF", "scfDiagAlgorithm", "useSmearing", "scfDiagOn",
+		                         "scfOuterEps", "scfOuterMaxIters", "scfMaxIterAfterHistoryFull"]
+		for attr in directTranslateKwargs:
+			if getattr(self,attr) is not None:
+				modDict[attr] = getattr(self,attr)
+
 
 		modDict["scfPrintRestart".lower()] = False
 
