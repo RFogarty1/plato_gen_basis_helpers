@@ -14,17 +14,23 @@ class TestStandardMDOptsObject(unittest.TestCase):
 		self.nSteps = 50
 		self.ensemble = "NVE"
 		self.temperature = 300.5
+		self.printKindTemp = False
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		kwargDict = {"timeStep":self.timeStep, "nSteps":self.nSteps,
-		             "ensemble":self.ensemble, "temperature":self.temperature}
+		             "ensemble":self.ensemble, "temperature":self.temperature,
+		             "printKindTemp":self.printKindTemp}
 		self.testObjA = tCode.MolDynamicsOptsCP2KStandard(**kwargDict)
 
 	def testExpectedKeysPresentInOptDictA_relevantOptsSet(self):
+		self.printKindTemp = True
+		self.createTestObjs()
+
 		expDict = {"mdTimeStep":"{:.2f}".format(self.timeStep),
 		           "mdSteps":self.nSteps, "mdEnsemble":self.ensemble,
-		            "mdTemperature": "{:.2f}".format(self.temperature) } 
+		            "mdTemperature": "{:.2f}".format(self.temperature),
+		            "mdPrintKindTemps":self.printKindTemp } 
 		actDict = self.testObjA.optDict
 
 		for key in expDict.keys():

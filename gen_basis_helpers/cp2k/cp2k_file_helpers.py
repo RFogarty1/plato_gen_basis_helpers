@@ -268,7 +268,6 @@ def _modCp2kObjBasedOnSurfDipoleCorrOptDict(cp2kObj, useDict):
 	if useDict.get("surf_dipole_corr_surfDipoleDir".lower(),None) is not None:
 		dftSection.Surf_dip_dir = useDict["surf_dipole_corr_surfDipoleDir".lower()].upper()
 
-
 def _modCp2kObjBasedOnMolecularDynamicsOptDict(cp2kObj, useDict):
 	mdSection = cp2kObj.CP2K_INPUT.MOTION.MD
 
@@ -291,6 +290,9 @@ def _modCp2kObjBasedOnMolecularDynamicsOptDict(cp2kObj, useDict):
 		thermoOpts = useDict["mdThermoStatOpts".lower()]
 		thermoOpts.addToPyCp2kObj(cp2kObj)
 
+	if useDict.get("mdPrintKindTemps".lower(),None) is not None:
+		val = "ON" if useDict["mdPrintKindTemps".lower()] is True else "OFF"
+		mdSection.PRINT.TEMP_KIND.Section_parameters = val
 
 def _modCp2kObjBasedOnTrajPrintDict(cp2kObj, useDict):
 	motionPart = cp2kObj.CP2K_INPUT.MOTION

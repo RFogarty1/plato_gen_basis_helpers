@@ -29,7 +29,8 @@ class ThermostatOptsBase():
 
 class MolDynamicsOptsCP2KStandard():
 
-	def __init__(self, timeStep=None, nSteps=None, ensemble=None, temperature=None, thermostatType=None):
+	def __init__(self, timeStep=None, nSteps=None, ensemble=None, temperature=None,
+	             thermostatType=None, printKindTemp=None):
 		""" Initializer
 		
 		Args:
@@ -38,6 +39,7 @@ class MolDynamicsOptsCP2KStandard():
 			ensemble: (str) e.g. NVE, NPT. Passed directly to ensemble keyword in Motion/MD section
 			temperature: (float) In Kelvin
 			thermostatType: (Str) e.g. Nose
+			printKindTemp: (Bool) If True print temperatures of atomic kinds (dumps to a file)
  
 		Returns
 			What Function Returns
@@ -50,6 +52,7 @@ class MolDynamicsOptsCP2KStandard():
 		self.ensemble = ensemble
 		self.temperature = temperature
 		self.thermostatType = thermostatType
+		self.printKindTemp = printKindTemp
 
 		#Mapping from numbers to strings
 		self.tempFmt = "{:.2f}"
@@ -60,7 +63,8 @@ class MolDynamicsOptsCP2KStandard():
 		outDict = {"mdEnsemble": self.ensemble, "mdSteps": self.nSteps,
 		           "mdTimeStep": self.timeStepFmt.format(self.timeStep) if self.timeStep is not None else None,
 		           "mdTemperature": self.tempFmt.format(self.temperature) if self.temperature is not None else None,
-	               "mdThermostatType": self.thermostatType if self.thermostatType is not None else None}
+	               "mdThermostatType": self.thermostatType if self.thermostatType is not None else None,
+		           "mdPrintKindTemps": self.printKindTemp if self.printKindTemp is not None else None}
 
 		outDict = {k:v for k,v in outDict.items() if v is not None}
 
