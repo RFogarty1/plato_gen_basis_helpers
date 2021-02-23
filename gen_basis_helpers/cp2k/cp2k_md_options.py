@@ -128,3 +128,20 @@ class NoseThermostatOpts(ThermostatOptsBase):
 		thermoSect.NOSE.Timecon = self.timeConFmt.format(self.timeCon)
 
 
+class LangevinThermostatOpts(ThermostatOptsBase):
+
+	def __init__(self, gamma=None, noisyGamma=None):
+		""" Initializer
+		
+		Args:
+			Gamma: Langevin friction parameter
+			noisyGamma: Intrinsic friction parameter; this is used to correct for energy dissipation effects in second generation CP-like dynamics runs
+		
+		"""
+		self.gamma = gamma
+		self.noisyGamma = noisyGamma
+
+	def addToPyCp2kObj(self, pyCp2kObj):
+		langevinSection = pyCp2kObj.CP2K_INPUT.MOTION.MD.LANGEVIN
+		langevinSection.Gamma = self.gamma
+		langevinSection.Noisygamma = self.noisyGamma

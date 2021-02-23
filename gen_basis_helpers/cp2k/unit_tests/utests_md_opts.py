@@ -127,4 +127,24 @@ class TestThermostatOpts(unittest.TestCase):
 		self.assertEqual(expTimeCon, thermostatSection.NOSE.Timecon)
 
 
+class TestLangevinThermostatOpts(unittest.TestCase):
+
+	def setUp(self):
+		self.gamma = 2
+		self.noisyGamma = 3
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.pycp2kObj = methReg.createCP2KObjFromMethodStr("cp2k_test_object")
+		kwargs = {"gamma":self.gamma, "noisyGamma":self.noisyGamma}
+		self.testObjA = tCode.LangevinThermostatOpts(**kwargs)
+
+	def testExpectedCaseA(self):
+		langevinSection = self.pycp2kObj.CP2K_INPUT.MOTION.MD.LANGEVIN
+		expGamma, expNoisyGamma = self.gamma, self.noisyGamma
+		self.testObjA.addToPyCp2kObj(self.pycp2kObj)
+
+		self.assertEqual(expGamma, langevinSection.Gamma)
+		self.assertEqual(expNoisyGamma, langevinSection.Noisygamma)
+
 
