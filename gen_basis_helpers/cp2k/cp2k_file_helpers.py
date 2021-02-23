@@ -234,6 +234,9 @@ def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 	if useDict.get("scfOTRotation".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.OT.Rotation = useDict["scfOTRotation".lower()]
 
+	if useDict.get("scfOTStepsize".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.OT.Stepsize = useDict["scfOTStepsize".lower()]
+
 	if useDict.get("scfGuess".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Scf_guess = useDict["scfGuess".lower()].upper()
 

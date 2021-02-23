@@ -87,6 +87,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("scfOTMinimizer")
 	registeredKwargs.add("scfOTEnergies")
 	registeredKwargs.add("scfOTRotation")
+	registeredKwargs.add("scfOTStepsize")
 	registeredKwargs.add("scfGuess")
 	registeredKwargs.add("scfPrintRestartHistoryOn")
 	registeredKwargs.add("scfPrintRestartHistory_eachMD")
@@ -307,7 +308,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		#Some kwargs which directly translate to the file helpers
 		directTranslateKwargs = ["scfOTMinimizer", "scfOTEnergies", "scfOTRotation", "scfGuess", "scfPrintRestartHistoryOn",
 		                         "scfPrintRestartHistory_eachMD", "scfPrintRestartHistory_eachSCF", "scfDiagAlgorithm", "useSmearing", "scfDiagOn",
-		                         "scfOuterEps", "scfOuterMaxIters", "scfMaxIterAfterHistoryFull"]
+		                         "scfOuterEps", "scfOuterMaxIters", "scfMaxIterAfterHistoryFull", "scfOTStepsize"]
 		for attr in directTranslateKwargs:
 			if getattr(self,attr) is not None:
 				modDict[attr] = getattr(self,attr)
