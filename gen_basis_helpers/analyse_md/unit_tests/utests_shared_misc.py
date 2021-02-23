@@ -38,3 +38,30 @@ class TestGetSlicesForMerging(unittest.TestCase):
 		actIndices = self._runTestFunct()
 		self.assertEqual(expIndices,actIndices)
 
+
+class TestGetSlicesForTrimmingTrajectories(unittest.TestCase):
+
+	def setUp(self):
+		self.tStepsA = [  [0,2,4,6], [4,6,8,10], [8,10,12] ]
+		self.trimStrat = "simple"
+
+	def _runTestFunct(self):
+		return tCode.getSliceIndicesForTrimmingTrajectories(self.tStepsA, trimStrat=self.trimStrat)
+
+	def testForExpectedA_simpleStrat(self):
+		expSlices = [[0,2], [0,2], [0,3]]
+		actSlices = self._runTestFunct()
+		self.assertEqual(expSlices, actSlices)
+
+	def testForExpectedB_simpleStrat(self):
+		self.tStepsA = [ [0,2,4], [6,8,10], [10,12,14], [12,14,16] ]
+		expIndices = [ [0,3], [0,2], [0,1], [0,3] ]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
+	def testForExpected_noneStrat(self):
+		self.trimStrat = None
+		expIndices = [ [0,4], [0,4], [0,3] ]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+

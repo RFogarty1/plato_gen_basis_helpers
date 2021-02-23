@@ -1,4 +1,5 @@
 
+import itertools as it
 import numpy as np
 
 from . import shared_misc as miscHelp
@@ -40,7 +41,6 @@ class ThermoDataStandard(ThermoDataInterface):
 		"""
 		self._eqTol = 1e-5
 		self.dataDict = dict(propDataDict)
-
 
 	@classmethod
 	def fromStdKwargs(cls, step=None, time=None, temp=None, eTotal=None, eKinetic=None,
@@ -102,12 +102,18 @@ class ThermoDataStandard(ThermoDataInterface):
 
 
 
-def getMergedStandardThermoData(dataList, overlapStrat="simple"):
+def getMergedStandardThermoData(dataList, overlapStrat="simple", trimStrat="simple"):
 	""" Returns a ThermoDataStandard object made by merging those in dataList
 	
 	Args:
 		dataList: (iter of ThermoDataStandard objs) They should all have the same properties
-		overlapStrat: Keyword for how to deal with overlapping steps; details handled by miscHelp.getSlicesForMergingTrajectories	
+		overlapStrat: Keyword for how to deal with overlapping steps; details handled by miscHelp.getSlicesForMergingTrajectories
+		trimStrat: (str or None) How to handle case where trajectory steps overlap (e.g steps=[0,5,10], [5,10,15])
+
+	WARNING:
+		a) This function doesnt involve COPYING anything, since that would be too inefficient for many typical cases. Thus modifying the output from this function will also modify the trajSteps in trajList.
+		b) The input trajectories are "trimmed" in place. Which may be confusing if you plan on using the untrimmed trajectories
+		c) "Trimming" is applied before the overlap strat is. This may affect what you get depending on the options used
  
 	Returns
 		 outData: Single ThermoDataStandard object. Note we DONT COPY ANY DATA. Thus, care should be taken if objects in dataList are kept around
@@ -129,13 +135,32 @@ def getMergedStandardThermoData(dataList, overlapStrat="simple"):
 
 	nSteps = [len(x.dataDict["step"]) for x in orderedTrajs]
 
-
 	#Step 1.5 - check all ThermoData is consistent
 	if not all(  [set(x.props)==set(dataList[0].props) for x in orderedTrajs] ):
 		raise ValueError("Not all objects in datalist have the same .prop values")
 	for obj in dataList:
 		assert obj.dataListLengthsAllEqual
 
+	#Now trim if required
+	trajSteps = [ dataList[idx].dataDict["step"] for idx,unused in orderedIdxVsStartSteps ]
+	sliceIndices = miscHelp.getSliceIndicesForTrimmingTrajectories(trajSteps, trimStrat=trimStrat)
+	for thermoObj, sliceIdx in it.zip_longest(dataList, sliceIndices):
+		_trimThermoDataBasedOnSlice(thermoObj, slice(*sliceIdx) )
+
+	#Re figure out start/end steps. TODO: Remove duplication
+	startSteps = [ min(x.dataDict["step"]) for x in dataList ]
+	endSteps = [ max(x.dataDict["step"]) for x in dataList ]
+
+	orderedIdxVsStartSteps = sorted( [x for x in enumerate(startSteps)], key=lambda x:x[1] )
+
+	orderedTrajs = list()
+	stepIndices = list()
+
+	for idx,unused in orderedIdxVsStartSteps:
+		orderedTrajs.append( dataList[idx] )
+		stepIndices.append( (startSteps[idx],endSteps[idx]) )
+
+	nSteps = [len(x.dataDict["step"]) for x in orderedTrajs]
 
 	#Step 2 = figure out based on step number
 	stepSlices = miscHelp.getSlicesForMergingTrajectories(stepIndices, nSteps, overlapStrat=overlapStrat)
@@ -150,4 +175,8 @@ def getMergedStandardThermoData(dataList, overlapStrat="simple"):
 
 	return ThermoDataStandard(outKwargDict)
 
+
+def _trimThermoDataBasedOnSlice(thermoData, sliceObj):
+	for prop in thermoData.dataDict.keys():
+		thermoData.dataDict[prop] = thermoData.dataDict[prop][sliceObj]
 

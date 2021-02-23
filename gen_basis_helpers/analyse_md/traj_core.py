@@ -1,4 +1,5 @@
 
+import itertools as it
 import json
 import os
 import pathlib
@@ -187,22 +188,28 @@ def getFinalNLinesFromFileObj(f, lines=1, _buffer=4098):
     return lines_found[-lines:]
 
 
-
-def getMergedTrajInMemory(trajList, overlapStrat="simple"):
+#TODO: Add an option for checking the timestep spacing stays constant (finalTime/nSteps) == time(step1) - time(step0)
+def getMergedTrajInMemory(trajList, overlapStrat="simple", trimStrat="simple"):
 	""" Returns a TrajectoryInMemory which is the merge of trajectories in trajList
 	
 	Args:
 		trajList: (iter of TrajectoryInMemory objects)
 		mergeStrat: (str or None) How to handle the cases where some steps are present in multiple trajectories. None means just throw an error if this is the case
+		trimStrat: (str or None) How to handle case where trajectory steps overlap (e.g steps=[0,5,10], [5,10,15])
 
 	mergeStrat values:
 		"simple": Allows the start step of one trajectory to be EQUAL or greater than the end step of the previous. For example for steps=[0,5], [5,10] we use step 5 from only the second object 
+
+	trimStrat values:
+		"simple": From start->end traj removes steps from early trajectories which would overlap the next one. (e.g. steps=[0,5,10], [5,10,15] becomes [0],[5,10,15])
  
 	Returns
 		outTraj: (TrajectoryInMemory) Contains all the ordered trajectories in trajList
  
 	WARNING:
-		This function doesnt involve COPYING anything, since that would be too inefficient for many typical cases. Thus modifying the output from this function will also modify the trajSteps in trajList.
+		a) This function doesnt involve COPYING anything, since that would be too inefficient for many typical cases. Thus modifying the output from this function will also modify the trajSteps in trajList.
+		b) The input trajectories are "trimmed" in place. Which may be confusing if you plan on using the untrimmed trajectories
+		c) "Trimming" is applied before the overlap strat is. This may affect what you get depending on the options used
 
 	Raises:
 		 ValueError: If step numbers in trajList overlap between two trajectories (e.g. if theres a "step 5" in two of the input trajectories) AND mergestrat=None
@@ -213,6 +220,19 @@ def getMergedTrajInMemory(trajList, overlapStrat="simple"):
 
 	orderedIdxVsStartSteps = sorted( [x for x in enumerate(startSteps)], key=lambda x:x[1] )
 
+
+	#Step 1.5 = Trim trajectories if needed
+	orderedTrajs = [trajList[idx] for idx,startStep in orderedIdxVsStartSteps]
+	miscHelp.trimTrajectoriesIfRequired(orderedTrajs, trimStrat)
+
+
+	#Step 1.9 - figure out new start/end steps
+	startSteps = [ min(x.trajSteps,key=lambda a:a.step).step for x in trajList ]
+	endSteps = [ max(x.trajSteps, key=lambda a:a.step).step for x in trajList ]
+
+	orderedIdxVsStartSteps = sorted( [x for x in enumerate(startSteps)], key=lambda x:x[1] )
+
+	#Step 2 - figure out start/end step indices for trimmed trajectories
 	orderedTrajs = list()
 	stepIndices = list()
 
@@ -231,3 +251,7 @@ def getMergedTrajInMemory(trajList, overlapStrat="simple"):
 		outTrajSteps.extend( currTraj.trajSteps[slice(*stepSlice)] )
 
 	return TrajectoryInMemory(outTrajSteps)
+
+
+
+

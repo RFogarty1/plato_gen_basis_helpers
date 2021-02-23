@@ -1,4 +1,6 @@
 
+import itertools as it
+
 
 def getSlicesForMergingTrajectories(stepIndices, nSteps, overlapStrat="simple"):
 	""" Takes a list of ORDERED [start,end] indices and returns the slice indices needed to merge trajectories
@@ -56,4 +58,61 @@ def _getSlicesForSimpleOverlapCase(stepIndices, nSteps):
 			stepSlices.append(currSlices)
 
 	return stepSlices
+
+
+
+def trimTrajectoriesIfRequired(orderedTrajs, trimStrat):
+	if trimStrat is None:
+		return None
+
+	#Figure out the indices we need to keep
+	trajObjs = [x.trajSteps for x in orderedTrajs]
+	trajSteps = list()
+	for trajObj in trajObjs:
+		currSteps = [x.step for x in trajObj]
+		trajSteps.append(currSteps)
+	sliceIndices = getSliceIndicesForTrimmingTrajectories(trajSteps, trimStrat=trimStrat)
+
+	#Trim the trajectories	
+	for sIndices, trajObj in it.zip_longest(sliceIndices, orderedTrajs):
+		trajObj.trajSteps = trajObj.trajSteps[slice(sIndices[0],sIndices[1])]
+
+
+def getSliceIndicesForTrimmingTrajectories(trajSteps, trimStrat="simple"):
+	""" Gets the slices required for trimming trajectories such that they dont overlap
+	
+	Args:
+		trajSteps: (iter of len-N iters) 
+
+	trimStrat values:
+		"simple": From start->end traj removes steps from early trajectories which would overlap the next one. (e.g. steps=[0,5,10], [5,10,15] becomes [0],[5,10,15])
+			 
+	Returns
+		idxSlices: iter of len-2 iters. Each contains the slice of step indices we need for one trajectory e.g. [[0,4],[0,3]] means take the first 5 for the first traj, and the first 4 for the second traj
+ 
+	"""
+	if trimStrat is None:
+		return [[0,len(x)] for x in trajSteps]
+
+	if trimStrat=="simple":
+		return _getSliceIndicesForTrimming_simpleStrat(trajSteps)
+	else:
+		raise ValueError("{} is an invalid value for trimStrat".format(trimStrat))
+
+
+def _getSliceIndicesForTrimming_simpleStrat(trajSteps):
+
+	outSlices = list()
+	for idx, tSteps in enumerate(trajSteps):
+		if idx==len(trajSteps)-1:
+			outSlices.append( [0, len(tSteps)] )
+		else:
+			maxIdx = trajSteps[idx+1][0]
+			for endIdx,stepIdx in enumerate( reversed(tSteps) ):
+				if stepIdx<maxIdx:
+					sliceEnd = len(tSteps)-endIdx
+					break
+			outSlices.append( [0, sliceEnd] )
+
+	return outSlices
 

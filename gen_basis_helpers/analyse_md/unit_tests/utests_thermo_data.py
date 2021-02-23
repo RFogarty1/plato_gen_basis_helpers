@@ -128,4 +128,20 @@ class TestMergingThermoDataStandard(unittest.TestCase):
 		with self.assertRaises(AssertionError):
 			tCode.getMergedStandardThermoData( self.dataList, overlapStrat=self.overlapStrat )
 
+	def testExpectedStepsWithOverhang_trimStratSimple(self):
+		self.stepsA = [1,2,3,4,5]
+		self.stepsB = [4,6] #Deleting step 5 makes it more likely we really are taking the step 4 from this set of trajs
+		self.tempA = [2*x for x in self.stepsA]
+		self.tempB = [3*x for x in self.stepsB]
+		self.createTestObjs()
+
+		expKwargDict = {"step": self.stepsA[:3] + self.stepsB,
+		                "temp": self.tempA[:3]  + self.tempB }
+		expObj = tCode.ThermoDataStandard( expKwargDict )
+		actObj = tCode.getMergedStandardThermoData( self.dataList, overlapStrat=self.overlapStrat )
+		self.assertEqual(expObj, actObj)
+
+
+
+
 

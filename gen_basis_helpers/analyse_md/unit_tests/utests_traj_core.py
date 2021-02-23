@@ -192,11 +192,11 @@ class TestMergeTrajInMemory(unittest.TestCase):
 		actTraj = tCode.getMergedTrajInMemory(self.trajListA)
 		self.assertEqual(expTraj, actTraj)
 
-	def testRaisesIfTrajectoriesOverlap_overlapStratNone(self):
+	def testRaisesIfTrajectoriesOverlap_overlapStratNone_trimStratNone(self):
 		self.stepsA.append(self.stepsB[-1])
 		self.createTestObjs()
 		with self.assertRaises(ValueError):
-			tCode.getMergedTrajInMemory(self.trajListA, overlapStrat=None)
+			tCode.getMergedTrajInMemory(self.trajListA, overlapStrat=None, trimStrat=None)
 
 	def testExpectedStepsWithUnitOverlap_overlapStratSimple(self):
 		self.stepsA.append(4)
@@ -205,5 +205,17 @@ class TestMergeTrajInMemory(unittest.TestCase):
 		expTraj = tCode.TrajectoryInMemory( [tCode.TrajStepBase(step=x) for x in expSteps] )
 		actTraj = tCode.getMergedTrajInMemory(self.trajListA, overlapStrat="simple")
 		self.assertEqual(expTraj,actTraj)
+
+	def testExpectedStepsWithOverhang_trimStratSimple(self):
+		self.stepsA = [1,2,3,4,5]
+		self.stepsB = [4,6] #Deleting step 5 makes it more likely we really are taking the step 4 from this set of trajs
+		self.stepsC = [7,8,9]
+		self.createTestObjs()
+		expSteps = [1,2,3,4,6,7,8,9]
+		expTraj = tCode.TrajectoryInMemory( [tCode.TrajStepBase(step=x) for x in expSteps] )
+		actTraj = tCode.getMergedTrajInMemory(self.trajListA, overlapStrat="simple", trimStrat="simple")
+
+		self.assertEqual(expTraj,actTraj)
+
 
 
