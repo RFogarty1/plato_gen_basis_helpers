@@ -87,8 +87,11 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 		if os.path.exists(self.outFilePath) and not(os.path.exists( os.path.join(workFolder,"run_1") )):
 			cpoutPaths = [self.outFilePath]
 			xyzPaths = [self.outGeomPath]
+			tKindPaths = [os.path.join(workFolder,x) for x in os.listdir(workFolder) if x.endswith(".temp")]
+			if len(tKindPaths) != 1:
+				tKindPaths = [None]
 		else:
-			cpoutPaths, xyzPaths = list(), list()
+			cpoutPaths, xyzPaths, tKindPaths = list(), list(), list()
 			runDirs = [x for x in os.listdir(workFolder) if os.path.isdir( os.path.join(workFolder,x) )]
 			runDirs = sorted( [x for x in runDirs if self._checkStringMatchesRunFormat(x)] )
 			#NEXT: We want to check for one cpout and one xyz per path
@@ -96,14 +99,19 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 				currDir = os.path.join(workFolder,runDir)
 				currXyz = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".xyz")]
 				currCpout = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".cpout")]
+				currTKind = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".temp")]
 				assert len(currXyz)==1
 				assert len(currCpout)==1
 				cpoutPaths += currCpout
 				xyzPaths += currXyz
+				if len(currTKind)==1:
+					tKindPaths += currTKind
+				else:
+					tKindPaths += [None]
 
 		assert len(cpoutPaths) == len(xyzPaths)
 
-		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths)
+		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths, tempKindPaths=tKindPaths)
 		return types.SimpleNamespace(**parsedDict)
 
 	def _checkStringMatchesRunFormat(self, inpStr):

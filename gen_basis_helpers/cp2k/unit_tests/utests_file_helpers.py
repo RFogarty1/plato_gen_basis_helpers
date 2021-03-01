@@ -432,6 +432,7 @@ def _loadExpectedOutputSimpleMDOptionsA():
 	newStr += "    STEPS 100\n"
 	newStr += "    TIMESTEP 0.5\n"
 	newStr += "    TEMPERATURE 300\n"
+	newStr += "    TEMP_KIND TRUE\n"
 	newStr += "    &THERMOSTAT\n"
 	newStr += "      TYPE NOSE\n"
 	newStr += "    &END THERMOSTAT\n"

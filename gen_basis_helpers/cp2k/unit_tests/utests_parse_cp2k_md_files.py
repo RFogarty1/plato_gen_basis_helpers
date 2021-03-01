@@ -1,4 +1,5 @@
 
+import copy
 import itertools as it
 import unittest 
 import unittest.mock as mock
@@ -210,6 +211,102 @@ class TestParseMdStepGenInfo(unittest.TestCase):
 		self.assertEqual(expEndIdx, actEndIdx)
 		for key in expDict.keys():
 			self.assertAlmostEqual( expDict[key], actDict[key] )
+
+
+class TestParseAtomicTempFile(unittest.TestCase):
+
+	def setUp(self):
+		self.fakePathA = "fake_path"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.fileAsListA = self._loadTestFileStrA().split("\n")
+
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCP2KHelp._getFileAsListFromInpFile")
+	def testExpA(self, mockedReadFileIn):
+		mockedReadFileIn.side_effect = lambda *args,**kwargs: self.fileAsListA
+		actDictA = tCode.parseAtomTempFile(self.fakePathA)
+		expDictA = self._loadDictA()
+		mockedReadFileIn.assert_called_with(self.fakePathA)
+		self._checkExpAndActDictMatch(expDictA, actDictA)
+
+	def _loadTestFileStrA(self):
+		return """         0               0.000        99.208281489       401.583437021
+         1               0.500        97.685567639      1140.677251832
+         2               1.000       100.792521731      8812.601802133
+         3               1.500       106.676809013     74529.763329235"""
+
+	def _loadDictA(self):
+		steps = [0,1,2,3]
+		time = [0,0.5,1.0,1.5]
+		atomTempA = [99.208281489, 97.685567639, 100.792521731, 106.676809013]
+		atomTempB = [401.583437021, 1140.677251832, 8812.601802133, 74529.763329235]
+		outDict = {"step": steps, "time": time, "kindTemp": [ atomTempA,atomTempB ]  }
+		return outDict
+
+	def _checkExpAndActDictMatch(self, expDict, actDict):
+		expKeys_simple = ["step","time"]
+		expKeys_other = ["kindTemp"]
+
+		for key in expKeys_simple:
+			expVals, actVals = expDict[key], actDict[key]
+			self.assertEqual( len(expVals),len(actVals) )
+			[self.assertAlmostEqual(exp,act) for exp,act in zip(expVals,actVals)]
+
+		for key in expKeys_other:
+			expVals, actVals = expDict[key], actDict[key]
+			self.assertEqual( len(expVals),len(actVals) )
+			for exp,act in zip(expVals,actVals):
+				self.assertEqual( len(expVals),len(actVals) )
+				[self.assertAlmostEqual(e,a) for e,a in zip(exp,act)]
+
+
+class TestAddAtomicTempInfoToThermoDataObj(unittest.TestCase):
+
+	def setUp(self):
+		self.times = [5,10,15]
+		self.steps = [0,1,2]
+
+		self.timesThermo = [5,10,15]
+		self.stepsThermo = [0,1,2]
+
+		self.kindTempsA = [250,300,270]
+		self.kindTempsB = [260,280,290]
+
+		self.indicesToLabels = None #Map the indices of "kindTemp" to an element. kindTemp_X is the key
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.dictA = {"step":self.steps, "time":self.times, "kindTemp":[self.kindTempsA, self.kindTempsB]}
+		self.thermoDictA = {"step":self.stepsThermo, "time":self.timesThermo}
+		self.thermoObjA = thermoDataHelp.ThermoDataStandard(self.thermoDictA)
+
+	def _runTestFunct(self):
+		tCode._addAtomicTempsToThermoDataObj(self.dictA, self.thermoObjA, idxToLabelDict=self.indicesToLabels)
+
+	def testExpectedData_simpleCorrectInput(self):
+		expThermoDict = copy.deepcopy(self.thermoDictA)
+		expThermoDict["kindTemp_0"] = self.kindTempsA
+		expThermoDict["kindTemp_1"] = self.kindTempsB
+		expThermoObj = thermoDataHelp.ThermoDataStandard(expThermoDict)
+		self._runTestFunct()
+		self.assertEqual(expThermoObj, self.thermoObjA)
+
+	def testRaisesError_stepsInconsistent(self):
+		self.steps = [0,2,3]
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			self._runTestFunct()
+
+	def testExpectedWhenUsingIndicesToLabels(self):
+		self.indicesToLabels = {0:"H",1:"O"}
+		expThermoDict = copy.deepcopy(self.thermoDictA)
+		expThermoDict["kindTemp_H"] = self.kindTempsA
+		expThermoDict["kindTemp_O"] = self.kindTempsB
+		expThermoObj = thermoDataHelp.ThermoDataStandard(expThermoDict)
+		self._runTestFunct()
+		self.assertEqual(expThermoObj, self.thermoObjA)
 
 
 def _getXyzMdNPTFileStrA():

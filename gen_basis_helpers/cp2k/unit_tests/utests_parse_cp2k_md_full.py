@@ -36,7 +36,7 @@ class TestParseMultipleCP2kFull(unittest.TestCase):
 
 	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseFullMdInfoFromCpoutAndXyzFilePaths")
 	def testExpectedResultGivenA(self, mockedParseCpoutAndXyz):
-		def fake_parser(inpCpout, inpXyz):
+		def fake_parser(inpCpout, inpXyz, **kwargs):
 			if (inpCpout == self.testCpoutPaths[0]) and (inpXyz == self.testXyzPaths[0]):
 				return self.retDictA
 			elif (inpCpout == self.testCpoutPaths[1]) and (inpXyz == self.testXyzPaths[1]):
@@ -48,15 +48,15 @@ class TestParseMultipleCP2kFull(unittest.TestCase):
 		mockedParseCpoutAndXyz.side_effect = fake_parser
 		actResult = tCode.parseMdInfoFromMultipleCpoutAndXyzPaths(self.testCpoutPaths, self.testXyzPaths)
 
-		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0])
-		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1])
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0], tempKindPath=None)
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1], tempKindPath=None)
 
 		for key in self.expDictA:
 			self.assertEqual( self.expDictA[key], actResult[key] )	
 
 	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseFullMdInfoFromCpoutAndXyzFilePaths")
 	def testExpectedWhenOrderSwitched(self, mockedParseCpoutAndXyz):
-		def fake_parser(inpCpout, inpXyz):
+		def fake_parser(inpCpout, inpXyz, **kwargs):
 			if (inpCpout == self.testCpoutPaths[0]) and (inpXyz == self.testXyzPaths[0]):
 				return self.retDictA
 			elif (inpCpout == self.testCpoutPaths[1]) and (inpXyz == self.testXyzPaths[1]):
@@ -69,8 +69,8 @@ class TestParseMultipleCP2kFull(unittest.TestCase):
 		self.testXyzPaths = [x for x in reversed(self.testXyzPaths)]
 		actResult = tCode.parseMdInfoFromMultipleCpoutAndXyzPaths(self.testCpoutPaths, self.testXyzPaths)
 
-		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0])
-		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1])
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0], tempKindPath=None)
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1], tempKindPath=None)
 
 		for key in self.expDictA:
 			self.assertEqual( self.expDictA[key], actResult[key] )	
@@ -91,6 +91,8 @@ class TestParseCp2kMdFull(unittest.TestCase):
 		self.initMdCell = uCellHelp.UnitCell(lattParams=[3,3,3], lattAngles=[90,90,90])
 		self.initThermoDict = {"step":0, "time":0, "eKinetic":1}
 		self.initCoords = [ [0,0,0,"Mg"] ]
+
+		self.atomicKindDictA = {"step":self.steps, "time":self.times, "kindTemp":[[200,250]]}
 
 		self.createTestObjs()
 
@@ -175,6 +177,26 @@ class TestParseCp2kMdFull(unittest.TestCase):
 		with self.assertRaises(AssertionError):
 			tCode.parseFullMdInfoFromCpoutAndXyzFilePaths(expCpoutPath, expXyzPath)
 
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseAtomTempFile")
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCp2kMdXyzFile")
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCpoutForMDJob")
+	def testExpVals_tempKindPathSet(self, mockedParseCpout, mockedParseXyz, mockedParseTempKind):
+		#Set mocks
+		expCpoutPath, expXyzPath, expAtomTempPath = "fake_cpout_path", "fake_xyz_path", "fake_atomic_temp_path"
+		mockedParseCpout.side_effect = lambda *args,**kwargs: self.parsedCpout
+		mockedParseXyz.side_effect = lambda *args,**kwargs: self.parsedXyz
+		mockedParseTempKind.side_effect = lambda *args,**kwargs: self.atomicKindDictA
+
+		#Mod expected dict to include atomic kind temperatures
+		expDict = copy.deepcopy(self.expDict)
+		expDict["thermo_data"].dataDict["kindTemp_Mg"] = [200,250]
+
+		#Run and test
+		actDict = tCode.parseFullMdInfoFromCpoutAndXyzFilePaths(expCpoutPath, expXyzPath, tempKindPath=expAtomTempPath)
+		mockedParseCpout.assert_called_with(expCpoutPath)
+		mockedParseXyz.assert_called_with(expXyzPath)
+		mockedParseTempKind.assert_called_with(expAtomTempPath)
+		self.assertEqual(expDict, actDict)
 
 class TestGetMergedTrajectoryCpoutAndXyz(unittest.TestCase):
 
@@ -201,10 +223,17 @@ class TestGetMergedTrajectoryCpoutAndXyz(unittest.TestCase):
 			self.assertEqual(trajStep.unitCell.cartCoords,cart)
 
 
+class TestGetKindIdxToSymbolDict(unittest.TestCase):
 
+	def setUp(self):
+		self.eleList = ["Mg", "Mg","X","Y","X"]
 
+	def _runTestFunct(self):
+		return tCode._getKindIdxToSymbolDict(self.eleList)
 
-
-
+	def testExpectedValsA(self):
+		expDict = {0: "Mg", 1: "X", 2: "Y"}
+		actDict = self._runTestFunct()
+		self.assertEqual(expDict,actDict)
 
 

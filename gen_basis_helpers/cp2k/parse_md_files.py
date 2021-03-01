@@ -11,13 +11,25 @@ import gen_basis_helpers.analyse_md.thermo_data as thermoDataHelp
 import gen_basis_helpers.analyse_md.traj_core as trajHelp
 
 
-def parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths, xyzPaths):
+def parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths, xyzPaths, tempKindPaths=None):
+	""" Parse an MD trajectory spread over multiple cp2k restarts
+	
+	Args:
+		cpoutPaths: (iter of str) Paths to *.cpout files
+		xyzPaths: (iter of str) Paths to *.xyz files
+		tempKindPaths: (iter of str, Optional) Paths to files containing atomic temperatures
+
+	Returns
+		outDict: Contains trajectory/thermodynamic info
+ 
+	"""
 	outDict = dict()
+	tempKindPaths = [None for x in range(len(cpoutPaths))] if tempKindPaths is None else tempKindPaths
 
 	#1) Get all the dicts
 	parsedDicts = list()
-	for cpoutPath, xyzPath in it.zip_longest(cpoutPaths, xyzPaths):
-		currDict = parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath)
+	for cpoutPath, xyzPath, tKindPath in it.zip_longest(cpoutPaths, xyzPaths, tempKindPaths):
+		currDict = parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath, tempKindPath=tKindPath)
 		parsedDicts.append(currDict)
 
 	#2) Merge all the trajectories
@@ -32,7 +44,15 @@ def parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths, xyzPaths):
 
 	return outDict
 
-def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath):
+def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath, tempKindPath=None):
+	""" Description of function
+	
+	Args:
+		cpoutPath: (str) Path to *.cpout file
+		xyzPath: (str) Path to *.xyz file
+		tempKindPath: (str, optional) Path to a file containing atomic temperature for each kind of atom
+ 
+	"""
 	outDict = parseCpoutForMDJob(cpoutPath)
 	outSteps = parseCp2kMdXyzFile(xyzPath)
 
@@ -44,7 +64,15 @@ def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath):
 			outDict["thermo_data"].dataDict[key].insert(0, outDict["init_thermo_dict"][key])
 
 
+	#Combine infor in cpout and xyz files to get full geometries
 	outDict["trajectory"] = _getMergedTrajectoryFromParsedCpoutAndXyz(outDict, outSteps)
+
+	#If tempKindPath is present, then parse it and add to the thermo data object
+	if tempKindPath is not None:
+		parsedTempKind = parseAtomTempFile(tempKindPath)
+		firstGeom = [x for unused,x in zip([0],iter(outDict["trajectory"]))][0].unitCell 
+		idxToLabelDict = _getKindIdxToSymbolDict( [ x[-1] for x in firstGeom.cartCoords] ) 
+		_addAtomicTempsToThermoDataObj(parsedTempKind, outDict["thermo_data"], idxToLabelDict=idxToLabelDict)
 
 	assert outDict["thermo_data"].dataListLengthsAllEqual
 
@@ -290,4 +318,51 @@ def _parseSingleStepXyz(fileAsList, lineIdx):
 	outDict["coords"] = outCoords
 
 	return lineIdx, outDict
+
+
+def parseAtomTempFile(inpFile):
+	fileAsList = parseCP2KHelp._getFileAsListFromInpFile(inpFile)
+	outDict = {"step":list(), "time":list()}
+	idx = 0
+
+	while idx<len(fileAsList):
+		if idx==0:
+			nKinds = len(fileAsList[idx].strip().split()) - 2
+			outDict["kindTemp"] = [list() for x in range(nKinds)]
+
+		currSplitLine = fileAsList[idx].strip().split()
+		outDict["step"].append( float(currSplitLine[0]) )
+		outDict["time"].append( float(currSplitLine[1]) )
+		for kindIdx in range(nKinds):
+			outDict["kindTemp"][kindIdx].append( float(currSplitLine[2+kindIdx]) )
+
+		idx+=1
+
+	return outDict
+
+
+def _addAtomicTempsToThermoDataObj(atomicTempDict, thermoObj, idxToLabelDict=None):
+	idxToLabelDict = dict() if idxToLabelDict is None else idxToLabelDict
+
+	#Step 1 = check step indices are consistent
+	stepsThermo, stepsAtomTemp = thermoObj.dataDict["step"], atomicTempDict["step"]
+	assert stepsThermo==stepsAtomTemp
+	
+	#Step 2 = add to thermo obj
+	for idx,atomTemps in enumerate(atomicTempDict["kindTemp"]):
+		currLabel = idxToLabelDict.get(idx,idx)
+		currKey = "kindTemp_{}".format(currLabel)
+		thermoObj.dataDict[currKey] = atomTemps
+
+def _getKindIdxToSymbolDict(eleList):
+	foundEles = list()
+	idx = 0
+	outDict = dict()
+	for ele in eleList:
+		if ele not in foundEles:
+			foundEles.append(ele)
+			outDict[idx] = ele
+			idx+=1
+	return outDict
+
 

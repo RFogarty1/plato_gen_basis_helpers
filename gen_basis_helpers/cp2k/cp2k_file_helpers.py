@@ -296,6 +296,8 @@ def _modCp2kObjBasedOnMolecularDynamicsOptDict(cp2kObj, useDict):
 	if useDict.get("mdPrintKindTemps".lower(),None) is not None:
 		val = "ON" if useDict["mdPrintKindTemps".lower()] is True else "OFF"
 		mdSection.PRINT.TEMP_KIND.Section_parameters = val
+		mdSection.Temp_kind = useDict["mdPrintKindTemps".lower()]
+
 
 def _modCp2kObjBasedOnTrajPrintDict(cp2kObj, useDict):
 	motionPart = cp2kObj.CP2K_INPUT.MOTION
