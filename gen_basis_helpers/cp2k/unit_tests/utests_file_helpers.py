@@ -206,7 +206,7 @@ class testModifyCp2kObj(unittest.TestCase):
 		             "walltime":2500, "prefDiagLib":"sl",
 		             "rsGrid_distrib":[-1,-1,48], "qsExtrapolationOrder":4, "scfDiagAlgorithm":"OT",
 		             "scfOTMinimizer": "DIIS", "scfOTEnergies":True, "scfOTRotation":True, "scfGuess":"restart",
-		             "scfOTPreconditioner": "FULL_SINGLE_INVERSE", "scfOTEneryGap": "1e-2",
+		             "scfOTPreconditioner": "FULL_SINGLE_INVERSE", "scfOTEnergyGap": "1e-2",
 		             "scfOTSafeDIIS":False,
 		             "extRestartName": "fake_restart_file.restart", "scfMaxIterAfterHistoryFull":1,
 		             "scfOTStepsize" : 0.1}

@@ -240,8 +240,8 @@ def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 	if useDict.get("scfOTPreconditioner".lower(),None) is not None:
 		scfSection.OT.Preconditioner = useDict["scfOTPreconditioner".lower()]
 
-	if useDict.get("scfOTEneryGap".lower(),None) is not None:
-		scfSection.OT.Energy_gap = useDict["scfOTEneryGap".lower()]
+	if useDict.get("scfOTEnergyGap".lower(),None) is not None:
+		scfSection.OT.Energy_gap = useDict["scfOTEnergyGap".lower()]
 
 	if useDict.get("scfOTSafeDIIS".lower(),None) is not None:
 		scfSection.OT.Safe_diis = useDict["scfOTSafeDIIS".lower()]
