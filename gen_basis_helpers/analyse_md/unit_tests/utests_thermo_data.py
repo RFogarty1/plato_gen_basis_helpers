@@ -1,11 +1,34 @@
 
 import copy
+import os
 import unittest
 import unittest.mock as mock
 
 import numpy as np
 
 import gen_basis_helpers.analyse_md.thermo_data as tCode
+
+class TestThermoDataReadWrite(unittest.TestCase):
+
+	def setUp(self):
+		self.step = [1,2,3]
+		self.temp = [4,5,6]
+		self.time = [7,8,9]
+		self.tempFileA = "temp_file_a.thermo"
+		self.createTestObjs()
+
+	def tearDown(self):
+		os.remove(self.tempFileA)
+
+	def createTestObjs(self):
+		currKwargDict = {"step":self.step, "time":self.time, "temp":self.temp}
+		self.testObjA = tCode.ThermoDataStandard(currKwargDict)
+
+	def testReadAndWriteConsistentA(self):
+		expObj = self.testObjA
+		tCode.dumpStandardThermoDataToFile(self.testObjA, self.tempFileA)
+		actObj = tCode.readThermoDataFromFile(self.tempFileA)
+		self.assertEqual(expObj,actObj)
 
 class TestThermoDataStandard(unittest.TestCase):
 

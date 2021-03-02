@@ -1,6 +1,8 @@
 
 import itertools as it
+import json
 import numpy as np
+
 
 from . import shared_misc as miscHelp
 
@@ -100,6 +102,31 @@ class ThermoDataStandard(ThermoDataInterface):
 
 		return True
 
+def dumpStandardThermoDataToFile(thermoDataObj, outFile):
+	""" Dump MD thermodynamic info (e.g. temperatures/pressures) to a file. File is simply json
+	
+	Args:
+		thermoDataObj: (ThermoDataStandard)
+		outFile: (str) Path to the output file
+			 
+	"""
+	outDict = thermoDataObj.toDict()
+	with open(outFile,"w") as f:
+		json.dump(outDict, f)
+
+def readThermoDataFromFile(inpFile):
+	""" Reads a thermoData file (format defined by dumpStandardThermoDataToFile) into a ThermoDataStandard object
+	
+	Args:
+		inpFile: (str) Path to the file containing thermo data
+			 
+	Returns
+		thermoDataObj: (ThermoDataStandard)
+	
+	"""
+	with open(inpFile,"r") as f:
+		inpDict = json.load(f)
+	return ThermoDataStandard.fromDict(inpDict)
 
 
 def getMergedStandardThermoData(dataList, overlapStrat="simple", trimStrat="simple"):
