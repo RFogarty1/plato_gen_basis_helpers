@@ -243,6 +243,9 @@ def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 	if useDict.get("scfOTEneryGap".lower(),None) is not None:
 		scfSection.OT.Energy_gap = useDict["scfOTEneryGap".lower()]
 
+	if useDict.get("scfOTSafeDIIS".lower(),None) is not None:
+		scfSection.OT.Safe_diis = useDict["scfOTSafeDIIS".lower()]
+
 	if useDict.get("scfGuess".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Scf_guess = useDict["scfGuess".lower()].upper()
 
