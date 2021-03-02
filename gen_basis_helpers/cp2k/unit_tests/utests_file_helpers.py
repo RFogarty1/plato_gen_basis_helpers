@@ -206,6 +206,7 @@ class testModifyCp2kObj(unittest.TestCase):
 		             "walltime":2500, "prefDiagLib":"sl",
 		             "rsGrid_distrib":[-1,-1,48], "qsExtrapolationOrder":4, "scfDiagAlgorithm":"OT",
 		             "scfOTMinimizer": "DIIS", "scfOTEnergies":True, "scfOTRotation":True, "scfGuess":"restart",
+		             "scfOTPreconditioner": "FULL_SINGLE_INVERSE", "scfOTEneryGap": "1e-2",
 		             "extRestartName": "fake_restart_file.restart", "scfMaxIterAfterHistoryFull":1,
 		             "scfOTStepsize" : 0.1}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
@@ -451,7 +452,8 @@ def _loadExpectedOutputMiscOptsA():
 	newGlobalPart = "&GLOBAL\n  WALLTIME 2500\n  PREFERRED_DIAG_LIBRARY SL\n"
 	newDistribGrid = "&MGRID\n      &RS_GRID\n        DISTRIBUTION_LAYOUT -1 -1 48\n      &END RS_GRID\n"
 	newDiagPart = "ALGORITHM OT"
-	newOTPart = "EPS_SCF 1.0E-7\n      &OT\n        MINIMIZER DIIS\n        STEPSIZE 0.1\n        ENERGIES TRUE\n        ROTATION TRUE\n      &END OT\n"
+	newOTPart = "EPS_SCF 1.0E-7\n      &OT\n        MINIMIZER DIIS\n        STEPSIZE 0.1\n        ENERGIES TRUE\n"
+	newOTPart += "        ROTATION TRUE\n        PRECONDITIONER FULL_SINGLE_INVERSE\n        ENERGY_GAP 1e-2\n      &END OT\n"
 	newScfGuessPart = "SCF_GUESS RESTART\n      MAX_SCF_HISTORY 1\n"
 	newExtRestartPart = "&EXT_RESTART\n  RESTART_FILE_NAME fake_restart_file.restart\n&END EXT_RESTART\n&GLOBAL\n"
 	outStr = outStr.replace("    &QS\n" ,  newQsPart)

@@ -237,6 +237,12 @@ def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 	if useDict.get("scfOTStepsize".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.OT.Stepsize = useDict["scfOTStepsize".lower()]
 
+	if useDict.get("scfOTPreconditioner".lower(),None) is not None:
+		scfSection.OT.Preconditioner = useDict["scfOTPreconditioner".lower()]
+
+	if useDict.get("scfOTEneryGap".lower(),None) is not None:
+		scfSection.OT.Energy_gap = useDict["scfOTEneryGap".lower()]
+
 	if useDict.get("scfGuess".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Scf_guess = useDict["scfGuess".lower()].upper()
 
