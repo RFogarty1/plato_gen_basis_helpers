@@ -90,6 +90,7 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 			tKindPaths = [os.path.join(workFolder,x) for x in os.listdir(workFolder) if x.endswith(".temp")]
 			if len(tKindPaths) != 1:
 				tKindPaths = [None]
+			finalRunFolder = workFolder #So we can find restart files etc
 		else:
 			cpoutPaths, xyzPaths, tKindPaths = list(), list(), list()
 			runDirs = [x for x in os.listdir(workFolder) if os.path.isdir( os.path.join(workFolder,x) )]
@@ -108,11 +109,12 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 					tKindPaths += currTKind
 				else:
 					tKindPaths += [None]
+				finalRunFolder = os.path.join(workFolder,runDirs[-1])
 
 		assert len(cpoutPaths) == len(xyzPaths)
 
 		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths, tempKindPaths=tKindPaths)
-		return types.SimpleNamespace(**parsedDict)
+		return types.SimpleNamespace(finalRunFolder=finalRunFolder,**parsedDict)
 
 	def _checkStringMatchesRunFormat(self, inpStr):
 		pattern = "run_[0-9]+"
