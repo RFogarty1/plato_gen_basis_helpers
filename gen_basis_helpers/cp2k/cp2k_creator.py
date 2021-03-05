@@ -334,7 +334,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 				modDict[attr] = getattr(self,attr)
 
 
-		modDict["scfPrintRestart".lower()] = False
+		modDict["scfPrintRestart".lower()] = False if self.scfPrintRestartHistoryOn is not True else None
 
 		runTypeModDict = self._getModDictBasedOnRunType()
 		modDict.update(runTypeModDict)
