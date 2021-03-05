@@ -102,6 +102,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("useSmearing")
 	registeredKwargs.add("inpRestartName")
 	registeredKwargs.add("inpRestartPath")
+	registeredKwargs.add("inpWfnRestartName")
+	registeredKwargs.add("inpWfnRestartPath")
 	registeredKwargs.add("scfMaxIterAfterHistoryFull")
 
 	def __init__(self,**kwargs):
@@ -214,18 +216,29 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 
 	#TODO: I should probably be using the calcObj paths here, but this way was just easier to unit test initially
 	def _getPostWriteFileHooks(self):
-		if self.inpRestartPath is None:
-			return None
 
 		if self.workFolder is None:
 			raise NotImplementedError("Cant deal with copying restart files if self.workFolder is not set")
 
+		allOutFuncts = list()
+
 		#1) Handle the standard restart file
-		inpPath = self.inpRestartPath
-		restartName = os.path.split(inpPath)[-1] if self.inpRestartName is None else self.inpRestartName
-		outPath = os.path.join(self.workFolder, restartName)
-		outFunct = lambda instance: shutil.copy2(inpPath,outPath)
-		return [outFunct]
+		if self.inpRestartPath is not None:
+			inpPath = self.inpRestartPath
+			restartName = os.path.split(inpPath)[-1] if self.inpRestartName is None else self.inpRestartName
+			outPath = os.path.join(self.workFolder, restartName)
+			outFunct = lambda instance: shutil.copy2(inpPath,outPath)
+			allOutFuncts.append(outFunct)
+
+		#2) Handle the standard restart wfn file
+		if self.inpWfnRestartPath is not None:
+			wfnPath = self.inpWfnRestartPath
+			wfnName = os.path.split(wfnPath)[-1] if self.inpWfnRestartName is None else self.inpWfnRestartName
+			wfnOutPath = os.path.join(self.workFolder, wfnName)
+			outFunct = lambda instance: shutil.copy2(wfnPath, wfnOutPath)
+			allOutFuncts.append(outFunct)
+
+		return allOutFuncts
 
 	def _modPycp2kObj(self,pycp2kObj):
 		#Modify basis set info and geometry; these need a special function essentially
@@ -307,6 +320,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 			modDict["maxscf"] = self.scfMaxIters
 		if self.inpRestartPath is not None:
 			modDict["extRestartName"] = self.inpRestartName if self.inpRestartName is not None else os.path.split(self.inpRestartPath)[-1]
+		if self.inpWfnRestartPath is not None:
+			modDict["dftInpWfnRestartFilename"] = self.inpWfnRestartName if self.inpWfnRestartName is not None else os.path.split(self.inpWfnRestartPath)[-1]
 
 		#Some kwargs which directly translate to the file helpers
 		directTranslateKwargs = ["scfOTMinimizer", "scfOTEnergies", "scfOTRotation", "scfGuess", "scfPrintRestartHistoryOn",
