@@ -106,6 +106,10 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("inpWfnRestartName")
 	registeredKwargs.add("inpWfnRestartPath")
 	registeredKwargs.add("scfMaxIterAfterHistoryFull")
+	registeredKwargs.add("scfPrintRestartOn")
+	registeredKwargs.add("scfPrintRestart_eachMD")
+	registeredKwargs.add("scfPrintRestart_eachSCF")
+	registeredKwargs.add("scfPrintRestart_backupCopies")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -324,18 +328,25 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if self.inpWfnRestartPath is not None:
 			modDict["dftInpWfnRestartFilename"] = self.inpWfnRestartName if self.inpWfnRestartName is not None else os.path.split(self.inpWfnRestartPath)[-1]
 
+		#Dont save wfn restart by default
+		if self.scfPrintRestartOn is None:
+			modDict["scfPrintRestart"] = False
+		else:
+			modDict["scfPrintRestart"] = self.scfPrintRestartOn
+
 		#Some kwargs which directly translate to the file helpers
 		directTranslateKwargs = ["scfOTMinimizer", "scfOTEnergies", "scfOTRotation", "scfGuess", "scfPrintRestartHistoryOn",
 		                         "scfPrintRestartHistory_eachMD", "scfPrintRestartHistory_eachSCF", "scfDiagAlgorithm", "useSmearing", "scfDiagOn",
 		                         "scfOuterEps", "scfOuterMaxIters", "scfMaxIterAfterHistoryFull", "scfOTStepsize", "scfOTPreconditioner",
-		                         "scfOTEnergyGap", "scfOTSafeDIIS", "scfPrintRestartHistory_backupCopies"]
+		                         "scfOTEnergyGap", "scfOTSafeDIIS", "scfPrintRestartHistory_backupCopies", "scfPrintRestart_eachMD",
+		                         "scfPrintRestart_eachSCF", "scfPrintRestart_backupCopies"]
 
 		for attr in directTranslateKwargs:
 			if getattr(self,attr) is not None:
 				modDict[attr] = getattr(self,attr)
 
 
-		modDict["scfPrintRestart".lower()] = False if self.scfPrintRestartHistoryOn is not True else None
+#		modDict["scfPrintRestart".lower()] = False if self.scfPrintRestartHistoryOn is not True else None
 
 		runTypeModDict = self._getModDictBasedOnRunType()
 		modDict.update(runTypeModDict)

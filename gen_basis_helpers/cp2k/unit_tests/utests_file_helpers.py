@@ -175,9 +175,10 @@ class testModifyCp2kObj(unittest.TestCase):
 		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
 
 	def testChangeScfConvParams(self):
-		kwargDict = {"scfMixAlpha": "0.8", "scfMixMethod": "PULAY_MIXING", "scfMixingOn":False,
+		kwargDict = {"scfMixAlpha": "0.8", "scfMixMethod": "PULAY_MIXING", "scfMixingOn":False, "scfPrintRestart":True,
 		             "scfPrintRestartHistoryOn":True, "scfPrintRestartHistory_eachMD":8, "scfPrintRestartHistory_eachSCF":12,
-		             "scfPrintRestartHistory_backupCopies":5,
+		             "scfPrintRestartHistory_backupCopies":5, "scfPrintRestart_eachMD":2, "scfPrintRestart_eachSCF":3,
+		             "scfPrintRestart_backupCopies":7,
 		             "scfDiagOn":False, "scfOuterEps": 1e-5, "scfOuterMaxIters":20}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputScfMixA()
@@ -399,6 +400,13 @@ def _loadExpectedOutputScfMixA():
 	outStr = _getDefObjInputStr()
 	newPrintPart = "&SCF\n"
 	newPrintPart += "      &PRINT\n"
+	newPrintPart += "        &RESTART ON\n"
+	newPrintPart += "          BACKUP_COPIES 7\n"
+	newPrintPart += "          &EACH\n"
+	newPrintPart += "            MD 2\n"
+	newPrintPart += "            QS_SCF 3\n"
+	newPrintPart += "          &END EACH\n"
+	newPrintPart += "        &END RESTART\n"
 	newPrintPart += "        &RESTART_HISTORY ON\n"
 	newPrintPart += "          BACKUP_COPIES 5\n"
 	newPrintPart += "          &EACH\n"

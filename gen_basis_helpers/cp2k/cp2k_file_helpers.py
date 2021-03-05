@@ -249,6 +249,15 @@ def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 	if useDict.get("scfGuess".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.SCF.Scf_guess = useDict["scfGuess".lower()].upper()
 
+	if useDict.get("scfPrintRestart_eachMD".lower(),None) is not None:
+		scfSection.PRINT.RESTART.EACH.Md = int(useDict["scfPrintRestart_eachMD".lower()])
+
+	if useDict.get("scfPrintRestart_eachSCF".lower(),None) is not None:
+		scfSection.PRINT.RESTART.EACH.Qs_scf = int(useDict["scfPrintRestart_eachSCF".lower()])
+
+	if useDict.get("scfPrintRestart_backupCopies".lower(),None) is not None:
+		scfSection.PRINT.RESTART.Backup_copies = int(useDict["scfPrintRestart_backupCopies".lower()])
+
 	if useDict.get("scfPrintRestartHistoryOn".lower(),None) is not None:
 		val = "ON" if useDict["scfPrintRestartHistoryOn".lower()] is True else "OFF"
 		scfSection.PRINT.RESTART_HISTORY.Section_parameters = val
