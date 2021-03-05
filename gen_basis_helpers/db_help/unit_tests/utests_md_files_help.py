@@ -221,5 +221,21 @@ class TestGetStdMdFilesOutputDictFromStdInpCreatorAndOutput(unittest.TestCase):
 			mockCopy.assert_any_call( os.path.join(runDir,baseFileName+".bak-2"), os.path.join(outDir, baseFileName+".bak-2") )
 
 
+	@mock.patch("gen_basis_helpers.db_help.md_files_help.shutil.copy2")
+	@mock.patch("gen_basis_helpers.db_help.md_files_help.os.listdir")
+	def testCopyWfnRestart_reqdNumberFilesGreaterThanActual(self, mockListDir, mockCopy):
+		runDir = "fake_run_dir"
+		outDir = "fake_out_dir"
+		baseFileName = "fake_file.wfn"
+		mockDirContents = [baseFileName, baseFileName+".bak-2", baseFileName+".bak-1"]
+		mockListDir.side_effect = lambda *args, **kwargs: mockDirContents
+
+		self.testObjA.maxNumbWfnBackups = 10
+		self.testObjA._copyWfnRestartFiles(runDir, outDir, baseFileName)
+
+		mockCopy.assert_any_call( os.path.join(runDir, baseFileName), os.path.join(outDir, baseFileName) )
+		mockCopy.assert_any_call( os.path.join(runDir, baseFileName+".bak-1"), os.path.join(outDir, baseFileName+".bak-1") )
+		mockCopy.assert_any_call( os.path.join(runDir, baseFileName+".bak-2"), os.path.join(outDir, baseFileName+".bak-2") )
+
 
 

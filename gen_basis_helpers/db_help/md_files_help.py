@@ -116,7 +116,9 @@ class MDFilesFromOutObjsFileDumperStandard():
 			otherNames = [x for x in os.listdir(runDir) if "bak" in x and ".wfn" in x]
 			wfnNamesVsIdx = [ [x, self._getWfnBackupIdx(x)] for x in otherNames ]
 			sortedOtherWfnNames = [ x[0] for x in sorted(wfnNamesVsIdx,key=lambda x:x[1]) ]
-			outWfnNames = [sortedOtherWfnNames[idx] for idx,unused in enumerate(range(1,self.maxNumbWfnBackups))]
+			numbWfnFiles = len(sortedOtherWfnNames) + 1
+			maxNumbWfnFiles = numbWfnFiles if numbWfnFiles<self.maxNumbWfnBackups else self.maxNumbWfnBackups
+			outWfnNames = [sortedOtherWfnNames[idx] for idx,unused in enumerate(range(1,maxNumbWfnFiles))]
 			for outName in outWfnNames:
 				shutil.copy2( os.path.join(runDir, outName), os.path.join(outDir, outName) )
 
