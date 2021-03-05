@@ -82,16 +82,18 @@ class TestGetOutDictForMdSimple(unittest.TestCase):
 		self.stdOutObj = mock.Mock()
 		self.writeFiles = True
 		self.startDir = "fake_dir"
+		self.maxWfnBackups = 6
 
 	def _runTestFunct(self):
-		return tCode.getOutDictForMDFromStdOutObj_simple(self.startDir, self.stdOutObj, writeFiles=self.writeFiles)
+		return tCode.getOutDictForMDFromStdOutObj_simple(self.startDir, self.stdOutObj,
+		                                                 writeFiles=self.writeFiles, maxNumbWfnBackups=self.maxWfnBackups)
 
 	@mock.patch("gen_basis_helpers.db_help.md_files_help.MDFilesFromOutObjsFileDumperStandard")
 	def testExpectedCallsA_writeFile(self, mockedDumpClass):
 		expInstance = mock.Mock()
 		mockedDumpClass.side_effect = lambda *args, **kwargs: expInstance
 		self._runTestFunct()
-		mockedDumpClass.assert_called_with(copyWfnFile=True, copyRestartFile=True)
+		mockedDumpClass.assert_called_with(copyWfnFile=True, copyRestartFile=True, maxNumbWfnBackups=self.maxWfnBackups)
 		expInstance.dumpFiles.assert_called_with(self.stdOutObj, self.startDir)
 
 
@@ -108,6 +110,7 @@ class TestGetStdMdFilesOutputDictFromStdInpCreatorAndOutput(unittest.TestCase):
 
 		self.copyWfnFiles = True
 		self.copyRestartFiles = True
+		self.maxNumbWfnBackups = 1
 
 		self.createTestObjs()
 
@@ -120,7 +123,8 @@ class TestGetStdMdFilesOutputDictFromStdInpCreatorAndOutput(unittest.TestCase):
 		self.dataA = [types.SimpleNamespace(parsedFile=types.SimpleNamespace(**self.dataDictA))]
 		self.stdOutObjA = calcRunnersHelp.StandardOutputObj(self.dataA, self.labelA)
 
-		self.testObjA = tCode.MDFilesFromOutObjsFileDumperStandard(copyWfnFile=self.copyWfnFiles, copyRestartFile=self.copyRestartFiles)
+		currKwargs = {"copyWfnFile":self.copyWfnFiles, "copyRestartFile":self.copyRestartFiles, "maxNumbWfnBackups":self.maxNumbWfnBackups}
+		self.testObjA = tCode.MDFilesFromOutObjsFileDumperStandard(**currKwargs)
 		self.expPathExtA = os.path.join(self.eleKey, self.structKey, self.methodKey)
 
 
@@ -197,4 +201,25 @@ class TestGetStdMdFilesOutputDictFromStdInpCreatorAndOutput(unittest.TestCase):
 		mockDumpMdFiles.assert_not_called()
 
 		self.assertEqual(expPathExtDict, actPathExtDict)
+
+
+	@mock.patch("gen_basis_helpers.db_help.md_files_help.shutil.copy2")
+	@mock.patch("gen_basis_helpers.db_help.md_files_help.os.listdir")
+	def testCopyWfnRestart_multipleBackupFilesReqd(self, mockListDir, mockCopy):
+		runDir = "fake_run_dir"
+		outDir = "fake_out_dir"
+		baseFileName = "fake_file.wfn"
+		mockDirContents = [baseFileName, baseFileName+".bak-2", baseFileName+".bak-1", baseFileName+".bak-3"]
+		mockListDir.side_effect = lambda *args, **kwargs: mockDirContents
+
+		self.testObjA.maxNumbWfnBackups = 2
+		self.testObjA._copyWfnRestartFiles(runDir, outDir, baseFileName)
+
+		mockCopy.assert_any_call( os.path.join(runDir,baseFileName), os.path.join(outDir,baseFileName) )
+		mockCopy.assert_any_call( os.path.join(runDir,baseFileName+".bak-1"), os.path.join(outDir,baseFileName+".bak-1") )
+		with self.assertRaises(AssertionError):
+			mockCopy.assert_any_call( os.path.join(runDir,baseFileName+".bak-2"), os.path.join(outDir, baseFileName+".bak-2") )
+
+
+
 
