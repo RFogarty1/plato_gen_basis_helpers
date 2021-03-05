@@ -259,6 +259,9 @@ def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 	if useDict.get("scfPrintRestartHistory_eachSCF".lower(),None) is not None:
 		scfSection.PRINT.RESTART_HISTORY.EACH.Qs_scf = int(useDict["scfPrintRestartHistory_eachSCF".lower()])
 
+	if useDict.get("scfPrintRestartHistory_backupCopies".lower(),None) is not None:
+		scfSection.PRINT.RESTART_HISTORY.Backup_copies = int(useDict["scfPrintRestartHistory_backupCopies".lower()])
+
 	if useDict.get("scfDiagOn".lower(),None) is not None:
 		scfSection.DIAGONALIZATION.Section_parameters = useDict["scfDiagOn".lower()]
 

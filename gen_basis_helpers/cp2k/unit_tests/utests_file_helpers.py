@@ -177,6 +177,7 @@ class testModifyCp2kObj(unittest.TestCase):
 	def testChangeScfConvParams(self):
 		kwargDict = {"scfMixAlpha": "0.8", "scfMixMethod": "PULAY_MIXING", "scfMixingOn":False,
 		             "scfPrintRestartHistoryOn":True, "scfPrintRestartHistory_eachMD":8, "scfPrintRestartHistory_eachSCF":12,
+		             "scfPrintRestartHistory_backupCopies":5,
 		             "scfDiagOn":False, "scfOuterEps": 1e-5, "scfOuterMaxIters":20}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputScfMixA()
@@ -399,13 +400,13 @@ def _loadExpectedOutputScfMixA():
 	newPrintPart = "&SCF\n"
 	newPrintPart += "      &PRINT\n"
 	newPrintPart += "        &RESTART_HISTORY ON\n"
+	newPrintPart += "          BACKUP_COPIES 5\n"
 	newPrintPart += "          &EACH\n"
 	newPrintPart += "            MD 8\n"
 	newPrintPart += "            QS_SCF 12\n"
 	newPrintPart += "          &END EACH\n"
 	newPrintPart += "        &END RESTART_HISTORY\n"
 	newPrintPart += "      &END PRINT\n"
-
 	newOuterScfPart  = "&SCF\n"
 	newOuterScfPart += "      &OUTER_SCF\n"
 	newOuterScfPart += "        EPS_SCF 1e-05\n"

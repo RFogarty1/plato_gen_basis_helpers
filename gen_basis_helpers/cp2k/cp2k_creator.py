@@ -95,6 +95,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("scfPrintRestartHistoryOn")
 	registeredKwargs.add("scfPrintRestartHistory_eachMD")
 	registeredKwargs.add("scfPrintRestartHistory_eachSCF")
+	registeredKwargs.add("scfPrintRestartHistory_backupCopies")
 	registeredKwargs.add("scfDiagOn")
 	registeredKwargs.add("scfMaxIters") #TODO: Handle this specially
 	registeredKwargs.add("scfOuterEps")
@@ -327,7 +328,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		directTranslateKwargs = ["scfOTMinimizer", "scfOTEnergies", "scfOTRotation", "scfGuess", "scfPrintRestartHistoryOn",
 		                         "scfPrintRestartHistory_eachMD", "scfPrintRestartHistory_eachSCF", "scfDiagAlgorithm", "useSmearing", "scfDiagOn",
 		                         "scfOuterEps", "scfOuterMaxIters", "scfMaxIterAfterHistoryFull", "scfOTStepsize", "scfOTPreconditioner",
-		                         "scfOTEnergyGap", "scfOTSafeDIIS"]
+		                         "scfOTEnergyGap", "scfOTSafeDIIS", "scfPrintRestartHistory_backupCopies"]
 
 		for attr in directTranslateKwargs:
 			if getattr(self,attr) is not None:
