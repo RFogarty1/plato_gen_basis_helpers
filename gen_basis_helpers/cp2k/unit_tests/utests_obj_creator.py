@@ -354,6 +354,7 @@ class TestGetHooksForCopyRestartFiles(unittest.TestCase):
 
 		self.wfnName = None
 		self.wfnPath = None
+		self.maxWfnsToCopy = 2
 
 		self.workFolder = "fake_work_folder"
 		self.createTestObjs()
@@ -385,14 +386,17 @@ class TestGetHooksForCopyRestartFiles(unittest.TestCase):
 		mockedCopyFunct.assert_called_with(expInpPath, expOutPath)
 
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.shutil.copy2")
-	def testExpected_restartWfnCase(self, mockedCopyFunct):
-		self.wfnName = "fake_wfn.wfn"
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.CP2KCalcObjFactoryStandard._getCopyInpWfnRestartFileOutFunct")
+	def testExpected_restartWfnCase(self, mockedGetWfnOutFunct, mockedCopyFunct):
 		self.wfnPath = "fake_path.wfn"
 		self.createTestObjs()
-		expOutPath = os.path.join(self.workFolder, self.wfnName)
-		expInpPath = self.wfnPath
-		self._runTestFunct()
-		mockedCopyFunct.assert_any_call(expInpPath, expOutPath)
+		expFunctToBeCalled, expCallArg = mock.Mock(), mock.Mock()
+		mockedGetWfnOutFunct.side_effect = lambda *args,**kwargs: expFunctToBeCalled
+
+		outFuncts = self.testObjA._getPostWriteFileHooks()
+		[postWriteHook(expCallArg) for postWriteHook in outFuncts]
+	
+		expFunctToBeCalled.assert_called_with(expCallArg)
 
 	def testExpected_workfolderNone(self):
 		self.workFolder = None
@@ -406,4 +410,45 @@ class TestGetHooksForCopyRestartFiles(unittest.TestCase):
 		expVal = list()
 		actVal = self.testObjA._getPostWriteFileHooks()
 		self.assertEqual(expVal, actVal)
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.os.listdir")
+	def testExpectedCopyInpWfnPaths(self, mockListDir):
+		#Setup
+		self.maxWfnsToCopy = 2
+		self.wfnPath = os.path.join("fake_dir","fake_path.wfn")
+		mockFileLists  = [ "fake_path.wfn", "fake_path.wfn.bak-2", "fake_path.wfn.bak-1", "fake_path.wfn.bak-3"]
+		expFileList = [ os.path.join("fake_dir","fake_path.wfn"), os.path.join("fake_dir","fake_path.wfn.bak-1") ] 
+		mockListDir.side_effect = lambda *args,**kwargs: mockFileLists
+		self.createTestObjs()
+
+		#Run + check expected
+		actFileList = self.testObjA._getCopyInpWfnRestartFilePaths()
+		mockListDir.assert_called_with("fake_dir")
+		self.assertEqual(expFileList, actFileList)	
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.shutil.copy2")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.CP2KCalcObjFactoryStandard._getCopyInpWfnRestartFilePaths")
+	def testExpectedCopyCommands(self, mockedGetInpWfnPaths, mockedCopy):
+		#setup
+		self.wfnName = "outWfnName"
+		self.wfnPath = "file_a.wfn"
+		fakeInpPaths = ["file_a.wfn", "file_a.wfn.bak-1"]
+		expOutPaths  = ["outWfnName.wfn", "outWfnName.wfn.bak-1"]
+		mockedGetInpWfnPaths.side_effect = lambda *args,**kwargs: fakeInpPaths
+		self.createTestObjs()
+
+		#Run + check expected
+		outFunct = self.testObjA._getCopyInpWfnRestartFileOutFunct()
+		outFunct(mock.Mock())
+		mockedCopy.assert_any_call( "file_a.wfn", "outWfnName.wfn" )
+		mockedCopy.assert_any_call( "file_a.wfn.bak-1", "outWfnName.wfn.bak-1" )
+
+
+
+
+
+
+
+
+
 

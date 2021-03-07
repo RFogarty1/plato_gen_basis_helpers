@@ -2,6 +2,7 @@
 """ Purpose of this module is to make it simpler to create CP2KCalcObj objects """
 
 import contextlib
+import itertools as it
 import os
 import shutil
 
@@ -105,6 +106,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("inpRestartPath")
 	registeredKwargs.add("inpWfnRestartName")
 	registeredKwargs.add("inpWfnRestartPath")
+	registeredKwargs.add("maxInpWfnsToCopy") #Default is effectively 1
 	registeredKwargs.add("scfMaxIterAfterHistoryFull")
 	registeredKwargs.add("scfPrintRestartOn")
 	registeredKwargs.add("scfPrintRestart_eachMD")
@@ -237,13 +239,47 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 
 		#2) Handle the standard restart wfn file
 		if self.inpWfnRestartPath is not None:
-			wfnPath = self.inpWfnRestartPath
-			wfnName = os.path.split(wfnPath)[-1] if self.inpWfnRestartName is None else self.inpWfnRestartName
-			wfnOutPath = os.path.join(self.workFolder, wfnName)
-			outFunct = lambda instance: shutil.copy2(wfnPath, wfnOutPath)
-			allOutFuncts.append(outFunct)
+			outFunct = self._getCopyInpWfnRestartFileOutFunct()
+			allOutFuncts.append( outFunct )
 
 		return allOutFuncts
+
+	def _getCopyInpWfnRestartFileOutFunct(self):
+		if self.inpWfnRestartPath is not None:
+			restartPathInps = self._getCopyInpWfnRestartFilePaths()
+			wfnName = os.path.split(wfnPath)[-1] if self.inpWfnRestartName is None else self.inpWfnRestartName
+			outPaths = list()
+			for restartPath in restartPathInps:
+				basePath = os.path.splitext( os.path.splitext(restartPath)[0] )[0]
+				baseFolder = os.path.split(basePath)[0]
+				secondExt = os.path.splitext( restartPath )[1]
+				firstExt = os.path.splitext( os.path.splitext(restartPath)[0] )[1]
+				baseName = os.path.split(basePath)[1]
+
+				outName = wfnName + firstExt + secondExt
+				outPath = os.path.join(baseFolder,outName)
+				outPaths.append(outPath)
+
+			outFunct = lambda instance: [shutil.copy2(inpPath, outPath) for inpPath,outPath in it.zip_longest(restartPathInps,outPaths)] 
+
+		return outFunct
+
+	#This will only be called if we're asking for a restart wfn, so maxNumb=1 maxs some sense as a default
+	def _getCopyInpWfnRestartFilePaths(self):
+		maxWfnsToCopy = 1 if self.maxInpWfnsToCopy is None else self.maxInpWfnsToCopy
+		if (maxWfnsToCopy < 1):
+			return list()
+
+		#Get the output paths; obviously the first is ALWAYS the original with no .bak-n
+		outPaths = [self.inpWfnRestartPath]
+		wfnDir = os.path.split(self.inpWfnRestartPath)[0]
+		actFileNames = [x for x in os.listdir(wfnDir)]
+		baseWfnName = os.path.split(self.inpWfnRestartPath)[1]
+
+		outExts = [".bak-{}".format(x) for x in range(1,maxWfnsToCopy+1)]
+		outPaths += [os.path.join(wfnDir,baseWfnName+x) for x in outExts if (baseWfnName+x) in actFileNames]
+
+		return outPaths
 
 	def _modPycp2kObj(self,pycp2kObj):
 		#Modify basis set info and geometry; these need a special function essentially
