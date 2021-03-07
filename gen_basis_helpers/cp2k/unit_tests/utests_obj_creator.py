@@ -362,7 +362,7 @@ class TestGetHooksForCopyRestartFiles(unittest.TestCase):
 	def createTestObjs(self):
 		currKwargs = {"workFolder":self.workFolder, "inpRestartName":self.restartName,
 		              "inpRestartPath":self.filePath, "inpWfnRestartName": self.wfnName,
-		              "inpWfnRestartPath": self.wfnPath}
+		              "inpWfnRestartPath": self.wfnPath, "maxInpWfnsToCopy": self.maxWfnsToCopy}
 		self.testObjA = tCode.CP2KCalcObjFactoryStandard(**currKwargs)
 
 	def _runTestFunct(self):
@@ -430,18 +430,20 @@ class TestGetHooksForCopyRestartFiles(unittest.TestCase):
 	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.CP2KCalcObjFactoryStandard._getCopyInpWfnRestartFilePaths")
 	def testExpectedCopyCommands(self, mockedGetInpWfnPaths, mockedCopy):
 		#setup
-		self.wfnName = "outWfnName"
+		self.wfnName = "outWfnName.wfn"
 		self.wfnPath = "file_a.wfn"
 		fakeInpPaths = ["file_a.wfn", "file_a.wfn.bak-1"]
-		expOutPaths  = ["outWfnName.wfn", "outWfnName.wfn.bak-1"]
+		expOutPaths  = [os.path.join(self.workFolder,x) for x in ["outWfnName.wfn", "outWfnName.wfn.bak-1"]]
 		mockedGetInpWfnPaths.side_effect = lambda *args,**kwargs: fakeInpPaths
 		self.createTestObjs()
 
 		#Run + check expected
 		outFunct = self.testObjA._getCopyInpWfnRestartFileOutFunct()
 		outFunct(mock.Mock())
-		mockedCopy.assert_any_call( "file_a.wfn", "outWfnName.wfn" )
-		mockedCopy.assert_any_call( "file_a.wfn.bak-1", "outWfnName.wfn.bak-1" )
+
+		for inpPath,outPath in it.zip_longest(fakeInpPaths,expOutPaths):
+			mockedCopy.assert_any_call( inpPath,outPath )
+
 
 
 

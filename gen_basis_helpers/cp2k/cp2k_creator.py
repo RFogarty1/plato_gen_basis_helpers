@@ -256,8 +256,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 				firstExt = os.path.splitext( os.path.splitext(restartPath)[0] )[1]
 				baseName = os.path.split(basePath)[1]
 
-				outName = wfnName + firstExt + secondExt
-				outPath = os.path.join(baseFolder,outName)
+				outName = wfnName + secondExt if secondExt!=".wfn" else wfnName
+				outPath = os.path.join(self.workFolder,outName)
 				outPaths.append(outPath)
 
 			outFunct = lambda instance: [shutil.copy2(inpPath, outPath) for inpPath,outPath in it.zip_longest(restartPathInps,outPaths)] 
@@ -276,7 +276,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		actFileNames = [x for x in os.listdir(wfnDir)]
 		baseWfnName = os.path.split(self.inpWfnRestartPath)[1]
 
-		outExts = [".bak-{}".format(x) for x in range(1,maxWfnsToCopy+1)]
+		outExts = [".bak-{}".format(x) for x in range(1,maxWfnsToCopy)]
 		outPaths += [os.path.join(wfnDir,baseWfnName+x) for x in outExts if (baseWfnName+x) in actFileNames]
 
 		return outPaths
