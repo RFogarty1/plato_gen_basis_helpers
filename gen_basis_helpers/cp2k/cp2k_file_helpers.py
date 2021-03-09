@@ -135,6 +135,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnCollectiveVariables)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnMetadynamicsOptions)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnNudgedBandReplicasSection)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnHirshfeldOptions)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -419,6 +420,24 @@ def _modCp2kObjBasedOnNudgedBandReplicasSection(cp2kObj, useDict):
 	if useDict.get("nudgedBand_type".lower(),None) is not None:
 		nebSection.Band_type = useDict["nudgedBand_type".lower()]
 
+def _modCp2kObjBasedOnHirshfeldOptions(cp2kObj, useDict):
+	hirshSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.HIRSHFELD
+
+	if useDict.get("hirshfeld_on".lower(), None) is not None:
+		startVal = useDict["hirshfeld_on".lower()]
+		if startVal is True:
+			useVal = "ON"
+		elif startVal is False:
+			useVal = "OFF"
+		else:
+			useVal = startVal
+		hirshSection.Section_parameters = useVal
+
+	if useDict.get("hirshfeld_selfConsistent".lower(),None) is not None:
+		hirshSection.Self_consistent = useDict["hirshfeld_selfConsistent".lower()]
+
+	if useDict.get("hirshfeld_shapeFunction".lower(),None) is not None:
+		hirshSection.Shape_function = useDict["hirshfeld_shapeFunction".lower()].upper()
 
 def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)

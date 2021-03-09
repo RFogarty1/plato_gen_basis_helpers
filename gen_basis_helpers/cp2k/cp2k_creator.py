@@ -114,7 +114,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("scfPrintRestart_backupCopies")
 	registeredKwargs.add("nudgedBandOpts")
 	registeredKwargs.add("nudgedBandReplicas")
-
+	registeredKwargs.add("hirshfeld_on")
+	registeredKwargs.add("hirshfeld_selfConsistent")
+	registeredKwargs.add("hirshfeld_shapeFunction")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -384,7 +386,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		                         "scfPrintRestartHistory_eachMD", "scfPrintRestartHistory_eachSCF", "scfDiagAlgorithm", "useSmearing", "scfDiagOn",
 		                         "scfOuterEps", "scfOuterMaxIters", "scfMaxIterAfterHistoryFull", "scfOTStepsize", "scfOTPreconditioner",
 		                         "scfOTEnergyGap", "scfOTSafeDIIS", "scfPrintRestartHistory_backupCopies", "scfPrintRestart_eachMD",
-		                         "scfPrintRestart_eachSCF", "scfPrintRestart_backupCopies"]
+		                         "scfPrintRestart_eachSCF", "scfPrintRestart_backupCopies", "hirshfeld_on", "hirshfeld_selfConsistent",
+		                         "hirshfeld_shapeFunction"]
 
 		for attr in directTranslateKwargs:
 			if getattr(self,attr) is not None:
