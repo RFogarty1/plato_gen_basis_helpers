@@ -48,7 +48,8 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.scfPrintRestartHistoryOn = None
 		self.scfPrintRestartHistory_eachMD = None
 		self.scfPrintRestartHistory_eachSCF = None
-
+		self.nudgedBandOpts = None
+		self.nudgedBandReplicas = None
 		self.createTestObjs()
 
 	#Note we pass the None value for workFolder as a test essentially; if EITHER folderPath or workFolder are set to a real (not None) value then we take that one for both
@@ -68,7 +69,8 @@ class TestStandardCreationObj(unittest.TestCase):
 		                                                        scfOTMinimizer=self.scfOTMinimizer, scfOTEnergies=self.scfOTEnergies,scfOTRotation=self.scfOTRotation,
 		                                                        scfGuess=self.scfGuess, scfPrintRestartHistoryOn=self.scfPrintRestartHistoryOn,
 		                                                        scfPrintRestartHistory_eachMD=self.scfPrintRestartHistory_eachMD,
-		                                                        scfPrintRestartHistory_eachSCF=self.scfPrintRestartHistory_eachSCF)
+		                                                        scfPrintRestartHistory_eachSCF=self.scfPrintRestartHistory_eachSCF,
+		                                                        nudgedBandOpts=self.nudgedBandOpts, nudgedBandReplicas=self.nudgedBandReplicas)
 
 	def testWrongKwargCaughtByInit(self):
 		with self.assertRaises(KeyError):
@@ -276,6 +278,28 @@ class TestStandardCreationObj(unittest.TestCase):
 		actArgDict = {k.lower():v for k,v in args[1].items()}
 
 		for key in expArgDict:
+			self.assertEqual( expArgDict[key], actArgDict[key] )
+
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.fileHelpers")
+	@mock.patch("gen_basis_helpers.cp2k.cp2k_creator.methRegister")
+	def testExpectedDictFromNebOpts(self, mockMethReg, mockFileHelpers):
+		#Setup mock options/replica objects
+		expBandOpts, expReplicaOpts = mock.Mock(), mock.Mock()
+		expNebOptDict = {"fake_band_opts": expBandOpts}
+		expNebReplicaDict = {"fake_key_replicas":expReplicaOpts}
+		self.nudgedBandOpts = mock.Mock()
+		self.nudgedBandReplicas = mock.Mock()
+		self.nudgedBandOpts.optDict = expNebOptDict
+		self.nudgedBandReplicas.optDict = expNebReplicaDict
+		self.createTestObjs()
+
+		#Run and test
+		expArgDict = {"fake_band_opts":expBandOpts, "fake_key_replicas":expReplicaOpts}
+		self.testCreatorObjA.create()
+		args,kwargs = mockFileHelpers.modCp2kObjBasedOnDict.call_args
+		actArgDict = {k.lower():v for k,v in args[1].items()}
+
+		for key in expArgDict.keys():
 			self.assertEqual( expArgDict[key], actArgDict[key] )
 
 

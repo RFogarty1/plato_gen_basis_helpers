@@ -112,6 +112,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("scfPrintRestart_eachMD")
 	registeredKwargs.add("scfPrintRestart_eachSCF")
 	registeredKwargs.add("scfPrintRestart_backupCopies")
+	registeredKwargs.add("nudgedBandOpts")
+	registeredKwargs.add("nudgedBandReplicas")
+
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -349,6 +352,12 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if self.metaDynOpts is not None:
 			currDict = self.metaDynOpts.optDict
 			modDict.update(currDict)
+		if self.nudgedBandOpts is not None:
+			currDict = self.nudgedBandOpts.optDict
+			modDict.update(currDict)
+		if self.nudgedBandReplicas is not None:
+			currDict = self.nudgedBandReplicas.optDict
+			modDict.update(currDict)
 		if self.thermostatOpts is not None:
 			modDict["mdThermoStatOpts"] = self.thermostatOpts
 		if self.rsGridDistrib is not None:
@@ -434,6 +443,9 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		if runStr.lower() == "md":
 			outDict = self.mdOpts.optDict
 			outDict["runType".lower()] = "md"
+
+		if runStr.lower() == "band":
+			outDict["runType".lower()] = "band"
 
 		return outDict
 

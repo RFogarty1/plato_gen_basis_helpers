@@ -3,6 +3,8 @@
 import itertools as it
 import os
 
+import plato_pylib.shared.unit_convs as uConvHelp
+
 from pycp2k import CP2K
 #import ase.calculators.cp2k as cp2kAseCalc
 
@@ -132,6 +134,7 @@ def _getStandardPyCp2kModder():
 	outModder.finalFuncts.append(_modCp2kObjBasedOnAtomicConstraints)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnCollectiveVariables)
 	outModder.finalFuncts.append(_modCp2kObjBasedOnMetadynamicsOptions)
+	outModder.finalFuncts.append(_modCp2kObjBasedOnNudgedBandReplicasSection)
 	return outModder
 
 def _attachXcFunctionalToModder(modder):
@@ -388,6 +391,34 @@ def _modCp2kObjBasedOnMetadynamicsOptions(cp2kObj, useDict):
 	if useDict.get("metaVars".lower(),None) is not None:
 		for mVar in useDict.get("metaVars".lower()):
 			mVar.addMetaVarToPyCp2kObj(cp2kObj)
+
+
+def _modCp2kObjBasedOnNudgedBandReplicasSection(cp2kObj, useDict):
+	nebSection = cp2kObj.CP2K_INPUT.MOTION.BAND
+
+	#TODO: May have to be cleverer with the replica list later; but this is fine for now
+	# since co-ords are currently the only bit of info we give for the replica subsections
+	if useDict.get("nudgedband_replica_coords".lower(),None) is not None:
+		nebCoords = useDict["nudgedband_replica_coords".lower()]
+		for coords in nebCoords:
+			nebSection.REPLICA_add()
+			convCoords = list()
+			for currCoords in coords:
+				convCoords.append(  [x*uConvHelp.BOHR_TO_ANG for x in currCoords] )
+			nebSection.REPLICA_list[-1].COORD.Default_keyword = convCoords
+
+	if useDict.get("nudgedband_numbReplicas".lower(),None) is not None:
+		nebSection.Number_of_replica = useDict["nudgedband_numbReplicas".lower()]
+
+	if useDict.get("nudgedband_procsPerReplica".lower(),None) is not None:
+		nebSection.Nproc_rep = useDict["nudgedband_procsPerReplica".lower()]
+
+	if useDict.get("nudgedBand_springConstant".lower(),None) is not None:
+		nebSection.K_spring = useDict["nudgedBand_springConstant".lower()]
+
+	if useDict.get("nudgedBand_type".lower(),None) is not None:
+		nebSection.Band_type = useDict["nudgedBand_type".lower()]
+
 
 def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)
