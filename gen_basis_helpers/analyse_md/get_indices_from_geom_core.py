@@ -228,7 +228,7 @@ class FilterToExcludeIndicesBasedOnNumberOfAtomsInSurfacePlane(FilterIndicesFunc
 
 	Original use case was to find dissolved Mg atoms (which sit on their own away from the surface """
 
-	def __init__(self, minAtomsInPlane, maxAtomsInPlane, planeTol=1e-1, restrictNebsToInpIndices=True):
+	def __init__(self, minAtomsInPlane, maxAtomsInPlane, planeTol=5e-1, restrictNebsToInpIndices=True):
 		""" Initializer
 		
 		Args:
@@ -297,7 +297,6 @@ class FilterToExcludeIndicesBasedOnNumberOfAtomsInSurfacePlane(FilterIndicesFunc
 			if idx != inpIdx:
 				currDist = planeEqn.getDistanceOfPointFromPlane(coord[:3])
 				if currDist < self.planeTol:
-#					if (idx in inpIndices) or (self.restrictNebsToInpIndices is False):
 					outIndices.append(idx)
 			else:
 				if includeSelf:
