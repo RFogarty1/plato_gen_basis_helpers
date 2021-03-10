@@ -1,6 +1,7 @@
 
 
 import copy
+import itertools as it
 import plato_pylib.shared.ucell_class as uCellHelp
 
 from . import get_neb_lists as nebListHelp
@@ -220,5 +221,92 @@ class FilterToExcludeIndicesFurtherOutOfPlaneThanCutoff(FilterIndicesFunction):
 				outIndices.append( inpIndices[idx] )
 
 		return outIndices
+
+
+class FilterToExcludeIndicesBasedOnNumberOfAtomsInSurfacePlane(FilterIndicesFunction):
+	""" Returns only the indices for atoms with certain number of atoms in a layer.
+
+	Original use case was to find dissolved Mg atoms (which sit on their own away from the surface """
+
+	def __init__(self, minAtomsInPlane, maxAtomsInPlane, planeTol=1e-1, restrictNebsToInpIndices=True):
+		""" Initializer
+		
+		Args:
+			maxAtomsInPlane: (int) Filter to include atoms which are part of a plane with <=maxAtomsInPlane
+			minAtomsInPlane: (int) Filter include atoms which are part of a plane with >=minAtomsInPlane (1 would filter None out) 
+			planeTol: (float) Maximum distance an atom can be from the top/botom of a plane, and still be considered as "in" that plane (can maybe be thought of as planeHeight)
+			restrictNebsToInpIndices: (Bool) If True, number of atoms in a plane can only include the input indices (e.g. for an MgO system if we already filtered out the oxygen atoms and restrictNebsToInpIndices=True then only Mg atoms will contribute to minAtomsInPlane/maxAtomsInPlane)
+
+		NOTE:
+			Both maxAtomsInPlane and minAtomsInPlane are INCLUSIVE of the atom which we define the plane around. i.e. there is always AT LEAST one atom in a plane
+
+			
+		"""
+		self.minAtomsInPlane = minAtomsInPlane
+		self.maxAtomsInPlane = maxAtomsInPlane
+		self.planeTol = planeTol
+		self.restrictNebsToInpIndices = restrictNebsToInpIndices
+
+
+	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
+		self._checkMinMaxConsistent()
+		indicesInSamePlane = self.getIndicesInSameSurfPlaneForEachAtom(inpGeom, inpIndices, includeSelf=True)
+		outIndices = list()
+		for indicesInPlane in indicesInSamePlane:
+			currIdx = indicesInPlane[0]
+			nInPlane = len(indicesInPlane[1])
+			if (nInPlane>=self.minAtomsInPlane) and (nInPlane<=self.maxAtomsInPlane):
+				outIndices.append(currIdx)
+		return outIndices
+
+	def _checkMinMaxConsistent(self):
+		if self.minAtomsInPlane > self.maxAtomsInPlane:
+			raise ValueError(" minAtomsInPlane > maxAtomsInPlane ({}>{})".format(self.minAtomsInPlane,self.maxAtomsInPlane))
+
+	#TODO: Dont restrict the neighbours to inpIndices; thats likely gonna be the more general use case regardless. Its easier to filter out later anyway
+	def getIndicesInSameSurfPlaneForEachAtom(self, inpGeom, inpIndices, includeSelf=False):
+		outVals = list()
+		planeEqn = cartHelp.getPlaneEqnForOuterSurfaceAtoms(inpGeom)
+		for idx in inpIndices:
+			indicesInSamePlane = self._getIndicesInSameSurfPlaneOneAtomIdx(inpGeom, idx, planeEqn, includeSelf=includeSelf)
+			filteredToOnlyInInpIndices = [x for x in indicesInSamePlane if x in inpIndices]
+			if self.restrictNebsToInpIndices:
+				outVals.append( [idx,filteredToOnlyInInpIndices] )
+			else:
+				outVals.append( [idx,indicesInSamePlane] )
+		return outVals
+
+	#TODO: This will likely need factoring out a some point
+	def _getIndicesInSameSurfPlaneOneAtomIdx(self, inpGeom, inpIdx, planeEqn, includeSelf=False):
+		#Put our current atom right at the centre of the cell; meaning we shouldnt have an issue with periodic boundaries
+		tempGeom = copy.deepcopy(inpGeom)
+		startFract = inpGeom.fractCoords[inpIdx][:3]
+		fractTranslate = [x-y for x,y in it.zip_longest([0.5,0.5,0.5],startFract)]
+		uCellHelp.applyTranslationVectorToFractionalCoords(tempGeom, fractTranslate, foldInAfter=True)
+
+		#recentre our plane equation using the cart coords
+		startCart = tempGeom.cartCoords[inpIdx]
+		startDVal = planeEqn.coeffs[-1]
+		useDVal = planeEqn.calcDForInpXyz(startCart[:3])
+		planeEqn.coeffs = planeEqn.coeffs[:3] + [useDVal]
+
+
+		#Get all the indices which are within planeTol
+		outIndices = list()
+		for idx,coord in enumerate(tempGeom.cartCoords):
+			if idx != inpIdx:
+				currDist = planeEqn.getDistanceOfPointFromPlane(coord[:3])
+				if currDist < self.planeTol:
+#					if (idx in inpIndices) or (self.restrictNebsToInpIndices is False):
+					outIndices.append(idx)
+			else:
+				if includeSelf:
+					outIndices.append(idx)
+
+		#Reset the planeEqn to what it started as
+		planeEqn.coeffs = planeEqn.coeffs[:3] + [startDVal]
+
+		return outIndices
+
 
 

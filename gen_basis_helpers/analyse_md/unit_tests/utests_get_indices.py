@@ -271,15 +271,83 @@ class TestFilterToExcludeOutsideOutOfPlaneDistanceFromPoints(unittest.TestCase):
 		self.assertEqual(expIndices,actIndices)
 
 
+class TestFilterToExcludeIndicesBasedonNumberOfAtomsInSurfacePlanes(unittest.TestCase):
 
+	def setUp(self):
+		#Used to initialise filter function
+		self.minAtomsInPlane = 1
+		self.maxAtomsInPlane = 1
+		self.planeTol = 5e-1
+		self.restrictNebsToInpIndices = True
 
+		#geometry used to test
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoordsA = [  [4,4,4,"X"],
+		                      [2,2,4,"X"],
+		                      [1,1,4,"X"],
+		                      [2,2,5,"X"], 
+		                      [3,3,6,"X"],
+		                      [5,5,6,"X"] ]		
+		#Indices to start with
+		self.inpIndices = [x for x in range(len(self.cartCoordsA))]
 
+		self.createTestObjs()
 
+	def createTestObjs(self):
+		currArgs = [self.minAtomsInPlane, self.maxAtomsInPlane]
+		currKwargs = {"planeTol":self.planeTol, "restrictNebsToInpIndices":self.restrictNebsToInpIndices}
+		self.testObjA = tCode.FilterToExcludeIndicesBasedOnNumberOfAtomsInSurfacePlane(*currArgs, **currKwargs)
 
+		self.geomA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.geomA.cartCoords = self.cartCoordsA
 
+	def _runTestFunct(self):
+		dudInstanceArg = mock.Mock() #filter function takes a getIndicesInstance as first arg; but not needed for this (or most) case
+		return self.testObjA(dudInstanceArg, self.geomA, self.inpIndices)
 
+	def testExpectedCase_limitToSingleAtomInPlane(self):
+		expIndices = [3]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
 
+	def testExpectedCase_NeighboursStraddlePBCs(self):
+		#Only last 2 indices SHOULD be closer than the planeTol (onyl with 2 atoms in a plane)
+		self.cartCoordsA = [  [4,4,2,"X"],
+		                      [2,2,3,"X"],
+		                      [1,1,4,"X"],
+		                      [2,2,5,"X"], 
+		                      [3,3,0.1,"X"],
+		                      [5,5,9.9,"X"] ]
+		self.minAtomsInPlane, self.maxAtomsInPlane = 2, 2
+		self.createTestObjs()
+		expIndices = [4,5]
+		actIndices = self._runTestFunct()
 
+		self.assertEqual(expIndices, actIndices)
+
+	def testExpected_nebsRestrictedToInpIndices(self):
+		self.inpIndices = [0,3,4,5]
+		self.minAtomsInPlane, self.maxAtomsInPlane = 2,5
+		self.restrictNebsToInpIndices = True
+		self.createTestObjs()
+		expIndices = [4,5]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
+	def testExpected_nebsNotRestrictedToInpIndices(self):
+		self.inpIndices = [0,3,4,5]
+		self.minAtomsInPlane, self.maxAtomsInPlane = 2,5
+		self.restrictNebsToInpIndices = False
+		self.createTestObjs()
+		expIndices = [0,4,5]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
+	def testThrowsIfMaxAtomsInPlaneLowerThanMin(self):
+		self.minAtomsInPlane, self.maxAtomsInPlane = 4, 2
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
 
 
 
