@@ -202,7 +202,6 @@ class testModifyCp2kObj(unittest.TestCase):
 		actStr = self.startCP2KObj.get_input_string()
 		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
 
-	#Random couple of kwargs to do with MD generally
 	def testMiscOptsA(self):
 		kwargDict = {"scfPrintRestart":False, "qsExtrapolationMethod":"LINEAR_P", "nGrids":5,
 		             "walltime":2500, "prefDiagLib":"sl",
@@ -211,7 +210,8 @@ class testModifyCp2kObj(unittest.TestCase):
 		             "scfOTPreconditioner": "FULL_SINGLE_INVERSE", "scfOTEnergyGap": "1e-2",
 		             "scfOTSafeDIIS":False,
 		             "extRestartName": "fake_restart_file.restart", "scfMaxIterAfterHistoryFull":1,
-		             "scfOTStepsize" : 0.1, "dftInpWfnRestartFilename":"fake_restart_wfn.wfn"}
+		             "scfOTStepsize" : 0.1, "dftInpWfnRestartFilename":"fake_restart_wfn.wfn",
+		             "printForces":False}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputMiscOptsA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -492,6 +492,7 @@ def _loadExpectedOutputMiscOptsA():
 	newScfGuessPart = "SCF_GUESS RESTART\n      MAX_SCF_HISTORY 1\n"
 	newExtRestartPart = "&EXT_RESTART\n  RESTART_FILE_NAME fake_restart_file.restart\n&END EXT_RESTART\n&GLOBAL\n"
 	newDftRestartPart = "&DFT\n    WFN_RESTART_FILE_NAME fake_restart_wfn.wfn\n"
+	newPrintForces = "    &FORCES OFF"
 	outStr = outStr.replace("    &QS\n" ,  newQsPart)
 	outStr = outStr.replace("    &SCF\n", newScfPart)
 	outStr = outStr.replace("&GLOBAL\n", newGlobalPart)
@@ -502,6 +503,7 @@ def _loadExpectedOutputMiscOptsA():
 	outStr = outStr.replace("SCF_GUESS ATOMIC\n", newScfGuessPart)
 	outStr = outStr.replace("&GLOBAL\n", newExtRestartPart)
 	outStr = outStr.replace("&DFT\n", newDftRestartPart)
+	outStr = outStr.replace("    &FORCES On", newPrintForces)
 	return outStr
 
 def _loadExpectedOutputTrajPrintOptsA():

@@ -117,6 +117,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("hirshfeld_on")
 	registeredKwargs.add("hirshfeld_selfConsistent")
 	registeredKwargs.add("hirshfeld_shapeFunction")
+	registeredKwargs.add("printForces")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -387,7 +388,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		                         "scfOuterEps", "scfOuterMaxIters", "scfMaxIterAfterHistoryFull", "scfOTStepsize", "scfOTPreconditioner",
 		                         "scfOTEnergyGap", "scfOTSafeDIIS", "scfPrintRestartHistory_backupCopies", "scfPrintRestart_eachMD",
 		                         "scfPrintRestart_eachSCF", "scfPrintRestart_backupCopies", "hirshfeld_on", "hirshfeld_selfConsistent",
-		                         "hirshfeld_shapeFunction"]
+		                         "hirshfeld_shapeFunction", "printForces"]
 
 		for attr in directTranslateKwargs:
 			if getattr(self,attr) is not None:

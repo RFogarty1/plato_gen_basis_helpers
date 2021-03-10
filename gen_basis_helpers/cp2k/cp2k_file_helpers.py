@@ -577,6 +577,16 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 	if useDict.get("dftInpWfnRestartFilename".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.Restart_file_name = useDict["dftInpWfnRestartFilename".lower()]
 
+	if useDict.get("printForces".lower(),None) is not None:
+		startVal = useDict["printForces".lower()]
+		if startVal is True:
+			useVal = "ON"
+		elif startVal is False:
+			useVal = "OFF"
+		else:
+			useVal = startVal
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].PRINT.FORCES.Section_parameters = useVal
+
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work
