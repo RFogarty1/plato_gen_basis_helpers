@@ -178,3 +178,23 @@ def getStandardGhostVersionOfBasisObj(basisObj):
 	outBasisObj.ghost = True
 
 	return outBasisObj
+
+
+def getIterOfBasisObjsFromDictStandard(inpDict):
+	""" Returns an iter of basis objects from an input dictionary. Purpose is a convenience function to get basis from a database record
+	
+	Args:
+		inpDict: Keys are kind (e.g C), though actually ~any keys are likely fine. Each value is a dictionary representation of a CP2KBasisObjStandard object (made with the .toDict() method)
+			 
+	Returns
+		outObjs: Iter of CP2KBasisObjStandard objects. Ready to use in CP2K creator instance
+ 
+	"""
+	outObjs = list()
+	for key in sorted(inpDict.keys()):
+		currObj = CP2KBasisObjStandard.fromDict( inpDict[key] )
+		outObjs.append(currObj)
+	return outObjs
+
+
+

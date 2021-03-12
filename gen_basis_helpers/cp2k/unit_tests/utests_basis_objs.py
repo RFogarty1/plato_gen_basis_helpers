@@ -100,5 +100,22 @@ class TestGetGhostVersionsOfInputBasisObjs(unittest.TestCase):
 		self.assertEqual(expOutput, actOutput)
 
 
+class TestGetIterOfBasisObjsFromDictStandard(unittest.TestCase):
+
+	def setUp(self):
+		self.dictA = {"element": "C", "basis": "c_basis", "potential":"c_potential", "kind":"C",
+		              "basisFile":"c_basis_file", "potFile":"c_pot_file"}
+		self.dictB = {"element": "H", "basis": "h_basis", "potential":"h_potential", "kind":"H",
+		              "basisFile":"h_basis_file", "potFile":"h_pot_file"}
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.inpArgA = { self.dictA["kind"]:self.dictA, self.dictB["kind"]:self.dictB }
+
+	def testExpectedForCaseA(self):
+		#Alphabetical based on kind
+		expIter = [tCode.CP2KBasisObjStandard.fromDict(x) for x in [self.dictA, self.dictB]]
+		actIter = tCode.getIterOfBasisObjsFromDictStandard(self.inpArgA)
+		self.assertEqual(expIter, actIter)
 
 
