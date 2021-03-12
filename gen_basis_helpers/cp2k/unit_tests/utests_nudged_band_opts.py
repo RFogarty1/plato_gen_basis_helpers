@@ -82,18 +82,18 @@ class TestNudgedBandOpts(unittest.TestCase):
 
 	def setUp(self):
 		self.numbReplicas = 4
-		self.procsPerReplica = 8
+		self.procsPerReplicaEnv = 8
 		self.springConstant = None
 		self.nebType = "CI-NEB"
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		kwargDict = {"numbReplicas":self.numbReplicas, "procsPerReplica":self.procsPerReplica,
+		kwargDict = {"numbReplicas":self.numbReplicas, "procsPerReplicaEnv":self.procsPerReplicaEnv,
 		             "springConstant":self.springConstant, "nebType":self.nebType}
 		self.testObjA = tCode.NudgedBandOptsStd(**kwargDict)
 
 	def testExpectedOptDictA(self):
-		expOptDict = {"nudgedband_numbReplicas":self.numbReplicas, "nudgedband_procsPerReplica":self.procsPerReplica,
+		expOptDict = {"nudgedband_numbReplicas":self.numbReplicas, "nudgedband_procsPerReplicaEnv":self.procsPerReplicaEnv,
 		              "nudgedband_type":self.nebType}
 		actOptDict = self.testObjA.optDict
 

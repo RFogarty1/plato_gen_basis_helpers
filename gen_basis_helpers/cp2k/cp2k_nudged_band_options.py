@@ -38,25 +38,25 @@ class NudgedBandReplicas():
 
 class NudgedBandOptsStd():
 
-	def __init__(self, numbReplicas=None, procsPerReplica=None, springConstant=None, nebType=None):
+	def __init__(self, numbReplicas=None, procsPerReplicaEnv=None, springConstant=None, nebType=None):
 		""" Initializer
 		
 		Args (Leaving any as None should lead to CP2K defaults being used):
 			numbReplicas: (int) Number of replicas (images) to use in the NEB calc
-			procsPerReplica: (int) Number of processors per replica
+			procsPerReplicaEnv: (int) Number of processors per replica environment. I THINK you need to set this such that floor(nProcs/procesPerReplicaEnv) = numbReplicas or CP2K will calculate extra geometries + be generally super ineficient
 			springConstant: (float) Value of the spring constant linking replicas. Units are whatever cp2k uses
 			nebType: (str) Type of nudged elastic band calculation to use. IT-NEB (Improved tangent-NEB) or CI-NEB (Climbing image NEB) are the two most likely options
 				 
 		"""
 		self.numbReplicas = numbReplicas
-		self.procsPerReplica = procsPerReplica
+		self.procsPerReplicaEnv = procsPerReplicaEnv
 		self.springConstant = springConstant
 		self.nebType = nebType
 
 	@property
 	def optDict(self):
 		attrToKeyMap = {"numbReplicas":"nudgedband_numbReplicas",
-		                "procsPerReplica": "nudgedband_procsPerReplica",
+		                "procsPerReplicaEnv": "nudgedband_procsPerReplicaEnv",
 		                "springConstant": "nudgedBand_springConstant",
 		                "nebType": "nudgedband_type"}
 		outDict = dict()

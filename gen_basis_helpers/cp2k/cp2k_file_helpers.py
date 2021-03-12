@@ -411,8 +411,8 @@ def _modCp2kObjBasedOnNudgedBandReplicasSection(cp2kObj, useDict):
 	if useDict.get("nudgedband_numbReplicas".lower(),None) is not None:
 		nebSection.Number_of_replica = useDict["nudgedband_numbReplicas".lower()]
 
-	if useDict.get("nudgedband_procsPerReplica".lower(),None) is not None:
-		nebSection.Nproc_rep = useDict["nudgedband_procsPerReplica".lower()]
+	if useDict.get("nudgedband_procsPerReplicaEnv".lower(),None) is not None:
+		nebSection.Nproc_rep = useDict["nudgedband_procsPerReplicaEnv".lower()]
 
 	if useDict.get("nudgedBand_springConstant".lower(),None) is not None:
 		nebSection.K_spring = useDict["nudgedBand_springConstant".lower()]

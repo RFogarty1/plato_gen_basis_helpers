@@ -273,7 +273,7 @@ class testModifyCp2kObj(unittest.TestCase):
 		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
 
 	def testNudgedBandOptionsSection(self):
-		kwargDict = {"nudgedband_numbReplicas": 12, "nudgedband_procsPerReplica": 2, "nudgedBand_springConstant": "5e-2",
+		kwargDict = {"nudgedband_numbReplicas": 12, "nudgedband_procsPerReplicaEnv": 2, "nudgedBand_springConstant": "5e-2",
 		             "nudgedband_type": "IT-NEB"}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutNudgedBandFile_noReplicasSet()
