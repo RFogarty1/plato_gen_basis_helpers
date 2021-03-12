@@ -1,10 +1,41 @@
 
 
 import copy
+import itertools as it
 import os
 
 import plato_pylib.parseOther.parse_cp2k_files as parseCP2KHelp
 import plato_pylib.shared.unit_convs as uConvHelp
+
+from ..misc import nudged_band_paths as nebPathHelp
+
+def getNebPathFromParsedFileObj(parsedFileObj):
+	""" Gets a NudgedBandPath object from a parsedFile
+	
+	Args:
+		parsedFileObj: (types.SimpleNamespace) This has .final_neb_summary .neb_geoms and .neb_energies attributes
+			 
+	Returns
+		nebPath: (NudgedBandPathStandard) Object containing the neb path. Has a toDict/fromDict method for easy serialization
+ 
+	"""
+	#Get the distance of each image along the pathway, rather than distance to previous image
+	distsFromPrev = parsedFileObj.final_neb_summary["dists"]
+	outDists = [0]
+	for dist in distsFromPrev:
+		outDists.append( dist+outDists[-1] )
+	geoms = parsedFileObj.neb_geoms
+	energies = parsedFileObj.neb_energies
+
+	#Get the steps
+	outSteps = list()
+	for geo, energyObj, dist in it.zip_longest(geoms, energies, outDists):
+		print(geo, energyObj, dist)
+		currStep = nebPathHelp.NudgedBandStepStandard(geom=geo, energies=energyObj, dist=dist)
+		outSteps.append(currStep)
+
+	return nebPathHelp.NudgedBandPathStandard( outSteps )
+
 
 
 def parseNudgedBandCalcStandard(cpoutPath, convAngToBohr=False):
@@ -72,14 +103,16 @@ def _parseFinalEnergyObjsFromIterOfOutFiles(outFiles):
 def _getXyzFilesFromCpoutPathAndNumbReplicas(cpoutPath, numbReplicas):
 	folder, filename = os.path.split(cpoutPath)
 	baseFileName = os.path.splitext(filename)[0]
-	extFmt = "-pos-Replica_nr_{}-1.xyz"
+	numbDigits = len(str(int(numbReplicas)))
+	extFmt = "-pos-Replica_nr_{:0" + str(numbDigits) + "}-1.xyz"
 	outPaths = [os.path.join(folder, baseFileName+extFmt.format(x)) for x in range(1,numbReplicas+1)] 
 	return outPaths
 
 def _getBandOutFilesFromCpoutPathAndNumbReplicas(cpoutPath, numbReplicas):
 	folder, filename = os.path.split(cpoutPath)
 	baseFileName = os.path.splitext(filename)[0]
-	extFmt = "-BAND{}.out"
+	numbDigits = len(str(int(numbReplicas)))
+	extFmt = "-BAND{:0" + str(numbDigits) + "}.out"
 	outPaths = [os.path.join(folder, baseFileName+extFmt.format(x)) for x in range(1,numbReplicas+1)] 
 	return outPaths
 

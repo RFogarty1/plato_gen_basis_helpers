@@ -217,14 +217,16 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	def _createOutputObj(self):
 		basicObj = methRegister.createCP2KObjFromMethodStr(self.methodStr)
 		self._modPycp2kObj(basicObj)
-		if self.runType is None:
-			md = False
-		else:
-			md = True if self.runType.lower()=="md" else False
 		keepRestartFile = True if self.saveRestartFile is None else self.saveRestartFile #Usually not ever written, so passing False can cause issues (attempt to rm a non-existent file can throw an error)
-#		postWriteHooks = None
 		postWriteHooks = self._getPostWriteFileHooks()
-		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=keepRestartFile, md=md, postWriteHooks=postWriteHooks)
+		if self.runType is None:
+			runType = None
+		elif (self.runType.lower()=="md") or (self.runType.lower()=="band"):
+			runType = self.runType
+		else:
+			runType = None
+
+		outputObj = calcObjs.CP2KCalcObj(basicObj, basePath=self._getPathToPassCalcObj(), saveRestartFile=keepRestartFile, postWriteHooks=postWriteHooks, runType=runType)
 		return outputObj
 
 	#TODO: I should probably be using the calcObj paths here, but this way was just easier to unit test initially

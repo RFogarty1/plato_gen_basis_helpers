@@ -55,8 +55,17 @@ class NudgedBandStepStandard():
 		return cls(**inpDict)
 
 	def toDict(self):
+		outDictAttrs = ["geom", "energies"]
 		outAttrs = ["geom", "energies", "dist"]
 		outDict = dict()
+
+		for attr in outDictAttrs:
+			currVal = getattr(self, attr)
+			if currVal is not None:
+				outDict[attr] = currVal.toDict()
+			else:
+				outDict[attr] = None
+
 		for attr in outAttrs:
 			outDict[attr] = getattr(self, attr)
 		return outDict

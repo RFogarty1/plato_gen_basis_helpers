@@ -9,11 +9,12 @@ import plato_pylib.parseOther.parse_cp2k_files as parseCP2K
 from ..shared import method_objs as methodObjs
 from . import cp2k_file_helpers as pyCP2KHelpers
 from . import parse_md_files as parseMdHelp
+from . import parse_neb_files as parseNebHelp
 
 #NOTE: Loads of descriptors are added below (at the bottom of the file)
 class CP2KCalcObj(methodObjs.CalcMethod):
 
-	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=True, md=False, postWriteHooks=None):
+	def __init__(self, pycp2kObj, basePath=None, saveRestartFile=True, md=False, postWriteHooks=None, runType=None):
 		""" Initializer
 		
 		Args:
@@ -28,6 +29,7 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 		self.saveRestartFile = saveRestartFile
 		self.md = md
 		self.postWriteHooks = list() if postWriteHooks is None else list(postWriteHooks)
+		self.runType = runType
 	
 	def writeFile(self):
 		self.cp2kObj.project_name = os.path.split(self.basePath)[1]
@@ -62,7 +64,14 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 	
 	@property
 	def parsedFile(self):
-		if self.md is False:
+		#Figure out runType
+		if self.md:
+			runType = "md"
+		else:
+			runType = self.runType
+
+		#Parse accordingly
+		if runType is None:
 			parsedDict = parseCP2K.parseCpout(self.outFilePath)
 			outObj = types.SimpleNamespace(**parsedDict)
 			try:
@@ -71,9 +80,12 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 			except FileNotFoundError:
 				pass
 			outObj.unitCell.convAngToBohr()
-
-		else:
+		elif runType.lower()=="md":
 			outObj = self._parseMdStandard()
+		elif runType.lower() == "band":
+			outObj = self._parsedNudgedBandStandard()
+		else:
+			raise ValueError("{} is an invalid runType".format(runType))
 
 		return outObj
 
@@ -115,6 +127,10 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 
 		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths, tempKindPaths=tKindPaths)
 		return types.SimpleNamespace(finalRunFolder=finalRunFolder,**parsedDict)
+
+	def _parsedNudgedBandStandard(self):
+		parsedDict = parseNebHelp.parseNudgedBandCalcStandard(self.outFilePath, convAngToBohr=True)
+		return types.SimpleNamespace(**parsedDict)
 
 	def _checkStringMatchesRunFormat(self, inpStr):
 		pattern = "run_[0-9]+"

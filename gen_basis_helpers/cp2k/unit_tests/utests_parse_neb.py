@@ -2,6 +2,7 @@
 import copy
 import os
 import itertools as it
+import types
 import unittest
 import unittest.mock as mock
 
@@ -11,6 +12,36 @@ import plato_pylib.shared.unit_convs as uConvHelp
 
 
 import gen_basis_helpers.cp2k.parse_neb_files as tCode
+
+
+class TestGetNebPathFromParsedFilObj(unittest.TestCase):
+
+	def setUp(self):
+		self.geoms = [4,5,6] #int is a reasonable stub for the class i want here
+		self.energies = [7,8,9]
+		self.dists = [2,3]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		finalNebSummary = {"dists":self.dists}
+		kwargDict = {"final_neb_summary":finalNebSummary, "neb_energies":self.energies,
+		             "neb_geoms":self.geoms}
+		self.parsedFileA = types.SimpleNamespace( **kwargDict )
+
+
+	@mock.patch("gen_basis_helpers.cp2k.parse_neb_files.nebPathHelp.NudgedBandPathStandard")
+	def testExpectedCallA(self, mockedPathCls):
+		expOutput = mock.Mock()
+		expDists = [0,2,5]
+		expSteps = list()
+		for geo,energy,dist in it.zip_longest(self.geoms, self.energies, expDists):
+			currStep = tCode.nebPathHelp.NudgedBandStepStandard(geom=geo,energies=energy,dist=dist)
+			expSteps.append(currStep)
+		mockedPathCls.side_effect = lambda *args,**kwargs: expOutput
+		actOutput = tCode.getNebPathFromParsedFileObj(self.parsedFileA)
+
+		mockedPathCls.assert_called_with(expSteps)
+		self.assertEqual(expOutput,actOutput)
 
 
 
@@ -94,6 +125,19 @@ class TestGetFilePathsFromCpoutPathAndNImages(unittest.TestCase):
 		actPaths = tCode._getXyzFilesFromCpoutPathAndNumbReplicas(self.cpoutPath, self.nReplicas)
 		self.assertEqual(expPaths, actPaths)
 
+	def testExpectedFirstBand_moreThan10Replicas(self):
+		self.nReplicas = 11
+		expExt = "-BAND01.out"
+		expPath = os.path.join("fake_dir_a","fake_cpout_a")+expExt
+		actPath = tCode._getBandOutFilesFromCpoutPathAndNumbReplicas(self.cpoutPath, self.nReplicas)[0]
+		self.assertEqual(expPath, actPath)
+
+	def testExpectedFirstXyz_moreThan10Replicas(self):
+		self.nReplicas = 11
+		expExt = "-pos-Replica_nr_01-1.xyz"
+		expPath = os.path.join("fake_dir_a","fake_cpout_a")+expExt
+		actPath = tCode._getXyzFilesFromCpoutPathAndNumbReplicas(self.cpoutPath, self.nReplicas)[0]
+		self.assertEqual(expPath, actPath)
 
 class TestParseSummaryNebCalc(unittest.TestCase):
 
