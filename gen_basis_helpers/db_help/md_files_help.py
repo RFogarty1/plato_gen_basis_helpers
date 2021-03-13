@@ -37,7 +37,7 @@ def getOutDictForMDFromStdOutObj_simple(startDir, stdOutObj, writeFiles=True, ma
 	""" Get output dictionary (to dump to database) and write relevant files from parsed dict
 	
 	Args:
-		startDbDir: (str) Path to a base folder for writing database related things. Files will be written to subpaths starting here
+		startDir: (str) Path to a base folder for writing database related things. Files will be written to subpaths starting here
 		stdOutObj: () Standard output object containing data for a single MD run. Restricted to the "parsedOutFile" type here, meaning data will be contained 
 		writeFiles: (Bool, optional) If True then trajectory and restart files will be written. Information on paths will be contained in outDict
 		maxNumbWfnBackups: (int, optional) The maximum number of *.wfn files which will be written. 1 means just the *.wfn, 2 gets the *.wfn.bak-1 etc.

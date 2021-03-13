@@ -1,5 +1,11 @@
 
+
+import plato_pylib.shared.energies_class as eClassHelp
+import plato_pylib.shared.ucell_class as uCellHelp
+
 from . import shared_io as sharedIoHelp
+
+
 
 class NudgedBandPathStandard():
 
@@ -52,11 +58,23 @@ class NudgedBandStepStandard():
 
 	@classmethod
 	def fromDict(cls, inpDict):
-		return cls(**inpDict)
+		otherAttrs = ["dist"]
+
+		outDict = dict()
+		if inpDict.get("geom",None) is not None:
+			outDict["geom"] = uCellHelp.UnitCell.fromDict( inpDict["geom"] )
+
+		if inpDict.get("energies",None) is not None:
+			outDict["energies"] = eClassHelp.EnergyVals.fromDict( inpDict["energies"] )
+
+		for key in otherAttrs:
+			outDict[key] = inpDict[key]
+
+		return cls(**outDict)
 
 	def toDict(self):
 		outDictAttrs = ["geom", "energies"]
-		outAttrs = ["geom", "energies", "dist"]
+		outAttrs = ["dist"]
 		outDict = dict()
 
 		for attr in outDictAttrs:

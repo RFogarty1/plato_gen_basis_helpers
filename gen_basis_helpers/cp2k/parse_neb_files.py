@@ -30,7 +30,6 @@ def getNebPathFromParsedFileObj(parsedFileObj):
 	#Get the steps
 	outSteps = list()
 	for geo, energyObj, dist in it.zip_longest(geoms, energies, outDists):
-		print(geo, energyObj, dist)
 		currStep = nebPathHelp.NudgedBandStepStandard(geom=geo, energies=energyObj, dist=dist)
 		outSteps.append(currStep)
 

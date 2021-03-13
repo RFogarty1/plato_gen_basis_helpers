@@ -105,18 +105,23 @@ class TestNudgedBandStep(unittest.TestCase):
 		objB = self.testObjA
 		self.assertNotEqual(objA, objB)
 
-	def testToAndFromDictConsistent(self):
+
+	@mock.patch("gen_basis_helpers.misc.nudged_band_paths.uCellHelp.UnitCell")
+	@mock.patch("gen_basis_helpers.misc.nudged_band_paths.eClassHelp.EnergyVals")
+	def testToAndFromDictConsistent(self, mockedEClass, mockedUCell):
+		#Setup
 		self.geom, self.energies = mock.Mock(), mock.Mock()
-		self.geom.toDict.side_effect = {"key_geom":"val_geom"}
-		self.energies.toDict.side_effect = {"key_energies":"val_energies"}
+		self.geom.toDict.side_effect = lambda *args,**kwargs: {"key_geom":"val_geom"}
+		self.energies.toDict.side_effect = lambda *args,**kwargs: {"key_energies":"val_energies"}
+		mockedUCell.fromDict.side_effect = lambda *args,**kwargs: self.geom
+		mockedEClass.fromDict.side_effect = lambda *args,**kwargs: self.energies
 		self.createTestObjs()
+
+		#Run and test
 		inpDict = self.testObjA.toDict()
 		objB = tCode.NudgedBandStepStandard.fromDict(inpDict)
-
 		self.geom.toDict.assert_called_with()
 		self.energies.toDict.assert_called_with()
 
 		self.assertEqual(self.testObjA,objB)
-
-
 
