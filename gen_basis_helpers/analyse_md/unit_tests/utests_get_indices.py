@@ -236,6 +236,11 @@ class TestFilterToExcludeWithoutNebsAmongstRemaining(unittest.TestCase):
 		actIndices = self._runTestFunct()
 		self.assertEqual(expIndices,actIndices)
 
+	def testWithInpIndicesOutOfOrder(self):
+		self.inpIndices = [3,1,0]
+		expIndices = [0,1]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
 
 class TestFilterToExcludeOutsideOutOfPlaneDistanceFromPoints(unittest.TestCase):
 

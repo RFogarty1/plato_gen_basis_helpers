@@ -170,11 +170,13 @@ class FilterToExcludeIndicesWithoutNebsAmongstRemaning(FilterIndicesFunction):
 
 	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
 
+		useInpIndices = sorted(inpIndices) #These NEED to be in order for us to have simple mapping between used/input indices
+
 		if self.restrictToPairs is not None:
 			sortedRestrictions = [sorted(x) for x in self.restrictToPairs]
 
 		cellForNebs = copy.deepcopy(inpGeom)
-		nebCellCartCoords = [x for idx,x in enumerate(inpGeom.cartCoords) if idx in inpIndices]
+		nebCellCartCoords = [x for idx,x in enumerate(inpGeom.cartCoords) if idx in useInpIndices]
 		cellForNebs.cartCoords = nebCellCartCoords
 
 		nebLists = nebListHelp.getNeighbourListsForInpCell_imagesMappedToCentral(cellForNebs, self.maxDist)
@@ -183,14 +185,14 @@ class FilterToExcludeIndicesWithoutNebsAmongstRemaning(FilterIndicesFunction):
 		for idx,nList in enumerate(nebLists):
 			if len(nList)>0:
 				if self.restrictToPairs is None:
-					outIndices.append( inpIndices[idx] )
+					outIndices.append( useInpIndices[idx] )
 				else:
 					pairLists = [ sorted([nebCellCartCoords[idx][-1], nebCellCartCoords[x][-1]]) for x in nList ]
 					filteredList = [x for x in pairLists if x in sortedRestrictions]
 					if len(filteredList)>0:
-						outIndices.append( inpIndices[idx] )
+						outIndices.append( useInpIndices[idx] )
 
-		return outIndices
+		return sorted(outIndices)
 
 
 class FilterToExcludeIndicesFurtherOutOfPlaneThanCutoff(FilterIndicesFunction):
