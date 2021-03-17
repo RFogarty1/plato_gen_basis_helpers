@@ -5,11 +5,27 @@ import itertools as it
 
 import numpy as np
 
+import plato_pylib.shared.ucell_class as uCellHelp
 import plato_pylib.utils.supercell as supCellHelp
 
 from . import plane_equations as planeEqnHelp
 from . import simple_vector_maths as vectHelp
 
+def getMostCentralIdxFromList(inpGeom, indices):
+	""" Gets the atom index which is closest to the centre of inpGeom when given a list of atom indices
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		indices: (iter of ints) Indices of atoms; we restrict the search to these indices
+
+	Returns
+		outIdx: (int) Index corresponding to the most central atom
+	
+	"""
+	centralFractCoord = [0.5,0.5,0.5,"X"]
+	centralCartCoord = uCellHelp.getCartCoordsFromFractCoords( inpGeom.lattVects,[centralFractCoord])[0][:3]
+	otherPoints = [ inpGeom.cartCoords[idx][:3] for idx in indices ] 
+	return indices[getIdxOfNearestPointToInputPoint(centralCartCoord, otherPoints)]
 
 
 def getHeightOfCell_abSurface(inpCell):
