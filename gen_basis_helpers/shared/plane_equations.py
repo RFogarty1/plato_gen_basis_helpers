@@ -149,3 +149,35 @@ def getOutOfPlaneDistTwoPoints(posA, posB, planeEqn):
 	return outOfPlaneDist
 
 
+
+def getVectorToMoveFromParallelPlanesAToB(planeA, planeB, parallelTol=1e-6):
+	""" Gets the vector to move (in the shortest distance) from planeA to planeB.
+	
+	Args:
+		planeA: (ThreeDimPlaneEquation)
+		planeB: (ThreeDimPlaneEquation)
+		parralelTol: (float) The magnitude of dot products between planeA and planeB normal vectors needs to be this close to 1 (tolerance is here to account for float errors)
+
+	Returns
+		 outVector: (len-3 iter) Vector allowing movement from planeA to planeB.
+ 
+	NOTE:
+		This works by getting the distance closest to origin for one plane, and getting the distance of that point from the other plane. This only works if the two planes are parralel and would give an essentially arbitrary value otherwise. Thus, I'm not sure what kind of errors you'd get for near-parralel planes (e.g. within numerical error). Suspect not a massive issue since near-parralel planes are unlikely (never?) going to intersect near origin
+
+	Raises:
+		 ValueError: If the planes intersect. This wont be perfect due to float errors.
+	"""
+	#Check for non parallel plane (presumably dot products can be used)
+	normVectA, normVectB = [ vectHelp.getUnitVectorFromInpVector(planeA.coeffs[:3]), vectHelp.getUnitVectorFromInpVector(planeB.coeffs[:3]) ]
+	absDotProd = vectHelp.getDotProductTwoVectors(normVectA, normVectB)
+	if abs(absDotProd-1)>parallelTol:
+		raise ValueError("planeEqns with coefficients {} and {} ARE NOT PARRALEL".format( planeA.coeffs[:3], planeB.coeffs[:3] ))
+
+	#Get the distance between planes if their parralel
+	pointOnB = planeB.getPointClosestToOrigin()
+	signedDist = planeA.getSignedDistanceOfPointFromPlane(pointOnB)
+	normVector = vectHelp.getUnitVectorFromInpVector(planeA.coeffs[:3])
+	tVect = [signedDist*x for x in normVector]
+	return tVect
+
+

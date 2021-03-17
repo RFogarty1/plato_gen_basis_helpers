@@ -12,6 +12,33 @@ import plato_pylib.shared.ucell_class as uCell
 import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 import gen_basis_helpers.shared.cart_coord_utils as tCode
 
+
+class TestGetAverageSurfacePlaneEqnForIndices(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [10,10,10]
+		self.lattAngles = [90,90,90]
+		self.coordsA = [ [2,2,3,"X"],
+		                 [3,3,3,"X"],
+		                 [5,5,5,"Y"],
+		                 [5,5,7,"Z"] ]
+		self.atomIndices = [2,3]
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coordsA
+
+	def _runTestFunct(self):
+		return tCode.getAveragePlaneEqnForAtomIndices(self.cellA, self.atomIndices, self.planeEqn)
+
+	def testExpectedAverageEqnA(self):
+		expD = 6
+		expPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,expD)
+		actPlaneEqn = self._runTestFunct()
+		self.assertEqual(expPlaneEqn, actPlaneEqn)
+
 class TestShiftCoordsToLeaveEqualVacAboveAndBelow(unittest.TestCase):
 
 	def setUp(self):

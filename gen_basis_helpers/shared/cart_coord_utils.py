@@ -11,6 +11,34 @@ import plato_pylib.utils.supercell as supCellHelp
 from . import plane_equations as planeEqnHelp
 from . import simple_vector_maths as vectHelp
 
+
+def getAveragePlaneEqnForAtomIndices(inpGeom, indices, planeEqn):
+	""" Returns a planeEqn which uses the mean d-value for the atom indices supplied.
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		indices: (iter of ints) Indices of the atoms to use
+		planeEqn: (ThreeDimPlaneEquation) Defines the direction of the plane (only a,b,c need to be set really)
+			 
+	Returns
+		outPlaneEqn: (ThreeDimPlaneEquation) Uses axb as the normal vector 
+ 
+	Raises:
+		 Errors
+	"""
+	#Get all the d values
+	dVals = list()
+	for idx,coord in enumerate(inpGeom.cartCoords):
+		if idx in indices:
+			currDVal = planeEqn.calcDForInpXyz(coord[:3])
+			dVals.append(currDVal)
+
+	#Get the average value + return in form of a new plane equation
+	outDVal = sum(dVals) / len(dVals)
+	outCoeffs = planeEqn.coeffs[:3] + [outDVal]
+	return planeEqnHelp.ThreeDimPlaneEquation(*outCoeffs)
+
+
 def getMostCentralIdxFromList(inpGeom, indices):
 	""" Gets the atom index which is closest to the centre of inpGeom when given a list of atom indices
 	

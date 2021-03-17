@@ -123,3 +123,54 @@ class TestGetOutOfPlaneDistTwoPoints(unittest.TestCase):
 		self.assertAlmostEqual(expDist, actDist)
 
 
+
+class TestGetVectorToMoveBetweenParralelPlanes(unittest.TestCase):
+
+	def setUp(self):
+		self.planeCoeffsA = [0,0,2,0]
+		self.planeCoeffsB = [0,0,1,4]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.planeA = tCode.ThreeDimPlaneEquation(*self.planeCoeffsA)
+		self.planeB = tCode.ThreeDimPlaneEquation(*self.planeCoeffsB)
+
+	def _runTestFunct(self):
+		return tCode.getVectorToMoveFromParallelPlanesAToB(self.planeA, self.planeB)
+
+	def testForParralelPlanesAlongZ(self):
+		expVector = [0,0,4]
+		actVector = self._runTestFunct()
+		self.assertEqual(expVector,actVector)
+
+	def testForParralelPlanesAlongZ_otherDirc(self):
+		self.planeCoeffsA, self.planeCoeffsB = self.planeCoeffsB, self.planeCoeffsA
+		self.createTestObjs()
+		expVector = [0,0,-4]
+		actVector = self._runTestFunct()
+		self.assertEqual(expVector, actVector)
+
+	def testForParralelPlanesAlongY(self):
+		self.planeCoeffsA = [0,1,0,3]
+		self.planeCoeffsB = [0,1,0,4]
+		self.createTestObjs()
+		expVector = [0,1,0]
+		actVector = self._runTestFunct()
+		self.assertEqual(expVector,actVector)
+
+	def testForNonParralelPlanes(self):
+		self.planeCoeffsA = [0,1,10,2]
+		self.planeCoeffsB = [0,0,1,1]
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			actVector = self._runTestFunct()
+
+	def testForBetweenSamePlane(self):
+		self.planeCoeffsA, self.planeCoeffsB = [0,0,4,0], [0,0,4,0]
+		self.createTestObjs()
+		expVector = [0,0,0]
+		actVector = self._runTestFunct()
+		self.assertEqual(expVector,actVector)
+
+
+
