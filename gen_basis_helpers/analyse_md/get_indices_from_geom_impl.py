@@ -12,6 +12,37 @@ from . import calc_dists as calcDistHelp
 from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
+
+def getIndicesGroupedBySurfLayerForFirstNLayers(inpGeom, surfEles, top=True, distTol=1e-1, nLayers=1):
+	""" Convenience (slooow implementation) function for getting indices for first n-layers of a surface
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		surfEles: (iter of str) Contains elements that can be found on the surface
+		top: (Bool) If True we look for the top surface (atoms with highest c values), if False we get bottom surface indices (most -ve c values)
+		distTol: (float) Distance tolerance for considering an atom to be in a plane. Probably want to increase this A LOT of the time 
+		nLayers: (int) Number of surface layers to get the indices for
+
+	Returns
+		 outIndices: (len-n iter of iters) Length matches nLayers. First entry is an iter of indices associated with the first layer, second entry is an iter of indices associated with the second layer etc.
+ 
+	"""
+	topVal = True if top else False
+	botVal = False if top else True
+
+	outIndicesGrouped = list()
+	outIndicesChained = list()
+	for n in range(1,nLayers+1):
+		currFinder = GetSurfaceIndicesFromGeomStandard(surfEles, top=topVal, bottom=botVal, distTol=distTol, nLayers=n)
+		currIndices = currFinder.getIndicesFromInpGeom(inpGeom)
+		newIndices = [x for x in currIndices if x not in outIndicesChained]
+		outIndicesChained.extend(newIndices)
+		outIndicesGrouped.append(newIndices)
+
+	return outIndicesGrouped
+
+
+
 class GetSurfaceIndicesFromGeomStandard(getIdxCore.GetSpecialIndicesFromInpGeomTemplate):
 
 	def __init__(self, surfEles, top=True, bottom=True, distTol=1e-1, nLayers=1):

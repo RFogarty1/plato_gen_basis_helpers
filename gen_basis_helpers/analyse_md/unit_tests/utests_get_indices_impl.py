@@ -7,6 +7,8 @@ import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.analyse_md.get_indices_from_geom_impl as tCode
 
+
+#Also handles getIndicesGroupedBySurfLayerForFirstNLayers
 class TestGetSurfaceIndicesStandard(unittest.TestCase):
 
 	def setUp(self):
@@ -51,6 +53,28 @@ class TestGetSurfaceIndicesStandard(unittest.TestCase):
 		expIndices = [0,1,2,3]
 		actIndices = self._runTestFunct()
 		self.assertEqual(expIndices, actIndices)
+
+	#Below are tests for getIndicesGroupedBySurfLayerForFirstNLayers
+	#This is so i can reuse the setup code
+
+	def _runGetGroupedTestFunct(self):
+		args = [self.cellA, self.surfEles]
+		kwargs = {"top":self.top, "distTol":self.distTol, "nLayers":self.nLayers}
+		return tCode.getIndicesGroupedBySurfLayerForFirstNLayers(*args, **kwargs)
+
+	def testThreeLayersTop_groupedFunction(self):
+		self.nLayers = 3
+		self.top = True
+		expIndices = [ [3], [2], [1] ]
+		actIndices = self._runGetGroupedTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
+	def testTwoLayersBot_groupedFunction(self):
+		self.nLayers = 2
+		self.top = False
+		expIndices = [ [1], [2] ]
+		actIndices = self._runGetGroupedTestFunct()
+		self.assertEqual(expIndices,actIndices)
 
 class TestGetWaterMoleculeIndicesStandard(unittest.TestCase):
 
