@@ -331,10 +331,22 @@ def parseAtomTempFile(inpFile):
 			outDict["kindTemp"] = [list() for x in range(nKinds)]
 
 		currSplitLine = fileAsList[idx].strip().split()
-		outDict["step"].append( float(currSplitLine[0]) )
+
+		#If this step isnt > previous step it means up to now came from a previous run
+		#(result of CP2K appending to files rather than overwriting)
+		if len(outDict["step"]) > 0:
+			currStep = int(currSplitLine[0])
+			if currStep <= outDict["step"][-1]:
+				outDict["step"] = list()
+				outDict["time"] = list()
+				outDict["kindTemp"] = [list() for x in range(nKinds)]
+
+		#Parse this line
+		outDict["step"].append( int(currSplitLine[0]) )
 		outDict["time"].append( float(currSplitLine[1]) )
 		for kindIdx in range(nKinds):
 			outDict["kindTemp"][kindIdx].append( float(currSplitLine[2+kindIdx]) )
+
 
 		idx+=1
 

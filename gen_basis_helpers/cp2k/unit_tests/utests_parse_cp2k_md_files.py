@@ -221,6 +221,7 @@ class TestParseAtomicTempFile(unittest.TestCase):
 
 	def createTestObjs(self):
 		self.fileAsListA = self._loadTestFileStrA().split("\n")
+		self.fileAsListB = self._loadTestFileStrB().split("\n")
 
 	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCP2KHelp._getFileAsListFromInpFile")
 	def testExpA(self, mockedReadFileIn):
@@ -230,8 +231,25 @@ class TestParseAtomicTempFile(unittest.TestCase):
 		mockedReadFileIn.assert_called_with(self.fakePathA)
 		self._checkExpAndActDictMatch(expDictA, actDictA)
 
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files.parseCP2KHelp._getFileAsListFromInpFile")
+	def testExpWhenStepIdxRepeats(self, mockedReadFileIn):
+		""" Deal with the fact that CP2K appends to these files rather than overwriting; which means that sometimes i'll cancel + restart a job, and the output will contain both steps from the original and current job """
+		mockedReadFileIn.side_effect = lambda *args,**kwargs: self.fileAsListB
+		expDictA = self._loadDictA() #We SHOULD parse the same thing for both; B just has extra stuff at the top simulating a previous cancelled run
+		actDictA = tCode.parseAtomTempFile(self.fakePathA)
+		self._checkExpAndActDictMatch(expDictA, actDictA)
+
+
 	def _loadTestFileStrA(self):
 		return """         0               0.000        99.208281489       401.583437021
+         1               0.500        97.685567639      1140.677251832
+         2               1.000       100.792521731      8812.601802133
+         3               1.500       106.676809013     74529.763329235"""
+
+	def _loadTestFileStrB(self):
+		return """         0               0.000        99.208281489       401.583437021
+         1               0.500        97.685567639      1140.677251832
+         0               0.000        99.208281489       401.583437021
          1               0.500        97.685567639      1140.677251832
          2               1.000       100.792521731      8812.601802133
          3               1.500       106.676809013     74529.763329235"""
