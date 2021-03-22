@@ -587,6 +587,16 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 			useVal = startVal
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].PRINT.FORCES.Section_parameters = useVal
 
+	if useDict.get("printPdos".lower(),None) is not None:
+		startVal = useDict["printPdos".lower()]
+		if startVal is True:
+			useVal = "ON"
+		elif startVal is False:
+			useVal = "OFF"
+		else:
+			useVal = startVal
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.PDOS.Section_parameters = useVal
+
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work
