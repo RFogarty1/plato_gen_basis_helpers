@@ -211,7 +211,7 @@ class testModifyCp2kObj(unittest.TestCase):
 		             "scfOTSafeDIIS":False,
 		             "extRestartName": "fake_restart_file.restart", "scfMaxIterAfterHistoryFull":1,
 		             "scfOTStepsize" : 0.1, "dftInpWfnRestartFilename":"fake_restart_wfn.wfn",
-		             "printForces":False, "printPdos":True}
+		             "printForces":False, "printPdos":True, "ldosIndices":[[1,2],[3,4]]}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputMiscOptsA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -493,7 +493,7 @@ def _loadExpectedOutputMiscOptsA():
 	newExtRestartPart = "&EXT_RESTART\n  RESTART_FILE_NAME fake_restart_file.restart\n&END EXT_RESTART\n&GLOBAL\n"
 	newDftRestartPart = "&DFT\n    WFN_RESTART_FILE_NAME fake_restart_wfn.wfn\n"
 	newPrintForces = "    &FORCES OFF"
-	newPrintPdosPart = "&DFT\n    &PRINT\n      &PDOS ON\n      &END PDOS\n    &END PRINT\n"
+	newPrintPdosPart = "&DFT\n    &PRINT\n      &PDOS ON\n        &LDOS\n          LIST 1 2\n        &END LDOS\n        &LDOS\n          LIST 3 4\n        &END LDOS\n      &END PDOS\n    &END PRINT\n"
 	outStr = outStr.replace("    &QS\n" ,  newQsPart)
 	outStr = outStr.replace("    &SCF\n", newScfPart)
 	outStr = outStr.replace("&GLOBAL\n", newGlobalPart)
