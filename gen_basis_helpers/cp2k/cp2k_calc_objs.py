@@ -10,6 +10,8 @@ from ..shared import method_objs as methodObjs
 from . import cp2k_file_helpers as pyCP2KHelpers
 from . import parse_md_files as parseMdHelp
 from . import parse_neb_files as parseNebHelp
+from . import parse_pdos_files as parsePdosHelp
+
 
 #NOTE: Loads of descriptors are added below (at the bottom of the file)
 class CP2KCalcObj(methodObjs.CalcMethod):
@@ -70,9 +72,14 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 		else:
 			runType = self.runType
 
+
 		#Parse accordingly
 		if runType is None:
 			parsedDict = parseCP2K.parseCpout(self.outFilePath)
+			parsedPdos = parsePdosHelp.parsePdosFromCpoutPath(self.outFilePath)
+			if parsedPdos != dict():
+				parsedDict["pdos"] = parsedPdos
+
 			outObj = types.SimpleNamespace(**parsedDict)
 			try:
 				outCartCoords = self._getFinalCartCoordsFromOpt()
