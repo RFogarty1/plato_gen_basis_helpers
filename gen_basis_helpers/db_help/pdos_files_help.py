@@ -69,7 +69,7 @@ def getPdosDictFromRecord(startDir, inpRecord):
 		outDict: keys are "atomLists" and "atomKinds". Values are iters of PdosFragmentStandard objects
  
 	"""
-	inpPath = os.path.join(startDir, inpRecord["pdos_path_ext"], inpRecord["pdos_filename"])
+	inpPath = os.path.join(startDir, inpRecord["db_ext_path"] ,inpRecord["pdos_path_ext"], inpRecord["pdos_filename"])
 	inpDicts = 	_readSinglePdosIntoListFromJsonFile(inpPath)
 
 	outDicts = dict()

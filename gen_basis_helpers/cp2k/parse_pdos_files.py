@@ -188,7 +188,7 @@ def parsePdosFromFile(inpFile):
 	haToEv = uConvHelp.RYD_TO_EV*2
 	while lineIdx < len(fileAsList):
 		currLine = fileAsList[lineIdx].strip().split()
-		moIndices.append(currLine[0])
+		moIndices.append(int(currLine[0]))
 		eigenVals.append( float(currLine[1])*haToEv )
 		occs.append( float(currLine[2]) )
 		breakdowns.append( [float(x) for x in currLine[3:]] )

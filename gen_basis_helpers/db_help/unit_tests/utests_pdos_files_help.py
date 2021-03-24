@@ -17,6 +17,7 @@ class TestGetPdosFromRecord(unittest.TestCase):
 		self.pdosFileName = "fake.json"
 		self.pdosPath = "fake_dir"
 		self.startDir = "start_dir"
+		self.dbExtPath = "ext_a"
 		self.atomKindDictA = {"eigenValues":[2,3]}
 		self.atomListDictA = {"eigenValues":[4,5,6]}
 		self.createTestObjs()
@@ -25,13 +26,13 @@ class TestGetPdosFromRecord(unittest.TestCase):
 		self.pdosDictFromFile = {"atomKinds": [self.atomKindDictA] , "atomLists": [self.atomListDictA]}
 		self.expPdosDict = {"atomKinds": [parsePdosHelp.PdosFragmentStandard.fromDict(self.atomKindDictA)],
 		                    "atomLists": [parsePdosHelp.PdosFragmentStandard.fromDict(self.atomListDictA)]}
-		self.recordA = {"pdos_path_ext":self.pdosPath, "pdos_filename":self.pdosFileName}
+		self.recordA = {"pdos_path_ext":self.pdosPath, "pdos_filename":self.pdosFileName, "db_ext_path":self.dbExtPath}
 
 
 	@mock.patch("gen_basis_helpers.db_help.pdos_files_help._readSinglePdosIntoListFromJsonFile")
 	def testExpectedFilePath(self, mockedReadFromJson):
 		mockedReadFromJson.side_effect = lambda *args,**kwargs: self.pdosDictFromFile
-		expPath = os.path.join(self.startDir, self.pdosPath, self.pdosFileName)
+		expPath = os.path.join(self.startDir, self.dbExtPath, self.pdosPath, self.pdosFileName)
 		expDict = self.expPdosDict
 		actDict = tCode.getPdosDictFromRecord(self.startDir, self.recordA)
 		mockedReadFromJson.assert_called_with(expPath)
