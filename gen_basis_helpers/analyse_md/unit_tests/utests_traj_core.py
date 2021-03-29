@@ -218,4 +218,76 @@ class TestMergeTrajInMemory(unittest.TestCase):
 		self.assertEqual(expTraj,actTraj)
 
 
+class TestGetGeomClosestToTime(unittest.TestCase):
+
+	def setUp(self):
+		self.equiDistTol = 1e-2
+		self.prioritiseLate = True
+		self.quenchTime = 5
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testTrajA = _loadTrajInMemoryA()
+		
+	def _runTestFunct(self):
+		kwargs = {"equiDist":self.equiDistTol, "prioritiseLate":self.prioritiseLate}
+		return tCode.getTimeAndGeomClosestToInpTimeForInpTraj(self.quenchTime, self.testTrajA, **kwargs)
+
+
+	@mock.patch("gen_basis_helpers.analyse_md.traj_core.copy.deepcopy")
+	def testPrioritiseLate(self, mockCopy):
+		mockCopy.side_effect = lambda x: x
+		expTime = 6
+		expGeom = self.testTrajA.trajSteps[2].unitCell
+		actTime,actGeom = self._runTestFunct()
+		self.assertAlmostEqual(expTime, actTime)
+		self.assertAlmostEqual(expGeom, actGeom)
+
+
+	@mock.patch("gen_basis_helpers.analyse_md.traj_core.copy.deepcopy")
+	def testSimplePrioritiseEarlyA(self, mockCopy):
+		self.prioritiseLate = False
+		self.createTestObjs()
+		mockCopy.side_effect = lambda x: x
+		expTime = 4
+		expGeom = self.testTrajA.trajSteps[1].unitCell
+		actTime,actGeom = self._runTestFunct()
+		self.assertAlmostEqual(expTime, actTime)
+		self.assertAlmostEqual(expGeom, actGeom)
+
+	@mock.patch("gen_basis_helpers.analyse_md.traj_core.copy.deepcopy")
+	def testEquidistHasExpectedEffect(self, mockCopy):
+		self.equiDistTol = 0.3
+		self.prioritiseLate = False
+		self.quenchTime = 5.1 #Closer 6, but eqidist makes t=4 and t=6 seem equally distanced from it (abs(1.1-0.9)<0.3)
+		mockCopy.side_effect = lambda x: x
+		self.createTestObjs()
+		expTime = 4
+		expGeom = self.testTrajA.trajSteps[1].unitCell
+		actTime, actGeom = self._runTestFunct()
+		self.assertAlmostEqual(expTime, actTime)
+		self.assertAlmostEqual(expGeom, actGeom)
+
+	@mock.patch("gen_basis_helpers.analyse_md.traj_core.copy.deepcopy")
+	def testTimeZero(self, mockCopy):
+		self.quenchTime = 0
+		mockCopy.side_effect = lambda x: x
+		self.createTestObjs()
+		expTime = 2
+		expGeom = self.testTrajA.trajSteps[0].unitCell
+		actTime, actGeom = self._runTestFunct()
+		self.assertAlmostEqual(expTime, actTime)
+		self.assertAlmostEqual(expGeom, actGeom)
+
+
+
+def _loadTrajInMemoryA():
+	outStepVals = [0,1,2,3]
+	outTimeVals = [2,4,6,8]
+	outGeomVals = [mock.Mock() for x in outStepVals] 
+
+	outIter = [ [a,b,c] for a,b,c in it.zip_longest(outGeomVals, outStepVals, outTimeVals) ] 
+	outTrajSteps = [tCode.TrajStepBase(unitCell=cell, step=step, time=time) for cell,step,time in outIter]
+
+	return tCode.TrajectoryInMemory(outTrajSteps)
 

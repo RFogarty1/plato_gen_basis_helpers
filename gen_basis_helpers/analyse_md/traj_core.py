@@ -1,4 +1,5 @@
 
+import copy
 import itertools as it
 import json
 import os
@@ -254,4 +255,56 @@ def getMergedTrajInMemory(trajList, overlapStrat="simple", trimStrat="simple"):
 
 
 
+def getTimeAndGeomClosestToInpTimeForInpTraj(inpTime, inpTrajInMem, equiDist=1e-2, prioritiseLate=True, convAngToBohr=False):
+	""" Extracts a geometry from a trajectory closest to the input time
+	
+	Args:
+		inpTime: (float) The time you want to get a geometry for
+		inpTrajInMem: (TrajectoryInMemory) Input trajectory. MUST BE IN ORDER (small time to large time)
+		equiDist: (float) Two steps are considered EQUAL if they differ from inpTime by less than this amount
+		prioritiseLate: (Bool) If True then we take the latest step when two are equal.
+		convAngToBohr: (Bool) If True then apply .convAngToBohr() to the output geometry
+ 
+	Returns
+		outTime: (float) The timestep 
+		outGeom: (plato_pylib UnitCell obj) Geometry at outTime
+ 
+	Notes:
+		TrajectoryInMemory must be ordered by time; which SHOULD always be the case anyway but..
+	"""
+	#Find the index
+	for idx,tStep in enumerate(inpTrajInMem):
+		currDiff = abs(inpTime - tStep.time)
+
+		if idx==0:
+			minDiff, maxDiff, minIndices = currDiff, currDiff, [idx]
+		else:
+			
+			if currDiff < minDiff+equiDist:
+				#Case 1: We're definitely closer than before
+				if abs(currDiff)+equiDist < abs(minDiff):
+					minDiff, minIndices = currDiff, [idx]
+				else:
+					minIndices.append(idx)
+
+			#If we're getting furthe away from the input time, we're never gonna get any closer
+			elif (currDiff > minDiff):
+				break
+
+			#Seems very unlikely to trigger (unless two steps are equidistant)
+			else:
+				pass
+
+
+	minIdx = minIndices[-1] if prioritiseLate else minIndices[0]
+
+	#Use the indices to get the geometry; this only works this efficiently in trajInMemory
+	# (in other cases we'd need to consume a new iterator until we reached this step)
+	outGeom = copy.deepcopy( inpTrajInMem.trajSteps[minIdx].unitCell )
+	outTime = inpTrajInMem.trajSteps[minIdx].time
+	if convAngToBohr:
+		outGeom.convAngToBohr()
+	
+#	print("Quenched at {} fs".format(outTime))
+	return outTime, outGeom
 
