@@ -6,8 +6,8 @@ import sim_xps_spectra.mol_spectra.spectrum_creator as specCreatorHelp
 import sim_xps_spectra.broad_functs.create_broaden_functs as broadFunctHelp
 
 
-
-def getGaussianBroadenedTotalDosFromFragment(pdosFragment, xVals, fwhm, multByOcc=False, normFactor=1):
+#TODO: normFactor should be put back; but cant use the area of normalised gaussian function to apply it (need to use intensities)
+def getGaussianBroadenedTotalDosFromFragment(pdosFragment, xVals, fwhm, multByOcc=False):
 	""" Get a total density of states broadened by gaussian functions
 	
 	Args:
@@ -27,13 +27,13 @@ def getGaussianBroadenedTotalDosFromFragment(pdosFragment, xVals, fwhm, multByOc
 	useFrag.breakdownLabels = ["total"]
 
 	#Create the spectrum
-	specObj = getGaussianBroadenedPdosFromFragmentsSimple( [useFrag], ["total_dos"], xVals, fwhm, multByOcc=multByOcc, normFactor=normFactor)
+	specObj = getGaussianBroadenedPdosFromFragmentsSimple( [useFrag], ["total_dos"], xVals, fwhm, multByOcc=multByOcc)
 
 	return specObj.totalSpectralContributions
 
 
-
-def getGaussianBroadenedPdosFromFragmentsSimple(pdosFragments, fragNames, xVals, fwhm, multByOcc=False, separateShells=False, normFactor=1):
+#TODO: normFactor should be put back; but cant use the area of normalised gaussian function to apply it (need to use intensities)
+def getGaussianBroadenedPdosFromFragmentsSimple(pdosFragments, fragNames, xVals, fwhm, multByOcc=False, separateShells=False):
 	""" Gets a set of partial density of states broadened with a Gaussian function
 	
 	Args:
@@ -56,7 +56,7 @@ def getGaussianBroadenedPdosFromFragmentsSimple(pdosFragments, fragNames, xVals,
 		allFrags.extend(currOutFrags)
 
 	#Step 2 = get the broadening function
-	bFunct = broadFunctHelp.createNormalisedGauFunctFromCentreAndFWHM(0.0,fwhm,area=normFactor)
+	bFunct = broadFunctHelp.createNormalisedGauFunctFromCentreAndFWHM(0.0,fwhm)
 
 	#Step 3 = Generate the spectrum from the fragment objects and the correct inputs
 	currKwargs = {"spectraFrags":allFrags, "normBFunct":bFunct, "xVals":xVals}
