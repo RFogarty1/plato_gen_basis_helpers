@@ -18,6 +18,7 @@ class TestGetSurfaceIndicesStandard(unittest.TestCase):
 		self.bottom = True
 		self.distTol = 1e-1
 		self.nLayers = 1
+		self.exitCleanlyWhenOutOfLayers = False
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -59,7 +60,8 @@ class TestGetSurfaceIndicesStandard(unittest.TestCase):
 
 	def _runGetGroupedTestFunct(self):
 		args = [self.cellA, self.surfEles]
-		kwargs = {"top":self.top, "distTol":self.distTol, "nLayers":self.nLayers}
+		kwargs = {"top":self.top, "distTol":self.distTol, "nLayers":self.nLayers,
+		          "exitCleanlyWhenOutOfLayers":self.exitCleanlyWhenOutOfLayers}
 		return tCode.getIndicesGroupedBySurfLayerForFirstNLayers(*args, **kwargs)
 
 	def testThreeLayersTop_groupedFunction(self):
@@ -75,6 +77,20 @@ class TestGetSurfaceIndicesStandard(unittest.TestCase):
 		expIndices = [ [1], [2] ]
 		actIndices = self._runGetGroupedTestFunct()
 		self.assertEqual(expIndices,actIndices)
+
+	def testErrorExitWhenTooManyLayersRequested_groupedFunction(self):
+		self.nLayers = 50
+		with self.assertRaises(ValueError):
+			self._runGetGroupedTestFunct()
+
+	def testCleanExitWhenTooManyLayersRequestd_groupedFunction(self):
+		self.exitCleanlyWhenOutOfLayers = True
+		self.top, self.surfEles = True, ["X","Y"]
+		self.nLayers = 50
+		expIndices = [ [3], [2], [1], [0] ]
+		actIndices = self._runGetGroupedTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
 
 class TestGetWaterMoleculeIndicesStandard(unittest.TestCase):
 

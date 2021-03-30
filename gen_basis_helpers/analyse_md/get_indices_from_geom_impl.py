@@ -13,7 +13,7 @@ from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
 
-def getIndicesGroupedBySurfLayerForFirstNLayers(inpGeom, surfEles, top=True, distTol=1e-1, nLayers=1):
+def getIndicesGroupedBySurfLayerForFirstNLayers(inpGeom, surfEles, top=True, distTol=1e-1, nLayers=1, exitCleanlyWhenOutOfLayers=False):
 	""" Convenience (slooow implementation) function for getting indices for first n-layers of a surface
 	
 	Args:
@@ -22,6 +22,7 @@ def getIndicesGroupedBySurfLayerForFirstNLayers(inpGeom, surfEles, top=True, dis
 		top: (Bool) If True we look for the top surface (atoms with highest c values), if False we get bottom surface indices (most -ve c values)
 		distTol: (float) Distance tolerance for considering an atom to be in a plane. Probably want to increase this A LOT of the time 
 		nLayers: (int) Number of surface layers to get the indices for
+		exitCleanlyWhenOutOfLayers: (Bool) If True then simply exit if no new indices are found in a layer, if False an error should be throw. This is for cases where nLayers> actual number of layers in the system
 
 	Returns
 		 outIndices: (len-n iter of iters) Length matches nLayers. First entry is an iter of indices associated with the first layer, second entry is an iter of indices associated with the second layer etc.
@@ -34,7 +35,14 @@ def getIndicesGroupedBySurfLayerForFirstNLayers(inpGeom, surfEles, top=True, dis
 	outIndicesChained = list()
 	for n in range(1,nLayers+1):
 		currFinder = GetSurfaceIndicesFromGeomStandard(surfEles, top=topVal, bottom=botVal, distTol=distTol, nLayers=n)
-		currIndices = currFinder.getIndicesFromInpGeom(inpGeom)
+		try:
+			currIndices = currFinder.getIndicesFromInpGeom(inpGeom)
+		except ValueError as e:
+			if exitCleanlyWhenOutOfLayers:
+				break
+			else:
+				raise(e)
+
 		newIndices = [x for x in currIndices if x not in outIndicesChained]
 		outIndicesChained.extend(newIndices)
 		outIndicesGrouped.append(newIndices)
