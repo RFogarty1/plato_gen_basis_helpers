@@ -46,8 +46,6 @@ def getFragPairGeomsFromIndices(inpGeom, fragIndices, maxSep=None):
 		for idxB,fragB in enumerate(fragIndices[idxA+1:], start=idxA+1):
 			inclThisFrag = True
 
-			print("idxB-idxA = {}".format(idxB-idxA))
-			print("maxSep = {}".format(maxSep))
 			if (maxSep is not None):
 				if (idxB-idxA) > maxSep:
 					inclThisFrag = False
