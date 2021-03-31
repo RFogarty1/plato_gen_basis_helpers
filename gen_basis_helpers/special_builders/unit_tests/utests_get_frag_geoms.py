@@ -7,6 +7,28 @@ import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.special_builders.get_frag_geoms as tCode
 
+
+class TestGetPairFragNames(unittest.TestCase):
+
+	def setUp(self):
+		self.fragNames = ["fragA", "fragB", "fragC"]
+		self.maxSep = None
+		
+	def _runTestFunct(self):
+		return tCode.getPairFragNamesFromIndividualFragNames(self.fragNames, maxSep=self.maxSep)
+
+	def testExpectedValsNoSep(self):
+		expVals = ["fragA-fragB", "fragA-fragC", "fragB-fragC"]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpectedValsSepOne(self):
+		self.maxSep = 1
+		expVals = ["fragA-fragB", "fragB-fragC"]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+
 class TestGetIsolatedFragGeomsFromFragIndices(unittest.TestCase):
 
 
