@@ -178,7 +178,7 @@ class testModifyCp2kObj(unittest.TestCase):
 		kwargDict = {"scfMixAlpha": "0.8", "scfMixMethod": "PULAY_MIXING", "scfMixingOn":False, "scfPrintRestart":True,
 		             "scfPrintRestartHistoryOn":True, "scfPrintRestartHistory_eachMD":8, "scfPrintRestartHistory_eachSCF":12,
 		             "scfPrintRestartHistory_backupCopies":5, "scfPrintRestart_eachMD":2, "scfPrintRestart_eachSCF":3,
-		             "scfPrintRestart_backupCopies":7,
+		             "scfPrintRestart_backupCopies":7, "scfHistoryEps":1e-3,
 		             "scfDiagOn":False, "scfOuterEps": 1e-5, "scfOuterMaxIters":20}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputScfMixA()
@@ -445,13 +445,14 @@ def _loadExpectedOutputScfMixA():
 	newOuterScfPart += "        EPS_SCF 1e-05\n"
 	newOuterScfPart += "        MAX_SCF 20\n"
 	newOuterScfPart += "      &END OUTER_SCF\n"
-
+	newEpsScfPart = "&SCF\n      EPS_SCF_HISTORY 0.001\n"
 	outStr = outStr.replace("MIXING T","MIXING F")
 	outStr = outStr.replace("METHOD BROYDEN_MIXING", "METHOD PULAY_MIXING")
 	outStr = outStr.replace("ALPHA 0.4", "ALPHA 0.8")
 	outStr = outStr.replace("&SCF\n",newPrintPart)
 	outStr = outStr.replace("DIAGONALIZATION ON", "DIAGONALIZATION FALSE")
 	outStr = outStr.replace("&SCF\n",newOuterScfPart)
+	outStr = outStr.replace("&SCF\n",newEpsScfPart)
 	return outStr
 
 def _loadExpectedOutputSurfaceDipoleOptsA():

@@ -287,6 +287,9 @@ def _modCp2kObjBasedOnScfOptDict(cp2kObj, useDict):
 	if useDict.get("scfMaxIterAfterHistoryFull".lower(),None) is not None:
 		scfSection.Max_scf_history = useDict["scfMaxIterAfterHistoryFull".lower()]
 
+	if useDict.get("scfHistoryEps".lower(),None) is not None:
+		scfSection.Eps_scf_history = useDict["scfHistoryEps".lower()]
+
 def _modCp2kObjBasedOnSurfDipoleCorrOptDict(cp2kObj, useDict):
 
 	dftSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT
