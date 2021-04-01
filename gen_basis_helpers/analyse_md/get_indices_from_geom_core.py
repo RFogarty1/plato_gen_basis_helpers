@@ -310,4 +310,54 @@ class FilterToExcludeIndicesBasedOnNumberOfAtomsInSurfacePlane(FilterIndicesFunc
 		return outIndices
 
 
+class FilterToExcludeAtomsOutsideCutoffDistFromIndices(FilterIndicesFunction):
+	""" Excludes indices further than a cutoff for any inpIndices. The indices of these needs to be chosen at initiation time
+
+	"""
+
+	def __init__(self, cutoffDist, cutoffIndices):
+		""" Initializer
+		
+		Args:
+			cutoffDist: (float) Maximum distance from inpIndices (in filterFunct) to any of atoms in cutoffIndices
+			cutoffIndices: (iter of ints) Indices of atoms we're testing for being within cutoff dist
+				 
+		"""
+		self.cutoffDist = cutoffDist
+		self.cutoffIndices = sorted(cutoffIndices)
+
+	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
+
+		#Figure out the indices we care about
+		useIndices = sorted(inpIndices) #Safer to have them sorted
+		outIndices = [x for x in useIndices if x in self.cutoffIndices]
+		allIndicesForCell = self.cutoffIndices + [idx for idx in inpIndices if idx not in self.cutoffIndices]
+
+		#Create at temporary cell with only the indices we care about + get neighbour lists (using cutoffDist)
+		startCellCartCoords = inpGeom.cartCoords
+		cellForNebs = copy.deepcopy(inpGeom)
+
+		nebCellCartCoords = list()
+		for idx in allIndicesForCell:
+			currCoords = startCellCartCoords[idx]
+			nebCellCartCoords.append(currCoords)
+
+		cellForNebs.cartCoords = nebCellCartCoords
+		nebLists = nebListHelp.getNeighbourListsForInpCell_imagesMappedToCentral(cellForNebs, self.cutoffDist)
+
+		#Filter out inpIndices which dont have neighbours amongst self.cutoffIndices
+		startIdx = len(self.cutoffIndices)
+		unMappedOutIndices = list()
+		for idx, nebList in enumerate(nebLists[startIdx:]):
+			if len(nebList)>0:
+				#Check if any of these indices matches 
+				if any([x<startIdx for x in nebList]):
+					unMappedOutIndices.append(idx)
+
+		#Map back to original indices
+		indicesForCellWithoutCutoffIndices = [x for x in allIndicesForCell if x not in self.cutoffIndices]
+		mappedIndices = [ indicesForCellWithoutCutoffIndices[idx] for idx in unMappedOutIndices ]
+
+		return sorted(outIndices + mappedIndices)
+
 

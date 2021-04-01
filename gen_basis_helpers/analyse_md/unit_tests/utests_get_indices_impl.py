@@ -8,6 +8,7 @@ import plato_pylib.shared.ucell_class as uCellHelp
 import gen_basis_helpers.analyse_md.get_indices_from_geom_impl as tCode
 
 
+
 #Also handles getIndicesGroupedBySurfLayerForFirstNLayers
 class TestGetSurfaceIndicesStandard(unittest.TestCase):
 
@@ -234,6 +235,43 @@ class TestGetIndicesForVaryTypesOfSurfAtom_waterBilayersSimple(unittest.TestCase
 		expIndices = {"free":[1,15,16], "close":[5,9,14], "far":[4,8,17]} 
 		actIndices = self._runTestFunct()
 		self.assertEqual(expIndices, actIndices)
+
+
+
+class TestGetWaterIndicesWithinDistOfInpIndices(unittest.TestCase):
+
+	def setUp(self):
+		self.cellA = _loadGeomTestVaryTypesOfSurfAtomA()
+		self.inpIndicesA = [5,9]
+		self.cutoffDist = 5 #bonds about 2.2 Angstrom i guess
+		self.oxyInCutoff = True
+		self.hyInCutoff = False
+		self.waterDetector = None
+
+	def _runTestFunct(self):
+		args = [self.cellA, self.inpIndicesA, self.cutoffDist]
+		kwargs = {"oxyInCutoff":self.oxyInCutoff, "hyInCutoff":self.hyInCutoff, "waterDetector":self.waterDetector}
+		return tCode.getIndicesOfWaterWithinCutoffDistOfInpIndices(*args,**kwargs)
+
+	def testExpectedForCaseA(self):
+		#expVals found by dumping to *.cell file and looking in vesta
+		expVals = [ [19,32,33], [21,36,37] ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)  
+
+	def testExpectedUsingHydrogen_noneFound(self):
+		self.oxyInCutoff, self.hyInCutoff = False,True
+		expVals = []
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	#Tried to switch O/H coords at first, but failed since wastn detected as a "water" molecule
+	def testExpectedUsingHydrogen_twoFound(self):
+		self.oxyInCutoff, self.hyInCutoff = False, True
+		self.cutoffDist = 6
+		expVals = [ [19,32,33], [21,36,37] ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
 
 
 def _loadGeomTestVaryTypesOfSurfAtomA():

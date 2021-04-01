@@ -13,6 +13,53 @@ from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
 
+def getIndicesOfWaterWithinCutoffDistOfInpIndices(inpGeom, inpIndices, cutoffDist, oxyInCutoff=True, hyInCutoff=False, waterDetector=None):
+	""" Gets indices for water molecules within
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		inpIndices: (iter of ints) The indices of atoms you want to detect water around
+		cutoffDist: (float) The maximum distance water can be from an input index
+		oxyInCutoff: (Bool) If True include the water oxygen atom when figuring out if a molecule is within cutoff
+		hyInCutoff: (Bool) If True we include the hydrogen atom when figuring out if a molecule is within cutoff
+		waterDetector: (GetWaterMoleculeIndicesFromGeomStandard object) Has a .getIndicesFromInpGeom function, which returns in the format [ [1,2,3], [9,10,11], ... ]
+
+	Returns
+		outIndices: (iter of len-3 iters)
+ 
+	"""
+	waterDetector = GetWaterMoleculeIndicesFromGeomStandard() if waterDetector is None else waterDetector
+	waterIndices = waterDetector.getIndicesFromInpGeom(inpGeom)
+	fractCoords = inpGeom.fractCoords
+
+	#Get all indices sufficiently close to inpIndices
+	if oxyInCutoff and hyInCutoff:
+		waterIndicesForSearch = [x for x in it.chain(*waterIndices)]
+	elif oxyInCutoff:
+		waterIndicesForSearch = [idx for idx in it.chain(*waterIndices) if fractCoords[idx][-1].upper()=="O"]
+	elif hyInCutoff:
+		waterIndicesForSearch = [idx for idx in it.chain(*waterIndices) if fractCoords[idx][-1].upper()=="H"]
+	else:
+		raise ValueError("oxyInCutoff={} and hyInCutoff={}; at least one of these should be true".format(oxyInCutoff, hyInCutoff))
+
+	#Get all the individual atoms within range
+	dudFilterInstance = None
+	withinDistFilterFunct = getIdxCore.FilterToExcludeAtomsOutsideCutoffDistFromIndices(cutoffDist, inpIndices)
+	outAtomIndices = withinDistFilterFunct( dudFilterInstance, inpGeom, waterIndicesForSearch )
+
+	#Figure out which water molecules are in range
+	waterIndicesToOutput = list()
+	for atomIdx in outAtomIndices:
+		currWaterIndex = [idx for idx,vals in enumerate(waterIndices) if atomIdx in vals]
+		assert len(currWaterIndex)==1
+		currWaterIndex = currWaterIndex[0]
+		waterIndicesToOutput.append(currWaterIndex)
+	waterIndicesToOutput = list(set(waterIndicesToOutput))
+
+	return [waterIndices[idx] for idx in waterIndicesToOutput]
+
+
+
 def getIndicesGroupedBySurfLayerForFirstNLayers(inpGeom, surfEles, top=True, distTol=1e-1, nLayers=1, exitCleanlyWhenOutOfLayers=False):
 	""" Convenience (slooow implementation) function for getting indices for first n-layers of a surface
 	

@@ -356,3 +356,63 @@ class TestFilterToExcludeIndicesBasedonNumberOfAtomsInSurfacePlanes(unittest.Tes
 
 
 
+class FilterToAtomsInsideCutoffDistFromIndices(unittest.TestCase):
+
+	def setUp(self):
+		self.cutoffDist = 5.1
+		self.cutoffIndices = [2,3]
+		self.inpIndices = [0,1]
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoordsA = [ [3,3,3,"X"],
+		                     [3,3,5,"Y"],
+		                     [3,3,6,"Z"],
+		                     [3,3,8,"Z"] ]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoordsA
+
+		args = [self.cutoffDist, self.cutoffIndices]
+		self.testObj = tCode.FilterToExcludeAtomsOutsideCutoffDistFromIndices(*args)
+
+	def _runTestFunct(self):
+		dudInstance = None
+		return self.testObj(dudInstance, self.cellA, self.inpIndices)
+
+	def testExpVals_noneFiltered(self):
+		expVals = self.inpIndices #shouldnt filter any out
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpVals_allFiltered(self):
+		self.cutoffDist = 0.1
+		self.createTestObjs()
+		expVals = []
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpVals_overlappingInpAndCutoffIndices(self):
+		self.cutoffIndices = [0,2,3]
+		self.createTestObjs()
+		expVals = self.inpIndices
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpVals_skippedIndices(self):
+		""" Case where the neighbour cell actually has diff indices """
+		self.cutoffIndices = [3,0]
+		self.createTestObjs()
+		expVals = [0,1]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals,actVals)
+
+	def testExpVals_someFiltered(self):
+		self.cutoffIndices = [2]
+		self.cutoffDist = 2.1
+		self.inpIndices = [0,1,2,3]
+		self.createTestObjs()
+		expVals = [1,2,3]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
