@@ -21,7 +21,7 @@ def getAveragePlaneEqnForAtomIndices(inpGeom, indices, planeEqn):
 		planeEqn: (ThreeDimPlaneEquation) Defines the direction of the plane (only a,b,c need to be set really)
 			 
 	Returns
-		outPlaneEqn: (ThreeDimPlaneEquation) Uses axb as the normal vector 
+		outPlaneEqn: (ThreeDimPlaneEquation) 
  
 	Raises:
 		 Errors
@@ -54,6 +54,58 @@ def getMostCentralIdxFromList(inpGeom, indices):
 	centralCartCoord = uCellHelp.getCartCoordsFromFractCoords( inpGeom.lattVects,[centralFractCoord])[0][:3]
 	otherPoints = [ inpGeom.cartCoords[idx][:3] for idx in indices ] 
 	return indices[getIdxOfNearestPointToInputPoint(centralCartCoord, otherPoints)]
+
+
+def getDistancesOfAtomsFromPlaneEquation_nearestImageAware(inpGeom, planeEqn, atomIndices, signed=False):
+	""" Gets distances of atoms from an input plane
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		planeEqn: (ThreeDimPlaneEquation) The plane we want distances for
+		atomIndices: (iter of int) 
+		signed: (Bool) If True get signed distances, if False get unsigned distances
+			 
+	Returns
+		outDists: (iter of float) Distances for each atomIndex from the plane
+ 
+	"""
+	
+	startPlaneDVal = planeEqn.coeffs[-1]
+	#0) Get the initial cartestian co-ordinates
+	cartCoords = inpGeom.cartCoords
+	tempCell = copy.deepcopy(inpGeom)
+
+	lattParams, lattAngles = inpGeom.getLattParamsList() , inpGeom.getLattAnglesList()
+	tempCellToGetNewPlaneEqn = uCellHelp.UnitCell(lattParams=lattParams, lattAngles=lattAngles)
+
+	#1) Figure out the shift we need to get the planeEqn that passes through [0.5,0.5,0.5]
+	tempCellToGetNewPlaneEqn.fractCoords = [ [0.5,0.5,0.5,"X"] ]
+	dValForCentreOfCell = planeEqn.calcDForInpXyz( tempCellToGetNewPlaneEqn.cartCoords[0][:3] )
+	planeEqnForCentreOfCell = copy.deepcopy(planeEqn)
+	planeEqnForCentreOfCell = planeEqnHelp.ThreeDimPlaneEquation( *(planeEqn.coeffs[:3] + [dValForCentreOfCell]) )
+	shiftPlaneToCentreVector = planeEqnHelp.getVectorToMoveFromParallelPlanesAToB(planeEqn,planeEqnForCentreOfCell)
+
+	#2) Translate the cell to get our plane equation at the centre of it
+	tempCell = copy.deepcopy(inpGeom)
+	newCellCartCoords = list()
+	for coord in cartCoords:
+		newCoord = [x+t for x,t in it.zip_longest(coord[:3], shiftPlaneToCentreVector)]
+		newCellCartCoords.append( newCoord + [coord[-1]] )
+
+	tempCell.cartCoords = newCellCartCoords
+	uCellHelp.foldAtomicPositionsIntoCell(tempCell)
+
+	#3) Get distances
+	useCoords = tempCell.cartCoords
+	outDists = list()
+	for idx in atomIndices:
+		if signed:
+			currDist = planeEqnForCentreOfCell.getSignedDistanceOfPointFromPlane( useCoords[idx][:3] )
+		else:
+			currDist = planeEqnForCentreOfCell.getDistanceOfPointFromPlane( useCoords[idx][:3] )
+		outDists.append(currDist)
+
+	return outDists
 
 
 def getHeightOfCell_abSurface(inpCell):

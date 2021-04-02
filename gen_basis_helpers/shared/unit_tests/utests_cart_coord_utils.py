@@ -13,6 +13,47 @@ import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 import gen_basis_helpers.shared.cart_coord_utils as tCode
 
 
+class TestGetDistanceOfAtomsFromPlaneEquation(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams = [10,10,10]
+		self.lattAngles = [90,90,90]
+		self.coordsA = [ [2,2,3,"X"],
+		                 [3,3,3,"X"],
+		                 [5,5,5,"Y"],
+		                 [5,5,9,"Z"] ]
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
+		self.atomIndices = [idx for idx,unused in enumerate(self.coordsA)]
+		self.signed = False
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coordsA
+
+	def _runTestFunct(self):
+		args = [self.cellA, self.planeEqn, self.atomIndices]
+		kwargs = {"signed":self.signed}
+		return tCode.getDistancesOfAtomsFromPlaneEquation_nearestImageAware(*args, **kwargs)
+
+	def testUnsignedDistsA_pbcsImportant(self):
+		expDists = [3,3,5,1]
+		actDists = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expDists, actDists)]
+
+	def testSignedDistsA_pbcsImportant(self):
+		self.signed = True
+		expDists = [3,3,5,-1]
+		actDists = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expDists, actDists)]
+
+	def testWithoutUsingAllIndices(self):
+		self.atomIndices = [2,3]
+		expDists = [5,1]
+		actDists = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expDists, actDists)]
+
+
 class TestGetAverageSurfacePlaneEqnForIndices(unittest.TestCase):
 
 	def setUp(self):
