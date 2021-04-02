@@ -13,8 +13,63 @@ from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
 
+def getIndicesOfWaterBilayerClosestToSurface(inpGeom, surfaceDetector, maxBilayerThickness=0.3, waterDetector=None, expNumberWater=None):
+	""" Get indices of water molecules in the first bilayer
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		surfaceDetector: (GetSurfaceIndicesFromGeomStandard) Gets indices of surface atoms; should be set to either top/bottom surface AND set to return a single layer
+		maxBilayerThickness: (float) Tolerance parameter used to detect surface layers; two atoms separated by more than this are in different bilayers. NOTE: We only use the oxygen atoms to determine which layer a water is in
+		waterDetector: (GetWaterMoleculeIndicesFromGeomStandard object) Used to get indices of water molecules
+		expNumberWater: (int) If set, then causes the fucntion to throw AssertionError if the number of water molecules found doesnt match the expected number
+
+	Returns
+		outIndices: (iter of len-3 iters) Each element contains indices of one water molecule
+ 
+	Raises:
+		AssertionError: If expNumberWater is set then this is throw when len(outIndices)!=expNumberWater
+	"""
+	cartCoords = inpGeom.cartCoords
+	waterDetector = GetWaterMoleculeIndicesFromGeomStandard() if waterDetector is None else waterDetector
+
+	#0) Get the surface plane
+	surfaceIndices = surfaceDetector.getIndicesFromInpGeom(inpGeom)
+	abPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpGeom)
+	surfPlaneEqn = cartHelp.getAveragePlaneEqnForAtomIndices(inpGeom, surfaceIndices, abPlaneEqn)
+
+	#1) Get all the water indices
+	waterIndicesGrouped = waterDetector.getIndicesFromInpGeom(inpGeom)
+	waterOxyIndices = [idx for idx in it.chain(*waterIndicesGrouped) if cartCoords[idx][-1].upper()=="O"]
+
+	#2) Figure out the closest surface-O distance.
+	distsFromPlane = cartHelp.getDistancesOfAtomsFromPlaneEquation_nearestImageAware(inpGeom, surfPlaneEqn, waterOxyIndices, signed=False)
+	minDistFromPlane = min(distsFromPlane)
+	maxDistToBeInBilayer = minDistFromPlane + maxBilayerThickness
+
+	#3) Get all the oxygen indices that are in waterIndices AND within closest surf-O + maxBilayerThickness of the surface plane
+	dudFilterInstance = None
+	indicesNearPlaneFilter = getIdxCore.FilterToAtomsWithinDistanceOfSurfacePlane(surfPlaneEqn, maxDistToBeInBilayer)
+	oxyIndicesNearPlane = indicesNearPlaneFilter(dudFilterInstance, inpGeom, waterOxyIndices)
+
+	#4) Convert to full water indices
+	outWaterIndices = list()
+	for idxA in oxyIndicesNearPlane:
+		for idxB,waterIndices in enumerate(waterIndicesGrouped):
+			if idxA in waterIndices:
+				outWaterIndices.append(idxB)
+
+	outWater = [ waterIndicesGrouped[idx] for idx in outWaterIndices ]
+
+	#5) Check we have the expected if the error check is requested
+	if expNumberWater is not None:
+		actNumbWater = len(outWater)
+		assert expNumberWater == actNumbWater, "expNumber water should equal actNumber water; but values are {} and {}".format(expNumberWater, actNumbWater)
+
+	return outWater
+
+
 def getIndicesOfWaterWithinCutoffDistOfInpIndices(inpGeom, inpIndices, cutoffDist, oxyInCutoff=True, hyInCutoff=False, waterDetector=None):
-	""" Gets indices for water molecules within
+	""" Gets indices for water molecules within a certain cutoff of inpIndices
 	
 	Args:
 		inpGeom: (plato_pylib UnitCell object)
