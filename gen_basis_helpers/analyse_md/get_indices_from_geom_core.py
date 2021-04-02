@@ -117,15 +117,16 @@ class FilterToAtomsWithinDistanceOfSurfacePlane(FilterIndicesFunction):
 	""" Return only indices for atoms within a certain distance from a given surface plane """
 
 
-	def __init__(self, planeEqn, maxDist, distTol=1e-1, top=True, bottom=True):
+	def __init__(self, planeEqn, maxDist, distTol=1e-1, top=True, bottom=True, minImageConv=True):
 		""" Initializer
 		
 		Args:
 			planeEqn: (ThreeDimPlaneEquation) Defines the plane to use
-			maxDist: (float) Will filter to atoms CLOSER to the plane than this (e.g. distTol=1 means we filter to distance <1)
+			maxDist: (float) Will filter to atoms CLOSER to the plane than this (e.g. maxDist=1 means we filter to distance <1)
 			top: (Bool) Whether to include atoms ABOVE the plane
 			bottom: (Bool) Whether to include atoms BELOW the plane
 			distTol: (float) If a distance is <= to this value of the plane it is considered "on the plane" and that index will be always be returned regardless of the top/bottom parameter values (e.g. if bottom=False and an index was found at -0.5*distTol it would be returned)
+			minImageConv: (Bool) Whether to take periodic boundaries into account using the minimum image convention. Setting to False is probably faster, and may be fine if your sure PBCs wont matter (e.g. your surface plane is already at the centre of the cell)
 				 
 		"""
 		self.planeEqn = planeEqn
@@ -133,23 +134,33 @@ class FilterToAtomsWithinDistanceOfSurfacePlane(FilterIndicesFunction):
 		self.distTol = distTol
 		self.top = top
 		self.bottom = bottom
+		self.minImageConv = minImageConv
 
 	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
-		relCoords = [x[:3] for idx,x in enumerate(inpGeom.cartCoords) if idx in inpIndices]
-		signedDists = [self.planeEqn.getSignedDistanceOfPointFromPlane(x) for x in relCoords]
+		useIndices = sorted(inpIndices)
+		relCoords = [x[:3] for idx,x in enumerate(inpGeom.cartCoords) if idx in useIndices]
 
-		outIndices = list()
+		if self.minImageConv:
+			signedDists = cartHelp.getDistancesOfAtomsFromPlaneEquation_nearestImageAware(inpGeom, self.planeEqn, useIndices, signed=True)
+		else:
+			signedDists = [self.planeEqn.getSignedDistanceOfPointFromPlane(x) for x in relCoords]
+
+		#Figure out which indices meet the criterion
+		outIndicesUnmapped = list()
 		for idx,sDist in enumerate(signedDists):
 			absDist = abs(sDist)
 			if absDist<self.distTol:
-				outIndices.append(idx)
+				outIndicesUnmapped.append(idx)
 			else:
 				if self.top:
 					if (sDist>0) and (absDist<self.maxDist):
-						outIndices.append(idx)
+						outIndicesUnmapped.append(idx)
 				if self.bottom:
 					if (sDist<0) and (absDist<self.maxDist):
-						outIndices.append(idx)
+						outIndicesUnmapped.append(idx)
+
+		#Map back to the original indices (from inpIndices)
+		outIndices = [useIndices[idx] for idx in outIndicesUnmapped]
 
 		return outIndices
 

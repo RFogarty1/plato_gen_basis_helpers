@@ -160,13 +160,16 @@ class TestFilterToAtomsWithinDistanceOfSurfacePlane(unittest.TestCase):
 		self.lattParams = [10,10,10]
 		self.lattAngles = [90,90,90]
 		self.coordsA = [ [4,4,4,"X"], [5,5,5,"X"], [6,6,6,"X"] ]
+		self.minImageConv=False
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
 		self.cellA.cartCoords = self.coordsA
 		self.inpIndices = [x for x in range(len(self.coordsA))]
-		self.filterFunctA = tCode.FilterToAtomsWithinDistanceOfSurfacePlane(self.planeEqnA, self.maxDist, top=self.top, bottom=self.bot, distTol=self.distTol)
+
+		currKwargs = {"top":self.top, "bottom":self.bot, "distTol":self.distTol, "minImageConv":self.minImageConv}
+		self.filterFunctA = tCode.FilterToAtomsWithinDistanceOfSurfacePlane(self.planeEqnA, self.maxDist, **currKwargs)
 
 	def _runTestFunct(self):
 		return self.filterFunctA(mock.Mock(), self.cellA, self.inpIndices)
@@ -198,6 +201,30 @@ class TestFilterToAtomsWithinDistanceOfSurfacePlane(unittest.TestCase):
 		actIndices = self._runTestFunct()
 		self.assertEqual(expIndices, actIndices)
 
+	def testWithSplitInpIndices(self):
+		self.inpIndices = [2,1]
+		expIndices = [1,2]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
+	def testWithSplitInpIndices_PBCAware(self):
+		self.minImageConv=True		
+		self.createTestObjs()
+		self.inpIndices = [2,1]
+		expIndices = [1,2]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
+	def testPbcAwareVersion(self):
+		self.planeEqnA = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
+		self.coordsA = [ [4,4,2,"X"], [5,5,5,"X"], [6,6,9,"X"] ]
+		self.maxDist = 3
+		self.minImageConv=True		
+		self.createTestObjs()
+		self.inpIndices = [0,2]
+		expIndices = [0,2]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
 
 class TestFilterToExcludeWithoutNebsAmongstRemaining(unittest.TestCase):
 
