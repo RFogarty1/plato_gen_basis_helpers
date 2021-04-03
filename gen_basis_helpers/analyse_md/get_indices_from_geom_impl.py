@@ -13,6 +13,58 @@ from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
 
+
+def getIndicesOfWaterBilayersStartingClosestToSurface(inpGeom, surfaceDetector, maxBilayerThickness=0.3, waterDetector=None, expWaterPerLayer=None, maxNLayers=None):
+	""" Gets the indices of water molecules in bilayers starting with the one closest to the surface. This works by calling "getIndicesOfWaterBilayerClosestToSurface" repeatedly and likely isnt very computationally efficient
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		surfaceDetector: (GetSurfaceIndicesFromGeomStandard) Gets indices of surface atoms; should be set to either top/bottom surface AND set to return a single layer
+		maxBilayerThickness: (float) Tolerance parameter used to detect surface layers; two atoms separated by more than this are in different bilayers. NOTE: We only use the oxygen atoms to determine which layer a water is in
+		waterDetector: (GetWaterMoleculeIndicesFromGeomStandard object) Used to get indices of water molecules
+		expWaterPerLayer: (int) If set, then causes the fucntion to throw AssertionError if the number of water molecules found in any layer doest match
+		maxNLayers: (int) If set then we will only try to get N-layers from the surface
+			 
+	Returns
+		 outIndices: (iter) Length is the number of layers found. Each element is an iter of len-3 iters; e.g. [ [1,2,3], [4,5,6] ] where the integers are indices of atoms in one water molecule
+
+	Raises:
+		AssertionError: If expNumberWater is set then this is throw when len(outIndices)!=expWaterPerLayer for any layer
+ 
+	"""
+	useGeom = copy.deepcopy(inpGeom)
+
+	nLayersDone = 0
+	allIndices = list()
+	while True:
+		currKwargs = {"maxBilayerThickness":maxBilayerThickness, "waterDetector":waterDetector}
+		currIndices = getIndicesOfWaterBilayerClosestToSurface(useGeom, surfaceDetector, **currKwargs)
+		if len(currIndices)==0:
+			break
+		else:
+			allIndices.append(currIndices)
+			cartCoords = useGeom.cartCoords
+			for currWaterIndices in currIndices:
+				for idx in currWaterIndices:
+					cartCoords[idx][-1] = "X"
+			useGeom.cartCoords = cartCoords
+
+		nLayersDone += 1
+		if maxNLayers is not None:
+			if nLayersDone >= maxNLayers:
+				break
+
+
+	#Check expected number of water in each bilayer
+	if expWaterPerLayer is not None:
+		for idx, vals in enumerate(allIndices):
+			currNumbWater = len(vals)
+			assert currNumbWater==expWaterPerLayer, "{} water found in layer {}(0-based indexing); but {} expected".format(currNumbWater, idx, expWaterPerLayer)
+
+
+	return allIndices
+
+
 def getIndicesOfWaterBilayerClosestToSurface(inpGeom, surfaceDetector, maxBilayerThickness=0.3, waterDetector=None, expNumberWater=None):
 	""" Get indices of water molecules in the first bilayer
 	
@@ -40,6 +92,9 @@ def getIndicesOfWaterBilayerClosestToSurface(inpGeom, surfaceDetector, maxBilaye
 	#1) Get all the water indices
 	waterIndicesGrouped = waterDetector.getIndicesFromInpGeom(inpGeom)
 	waterOxyIndices = [idx for idx in it.chain(*waterIndicesGrouped) if cartCoords[idx][-1].upper()=="O"]
+
+	if len(waterIndicesGrouped) == 0:
+		return list()
 
 	#2) Figure out the closest surface-O distance.
 	distsFromPlane = cartHelp.getDistancesOfAtomsFromPlaneEquation_nearestImageAware(inpGeom, surfPlaneEqn, waterOxyIndices, signed=False)

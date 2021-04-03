@@ -300,6 +300,52 @@ class TestGetIndicesOfBilayerClosestToSurface(unittest.TestCase):
 		with self.assertRaises(AssertionError):
 			self._runTestFunct()
 
+	def testExpectedForZeroWaterPresent(self):
+		self.cellA.cartCoords = [x for x in self.cellA.cartCoords if x[-1].upper()=="MG"]
+		expVals = []
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+class TestGetNBilayersClosestToSurface(unittest.TestCase):
+
+	def setUp(self):
+		self.cellA = _loadGeomTestVaryTypesOfSurfAtomA()
+		self.surfaceDetector = tCode.GetSurfaceIndicesFromGeomStandard(["Mg"], top=True, bottom=False, distTol=2, nLayers=1)
+		self.maxBilayerThickness = 1.5
+		self.waterDetector = None
+		self.expWaterPerLayer = None
+		self.maxNLayers = None
+
+	def _runTestFunct(self):
+		args = [self.cellA, self.surfaceDetector]
+		kwargs = {"maxBilayerThickness":self.maxBilayerThickness, "waterDetector":self.waterDetector,
+		          "expWaterPerLayer":self.expWaterPerLayer, "maxNLayers":self.maxNLayers}
+		return tCode.getIndicesOfWaterBilayersStartingClosestToSurface(*args,**kwargs)
+
+	def testExpectedIndicesA(self):
+		expFirstLayer  = [ [18, 30, 31], [19, 32, 33], [20, 34, 35],
+		                   [21, 36, 37], [22, 38, 39], [23, 40, 41] ]
+
+		expSecondLayer = [ [24, 42, 43], [25, 44, 45], [26, 46, 47],
+		                   [27, 48, 49], [28, 50, 51], [29, 52, 53] ]
+
+		expVals = [expFirstLayer, expSecondLayer]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpectedFirstLayerOnly(self):
+		self.maxNLayers = 1
+		expFirstLayer  = [ [18, 30, 31], [19, 32, 33], [20, 34, 35],
+		                   [21, 36, 37], [22, 38, 39], [23, 40, 41] ]
+		expVals = [ expFirstLayer ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testRaisesForUnexpectedNumberOfWaterInABilayer(self):
+		self.expWaterPerLayer = 18
+		with self.assertRaises(AssertionError):
+			self._runTestFunct()
+
 def _loadGeomTestVaryTypesOfSurfAtomA():
 	lattVects = [ [18.19806, 0, 0],
 	              [-9.099031, 15.75998, 0],
