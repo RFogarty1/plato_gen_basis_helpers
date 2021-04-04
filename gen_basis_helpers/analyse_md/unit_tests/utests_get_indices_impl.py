@@ -5,6 +5,8 @@ import unittest.mock as mock
 import plato_pylib.shared.unit_convs as uConvHelp
 import plato_pylib.shared.ucell_class as uCellHelp
 
+
+import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 import gen_basis_helpers.analyse_md.get_indices_from_geom_impl as tCode
 
 
@@ -282,11 +284,12 @@ class TestGetIndicesOfBilayerClosestToSurface(unittest.TestCase):
 		self.maxBilayerThickness = 1.5
 		self.waterDetector = None
 		self.expNumberWater = None
+		self.planeEqn = None
 
 	def _runTestFunct(self):
 		args = [self.cellA, self.surfaceDetector]
 		kwargs = {"maxBilayerThickness":self.maxBilayerThickness, "waterDetector":self.waterDetector,
-		          "expNumberWater":self.expNumberWater}
+		          "expNumberWater":self.expNumberWater, "planeEqn":self.planeEqn}
 		return tCode.getIndicesOfWaterBilayerClosestToSurface(*args, **kwargs)
 
 	def testExpectedIndicesA(self):
@@ -306,6 +309,25 @@ class TestGetIndicesOfBilayerClosestToSurface(unittest.TestCase):
 		actVals = self._runTestFunct()
 		self.assertEqual(expVals, actVals)
 
+	def testRaisesIfBothSurfaceDetectorAndPlaneEqnSet(self):
+		self.planeEqn = 6
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
+	def testRaisesIfNeitherSurfaceDetectorNorPlaneEqnSet(self):
+		self.surfaceDetector=None
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
+	def testExpectedResultUsingPlaneEqnInput(self):
+		self.surfaceDetector=None
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,63) #This lies at the top of the cell; hence the nearest layer is the layer furthest from the surface
+		expSecondLayer = [ [24, 42, 43], [25, 44, 45], [26, 46, 47],
+		                   [27, 48, 49], [28, 50, 51], [29, 52, 53] ]
+		actSecondLayer = self._runTestFunct()
+		self.assertEqual(expSecondLayer,actSecondLayer)		
+
+
 class TestGetNBilayersClosestToSurface(unittest.TestCase):
 
 	def setUp(self):
@@ -315,29 +337,30 @@ class TestGetNBilayersClosestToSurface(unittest.TestCase):
 		self.waterDetector = None
 		self.expWaterPerLayer = None
 		self.maxNLayers = None
+		self.planeEqn = None
 
 	def _runTestFunct(self):
 		args = [self.cellA, self.surfaceDetector]
 		kwargs = {"maxBilayerThickness":self.maxBilayerThickness, "waterDetector":self.waterDetector,
-		          "expWaterPerLayer":self.expWaterPerLayer, "maxNLayers":self.maxNLayers}
+		          "expWaterPerLayer":self.expWaterPerLayer, "maxNLayers":self.maxNLayers, "planeEqn":self.planeEqn}
 		return tCode.getIndicesOfWaterBilayersStartingClosestToSurface(*args,**kwargs)
 
-	def testExpectedIndicesA(self):
+	def _loadExpFirstAndSecondLayerDefaultSettings(self):
 		expFirstLayer  = [ [18, 30, 31], [19, 32, 33], [20, 34, 35],
 		                   [21, 36, 37], [22, 38, 39], [23, 40, 41] ]
 
 		expSecondLayer = [ [24, 42, 43], [25, 44, 45], [26, 46, 47],
 		                   [27, 48, 49], [28, 50, 51], [29, 52, 53] ]
+		return [expFirstLayer, expSecondLayer]
 
-		expVals = [expFirstLayer, expSecondLayer]
+	def testExpectedIndicesA(self):
+		expVals = self._loadExpFirstAndSecondLayerDefaultSettings()
 		actVals = self._runTestFunct()
 		self.assertEqual(expVals, actVals)
 
 	def testExpectedFirstLayerOnly(self):
 		self.maxNLayers = 1
-		expFirstLayer  = [ [18, 30, 31], [19, 32, 33], [20, 34, 35],
-		                   [21, 36, 37], [22, 38, 39], [23, 40, 41] ]
-		expVals = [ expFirstLayer ]
+		expVals = [self._loadExpFirstAndSecondLayerDefaultSettings()[0]]
 		actVals = self._runTestFunct()
 		self.assertEqual(expVals, actVals)
 
@@ -345,6 +368,15 @@ class TestGetNBilayersClosestToSurface(unittest.TestCase):
 		self.expWaterPerLayer = 18
 		with self.assertRaises(AssertionError):
 			self._runTestFunct()
+
+	def testExpectedUsingPlaneEqnInput(self):
+		self.surfaceDetector=None
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,63) #This lies at the top of the cell; hence the nearest layer is the layer furthest from the surface
+		expFirstLayer, expSecondLayer = self._loadExpFirstAndSecondLayerDefaultSettings()
+		expVals = [expSecondLayer, expFirstLayer]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
 
 def _loadGeomTestVaryTypesOfSurfAtomA():
 	lattVects = [ [18.19806, 0, 0],

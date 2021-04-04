@@ -14,7 +14,7 @@ from ..shared import plane_equations as planeEqnHelp
 
 
 
-def getIndicesOfWaterBilayersStartingClosestToSurface(inpGeom, surfaceDetector, maxBilayerThickness=0.3, waterDetector=None, expWaterPerLayer=None, maxNLayers=None):
+def getIndicesOfWaterBilayersStartingClosestToSurface(inpGeom, surfaceDetector, maxBilayerThickness=0.3, waterDetector=None, expWaterPerLayer=None, maxNLayers=None, planeEqn=None):
 	""" Gets the indices of water molecules in bilayers starting with the one closest to the surface. This works by calling "getIndicesOfWaterBilayerClosestToSurface" repeatedly and likely isnt very computationally efficient
 	
 	Args:
@@ -24,6 +24,7 @@ def getIndicesOfWaterBilayersStartingClosestToSurface(inpGeom, surfaceDetector, 
 		waterDetector: (GetWaterMoleculeIndicesFromGeomStandard object) Used to get indices of water molecules
 		expWaterPerLayer: (int) If set, then causes the fucntion to throw AssertionError if the number of water molecules found in any layer doest match
 		maxNLayers: (int) If set then we will only try to get N-layers from the surface
+		planeEqn: (ThreeDimPlaneEquation) If set, then we find nearest bilayer to this plane equation. NOTE: Both this and surfaceDetector cant be set at the same time
 			 
 	Returns
 		 outIndices: (iter) Length is the number of layers found. Each element is an iter of len-3 iters; e.g. [ [1,2,3], [4,5,6] ] where the integers are indices of atoms in one water molecule
@@ -37,8 +38,8 @@ def getIndicesOfWaterBilayersStartingClosestToSurface(inpGeom, surfaceDetector, 
 	nLayersDone = 0
 	allIndices = list()
 	while True:
-		currKwargs = {"maxBilayerThickness":maxBilayerThickness, "waterDetector":waterDetector}
-		currIndices = getIndicesOfWaterBilayerClosestToSurface(useGeom, surfaceDetector, **currKwargs)
+		currKwargs = {"maxBilayerThickness":maxBilayerThickness, "waterDetector":waterDetector, "surfaceDetector":surfaceDetector, "planeEqn":planeEqn}
+		currIndices = getIndicesOfWaterBilayerClosestToSurface(useGeom, **currKwargs)
 		if len(currIndices)==0:
 			break
 		else:
@@ -65,29 +66,41 @@ def getIndicesOfWaterBilayersStartingClosestToSurface(inpGeom, surfaceDetector, 
 	return allIndices
 
 
-def getIndicesOfWaterBilayerClosestToSurface(inpGeom, surfaceDetector, maxBilayerThickness=0.3, waterDetector=None, expNumberWater=None):
-	""" Get indices of water molecules in the first bilayer
+def getIndicesOfWaterBilayerClosestToSurface(inpGeom, surfaceDetector=None, maxBilayerThickness=0.3, waterDetector=None, expNumberWater=None, planeEqn=None):
+	""" Get indices of water molecules in the first bilayer.
 	
 	Args:
 		inpGeom: (plato_pylib UnitCell object)
-		surfaceDetector: (GetSurfaceIndicesFromGeomStandard) Gets indices of surface atoms; should be set to either top/bottom surface AND set to return a single layer
+		surfaceDetector: (GetSurfaceIndicesFromGeomStandard) Gets indices of surface atoms; should be set to either top/bottom surface AND set to return a single layer. ALTERNATIVELY can just set the planeEqn optional argument and directly pass a plane equation in (can then pass None for surfaceDetector)
 		maxBilayerThickness: (float) Tolerance parameter used to detect surface layers; two atoms separated by more than this are in different bilayers. NOTE: We only use the oxygen atoms to determine which layer a water is in
 		waterDetector: (GetWaterMoleculeIndicesFromGeomStandard object) Used to get indices of water molecules
 		expNumberWater: (int) If set, then causes the fucntion to throw AssertionError if the number of water molecules found doesnt match the expected number
+		planeEqn: (ThreeDimPlaneEquation) If set, then we find nearest bilayer to this plane equation. NOTE: Both this and surfaceDetector cant be set at the same time
 
 	Returns
 		outIndices: (iter of len-3 iters) Each element contains indices of one water molecule
  
 	Raises:
 		AssertionError: If expNumberWater is set then this is throw when len(outIndices)!=expNumberWater
+		ValueError: If both surfaceDetector and planeEqn are set to something other than None
 	"""
 	cartCoords = inpGeom.cartCoords
 	waterDetector = GetWaterMoleculeIndicesFromGeomStandard() if waterDetector is None else waterDetector
 
+	#-1) Check how to get the surface plane; make sure options make sense (e.g. EITHER surface detector OR planeEqn is set)
+	if (planeEqn is None) and (surfaceDetector is None):
+		raise ValueError("planeEqn and surfaceDetector are both None; one of these needs setting")
+
+	if (planeEqn is not None) and (surfaceDetector is not None):
+		raise ValueError("Both planeEqn and surfaceDetector are set; one of these needs to be set to None")
+
 	#0) Get the surface plane
-	surfaceIndices = surfaceDetector.getIndicesFromInpGeom(inpGeom)
-	abPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpGeom)
-	surfPlaneEqn = cartHelp.getAveragePlaneEqnForAtomIndices(inpGeom, surfaceIndices, abPlaneEqn)
+	if surfaceDetector is not None:
+		surfaceIndices = surfaceDetector.getIndicesFromInpGeom(inpGeom)
+		abPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpGeom)
+		surfPlaneEqn = cartHelp.getAveragePlaneEqnForAtomIndices(inpGeom, surfaceIndices, abPlaneEqn)
+	else:
+		surfPlaneEqn = planeEqn
 
 	#1) Get all the water indices
 	waterIndicesGrouped = waterDetector.getIndicesFromInpGeom(inpGeom)
