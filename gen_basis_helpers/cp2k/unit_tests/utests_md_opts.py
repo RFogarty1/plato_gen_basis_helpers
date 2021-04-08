@@ -147,4 +147,40 @@ class TestLangevinThermostatOpts(unittest.TestCase):
 		self.assertEqual(expGamma, langevinSection.Gamma)
 		self.assertEqual(expNoisyGamma, langevinSection.Noisygamma)
 
+class TestThermalRegion(unittest.TestCase):
+
+	def setUp(self):
+		self.doLangevin = True
+		self.atomList = [0,2,4]
+		self.expAtomList = [1,3,5] #We're using  zero based numbering; this is the base 1 numbering
+		self.noisyGammaRegion = 0.2
+		self.baseZeroAtomList = True
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.pycp2kObj = methReg.createCP2KObjFromMethodStr("cp2k_test_object")
+		kwargs = {"atomList": self.atomList, "doLangevin":self.doLangevin, "noisyGamma":self.noisyGammaRegion,
+		          "baseZeroAtomList":self.baseZeroAtomList}
+		self.testObj = tCode.ThermalRegion(**kwargs)
+
+	def _runTestFunct(self):
+		self.testObj.addToPyCp2kObj( self.pycp2kObj )
+
+	def testExpectedCaseA_baseZeroAtomList(self):
+		self._runTestFunct()
+		self._testExpectedAllOptionsSet()
+
+	def testExpected_baseOneAtomList(self):
+		self.baseZeroAtomList = False
+		self.createTestObjs()
+		self.expAtomList = [x for x in self.atomList]
+		self._runTestFunct()
+		self._testExpectedAllOptionsSet()
+
+	def _testExpectedAllOptionsSet(self):
+		thermalSection = self.pycp2kObj.CP2K_INPUT.MOTION.MD.THERMAL_REGION
+		self.assertEqual( 1,len(thermalSection.DEFINE_REGION_list) )
+		self.assertEqual( self.doLangevin, thermalSection.DEFINE_REGION_list[-1].Do_langevin )
+		self.assertEqual( self.expAtomList, thermalSection.DEFINE_REGION_list[-1].List )
+		self.assertAlmostEqual( self.noisyGammaRegion, thermalSection.DEFINE_REGION_list[-1].Noisy_gamma_region)
 

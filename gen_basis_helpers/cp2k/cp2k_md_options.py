@@ -145,3 +145,39 @@ class LangevinThermostatOpts(ThermostatOptsBase):
 		langevinSection = pyCp2kObj.CP2K_INPUT.MOTION.MD.LANGEVIN
 		langevinSection.Gamma = self.gamma
 		langevinSection.Noisygamma = self.noisyGamma
+
+
+
+class ThermalRegion():
+	""" Object representing a thermal region in MD. Used to run various types of Langevin (e.g. different gamma values) or mixed Langevin/NVE simulations """
+
+	def __init__(self, atomList=None, doLangevin=None, noisyGamma=None, baseZeroAtomList=True):
+		""" Initializer
+		
+		Args:
+			atomList: (iter of ints) List of atom integers to be put in this region. Whether we use base-zero or base-one numbering is determined by baseZeroAtomList
+			doLangevin: (Bool)
+			noisyGamma: (float, Optional) Value of noisy gamma to overwrite the global value
+			baseZeroAtomList: (Bool) If True our atomList is assumed to be base-zero, if false its assumed base 1. CP2K uses base one (i.e. the first atom in CP2K has the index 1)
+
+		"""
+		self.atomList = atomList
+		self.doLangevin = doLangevin
+		self.noisyGamma = noisyGamma
+		self.baseZeroAtomList = baseZeroAtomList
+
+	@property
+	def outAtomList(self):
+		if self.baseZeroAtomList:
+			return [x+1 for x in self.atomList]
+		else:
+			return self.atomList
+
+	def addToPyCp2kObj(self, pyCp2kObj):
+		pyCp2kObj.CP2K_INPUT.MOTION.MD.THERMAL_REGION.DEFINE_REGION_add()
+		currRegion = pyCp2kObj.CP2K_INPUT.MOTION.MD.THERMAL_REGION.DEFINE_REGION_list[-1]
+		currRegion.Do_langevin = self.doLangevin
+		currRegion.List = self.outAtomList
+		currRegion.Noisy_gamma_region = self.noisyGamma
+
+

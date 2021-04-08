@@ -326,6 +326,9 @@ def _modCp2kObjBasedOnMolecularDynamicsOptDict(cp2kObj, useDict):
 		mdSection.PRINT.TEMP_KIND.Section_parameters = val
 		mdSection.Temp_kind = useDict["mdPrintKindTemps".lower()]
 
+	if useDict.get("mdThermoRegions".lower(),None) is not None:
+		thermoRegions = useDict["mdThermoRegions".lower()]
+		[x.addToPyCp2kObj(cp2kObj) for x in thermoRegions]
 
 def _modCp2kObjBasedOnTrajPrintDict(cp2kObj, useDict):
 	motionPart = cp2kObj.CP2K_INPUT.MOTION

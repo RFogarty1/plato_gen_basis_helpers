@@ -122,6 +122,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("ldosIndices")
 	registeredKwargs.add("scfHistoryEps")
 	registeredKwargs.add("motion_cellopt_constraint")
+	registeredKwargs.add("mdThermoRegions")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -395,7 +396,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		                         "scfOTEnergyGap", "scfOTSafeDIIS", "scfPrintRestartHistory_backupCopies", "scfPrintRestart_eachMD",
 		                         "scfPrintRestart_eachSCF", "scfPrintRestart_backupCopies", "hirshfeld_on", "hirshfeld_selfConsistent",
 		                         "hirshfeld_shapeFunction", "printForces", "printPdos", "ldosIndices", "scfHistoryEps",
-		                         "motion_cellopt_constraint"]
+		                         "motion_cellopt_constraint", "mdThermoRegions"]
 
 		for attr in directTranslateKwargs:
 			if getattr(self,attr) is not None:
