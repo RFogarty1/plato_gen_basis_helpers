@@ -341,6 +341,16 @@ class TestModDictBasedOnGeomConstraints(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			self.runTestFunct()
 
+	#Very tricky to implement this properly; since cp2k can only fix x/y/z rather than lattice parameters
+	def testRaisesWhenSomeLattParamsMixOfTrueAndFalse(self):
+		cellConstrs = geomConstr.CellConstraints.initWithNoConstraints()
+		cellConstrs.lattParamsToFix = [True,True,False]
+		cellConstrs.anglesToFix = [True,True,True]
+		atomicPosConstraints = geomConstr.AtomicPositionConstraints.initWithNoConstraints()
+		self.testConstrObj = geomConstr.GeomConstraints(atomicPosConstraints,cellConstrs)
+		with self.assertRaises(ValueError):
+			self.runTestFunct()
+
 
 class TestGetCP2KModDictBasedOnAtomicPosConstraints(unittest.TestCase):
 

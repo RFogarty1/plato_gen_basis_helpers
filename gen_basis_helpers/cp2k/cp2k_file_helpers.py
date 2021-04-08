@@ -605,7 +605,8 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.PDOS.LDOS_add()
 			cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.PDOS.LDOS_list[-1].List = " ".join([str(x) for x in indices])
 
-
+	if useDict.get("motion_cellopt_constraint",None) is not None:
+		cp2kObj.CP2K_INPUT.MOTION.CELL_OPT.Constraint = useDict["motion_cellopt_constraint"]
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work

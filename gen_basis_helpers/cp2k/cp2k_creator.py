@@ -121,6 +121,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("printPdos")
 	registeredKwargs.add("ldosIndices")
 	registeredKwargs.add("scfHistoryEps")
+	registeredKwargs.add("motion_cellopt_constraint")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -393,7 +394,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		                         "scfOuterEps", "scfOuterMaxIters", "scfMaxIterAfterHistoryFull", "scfOTStepsize", "scfOTPreconditioner",
 		                         "scfOTEnergyGap", "scfOTSafeDIIS", "scfPrintRestartHistory_backupCopies", "scfPrintRestart_eachMD",
 		                         "scfPrintRestart_eachSCF", "scfPrintRestart_backupCopies", "hirshfeld_on", "hirshfeld_selfConsistent",
-		                         "hirshfeld_shapeFunction", "printForces", "printPdos", "ldosIndices", "scfHistoryEps"]
+		                         "hirshfeld_shapeFunction", "printForces", "printPdos", "ldosIndices", "scfHistoryEps",
+		                         "motion_cellopt_constraint"]
 
 		for attr in directTranslateKwargs:
 			if getattr(self,attr) is not None:
@@ -480,8 +482,12 @@ def _getModDictBasedOnCellConstraints(cellConstraints):
 	if all(cellConstraints.anglesToFix):
 		outDict["geo_constrain_cell_angles"] = [True,True,True] #Constrain all angles case
 		outDict["runtype"] = "cell_opt"
-	return outDict
 
+	#Need to check no lattice parameters are set to be fixed since i havent implemented that
+	if any([x is True for x in cellConstraints.lattParamsToFix]):
+		raise ValueError("Requested lattParamsToFix={}; Currently these all need to be False (havent implemented fixing one)".format(cellConstraints.lattParamsToFix))
+
+	return outDict
 
 def _getModDictBasedOnAtomicPosConstraints(atomicConstraints):
 	if len(atomicConstraints.atomicCartConstraints) == 1:
