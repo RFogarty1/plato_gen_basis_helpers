@@ -75,3 +75,46 @@ class TestExpectedMinMaxValsStandard(unittest.TestCase):
 			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
 
 
+class GetAverageZPosForGroupOfAtoms(unittest.TestCase):
+
+	def setUp(self):
+		self.atomGroup = [1,3]
+		self.minZ, self.maxZ = None, None
+		self.trajA = createTestTrajA()
+
+	def _runTestFunct(self):
+		return tCode.getAverageZPositionForAtomGroup( self.trajA, self.atomGroup )
+
+	def testExpectedValA(self):
+		expVals = [ (4+7)/2, (5+6)/2 ]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals, actVals)]
+
+
+def createTestTrajA():
+
+	#Cells
+	coordsA = [ [1,1,2,"X"], [1,1,4,"Y"], [1,1,5,"Y"],
+	            [1,1,7,"X"], [1,1,8,"Y"], [1,1,9,"Y"] ]
+
+	coordsB = [ [1,1,3,"X"], [1,1,5,"Y"], [1,1,9,"Y"],
+	            [1,1,6,"X"], [1,1,8,"Y"], [1,1,7,"Y"] ]
+
+	lattParams = [10,10,10]
+	lattAngles = [90,90,90]
+
+	#Create the unit cells
+	cellA = uCellHelp.UnitCell(lattParams=lattParams, lattAngles=lattAngles)
+	cellB = uCellHelp.UnitCell(lattParams=lattParams, lattAngles=lattAngles)
+	cellA.cartCoords = coordsA
+	cellB.cartCoords = coordsB
+
+	#Create traj steps
+	trajStepA = trajHelp.TrajStepBase(unitCell=cellA)
+	trajStepB = trajHelp.TrajStepBase(unitCell=cellB)
+
+	#create trajectories
+	trajA = trajHelp.TrajectoryInMemory([trajStepA,trajStepB])
+
+	return trajA
+

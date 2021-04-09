@@ -2,7 +2,7 @@
 
 
 def getMinMaxZPositionsAtomGroups(traj, groupIndices, minZ=None, maxZ=None):
-	""" Returns the minimum and maximum z-positions for a group of atoms in every currStep in traj. Example use-case is seeing evolution of a surface for example
+	""" Returns the minimum and maximum z-positions for a group of atoms in every currStep in traj. Example use-case is seeing evolution of a surface 
 	
 	Args:
 		traj: (TrajectoryBase object)
@@ -35,4 +35,21 @@ def getMinMaxZPositionsAtomGroups(traj, groupIndices, minZ=None, maxZ=None):
 
 
 
+def getAverageZPositionForAtomGroup(traj, groupIndices):
+	""" Returns the average z-position for a group of atoms for every step in traj
+	
+	Args:
+		traj: (TrajectoryBase object)
+		groupIndices: (int list) Indices for atoms in this group
+			 
+	Returns
+		avPos: (iter of floats) Each element is the average z-position of the group for one timestep
+ 
+	"""
+	outVals = list()
 
+	for currStep in traj:
+		zVals = [ x[-2] for idx,x in enumerate(currStep.unitCell.cartCoords) if idx in groupIndices ]
+		avZVal = sum(zVals)/len(zVals)
+		outVals.append( avZVal )
+	return outVals
