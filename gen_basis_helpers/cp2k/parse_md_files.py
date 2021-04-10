@@ -87,7 +87,7 @@ def _getMergedTrajectoryFromParsedCpoutAndXyz(parsedCpout, parsedXyz):
 	trajCpout, trajXyz = parsedCpout["trajectory"].trajSteps, parsedXyz
 	outList = list()
 
-	assert len(trajXyz)<=len(trajCpout)
+#	assert len(trajXyz)>=len(trajCpout)
 
 	idxCpout, idxXyz = 0, 0
 
