@@ -611,6 +611,23 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 	if useDict.get("motion_cellopt_constraint",None) is not None:
 		cp2kObj.CP2K_INPUT.MOTION.CELL_OPT.Constraint = useDict["motion_cellopt_constraint"]
 
+
+	if useDict.get("motionPrintForces".lower(),None) is not None:
+		if len(cp2kObj.CP2K_INPUT.MOTION.PRINT_list)<1:
+			cp2kObj.CP2K_INPUT.MOTION.PRINT_add()
+
+		val = "ON" if useDict["motionPrintForces".lower()] is True else "OFF"
+		cp2kObj.CP2K_INPUT.MOTION.PRINT_list[-1].FORCES.Section_parameters = val
+
+	if useDict.get("motionPrintVelocities".lower(),None) is not None:
+		if len(cp2kObj.CP2K_INPUT.MOTION.PRINT_list)<1:
+			cp2kObj.CP2K_INPUT.MOTION.PRINT_add()
+
+		val = "ON" if useDict["motionPrintVelocities".lower()] is True else "OFF"
+		cp2kObj.CP2K_INPUT.MOTION.PRINT_list[-1].VELOCITIES.Section_parameters = val
+
+
+
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work
 	
