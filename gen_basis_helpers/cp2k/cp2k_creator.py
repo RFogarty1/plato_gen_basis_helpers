@@ -441,7 +441,13 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 
 	def _getModDictBasedOnRunType(self):
 		outDict = dict()
-		runStr = self.runType if self.runType is not None else "None" #Need to be able to apply .lower() to it
+
+		if self.runType is None:
+			return outDict
+
+		runStr = self.runType
+#		runStr = self.runType if self.runType is not None else "None" #Need to be able to apply .lower() to it
+		outDict["runType".lower()] = runStr #Default is to just set the str to user option
 
 		if runStr.lower() == "geomOpt".lower():
 			if self.geomConstraints is None:
