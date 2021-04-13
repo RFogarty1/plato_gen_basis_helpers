@@ -14,10 +14,11 @@ class TestParsedFileStdInpCreator(unittest.TestCase):
 		self.geoms = [self.geomA, self.geomB]
 		self.baseCreatorA = mock.Mock()
 		self.baseFileName = None
+		self.fileNames = None
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		kwargDictA = {"geoms":self.geoms, "baseCreator":self.baseCreatorA, "baseFileName":self.baseFileName}
+		kwargDictA = {"geoms":self.geoms, "baseCreator":self.baseCreatorA, "baseFileName":self.baseFileName, "fileNames":self.fileNames}
 		self.testObjA = tCode.ParsedFileObjsForMultiGeomsStandardInputCreator( **kwargDictA )
 
 	def testGetFileNames(self):
@@ -29,6 +30,13 @@ class TestParsedFileStdInpCreator(unittest.TestCase):
 		self.baseFileName = "test_file_name_a"
 		self.createTestObjs()
 		expFileNames = ["test_file_name_a_1", "test_file_name_a_2"]
+		actFileNames = self.testObjA._getFileNamesForAll()
+		self.assertEqual(expFileNames, actFileNames)
+
+	def testGetPassedFileNames(self):
+		self.fileNames = ["filename_a", "filename_b"]
+		self.createTestObjs()
+		expFileNames = self.fileNames
 		actFileNames = self.testObjA._getFileNamesForAll()
 		self.assertEqual(expFileNames, actFileNames)
 

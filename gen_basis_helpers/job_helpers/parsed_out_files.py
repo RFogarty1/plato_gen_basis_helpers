@@ -15,6 +15,7 @@ class ParsedFileObjsForMultiGeomsStandardInputCreator(stdTemplate.StandardInputC
 	registeredKwargs.add("baseCreator")
 	registeredKwargs.add("catchParserErrors")
 	registeredKwargs.add("baseFileName")
+	registeredKwargs.add("fileNames")
 
 	def _createFromSelf(self):
 		workflow = self._getWorkflow()
@@ -42,6 +43,8 @@ class ParsedFileObjsForMultiGeomsStandardInputCreator(stdTemplate.StandardInputC
 		return outCreators
 
 	def _getFileNamesForAll(self):
+		if self.fileNames is not None:
+			return self.fileNames
 		baseFileName = "inp_file" if self.baseFileName is None else self.baseFileName
 		return [baseFileName + "_{}".format(idx) for idx,unused in enumerate(self.geoms,1)]
 
