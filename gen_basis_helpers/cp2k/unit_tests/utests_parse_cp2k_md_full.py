@@ -48,8 +48,8 @@ class TestParseMultipleCP2kFull(unittest.TestCase):
 		mockedParseCpoutAndXyz.side_effect = fake_parser
 		actResult = tCode.parseMdInfoFromMultipleCpoutAndXyzPaths(self.testCpoutPaths, self.testXyzPaths)
 
-		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0], tempKindPath=None)
-		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1], tempKindPath=None)
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0], tempKindPath=None, velocityPath=None, forcePath=None)
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1], tempKindPath=None, velocityPath=None, forcePath=None)
 
 		for key in self.expDictA:
 			self.assertEqual( self.expDictA[key], actResult[key] )	
@@ -69,8 +69,8 @@ class TestParseMultipleCP2kFull(unittest.TestCase):
 		self.testXyzPaths = [x for x in reversed(self.testXyzPaths)]
 		actResult = tCode.parseMdInfoFromMultipleCpoutAndXyzPaths(self.testCpoutPaths, self.testXyzPaths)
 
-		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0], tempKindPath=None)
-		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1], tempKindPath=None)
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[0], self.testXyzPaths[0], tempKindPath=None, velocityPath=None, forcePath=None)
+		mockedParseCpoutAndXyz.assert_any_call(self.testCpoutPaths[1], self.testXyzPaths[1], tempKindPath=None, velocityPath=None, forcePath=None)
 
 		for key in self.expDictA:
 			self.assertEqual( self.expDictA[key], actResult[key] )	
@@ -237,5 +237,104 @@ class TestGetKindIdxToSymbolDict(unittest.TestCase):
 		expDict = {0: "Mg", 1: "X", 2: "Y"}
 		actDict = self._runTestFunct()
 		self.assertEqual(expDict,actDict)
+
+
+#Probably mock out a function which parses the file like it was an xyz co-ord file
+class TestParseVelocitiesAndAddToTrajFile(unittest.TestCase):
+
+	def setUp(self):
+		self.fakePathA = "fake_path_a"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.fileAsListA = _getFileStrForTwoXyzStepsA().split("\n")
+		self.trajSteps = _loadStartTrajStepsArrayDataTwoStepsA()
+
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files._readFileIntoList")
+	def testExpectedCaseA(self, mockedReadFileIntoList):
+		mockedReadFileIntoList.side_effect = lambda *args,**kwargs: self.fileAsListA
+
+		#Figure out what we expect
+		expSteps = copy.deepcopy(self.trajSteps)
+		expDataArrays = _loadExpectedArrayDataTwoXyzStepsA()
+		expSteps[0].addExtraAttrDict( { "velocities":{"value":expDataArrays[0], "cmpType": "numericalArray"} } )
+		expSteps[1].addExtraAttrDict( { "velocities":{"value":expDataArrays[1], "cmpType": "numericalArray"} } )
+
+		#Run
+		tCode._parseVelocitiesAndAddToTrajSteps(self.fakePathA, self.trajSteps)
+		actSteps = self.trajSteps
+
+		#Test
+		mockedReadFileIntoList.assert_called_with(self.fakePathA)
+		self.assertEqual(expSteps, actSteps)
+
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files._readFileIntoList")
+	def testExpectedWhenSecondStepIdxDoesntMatch(self, mockedReadFileIntoList):
+		mockedReadFileIntoList.side_effect = lambda *args,**kwargs: self.fileAsListA
+		self.trajSteps[1].step += 1
+
+		#Figure out what we expect
+		expSteps = copy.deepcopy(self.trajSteps)
+		expDataArrays = _loadExpectedArrayDataTwoXyzStepsA()
+		expSteps[0].addExtraAttrDict( { "velocities":{"value":expDataArrays[0], "cmpType": "numericalArray"} } )
+		expSteps[1].addExtraAttrDict( { "velocities":{"value":None, "cmpType": "numericalArray"} } )
+
+		#Run
+		tCode._parseVelocitiesAndAddToTrajSteps(self.fakePathA, self.trajSteps)
+		actSteps = self.trajSteps
+
+		#Test
+		mockedReadFileIntoList.assert_called_with(self.fakePathA)
+		self.assertEqual(expSteps, actSteps)
+
+	@mock.patch("gen_basis_helpers.cp2k.parse_md_files._readFileIntoList")
+	def testExpectedForForcesA(self, mockedReadFileIntoList):
+		mockedReadFileIntoList.side_effect = lambda *args,**kwargs: self.fileAsListA
+
+		#Figure out what we expect
+		expSteps = copy.deepcopy(self.trajSteps)
+		expDataArrays = _loadExpectedArrayDataTwoXyzStepsA()
+		expSteps[0].addExtraAttrDict( { "forces":{"value":expDataArrays[0], "cmpType": "numericalArray"} } )
+		expSteps[1].addExtraAttrDict( { "forces":{"value":expDataArrays[1], "cmpType": "numericalArray"} } )
+
+		#Run
+		tCode._parseForcesXyzAndAddToTrajSteps(self.fakePathA, self.trajSteps)
+		actSteps = self.trajSteps
+
+		#Test
+		mockedReadFileIntoList.assert_called_with(self.fakePathA)
+		self.assertEqual(expSteps, actSteps)
+
+
+
+def _getFileStrForTwoXyzStepsA():
+	return """      3
+ i =     1684, time =      842.000, E =      -551.1892718614
+  O         0.0000273977        0.0001497837       -0.0000059469
+  O         0.0003008562       -0.0000448785        0.0005541464
+  O         0.0000779939       -0.0003770666        0.0001145407
+      3
+ i =     1687, time =      843.500, E =      -551.1958582717
+  O         0.0000092244        0.0000987555       -0.0000157442
+  O         0.0003614182       -0.0000414387        0.0005957346
+  O         0.0001496509       -0.0004363731        0.0001015894"""
+
+def _loadExpectedArrayDataTwoXyzStepsA():
+
+	stepA = [ [0.0000273977,  0.0001497837, -0.0000059469],
+	          [0.0003008562, -0.0000448785,  0.0005541464],
+	          [0.0000779939, -0.0003770666,  0.0001145407] ]
+
+	stepB = [ [0.0000092244,  0.0000987555, -0.0000157442],
+	          [0.0003614182, -0.0000414387,  0.0005957346],
+	          [0.0001496509, -0.0004363731,  0.0001015894] ]
+
+	return [stepA, stepB]
+
+def _loadStartTrajStepsArrayDataTwoStepsA():
+	stepA = trajHelp.TrajStepFlexible(step=1684, time=842.0)
+	stepB = trajHelp.TrajStepFlexible(step=1687, time=843.5)
+	return stepA, stepB
+
 
 

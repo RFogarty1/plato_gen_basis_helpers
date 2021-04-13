@@ -68,6 +68,7 @@ class TrajStepBase():
 		self._eqTol = 1e-5
 		self.normalCmpAttrs = ["unitCell", "step"]
 		self.numericalCmpAttrs = ["time"]
+		self.numericalArrayCmpAttrs = list()
 		self.unitCell = unitCell
 		self.step = step
 		self.time = time
@@ -86,6 +87,12 @@ class TrajStepBase():
 	def __eq__(self, other):
 		eqTol = min(self._eqTol, other._eqTol)
 
+		if sorted(self.normalCmpAttrs)!=sorted(other.normalCmpAttrs):
+			return False
+
+		if sorted(self.numericalCmpAttrs)!=sorted(other.numericalCmpAttrs):
+			return False
+
 		for attr in self.normalCmpAttrs:
 			if getattr(self,attr)!=getattr(other,attr):
 				return False
@@ -99,7 +106,145 @@ class TrajStepBase():
 			elif abs(valA-valB)>eqTol:
 				return False
 
+		#This section is for sub-classes really
+		if sorted(self.numericalArrayCmpAttrs) != sorted(other.numericalArrayCmpAttrs):
+			return False
+
+		#Numerical array comparisons	
+		for attr in self.numericalArrayCmpAttrs:
+			arrA, arrB = getattr(self,attr), getattr(other,attr)
+			if self._checkTwoNumericalArraysEqual(arrA, arrB, eqTol) is False:
+				return False
+
 		return True
+
+	#Needed for more general classes that inherit from this
+	def _checkTwoNumericalArraysEqual(self, arrA, arrB, eqTol):
+
+		if (arrA is None) and (arrB is None):
+			pass
+
+		elif (arrA is None) or (arrB is None):
+			return False
+
+		else:
+			if len(arrA) != len(arrB):
+				return False
+			
+			for rowA, rowB in it.zip_longest(arrA, arrB):
+				if len(rowA) != len(rowB):
+					return False
+	
+				for valA, valB in it.zip_longest(rowA, rowB):
+					absDiff = abs(valA-valB)
+					if absDiff > eqTol:
+						return False
+
+		return True
+
+
+class TrajStepFlexible(TrajStepBase):
+
+	def __init__(self, unitCell=None, step=None, time=None, extraAttrDict=None):
+		""" Initializer. NOTE: This is a pretty general/abstract initializer which isnt really meant to be called directly at high level
+
+			unitCell: (plato_pylib UnitCell) Contains geometry at this step (central cell atoms only)
+			step: (int) Contains the step number
+			time: (float) Contains the time at this step number
+			extraAttrDict: (dict of dicts) See below
+
+		extraAttrDict: This allows new attributes to be specified for each traj step. The keys are the names of the attributes you want (e.g. "velocities") The keys that should be set in the other dict are all optional but likely VERY IMPORTANT:
+
+			value: The value to set this attribute on upon initiation. Default=None	
+			cmpType: (str) Values indicate the type of equality comparison to use. Allowed values are "normal","numerical", "numericalArray". Default is "normal", meaning self.attr==other.attr gets tested directly (works for ints but not floats)
+
+		"""
+		super().__init__(unitCell=unitCell, step=step, time=time)
+		self.reservedAttrs = ["unitCell", "step", "time", "_eqTol", "normalCmpAttrs", "numericalCmpAttrs", "numericalArrayCmpAttrs"]
+		extraAttrDict = dict() if extraAttrDict is None else extraAttrDict
+		self.extraAttrs = set()
+
+		self.addExtraAttrDict(extraAttrDict)
+
+	def _appendCmpTypeToRelevantList(self, attrName, cmpType):
+		if cmpType=="normal":
+			self.normalCmpAttrs.append(attrName)
+		elif cmpType=="numerical":
+			self.numericalCmpAttrs.append(attrName)
+		elif cmpType=="numericalArray":
+			self.numericalArrayCmpAttrs.append(attrName)
+		else:
+			raise ValueError("cmpType = {} for attrName={} is an invalid value".format(cmpType, attrName))
+
+	def addExtraAttrDict(self, extraAttrDict):
+		""" Adds extra attributes to the object. Used (for example) to add velocities to steps in a trajectory
+		
+		extraAttrDict: This allows new attributes to be specified for each traj step. The keys are the names of the attributes you want (e.g. "velocities") The keys that should be set in the other dict are all optional but likely VERY IMPORTANT:
+
+			value: The value to set this attribute on upon initiation. Default=None	
+			cmpType: (str) Values indicate the type of equality comparison to use. Allowed values are "normal","numerical", "numericalArray". Default is "normal", meaning self.attr==other.attr gets tested directly (works for ints but not floats)
+
+		"""
+		if extraAttrDict is not None:
+
+			#Check extraAttrDict doesnt have any reservedAttr vals
+			for key in extraAttrDict.keys():
+				if key in self.reservedAttrs:
+					raise ValueError("Cant set {} from extraAttrDict; this is a reseverd attribute name".format(key))
+
+			#Set the values for any new attrs
+			for key in extraAttrDict.keys():
+				currDict = extraAttrDict[key]
+				setattr(self, key, currDict.get("value",None))
+				self.extraAttrs.add(key)
+				if currDict.get("cmpType") is not None:
+					self._appendCmpTypeToRelevantList(key, currDict.get("cmpType"))
+				else:
+					self._appendCmpTypeToRelevantList(key, "normal")
+
+
+	def toDict(self):
+		outDict = super().toDict()
+		for key in self.extraAttrs:
+			currVal = getattr(self, key)
+			try:
+				outDict[key] = currVal.toDict()
+			except AttributeError:
+				outDict[key] = currVal
+
+		#Dump info on how to compare the keys
+		outDict["normalCmpAttrs"] = self.normalCmpAttrs
+		outDict["numerical"] = self.numericalCmpAttrs
+		outDict["numericalArray"] = self.numericalArrayCmpAttrs
+
+		return outDict
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		#Deal with the standard stuff
+		outDict = dict()
+		if inpDict.get("unitCell",None) is not None:
+			outDict["unitCell"] = uCellHelp.UnitCell.fromDict(inpDict["unitCell"])
+
+		for key in ["step","time"]:
+			outDict[key] = inpDict.get(key,None)
+
+		#Deal with extra attributes
+		cmpAttrs = ["normalCmpAttrs", "numerical", "numericalArray"]
+
+		extraAttrDict = dict()
+		for key in inpDict.keys():
+			if (key not in outDict) and (key not in cmpAttrs):
+				extraAttrDict[key] = {"value": inpDict[key]}
+				if key in inpDict["normalCmpAttrs"]:
+					extraAttrDict[key]["cmpType"] = "normal"
+				elif key in inpDict["numerical"]:
+					extraAttrDict[key]["cmpType"] = "numerical"
+				elif key in inpDict["numericalArray"]:
+					extraAttrDict[key]["cmpType"] = "numericalArray"
+
+
+		return cls(extraAttrDict=extraAttrDict,**outDict)
 
 
 def dumpTrajObjToFile(trajObj, outFile):
@@ -131,7 +276,8 @@ def readTrajObjFromFileToTrajectoryInMemory(inpFile):
 	with open(inpFile,"rt") as f:
 		for line in f:
 			currDict = json.loads(line)
-			currObj = TrajStepBase.fromDict(currDict)
+#			currObj = TrajStepBase.fromDict(currDict)
+			currObj = TrajStepFlexible.fromDict(currDict)
 			outTrajObjs.append(currObj)
 
 	return TrajectoryInMemory(outTrajObjs)
@@ -149,7 +295,8 @@ def readLastTrajStepFromFile(inpFile):
 	with open(inpFile,"rt") as f:
 		line = getFinalNLinesFromFileObj(f)[-1]
 		currDict = json.loads(line)
-		outObj = TrajStepBase.fromDict(currDict)
+#		outObj = TrajStepBase.fromDict(currDict)
+		outObj = TrajStepFlexible.fromDict(currDict)
 	return outObj
 
 

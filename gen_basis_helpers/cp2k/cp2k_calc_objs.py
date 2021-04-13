@@ -101,38 +101,65 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 		return parsedXyzDict["all_geoms"][-1].cartCoords
 
 	def _parseMdStandard(self):
-		#This case should ONLY trigger if multiple runs wernt required
 		workFolder = os.path.split(self.outFilePath)[0]
+		cpoutPaths, xyzPaths, tKindPaths, velPaths, forcePaths = list(), list(), list(), list(), list()
+
+		#This case should ONLY trigger if multiple runs wernt required
 		if os.path.exists(self.outFilePath) and not(os.path.exists( os.path.join(workFolder,"run_1") )):
 			cpoutPaths = [self.outFilePath]
 			xyzPaths = [self.outGeomPath]
 			tKindPaths = [os.path.join(workFolder,x) for x in os.listdir(workFolder) if x.endswith(".temp")]
+			velPaths = [os.path.join(workFolder,x) for x in os.listdir(workFolder) if x.endswith("vel-1.xyz")]
+			forcePaths = [os.path.join(workFolder,x) for x in os.listdir(workFolder) if x.endswith("frc-1.xyz")]
+	
+			#Deal with knd-temp/velocities/
 			if len(tKindPaths) != 1:
 				tKindPaths = [None]
+			if len(velPaths) != 1:
+				velPaths = [None]
+			if len(forcePaths) != 1:
+				forcePaths = [None]
+
 			finalRunFolder = workFolder #So we can find restart files etc
 		else:
-			cpoutPaths, xyzPaths, tKindPaths = list(), list(), list()
 			runDirs = [x for x in os.listdir(workFolder) if os.path.isdir( os.path.join(workFolder,x) )]
 			runDirs = sorted( [x for x in runDirs if self._checkStringMatchesRunFormat(x)] )
 			#NEXT: We want to check for one cpout and one xyz per path
 			for runDir in runDirs:
 				currDir = os.path.join(workFolder,runDir)
-				currXyz = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".xyz")]
+				currXyz = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("pos-1.xyz")]
 				currCpout = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".cpout")]
 				currTKind = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".temp")]
+				currVel = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("vel-1.xyz")]
+				currForces = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("frc-1.xyz")]
+
+
 				assert len(currXyz)==1
 				assert len(currCpout)==1
 				cpoutPaths += currCpout
 				xyzPaths += currXyz
+
+				#Deal with kind-temp/velocities/forces
 				if len(currTKind)==1:
 					tKindPaths += currTKind
 				else:
 					tKindPaths += [None]
+				
+				if len(currVel)==1:
+					velPaths += currVel
+				else:
+					velPaths += [None]
+
+				if len(currForces)==1:
+					forcePaths += currForces
+				else:
+					forcePaths += [None]
+
 				finalRunFolder = os.path.join(workFolder,runDirs[-1])
 
 		assert len(cpoutPaths) == len(xyzPaths)
 
-		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths, tempKindPaths=tKindPaths)
+		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths, tempKindPaths=tKindPaths, velocityPaths=velPaths, forcePaths=forcePaths)
 		return types.SimpleNamespace(finalRunFolder=finalRunFolder,**parsedDict)
 
 	def _parsedNudgedBandStandard(self):

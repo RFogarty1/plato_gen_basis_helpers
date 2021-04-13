@@ -11,13 +11,15 @@ import gen_basis_helpers.analyse_md.thermo_data as thermoDataHelp
 import gen_basis_helpers.analyse_md.traj_core as trajHelp
 
 
-def parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths, xyzPaths, tempKindPaths=None):
+def parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths, xyzPaths, tempKindPaths=None, velocityPaths=None, forcePaths=None):
 	""" Parse an MD trajectory spread over multiple cp2k restarts
 	
 	Args:
 		cpoutPaths: (iter of str) Paths to *.cpout files
 		xyzPaths: (iter of str) Paths to *.xyz files
 		tempKindPaths: (iter of str, Optional) Paths to files containing atomic temperatures
+		velocityPaths: (iter of str, Optional) Paths to files containing velocities as dumped by motion section (basically an xyz format)
+		forcePaths: (iter of str, Optional) Paths to files containing forces as dumped by motion section (basically an xyz format)
 
 	Returns
 		outDict: Contains trajectory/thermodynamic info
@@ -25,11 +27,13 @@ def parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths, xyzPaths, tempKindPaths=
 	"""
 	outDict = dict()
 	tempKindPaths = [None for x in range(len(cpoutPaths))] if tempKindPaths is None else tempKindPaths
+	velocityPaths = [None for x in range(len(cpoutPaths))] if velocityPaths is None else velocityPaths
+	forcePaths = [None for x in range(len(cpoutPaths))] if forcePaths is None else forcePaths
 
 	#1) Get all the dicts
 	parsedDicts = list()
-	for cpoutPath, xyzPath, tKindPath in it.zip_longest(cpoutPaths, xyzPaths, tempKindPaths):
-		currDict = parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath, tempKindPath=tKindPath)
+	for cpoutPath, xyzPath, tKindPath, vPath, fPath in it.zip_longest(cpoutPaths, xyzPaths, tempKindPaths, velocityPaths, forcePaths):
+		currDict = parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath, tempKindPath=tKindPath, velocityPath=vPath, forcePath=fPath)
 		parsedDicts.append(currDict)
 
 	#2) Merge all the trajectories
@@ -44,7 +48,7 @@ def parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths, xyzPaths, tempKindPaths=
 
 	return outDict
 
-def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath, tempKindPath=None):
+def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath, tempKindPath=None, velocityPath=None, forcePath=None):
 	""" Description of function
 	
 	Args:
@@ -58,7 +62,8 @@ def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath, tempKindPath=Non
 
 	#If step 0 is in the xyz then we need to add the initial trajectory/thermal info to outDict
 	if outSteps[0]["step"] == 0:
-		stepZero = trajHelp.TrajStepBase(unitCell=outDict["init_md_cell"], step=0, time=0)
+#		stepZero = trajHelp.TrajStepBase(unitCell=outDict["init_md_cell"], step=0, time=0)
+		stepZero = trajHelp.TrajStepFlexible(unitCell=outDict["init_md_cell"], step=0, time=0)
 		outDict["trajectory"].trajSteps.insert(0, stepZero)
 		for key in outDict["thermo_data"].dataDict:
 			outDict["thermo_data"].dataDict[key].insert(0, outDict["init_thermo_dict"][key])
@@ -66,6 +71,13 @@ def parseFullMdInfoFromCpoutAndXyzFilePaths(cpoutPath, xyzPath, tempKindPath=Non
 
 	#Combine infor in cpout and xyz files to get full geometries
 	outDict["trajectory"] = _getMergedTrajectoryFromParsedCpoutAndXyz(outDict, outSteps)
+
+	#Optionally add velocities and forces
+	if velocityPath is not None:
+		_parseVelocitiesAndAddToTrajSteps(velocityPath, outDict["trajectory"].trajSteps)
+	if forcePath is not None:
+		_parseForcesXyzAndAddToTrajSteps(forcePath, outDict["trajectory"].trajSteps)
+
 
 	#If tempKindPath is present, then parse it and add to the thermo data object
 	if tempKindPath is not None:
@@ -197,8 +209,6 @@ def _mdInitSectionParseDictHandler(parserInstance, outDict):
 	parserInstance.outDict["traj_geoms"] = list()
 
 def _mdStepsParseDictHandler(parserInstance, outDict):
-#	import pdb
-#	pdb.set_trace()
 
 	#1) Deal with the thermal info stuff
 	possibleKeysThermo = ["ePot", "eKinetic", "pressure", "step", "time", "temp"]
@@ -233,7 +243,8 @@ def _mdStepsFinalStepFunct(parserInstance):
 	assert len( thermoInfo["step"] ) == len( parserInstance.outDict["traj_geoms"] )
 
 	for idx, geom in enumerate(parserInstance.outDict["traj_geoms"]):
-		currStep = trajHelp.TrajStepBase(unitCell=geom, step=thermoInfo["step"][idx], time=thermoInfo["time"][idx])
+#		currStep = trajHelp.TrajStepBase(unitCell=geom, step=thermoInfo["step"][idx], time=thermoInfo["time"][idx])
+		currStep = trajHelp.TrajStepFlexible(unitCell=geom, step=thermoInfo["step"][idx], time=thermoInfo["time"][idx])
 		trajSteps.append(currStep)
 
 	parserInstance.outDict["trajectory"] = trajHelp.TrajectoryInMemory(trajSteps)
@@ -269,6 +280,79 @@ def _parseMdStepInfo(fileAsList, lineIdx):
 		lineIdx += 1
 
 	return outDict, lineIdx+1
+
+
+
+def _parseVelocitiesAndAddToTrajSteps(velXyzPath, trajSteps):
+	""" Gets velocities from a *.xyz dump and adds them to trajSteps when step indices match
+	
+	Args:
+		velXyzPath: (str, Path)
+		trajSteps: (iter of TrajStepFlexible)
+			 
+	Returns
+		Nothing; works in place
+ 
+	"""
+	parsedDicts = parseCp2kMdXyzFile(velXyzPath)
+	valsAsCoords = _getValuesOfXyzParsedDictsForTrajSteps(parsedDicts, trajSteps)
+
+	for tStep,val in it.zip_longest(trajSteps,valsAsCoords):
+
+		if val is None:
+			currVals = None
+		else:
+			currVals = [x[:3] for x in val]
+
+		tStep.addExtraAttrDict({"velocities": {"value":currVals, "cmpType":"numericalArray"}})
+
+def _parseForcesXyzAndAddToTrajSteps(forcesXyzPath, trajSteps):
+	""" See _parseVelocitiesAndAddToTrajSteps; this is basically the same except with atomic forces rather than velocities """
+
+	parsedDicts = parseCp2kMdXyzFile(forcesXyzPath)
+	valsAsCoords = _getValuesOfXyzParsedDictsForTrajSteps(parsedDicts, trajSteps)
+
+	for tStep,val in it.zip_longest(trajSteps,valsAsCoords):
+
+		if val is None:
+			currVals = None
+		else:
+			currVals = [x[:3] for x in val]
+
+		tStep.addExtraAttrDict({"forces": {"value":currVals, "cmpType":"numericalArray"}})
+
+
+def _getValuesOfXyzParsedDictsForTrajSteps(parsedDicts, trajSteps):
+	pDictIdx, tStepIdx = 0,0
+
+	outVals = list()
+	while (pDictIdx<len(parsedDicts)) and (tStepIdx<len(trajSteps)):
+		pDictStep, tStepDict = parsedDicts[pDictIdx]["step"], trajSteps[tStepIdx].step
+
+		if pDictStep==tStepDict:
+			outVals.append( parsedDicts[pDictIdx]["coords"] )
+			pDictIdx += 1
+			tStepIdx += 1
+
+		elif pDictStep<tStepDict:
+			pDictIdx += 1
+
+		elif pDictStep>tStepDict:
+			outVals.append( None )
+			tStepIdx += 1
+
+		else:
+			raise ValueError("Shouldnt ever reach here")
+
+	#TODO: Currently untested; so i should test it really
+	#Fill in any remaining values
+	if len(outVals) < len(trajSteps):
+		for step in trajSteps[ len(outVals): ]:
+			outVals.append(None)
+
+	return outVals
+
+
 
 
 def parseCp2kMdXyzFile(inpXyz):

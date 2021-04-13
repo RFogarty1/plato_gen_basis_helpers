@@ -161,6 +161,83 @@ class TestTrajStepBase(unittest.TestCase):
 		actObj = tCode.TrajStepBase.fromDict(outDict)
 		self.assertEqual(expObj,actObj)
 
+class TestTrajStepFlexible(unittest.TestCase):
+
+	def setUp(self):
+		self.step = 4
+		self.unitCell = 7 #Exactly comparable; mock is anoying since deepcopy doesnt work well for this
+		self.time = 2.5
+
+		self.extraAttrA = {"maxVelocity": {"value":2.5, "cmpType":"numerical"}}
+		self.extraAttrB = {"velocities":  {"value":[ [2.5, 3.4, 5.4], [3.2, 5.2, 6.4] ],
+		                                   "cmpType":"numericalArray"}}
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.extraAttrDict = copy.deepcopy( self.extraAttrA )
+		self.extraAttrDict.update( copy.deepcopy(self.extraAttrB) )
+		currKwargs = {"unitCell":self.unitCell, "step":self.step, "time":self.time,
+		              "extraAttrDict":self.extraAttrDict}
+		self.testObjA = tCode.TrajStepFlexible(**currKwargs)
+
+	def testExtraAttrDictCantOverwrite(self):
+		self.extraAttrA = {"numericalCmpAttrs":{}}
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
+
+	def testTwoUnequalObjsCompareUnequal_newNumericalAttrDiffers(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.extraAttrA["maxVelocity"]["value"] += 1.0
+		self.createTestObjs()
+		self.assertNotEqual(objA, self.testObjA)
+		self.assertNotEqual(self.testObjA, objA)
+
+	def testTwoUnequalObjsCompareUnequal_newNumericalArrayDiffers(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.extraAttrB["velocities"]["value"][1][1] += 1.0
+		self.createTestObjs()
+		self.assertNotEqual(objA, self.testObjA)
+		self.assertNotEqual(self.testObjA, objA)
+
+	def testTwoUnequalObjsCompareUnequal_newNumericalArrayDiffLengths2ndDim(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.extraAttrB["velocities"]["value"][1].append(2.2)
+		self.createTestObjs()
+		self.assertNotEqual(objA, self.testObjA)
+		self.assertNotEqual(self.testObjA, objA)
+
+	def testTwoUnequalObjsCompareUnequal_newNumericalOneAsNone(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.extraAttrB["velocities"]["value"] = None
+		self.createTestObjs()
+		self.assertNotEqual(objA, self.testObjA)
+		self.assertNotEqual(self.testObjA, objA)
+
+	#Note this test should fail if cmpAttrs arent set properly with to/from dict
+	def testToDictAndFromDictConsistent(self):
+		#We expect more keys than this; but want to test at least these are present
+		self.unitCell = uCellHelp.UnitCell(lattParams=[1,2,3], lattAngles=[90,90,90])
+		self.createTestObjs()
+		expKeysPartial = {"maxVelocity", "velocities"} 
+		outDict = self.testObjA.toDict()
+		objB = tCode.TrajStepFlexible.fromDict(outDict)
+
+		for key in expKeysPartial:
+			self.assertTrue( key in outDict.keys() )
+
+		self.assertEqual(self.testObjA, objB)
+		self.assertEqual(objB, self.testObjA)
+
+	def testAddAttrsAfterInit(self):
+		extraAttrDict = copy.deepcopy(self.extraAttrB)
+		expObj = copy.deepcopy(self.testObjA)
+		self.extraAttrB = dict()
+		self.createTestObjs()
+		self.testObjA.addExtraAttrDict(extraAttrDict)
+		self.assertEqual(expObj, self.testObjA)
+
+
+
 #Tough case:
 # [  [1,3], [4,8], [5,7] ] -> [ [1,3], [4,8] ] BUT very tough to pull off
 # Alternatively, I could just raise in that case
