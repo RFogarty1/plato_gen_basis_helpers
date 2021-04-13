@@ -155,12 +155,13 @@ class TestThermalRegion(unittest.TestCase):
 		self.expAtomList = [1,3,5] #We're using  zero based numbering; this is the base 1 numbering
 		self.noisyGammaRegion = 0.2
 		self.baseZeroAtomList = True
+		self.temperature = 200
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		self.pycp2kObj = methReg.createCP2KObjFromMethodStr("cp2k_test_object")
 		kwargs = {"atomList": self.atomList, "doLangevin":self.doLangevin, "noisyGamma":self.noisyGammaRegion,
-		          "baseZeroAtomList":self.baseZeroAtomList}
+		          "baseZeroAtomList":self.baseZeroAtomList, "temperature":200}
 		self.testObj = tCode.ThermalRegion(**kwargs)
 
 	def _runTestFunct(self):
@@ -183,4 +184,5 @@ class TestThermalRegion(unittest.TestCase):
 		self.assertEqual( self.doLangevin, thermalSection.DEFINE_REGION_list[-1].Do_langevin )
 		self.assertEqual( self.expAtomList, thermalSection.DEFINE_REGION_list[-1].List )
 		self.assertAlmostEqual( self.noisyGammaRegion, thermalSection.DEFINE_REGION_list[-1].Noisy_gamma_region)
+		self.assertAlmostEqual( self.temperature, thermalSection.DEFINE_REGION_list[-1].Temperature)
 

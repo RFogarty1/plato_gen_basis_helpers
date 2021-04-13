@@ -151,13 +151,14 @@ class LangevinThermostatOpts(ThermostatOptsBase):
 class ThermalRegion():
 	""" Object representing a thermal region in MD. Used to run various types of Langevin (e.g. different gamma values) or mixed Langevin/NVE simulations """
 
-	def __init__(self, atomList=None, doLangevin=None, noisyGamma=None, baseZeroAtomList=True):
+	def __init__(self, atomList=None, doLangevin=None, noisyGamma=None, temperature=None, baseZeroAtomList=True):
 		""" Initializer
 		
 		Args:
 			atomList: (iter of ints) List of atom integers to be put in this region. Whether we use base-zero or base-one numbering is determined by baseZeroAtomList
 			doLangevin: (Bool)
 			noisyGamma: (float, Optional) Value of noisy gamma to overwrite the global value
+			temperature: (float, Optional) Temperature for this region; NOTE: If left blank 0K is assumed even if the region is set to Langevin (rather than NVE)
 			baseZeroAtomList: (Bool) If True our atomList is assumed to be base-zero, if false its assumed base 1. CP2K uses base one (i.e. the first atom in CP2K has the index 1)
 
 		"""
@@ -165,6 +166,7 @@ class ThermalRegion():
 		self.doLangevin = doLangevin
 		self.noisyGamma = noisyGamma
 		self.baseZeroAtomList = baseZeroAtomList
+		self.temperature = temperature
 
 	@property
 	def outAtomList(self):
@@ -179,5 +181,5 @@ class ThermalRegion():
 		currRegion.Do_langevin = self.doLangevin
 		currRegion.List = self.outAtomList
 		currRegion.Noisy_gamma_region = self.noisyGamma
-
+		currRegion.Temperature = self.temperature
 
