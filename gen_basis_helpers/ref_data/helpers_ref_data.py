@@ -27,6 +27,29 @@ def getPerfectHcpMinimalUCell(element):
 	return perfectHcpCell
 
 
+def getDiamondStructurePrimitiveUCell(element="C", lattParam=1):
+	""" Gets a UnitCell object for the primitive diamond structure cell; this has angles of 60 degrees and a two atom basis
+	
+	Args:
+		element: (str,Optional) The element symbol to use
+		lattParam: (float, Optional) The lattice parameter to use. This refers to the lattice parameter of the conventional cell
+
+	Returns
+		outCell: (plato_pylib UnitCell object)  
+ 
+	"""
+	aOverTwo = lattParam/2
+	lattVects = [ [       0, aOverTwo, aOverTwo],
+	              [aOverTwo,        0, aOverTwo],
+	              [aOverTwo, aOverTwo,        0] ]
+	fractCoords = [ [0  ,   0,   0, element],
+	                [1/4, 1/4, 1/4, element] ]
+
+	outCell = UCell.UnitCell.fromLattVects(lattVects)
+	outCell.fractCoords = fractCoords
+	return outCell
+
+
 def getEmptyCubicBoxUCell(boxLength):
 	lattVects = [ [1.0, 0.0, 0.0],
 	              [0.0, 1.0, 0.0],
