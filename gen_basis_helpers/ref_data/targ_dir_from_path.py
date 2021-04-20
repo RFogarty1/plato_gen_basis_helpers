@@ -52,7 +52,14 @@ except AttributeError:
 	mgWaterRepoPath = None
 	print("WARNING: cfgVars.MG_WATER_REPO_PATH not set")
 
+try:
+	sgcpRepoPath = cfgVars.SGCP_REPO_PATH
+except AttributeError:
+	sgcpRepoPath = None
+	print("WARNING: cfgVars.SGCP_REPO_PATH not set")
+
 getMgWaterWorkDirFromCurrent = GetSpecialDirFromSubDir(mgWaterRepoPath, "work_folder", applyAbsPath=False)
 getMgWaterDatabaseDirFromCurrent = GetSpecialDirFromSubDir(mgWaterRepoPath, "database_input", applyAbsPath=False)
-
+getSgcpWorkDirFromCurrent = GetSpecialDirFromSubDir(sgcpRepoPath, "work_folder", applyAbsPath=False)
+getSgcpDatabaseDirFromCurrent = GetSpecialDirFromSubDir(sgcpRepoPath, "database_input", applyAbsPath=False)
 
