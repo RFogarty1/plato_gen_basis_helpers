@@ -7,7 +7,6 @@ class MolDynamicsOptsCP2KBase():
 	def optDict(self):
 		raise NotImplementedError("")
 
-
 class ThermostatOptsBase():
 	""" Object representing options for the thermostat. See addToPyCp2kObj for interface """
 
@@ -103,6 +102,28 @@ class MetaDynamicsOptsCP2KStandard():
 		return outDict
 
 
+
+class ThermostatOptsMultiRegions(ThermostatOptsBase):
+	""" Extension of ThermostatOptsBase that allows multiple regions to be defined """
+	def __init__(self, basicThermoOpts, regions, regionKwarg="defined"):
+		""" Initializer
+		
+		Args:
+			basicThermoOpts: (ThermostatOptsBase object) e.g. NoseThermostatOpts. Contains all options except those related to the regions to define
+			regions: (iter of ThermostatRegionInfo) Contains objects representing thermostat regions
+
+		"""
+		self.basicThermoOpts = basicThermoOpts
+		self.regions = regions
+		self.regionKwarg = regionKwarg
+
+	def addToPyCp2kObj(self, pyCp2kObj):
+		self.basicThermoOpts.addToPyCp2kObj(pyCp2kObj)
+		for reg in self.regions:
+			reg.addToPyCp2kObj(pyCp2kObj)
+		pyCp2kObj.CP2K_INPUT.MOTION.MD.THERMOSTAT.Region = self.regionKwarg
+
+
 class NoseThermostatOpts(ThermostatOptsBase):
 
 	def __init__(self, length=None, mts=None, yoshida=None, timeCon=None, timeConFmt="{:.1f}"):
@@ -147,8 +168,37 @@ class LangevinThermostatOpts(ThermostatOptsBase):
 		langevinSection.Noisygamma = self.noisyGamma
 
 
+class AdaptiveLangevinThermostatOpts(ThermostatOptsBase):
 
-class ThermalRegion():
+	def __init__(self, timeConLangevin=None, timeConNose=None):
+		""" Initializer
+		
+		Args:
+			timeConLangevin: (float) Time constant (in fs) for the Langevin part of the thermostat (inverse friction coefficient)
+			timeConNose: (float) Time constant (in fs) for the Nose part of the thermostat
+ 
+		"""
+		self.timeConLangevin = timeConLangevin
+		self.timeConNose = timeConNose
+
+	def addToPyCp2kObj(self, pyCp2kObj):
+		thermostatSection = pyCp2kObj.CP2K_INPUT.MOTION.MD.THERMOSTAT
+		thermostatSection.Type = "AD_LANGEVIN"
+		thermostatSection.AD_LANGEVIN.Timecon_langevin = self.timeConLangevin
+		thermostatSection.AD_LANGEVIN.Timecon_nh = self.timeConNose
+
+
+
+class _OutAtomListMixin():
+
+	@property
+	def outAtomList(self):
+		if self.baseZeroAtomList:
+			return [x+1 for x in self.atomList]
+		else:
+			return self.atomList
+
+class ThermalRegion(_OutAtomListMixin):
 	""" Object representing a thermal region in MD. Used to run various types of Langevin (e.g. different gamma values) or mixed Langevin/NVE simulations """
 
 	def __init__(self, atomList=None, doLangevin=None, noisyGamma=None, temperature=None, baseZeroAtomList=True):
@@ -168,13 +218,6 @@ class ThermalRegion():
 		self.baseZeroAtomList = baseZeroAtomList
 		self.temperature = temperature
 
-	@property
-	def outAtomList(self):
-		if self.baseZeroAtomList:
-			return [x+1 for x in self.atomList]
-		else:
-			return self.atomList
-
 	def addToPyCp2kObj(self, pyCp2kObj):
 		pyCp2kObj.CP2K_INPUT.MOTION.MD.THERMAL_REGION.DEFINE_REGION_add()
 		currRegion = pyCp2kObj.CP2K_INPUT.MOTION.MD.THERMAL_REGION.DEFINE_REGION_list[-1]
@@ -183,3 +226,22 @@ class ThermalRegion():
 		currRegion.Noisy_gamma_region = self.noisyGamma
 		currRegion.Temperature = self.temperature
 
+
+class ThermostatRegionInfo(_OutAtomListMixin):
+	""" Class representing a defined thermostat region under CP2K_INPUT/MOTION/MD/THERMOSTAT"""
+
+	def __init__(self, atomList=None, baseZeroAtomList=True):
+		""" Initializer
+		
+		Args:
+			atomList: (iter of ints)
+			baseZeroAtomList: (Bool) If True our atomList is assumed to be base-zero, if false its assumed base 1. CP2K uses base one (i.e. the first atom in CP2K has the index 1)
+ 
+		"""
+		self.atomList = atomList
+		self.baseZeroAtomList = baseZeroAtomList
+
+	def addToPyCp2kObj(self, pyCp2kObj):
+		thermostatSection = pyCp2kObj.CP2K_INPUT.MOTION.MD.THERMOSTAT
+		thermostatSection.DEFINE_REGION_add()
+		thermostatSection.DEFINE_REGION_list[-1].List = self.outAtomList

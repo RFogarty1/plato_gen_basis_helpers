@@ -147,6 +147,29 @@ class TestLangevinThermostatOpts(unittest.TestCase):
 		self.assertEqual(expGamma, langevinSection.Gamma)
 		self.assertEqual(expNoisyGamma, langevinSection.Noisygamma)
 
+class TestAdaptiveLangevin(unittest.TestCase):
+
+	def setUp(self):
+		self.timeConLangevin = 2
+		self.timeConNose = 3
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.pycp2kObj = methReg.createCP2KObjFromMethodStr("cp2k_test_object")
+		kwargs = {"timeConLangevin":self.timeConLangevin, "timeConNose":self.timeConNose}
+		self.testObjA = tCode.AdaptiveLangevinThermostatOpts(**kwargs)
+
+	def testExpectedCaseA(self):
+		expTimeConLangevin, expTimeConNose = self.timeConLangevin, self.timeConNose
+		expType = "AD_LANGEVIN"
+		thermostatSection = self.pycp2kObj.CP2K_INPUT.MOTION.MD.THERMOSTAT
+		self.testObjA.addToPyCp2kObj(self.pycp2kObj)
+
+		self.assertEqual(expType, thermostatSection.Type)
+		self.assertEqual(expTimeConLangevin, thermostatSection.AD_LANGEVIN.Timecon_langevin)
+		self.assertEqual(expTimeConNose, thermostatSection.AD_LANGEVIN.Timecon_nh)
+
+
 class TestThermalRegion(unittest.TestCase):
 
 	def setUp(self):
@@ -185,4 +208,65 @@ class TestThermalRegion(unittest.TestCase):
 		self.assertEqual( self.expAtomList, thermalSection.DEFINE_REGION_list[-1].List )
 		self.assertAlmostEqual( self.noisyGammaRegion, thermalSection.DEFINE_REGION_list[-1].Noisy_gamma_region)
 		self.assertAlmostEqual( self.temperature, thermalSection.DEFINE_REGION_list[-1].Temperature)
+
+class TestThermostatRegion(unittest.TestCase):
+
+	def setUp(self):
+		self.baseZeroAtomList = True
+		self.atomList = [3,5,7]
+		self.expAtomList = [4,6,8] #We're using zero based numbering; this is the base 1 numbering
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"atomList":self.atomList, "baseZeroAtomList":self.baseZeroAtomList}
+		self.testObjA = tCode.ThermostatRegionInfo(**currKwargs)
+		self.pycp2kObj = methReg.createCP2KObjFromMethodStr("cp2k_test_object")
+
+	def _runTestFunct(self):
+		self.testObjA.addToPyCp2kObj( self.pycp2kObj )
+
+	#TODO: Create a mixin property (OutAtomListFromBaseZeroMixin)
+	def testExpectedCalls_baseZeroAtomList(self):
+		self._runTestFunct()
+		self._testExpectedAllOptionsSet()
+
+	def testExpectedCalls_baseOneAtomList(self):
+		self.baseZeroAtomList = False
+		self.atomList = self.expAtomList
+		self.createTestObjs()
+		self._runTestFunct()
+		self._testExpectedAllOptionsSet()
+
+	def _testExpectedAllOptionsSet(self):
+		thermostatSection = self.pycp2kObj.CP2K_INPUT.MOTION.MD.THERMOSTAT
+		self.assertEqual(thermostatSection.DEFINE_REGION_list[-1].List, self.expAtomList)
+
+
+class TestThermostatMultiRegions(unittest.TestCase):
+
+	def setUp(self):
+		self.basicThermoOpts = mock.Mock()
+		self.regions = [mock.Mock(), mock.Mock()]
+		self.mockPyCp2kObj = mock.Mock()
+		self.regionKwarg = "test_val"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		args = [self.basicThermoOpts, self.regions]
+		kwargs = {"regionKwarg":self.regionKwarg}
+		self.testObjA = tCode.ThermostatOptsMultiRegions(*args, **kwargs)
+
+	def _runTestFunct(self):
+		self.testObjA.addToPyCp2kObj(self.mockPyCp2kObj)
+
+	def testExpectedCallsA(self):
+
+		self._runTestFunct()
+
+		self.basicThermoOpts.addToPyCp2kObj.assert_called_with( self.mockPyCp2kObj )
+		for reg in self.regions:
+			reg.addToPyCp2kObj.assert_called_with(self.mockPyCp2kObj)
+
+		self.assertEqual( self.regionKwarg , self.mockPyCp2kObj.CP2K_INPUT.MOTION.MD.THERMOSTAT.Region )
+
 
