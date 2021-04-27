@@ -326,16 +326,17 @@ class FilterToExcludeAtomsOutsideCutoffDistFromIndices(FilterIndicesFunction):
 
 	"""
 
-	def __init__(self, cutoffDist, cutoffIndices):
+	def __init__(self, cutoffDist, cutoffIndices, excludeOutside=True):
 		""" Initializer
 		
 		Args:
 			cutoffDist: (float) Maximum distance from inpIndices (in filterFunct) to any of atoms in cutoffIndices
 			cutoffIndices: (iter of ints) Indices of atoms we're testing for being within cutoff dist
-				 
+			excludeOutside: (Bool) If True we filter out (i.e. exclude) indices further away than the cutoff distance. If False we filter out those WITHIN the cutoffDist
 		"""
 		self.cutoffDist = cutoffDist
 		self.cutoffIndices = sorted(cutoffIndices)
+		self.excludeOutside = excludeOutside
 
 	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
 
@@ -364,6 +365,17 @@ class FilterToExcludeAtomsOutsideCutoffDistFromIndices(FilterIndicesFunction):
 				#Check if any of these indices matches 
 				if any([x<startIdx for x in nebList]):
 					unMappedOutIndices.append(idx)
+
+
+		#If we're excluding those within the cutoff then reverse unMappedOutIndices
+		if self.excludeOutside is False:
+			outIndices = list() #Makes ZERO sense to still include inpIndices in the output; since they must be within any cutoff of themselves
+			unMappedIndicesOutsideCutoff = list()
+			for idx,unused in enumerate(nebLists[startIdx:]):
+				if idx not in unMappedOutIndices:
+					unMappedIndicesOutsideCutoff.append(idx)
+
+			unMappedOutIndices = unMappedIndicesOutsideCutoff
 
 		#Map back to original indices
 		indicesForCellWithoutCutoffIndices = [x for x in allIndicesForCell if x not in self.cutoffIndices]

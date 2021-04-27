@@ -394,6 +394,7 @@ class FilterToAtomsInsideCutoffDistFromIndices(unittest.TestCase):
 		                     [3,3,5,"Y"],
 		                     [3,3,6,"Z"],
 		                     [3,3,8,"Z"] ]
+		self.excludeOutside = True
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -401,7 +402,8 @@ class FilterToAtomsInsideCutoffDistFromIndices(unittest.TestCase):
 		self.cellA.cartCoords = self.cartCoordsA
 
 		args = [self.cutoffDist, self.cutoffIndices]
-		self.testObj = tCode.FilterToExcludeAtomsOutsideCutoffDistFromIndices(*args)
+		kwargs = {"excludeOutside":self.excludeOutside}
+		self.testObj = tCode.FilterToExcludeAtomsOutsideCutoffDistFromIndices(*args, **kwargs)
 
 	def _runTestFunct(self):
 		dudInstance = None
@@ -443,3 +445,10 @@ class FilterToAtomsInsideCutoffDistFromIndices(unittest.TestCase):
 		actVals = self._runTestFunct()
 		self.assertEqual(expVals, actVals)
 
+	def testExpValsExcludeOutsideFalse(self):
+		self.cutoffDist = 0.1
+		self.excludeOutside = False
+		self.createTestObjs()
+		expVals = self.inpIndices
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)

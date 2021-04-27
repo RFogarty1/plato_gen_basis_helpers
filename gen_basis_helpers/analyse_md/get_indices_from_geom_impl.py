@@ -152,36 +152,110 @@ def getIndicesOfWaterWithinCutoffDistOfInpIndices(inpGeom, inpIndices, cutoffDis
  
 	"""
 	waterDetector = GetWaterMoleculeIndicesFromGeomStandard() if waterDetector is None else waterDetector
-	waterIndices = waterDetector.getIndicesFromInpGeom(inpGeom)
 	fractCoords = inpGeom.fractCoords
+	_getSearchIndices = _getSearchIndicesFunctionForWaterOrHydroxyl(fractCoords, oxyInCutoff, hyInCutoff)
 
-	#Get all indices sufficiently close to inpIndices
-	if oxyInCutoff and hyInCutoff:
-		waterIndicesForSearch = [x for x in it.chain(*waterIndices)]
-	elif oxyInCutoff:
-		waterIndicesForSearch = [idx for idx in it.chain(*waterIndices) if fractCoords[idx][-1].upper()=="O"]
-	elif hyInCutoff:
-		waterIndicesForSearch = [idx for idx in it.chain(*waterIndices) if fractCoords[idx][-1].upper()=="H"]
-	else:
-		raise ValueError("oxyInCutoff={} and hyInCutoff={}; at least one of these should be true".format(oxyInCutoff, hyInCutoff))
+	args = [waterDetector, inpIndices, cutoffDist]
+	kwargs = {"getSearchIndices": _getSearchIndices}
+	getIndicesInstance = _GetMoleculeIndicesBasedOnDistsFromInpIndices(*args, **kwargs)
+	outWaterIndices = getIndicesInstance.getIndicesFromInpGeom(inpGeom)
 
-	#Get all the individual atoms within range
-	dudFilterInstance = None
-	withinDistFilterFunct = getIdxCore.FilterToExcludeAtomsOutsideCutoffDistFromIndices(cutoffDist, inpIndices)
-	outAtomIndices = withinDistFilterFunct( dudFilterInstance, inpGeom, waterIndicesForSearch )
-
-	#Figure out which water molecules are in range
-	waterIndicesToOutput = list()
-	for atomIdx in outAtomIndices:
-		currWaterIndex = [idx for idx,vals in enumerate(waterIndices) if atomIdx in vals]
-		assert len(currWaterIndex)==1
-		currWaterIndex = currWaterIndex[0]
-		waterIndicesToOutput.append(currWaterIndex)
-	waterIndicesToOutput = list(set(waterIndicesToOutput))
-
-	return [waterIndices[idx] for idx in waterIndicesToOutput]
+	return outWaterIndices
 
 
+def getIndicesOfHydroxylWithinCutoffOfInpIndices(inpGeom, inpIndices, cutoffDist, oxyInCutoff=True, hyInCutoff=True, hydroxylDetector=None, minDist=None):
+	""" Gets indices for hydroxyl within a certain cutoff of inpIndices
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		inpIndices: (iter of ints) The indices of atoms you want to detect hydroxyl around
+		cutoffDist: (float) The maximum distance hydroxyl can be from an input index
+		oxyInCutoff: (Bool) If True include the hydrxol oxygen atom when figuring out if a molecule is within cutoff
+		hyInCutoff: (Bool) If True we include the hydrogen atom when figuring out if a molecule is within cutoff
+		hydroxylDetector: (GetHydroxylMoleculeIndicesFromGeomStandard object) Has a .getIndicesFromInpGeom function, which returns in the format [ [1,2], [9,10], ... ]
+		minDist: (float, optional) If specified then filter out any molecules CLOSER to inpIndices than this minDist. This allows a distance range to effectively be specified
+
+	Returns
+		outIndices: (iter of len-2 iters)
+ 
+	"""
+
+	hydroxylDetector = GetHydroxylMoleculeIndicesFromGeomStandard() if hydroxylDetector is None else hydroxylDetector
+	fractCoords = inpGeom.fractCoords
+	_getSearchIndices = _getSearchIndicesFunctionForWaterOrHydroxyl(fractCoords, oxyInCutoff, hyInCutoff)
+
+	args = [hydroxylDetector, inpIndices, cutoffDist]
+	kwargs = {"getSearchIndices": _getSearchIndices, "minDist":minDist}
+	getIndicesInstance = _GetMoleculeIndicesBasedOnDistsFromInpIndices(*args, **kwargs)
+	outWaterIndices = getIndicesInstance.getIndicesFromInpGeom(inpGeom)
+
+	return outWaterIndices
+
+
+def _getSearchIndicesFunctionForWaterOrHydroxyl(fractCoords, oxyInCutoff, hyInCutoff): 
+	def _getSearchIndices(inpWaterIndices):
+		if oxyInCutoff and hyInCutoff:
+			searchIndices = [x for x in it.chain(*inpWaterIndices)]
+		elif oxyInCutoff:
+			searchIndices = [idx for idx in it.chain(*inpWaterIndices) if fractCoords[idx][-1].upper()=="O"]
+		elif hyInCutoff:
+			searchIndices = [idx for idx in it.chain(*inpWaterIndices) if fractCoords[idx][-1].upper()=="H"]
+		else:
+			raise ValueError("oxyInCutoff={} and hyInCutoff={}; at least one of these should be true".format(oxyInCutoff, hyInCutoff))
+		return searchIndices
+	return _getSearchIndices
+
+
+class _GetMoleculeIndicesBasedOnDistsFromInpIndices():
+
+	def __init__(self, moleculeDetector, inpIndices, distCutoff, getSearchIndices=None, minDist=None):
+		""" Initializer. NOTE: This is meant as a backend class and isnt meant to be called directly.
+		
+		Args:
+			moleculeDetector: class with .getIndicesFromInpGeom(inpGeom) that returns an iter of molecule indices. E.g. For two water molecules it may return [ [0,1,2], [4,5,6] ]
+			inpIndices: (iter of ints) Indices of the atoms we're testing for distance to
+			distCutoff: (float) The cutoff distance we use to filter.
+
+			getSearchIndices: f(molIndices)->searchIndices. searchIndices is an iter of ints. We use these to check whether any atom in a molecule is within range of inpIndices. If this isnt set we simply use all indices in a molecule to search; e.g. for the above case it would be [0,1,2,4,5,6]. However, we may only want to check for oxygen atoms being in/out of range of inpIndices; in this case searchIndices may be [0,4]
+		minDist: (float, optional) If specified then filter out any molecules CLOSER to inpIndices than this minDist. This allows a distance range to effectively be specified
+ 
+		"""
+#TODO: excludeOutsideCutoff flag
+#			excludeOutsideCutoff: (Bool) If True (Default) we exclude molecules further from inpIndices than cutoff; if False we exclude those inside it
+
+		self.moleculeDetector = moleculeDetector
+		self.inpIndices = inpIndices
+		self.distCutoff = distCutoff
+		self.getSearchIndices = getSearchIndices
+		self.minDist = minDist
+
+	def getIndicesFromInpGeom(self, inpGeom):
+		molIndices = self.moleculeDetector.getIndicesFromInpGeom(inpGeom)
+		if self.getSearchIndices is None:
+			searchIndices = [x for x in it.chain(*molIndices)]
+		else:
+			searchIndices = self.getSearchIndices(molIndices)
+
+		#Get all the individual atoms within range
+		dudFilterInstance = None
+		withinDistFilterFunct = getIdxCore.FilterToExcludeAtomsOutsideCutoffDistFromIndices(self.distCutoff, self.inpIndices)
+		outAtomIndices = withinDistFilterFunct( dudFilterInstance, inpGeom, searchIndices )
+
+		if self.minDist is not None:
+			filterToExcludeWithinCutoffFunct = getIdxCore.FilterToExcludeAtomsOutsideCutoffDistFromIndices(self.minDist, self.inpIndices,excludeOutside=False)
+			outAtomIndices = filterToExcludeWithinCutoffFunct( dudFilterInstance, inpGeom, outAtomIndices )
+
+		#Get indices of molecules containing these 
+		molIndicesToOutput = list() #NOT the return values; just where to find in molIndices
+		for atomIdx in outAtomIndices:
+			currIndex = [idx for idx,vals in enumerate(molIndices) if atomIdx in vals]
+			assert len(currIndex)==1 #Can only really be one or zero, since one atom can only belong to one molecule
+			currIndex = currIndex[0]
+			molIndicesToOutput.append(currIndex)
+		molIndicesToOutput = sorted(list(set(molIndicesToOutput)))
+
+		#Return the molecule indices
+		return [molIndices[idx] for idx in molIndicesToOutput]
 
 def getIndicesGroupedBySurfLayerForFirstNLayers(inpGeom, surfEles, top=True, distTol=1e-1, nLayers=1, exitCleanlyWhenOutOfLayers=False):
 	""" Convenience (slooow implementation) function for getting indices for first n-layers of a surface
@@ -331,6 +405,43 @@ class GetWaterMoleculeIndicesFromGeomStandard():
 
 		return True
 
+
+class GetHydroxylMoleculeIndicesFromGeomStandard():
+
+	def __init__(self, minOH=0.01, maxOH=1.05*uConvHelp.ANG_TO_BOHR, maxNebDist=None):
+		""" Initializer
+		
+		Args:
+			minOH: (float) The minimum O-H distance to be considered an OH bond (likely NEVER needs setting in practice)
+			maxOH: (float) The maximum O-H distance to be considered an OH bond
+			maxNebDist: (float) Maximum distance (from oxygen) to look for neighbours. A group will ONLY be recognised as a hydroxyl if it has a single neighbour within its range. Thus, this parameter might be useful for getting free OH groups without also getting those covalently bonded (e.g. in MeOH). Though a post-filter step for hydroxyl groups is likely safer. Defaults to maxOH
+				  
+		"""
+		self.minOH = minOH
+		self.maxOH = maxOH
+		self.maxNebDist = maxNebDist if maxNebDist is not None else maxOH
+
+	def getIndicesFromInpGeom(self, inpGeom):
+		#Get neighbour lists
+		maxNebSearch = max(self.maxOH, self.maxNebDist)
+		cartCoords = inpGeom.cartCoords
+		allAtomsNebLists = nebListHelp.getNeighbourListsForInpCell_imagesMappedToCentral(inpGeom, maxNebSearch)
+		oxyIndices = [idx for idx,unused in enumerate(cartCoords) if cartCoords[idx][-1].upper()=="O"]
+
+		#find the hydroxyls based on neighbour lists
+		outIndices = list()
+		for oIdx in oxyIndices:
+			currNebList = allAtomsNebLists[oIdx]
+			if len(currNebList)==1:
+				eleTypes = [cartCoords[x][-1] for x in currNebList]
+				if all([x.upper()=="H" for x in eleTypes]):
+					oCoord = cartCoords[oIdx][:3]
+					hCoord = cartCoords[currNebList[0]]
+					ohDist = calcDistHelp.calcSingleDistBetweenCoords_minImageConv(inpGeom, oCoord, hCoord)
+					if (ohDist > self.minOH) and (ohDist <= self.maxOH):
+						outIndices.append([oIdx, currNebList[0]])
+
+		return outIndices
 
 
 #TODO:

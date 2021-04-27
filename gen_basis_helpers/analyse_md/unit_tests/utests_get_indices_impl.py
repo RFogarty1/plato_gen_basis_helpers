@@ -145,6 +145,47 @@ class TestGetWaterMoleculeIndicesStandard(unittest.TestCase):
 		self.assertEqual(expOutput,actOutput)
 
 
+class TestGetHydroxylIndicesStandard(unittest.TestCase):
+
+	def setUp(self):
+		self.minOH, self.maxOH = 0.01, 1.1*uConvHelp.ANG_TO_BOHR
+		self.maxNebDist = 1.1*uConvHelp.ANG_TO_BOHR
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = _loadGeomSingleMgLayerHydroxylatedWithWaterMonolayer()
+		kwargDict = {"minOH":self.minOH, "maxOH":self.maxOH, "maxNebDist":self.maxNebDist}
+		self.testObjA = tCode.GetHydroxylMoleculeIndicesFromGeomStandard(**kwargDict)
+
+	def _runTestFunct(self):
+		return self.testObjA.getIndicesFromInpGeom(self.cellA)
+
+	def testExpectedIndicesA(self):
+		expIndices = _loadExpectedHydroxylIndices_singleMgLayerHydroxylatedWithWaterMonolayer()
+		actIndices = self._runTestFunct()
+		self.assertEqual( sorted(expIndices), sorted(actIndices) )
+
+	def testNoneDetectedWhenMaxOHTooShort(self):
+		self.maxOH = 0.5*uConvHelp.ANG_TO_BOHR
+		self.createTestObjs()
+		expIndices = list()
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
+	def testNoneDetectedForXOH_geom(self):
+		""" e.g. dont want to detect OH if its part of methanol/water etc. """
+		self.maxNebDist = 1.5*uConvHelp.ANG_TO_BOHR
+		self.createTestObjs()
+
+		cartCoords = [ [2,2,2,"X"], [2,2,2+(1.4*uConvHelp.ANG_TO_BOHR),"O"], [2,2,2+((1.4+1.0)*uConvHelp.ANG_TO_BOHR),"H"],
+		               [7,7,7,"O"], [7,7,7+(1.0*uConvHelp.ANG_TO_BOHR),"H"] ]
+		self.cellA.cartCoords = cartCoords
+
+		expIndices = [ [3,4] ]
+		actIndices = self._runTestFunct()
+
+		self.assertEqual( sorted(expIndices), sorted(actIndices) )
+
 #Simply mock the water index getter and stack 3 water molecules on top of each other
 class TestGetTopWaterLayerIndicesA(unittest.TestCase):
 
@@ -275,6 +316,50 @@ class TestGetWaterIndicesWithinDistOfInpIndices(unittest.TestCase):
 		actVals = self._runTestFunct()
 		self.assertEqual(expVals, actVals)
 
+class TestGetHydroxylIndicesWithinDistOfInpIndices(unittest.TestCase):
+
+	def setUp(self):
+		self.hydroxyDetector = None
+		self.inpIndices = [5]
+		self.cutoffDist = 2.2*uConvHelp.ANG_TO_BOHR
+		self.oxyInCutoff, self.hyInCutoff = True, True
+		self.minDist = None
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = _loadGeomSingleMgLayerHydroxylatedWithWaterMonolayer()
+
+	def _runTestFunct(self):
+		args = [self.cellA, self.inpIndices, self.cutoffDist]
+		kwargs = {"oxyInCutoff":self.oxyInCutoff, "hyInCutoff":self.hyInCutoff, "minDist":self.minDist}
+		return tCode.getIndicesOfHydroxylWithinCutoffOfInpIndices(*args, **kwargs)
+
+	def testExpCaseA(self):
+		expVals = [ [13,14], [21,22], [25,26] ]
+		actVals = self._runTestFunct()
+		self.assertEqual( sorted(expVals), sorted(actVals) )
+
+	def testNoneReturnedIfOxyInCutoffFalse(self):
+		self.oxyInCutoff = False
+		expVals = list()
+		actVals = self._runTestFunct()
+		self.assertEqual( sorted(expVals), sorted(actVals) )
+
+	def testExpectedHyInCutoffWithLargerCutoffDist(self):
+		self.oxyInCutoff = False
+		self.cutoffDist = 2.8*uConvHelp.ANG_TO_BOHR
+		expVals = [ [13,14], [21,22], [25,26] ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpectedMinAndMaxDistanceSpecified(self):
+		self.hyInCutoff = False
+		self.cutoffDist = 3.9*uConvHelp.ANG_TO_BOHR
+		self.minDist = 2.4*uConvHelp.ANG_TO_BOHR
+		self.createTestObjs()
+		expVals = [ [9,10], [11,12], [19,20] ]
+		actVals = self._runTestFunct()
+		self.assertEqual( sorted(expVals), sorted(actVals) )
 
 class TestGetIndicesOfBilayerClosestToSurface(unittest.TestCase):
 
@@ -440,3 +525,66 @@ def _loadGeomTestVaryTypesOfSurfAtomA():
 
 	outCell = uCellHelp.UnitCell.fromLattVects(lattVects, fractCoords=fractCoords)
 	return outCell
+
+
+def _loadGeomSingleMgLayerHydroxylatedWithWaterMonolayer():
+	lattVectors = [ [x*uConvHelp.BOHR_TO_ANG for x in [18.19806 ,        0,        0]],
+	                [x*uConvHelp.BOHR_TO_ANG for x in [-9.099031, 15.75998,        0]],
+	                [x*uConvHelp.BOHR_TO_ANG for x in [-9.099031, 15.75998, 63.97856]] ]
+
+	cartCoords = [ [  0.1214542359, 1.8196267123, 22.1955723719,  "Mg"],
+	               [  3.3284047979, 1.8212532892, 22.1914370011,  "Mg"],
+	               [  6.5383078083, 1.8262059327, 22.1816696526,  "Mg"],
+	               [ -1.4864883933, 4.6011105484, 22.1915290289,  "Mg"],
+	               [ -3.0916117901, 7.3860392044, 22.1818495864,  "Mg"],
+	               [  1.7233630404, 4.6060280692, 22.1817849271,  "Mg"],
+	               [  0.1214463163, 7.3795391972, 22.1956747834,  "Mg"],
+	               [  4.9363577945, 4.5995439582, 22.1955293125,  "Mg"],
+	               [  3.3283650735, 7.3810176883, 22.1914579493,  "Mg"],
+	               [   4.9357408756, 6.4558465066, 23.1428645602, "O"],
+	               [   4.9317129760, 6.4578090856, 24.1261352568, "H"],
+	               [  -1.4875861102, 6.4563188250, 23.0955659872, "O"],
+	               [  -1.5390639112, 6.4602746494, 24.0812622605, "H"],
+	               [   1.7273417794, 6.4542934871, 23.1366283102, "O"],
+	               [   1.7165806377, 6.4529634491, 24.1185714081, "H"],
+	               [   8.1422929808, 0.8964480936, 23.0955843628, "O"],
+	               [   8.0912046708, 0.9003698378, 24.0812871965, "H"],
+	               [   6.5424373543, 3.6745332540, 23.1365246049, "O"],
+	               [   6.5316883407, 3.6730287745, 24.1184459409, "H"],
+	               [   1.7273456379, 0.8945823024, 23.1366219878, "O"],
+	               [   1.7166759222, 0.8932007172, 24.1185678419, "H"],
+	               [   0.1208818476, 3.6756884827, 23.1430080822, "O"],
+	               [   0.1171114663, 3.6776744068, 24.1262808732, "H"],
+	               [   4.9356624802, 0.8959088297, 23.1428943007, "O"],
+	               [   4.9319239561, 0.8978710944, 24.1261676150, "H"],
+	               [   3.3274315554, 3.6763986244, 23.0956350496, "O"],
+	               [   3.2759433699, 3.6802622178, 24.0813194442, "H"],
+	               [  -1.8874432309, 6.4767520522, 25.9624287592, "O"],
+	               [  -2.4829221472, 5.6946685286, 26.0560040799, "H"],
+	               [  -2.4775581249, 7.2632244931, 26.0560011187, "H"],
+	               [   1.1522083310, 6.4580466268, 26.2169360954, "O"],
+	               [   1.3331680081, 6.4732780923, 27.1807979360, "H"],
+	               [   0.1621470753, 6.4589103759, 26.1563564863, "H"],
+	               [   7.7424923019, 0.9169105569, 25.9626207374, "O"],
+	               [   7.1470233194, 0.1348774287, 26.0563652099, "H"],
+	               [   7.1524611077, 1.7034217508, 26.0559810826, "H"],
+	               [   5.9671298549, 3.6781874135, 26.2169632216, "O"],
+	               [   6.1480902956, 3.6928928451, 27.1808290255, "H"],
+	               [   4.9770596881, 3.6791149719, 26.1564070752, "H"],
+	               [   1.1521037718, 0.8981902086, 26.2169285841, "O"],
+	               [   1.3330809663, 0.9133915044, 27.1807843755, "H"],
+	               [   0.1620338414, 0.8992287287, 26.1563771918, "H"],
+	               [   2.9275561518, 3.6967973390, 25.9627056626, "O"],
+	               [   2.3321023090, 2.9147150091, 26.0564069628, "H"],
+	               [   2.3374510526, 4.4832542552, 26.0562773955, "H"] ]
+
+	outCell = uCellHelp.UnitCell.fromLattVects(lattVectors)
+	outCell.cartCoords = cartCoords
+	outCell.convAngToBohr()
+	return outCell
+
+def _loadExpectedHydroxylIndices_singleMgLayerHydroxylatedWithWaterMonolayer():
+	outIndices = [ [9,10] , [11,12], [13,14], [15,16], [17,18],
+	               [19,20], [21,22], [23,24], [25,26] ]
+	return outIndices
+
