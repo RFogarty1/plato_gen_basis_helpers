@@ -29,11 +29,16 @@ def getNeighbourListsForInpCell_imagesMappedToCentral(inpCell, cutoff):
 	treeObj.set_coords(coords, cutoff=cutoff)
 	allPairs = treeObj.search_pairs(cutoff)
 
-	outList = list()
-	for idx in range(len(coords)):
-		relevantPairs = [x for x in allPairs if idx in x]
-		currList = sorted(list(set([x for x in it.chain(*relevantPairs) if x!=idx])))
-		outList.append(currList)
+	#Get neighbour lists from pairs
+	outList = [list() for x in range(len(coords))]
+	for idx,pair in enumerate(allPairs):
+		iA,iB = pair
+		outList[iA].append(iB)
+		outList[iB].append(iA)
+
+	#Sort lists and remove duplicates (likely actually unneccesary; no test fails if i dont)
+	for idx,unused in enumerate(outList):
+		outList[idx] = sorted(list(set(outList[idx])))
 
 	return outList 
 
