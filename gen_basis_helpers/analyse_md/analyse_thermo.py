@@ -11,14 +11,28 @@ class ThermoDashboardSimple():
 	""" Class for creating summary data from a ThermoDataStandard instance
 
 	"""
-	def __init__(self, props, startIdx=0, movingAvg=True, templatePlotter=None):
+	def __init__(self, props, startIdx=0, movingAvg=True, templatePlotter=None, centralWindowMovingAvg=False,
+	             centralWindowWidthEachSide=1):
+		""" Initializer
+		
+		Args:
+			props: (iter of str) The properties to include in the dashboard outputs (e.g. ["temp"])
+			startIdx: (int) The step index (not value) at which to start plotting/calculating averages
+			movingAvg: (Bool) If True calculate and plot a moving average (no effect on the tables)
+			templatePlotter: (dPlotBase.DataPlotterStandard object) Used as a template to plot
+			centralWindowMovingAvg: (Bool) Whether
+			centralWindowWidthEachSide: (int) The number of steps each side to use for the central window moving average. Only relevant if centralWindowMovingAvg=True
+				 
+		"""
 		self.props = props
 		self.startIdx = startIdx #Apply even to non-avg vals
 		self.movingAvg = movingAvg
 		self.templatePlotter = self._getDefaultPlotter() if templatePlotter is None else templatePlotter
+		self.centralWindowMovingAvg = centralWindowMovingAvg
+		self.centralWindowWidthEachSide = centralWindowWidthEachSide
 
 	def _getDefaultPlotter(self):
-		return dPlotBase.DataPlotterStandard(lineStyles=['none','-'], lineMarkers=['x',''], xlabel="Time")
+		return dPlotBase.DataPlotterStandard(lineStyles=['none','-','-'], lineMarkers=['x','',''], xlabel="Time", lineColors=["r","k","b"])
 
 	def getPlotFactories(self, thermoObj):
 		outFactories = list()
@@ -38,6 +52,13 @@ class ThermoDashboardSimple():
 			movingAvgYData = getMovingAverageFromThermoData(thermoObj, prop, startIdx=self.startIdx)
 			avgData = [ [x,y] for x,y in it.zip_longest(time,movingAvgYData) ]
 			outData.append(avgData)
+
+		if self.centralWindowMovingAvg:
+			currArgs = [thermoObj, prop, self.centralWindowWidthEachSide]
+			centMovingAvg = getSimpleCentralWindowAverageFromThermoData(*currArgs, startIdx=self.startIdx)
+			centMovingData = [ [x,y] for x,y in it.zip_longest(time, centMovingAvg) if x is not None]
+			outData.append(centMovingData)
+
 		#2) Create the output factory
 		outFactory = copy.deepcopy(self.templatePlotter)
 		outFactory.data = outData
@@ -92,6 +113,65 @@ def getMovingAverageFromThermoData(thermoData, prop, startIdx=0):
 		currVal = currSum/idx
 		outVals.append(currVal)
 	return outVals
+
+def getSimpleCentralWindowAverageFromThermoData(thermoData, prop, widthEachSide, fillVal=None, startIdx=0):
+	""" 
+	
+	Args:
+		thermoData: ThermoDataStandard object
+		prop: (str) the property the moving average is needed for
+		widthEachSide: (int) Number of data points to take each side when calculating the mean
+		fillVal: The value we output when we cant calculate a central moving average (e.g. we cant get a moving average for the first or last data points)
+		startIdx: (int) The idx in thermoData to start calculating the average value at
+			 
+	Returns
+		movingAvg:  (float) Values of the moving average for each idx after startIdx (inclusive). Note: Will contain "fillVal" values
+ 
+	"""
+	inpIter = thermoData.dataDict[prop][startIdx:]
+	args = [inpIter, widthEachSide]
+	kwargs = {"fillValWhenNotCalc":fillVal}
+	return _getSimpleCentralWindowAverageFromIter(*args, **kwargs)
+
+def _getSimpleCentralWindowAverageFromIter(inpIter, widthEachSide, fillValWhenNotCalc=None):
+	""" Gets a central-window moving average for the input data (each mean value is calculated from n values either side) 
+	
+	Args:
+		inpIter: (iter of Numbers) We take the moving averages of these numbers
+		widthEachSide: (int) Number of data points to take each side when calculating the mean
+		fillValWhenNotCalc: The value we output when we cant calculate a central moving average (e.g. we cant get a moving average for the first or last data points)
+
+	Returns
+		outVals: (iter of float) Central moving average. Each data point is an average of 2*widthEachSide + 1 data points
+ 
+	"""
+	stack = list()
+	outVals = list()
+	lenIter = len(inpIter)
+	reqStackSize = 2*widthEachSide + 1
+
+	#Initialise our stack
+	stack = [x for x in inpIter[:widthEachSide]]
+
+	#Calculate moving averages
+	for idx,val in enumerate(inpIter):
+
+		#Deal with the stack
+		if len(stack) == reqStackSize:
+			stack.pop(0)
+		
+		if idx < lenIter-widthEachSide:
+			stack.append(inpIter[idx+widthEachSide])
+
+		#Calculate moving average
+		if len(stack) < reqStackSize:
+			outVals.append(fillValWhenNotCalc)
+		else:
+			outVals.append( sum(stack)/len(stack) )
+		
+	return outVals
+
+
 
 class GetStatsForThermoProps(resetableKwargFactory.CreatorWithResetableKwargsTemplate):
 	registeredKwargs = set(resetableKwargFactory.CreatorWithResetableKwargsTemplate.registeredKwargs)

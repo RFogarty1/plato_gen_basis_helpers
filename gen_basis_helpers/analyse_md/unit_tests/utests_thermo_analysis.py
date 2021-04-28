@@ -10,6 +10,69 @@ import gen_basis_helpers.analyse_md.thermo_data as thermoDataHelp
 import gen_basis_helpers.analyse_md.analyse_thermo as tCode
 
 
+
+class TestGetSimpleCentralWindowAverageFromThermoData(unittest.TestCase):
+
+	def setUp(self):
+		self.temp = [10,15,20]
+		self.step = [10,20,30]
+		self.time = [20,40,60]
+		self.prop = "temp"
+		self.startIdx = 0
+		self.widthEachSide = 3
+		self.fillVal = None
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		thermoDataDict = {"step":self.step, "time":self.time, "temp":self.temp}
+		self.thermoDataObjA = thermoDataHelp.ThermoDataStandard(thermoDataDict)
+
+	def _runTestFunct(self):
+		args = [self.thermoDataObjA, self.prop, self.widthEachSide]
+		kwargs = {"fillVal":self.fillVal, "startIdx":self.startIdx} 
+		return tCode.getSimpleCentralWindowAverageFromThermoData(*args,**kwargs)
+
+	@mock.patch("gen_basis_helpers.analyse_md.analyse_thermo._getSimpleCentralWindowAverageFromIter")
+	def testExpectedCallsA(self, mockGetMovingAvg):
+		expVal = mock.Mock()
+		mockGetMovingAvg.side_effect = lambda *args,**kwargs: expVal
+		actVal = self._runTestFunct()
+		mockGetMovingAvg.assert_called_with(self.temp, self.widthEachSide, fillValWhenNotCalc=self.fillVal)
+		self.assertEqual(expVal, actVal)
+
+	@mock.patch("gen_basis_helpers.analyse_md.analyse_thermo._getSimpleCentralWindowAverageFromIter")
+	def testExpectedCalls_startIdxOne(self, mockGetMovingAvg):
+		expVal = mock.Mock()
+		mockGetMovingAvg.side_effect = lambda *args,**kwargs: expVal
+		self.startIdx = 1
+		actVal = self._runTestFunct()
+		mockGetMovingAvg.assert_called_with(self.temp[self.startIdx:], self.widthEachSide, fillValWhenNotCalc=self.fillVal)
+		self.assertEqual(expVal, actVal)
+
+
+class TestGetSimpleCentralWindowAverageFromIter(unittest.TestCase):
+
+	def setUp(self):
+		self.width = 2
+		self.fillValWhenNotCalc = None
+		self.iterA = [1,2,3,4,5,6,7,8,10]
+
+	def _runTestFunct(self):
+		args = [self.iterA, self.width]
+		kwargs = {"fillValWhenNotCalc":self.fillValWhenNotCalc}
+		return tCode._getSimpleCentralWindowAverageFromIter(*args, **kwargs)
+
+	def testSimpleCaseA(self):
+		expVals = [None, None, 15/5, 20/5, 25/5, 30/5, 36/5, None, None]
+		actVals = self._runTestFunct()
+		self.assertAlmostEqual(expVals, actVals)
+
+	def testExpectedForSuperShortList(self):
+		self.iterA = [1,2]
+		expVals = [None,None]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
 class TestGetMovingAverageFromThermoData(unittest.TestCase):
 
 
