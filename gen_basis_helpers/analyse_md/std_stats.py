@@ -56,7 +56,7 @@ def getStatsFromBlockingDataUpToMaxOrder(inpData, maxOrder):
 
 	while currOrder <= maxOrder:
 		#Sort out this order
-		currVar = calcVarianceOfData(currBlock) / len(currBlock)-1
+		currVar = calcVarianceOfData(currBlock) / (len(currBlock)-1)
 		currStdDev = math.sqrt(currVar)
 		currStdDevError = currStdDev * (1 / math.sqrt( 2*(len(currBlock)-1) ))
 		currMean = sum(currBlock)/len(currBlock)

@@ -24,9 +24,9 @@ class TestBlockingFunction(unittest.TestCase):
 		expValsTwo  = [-1.5, 3, 2.5, -1.75]
 
 		#The actual expceted outputs
-		orderZeroDict = {"order":0, "mean":0.5625,  "mean_std_dev": 0.678743957155421, "mean_std_dev_std_dev": 0.1239211253681147}
-		orderOneDict  = {"order":1, "mean":0.5625,  "mean_std_dev": 0.6339207117218998, "mean_std_dev_std_dev": 0.1694224366888029}
-		orderTwoDict  = {"order":2, "mean":0.5625,  "mean_std_dev": 0.4539324701979359, "mean_std_dev_std_dev": 0.1853171549443458}
+		orderZeroDict = {"order":0, "mean":0.5625,  "mean_std_dev": 1.248227910546254 , "mean_std_dev_std_dev": 0.22789419450457463}
+		orderOneDict  = {"order":1, "mean":0.5625,  "mean_std_dev": 1.2657490018618565, "mean_std_dev_std_dev": 0.33828565018701134}
+		orderTwoDict  = {"order":2, "mean":0.5625,  "mean_std_dev": 1.2680981494611   , "mean_std_dev_std_dev": 0.5176989016578825}
 
 		return [orderZeroDict, orderOneDict, orderTwoDict]
 
