@@ -1,6 +1,51 @@
 
 
 
+
+def getLayerThicknessDataFromMinMaxData(minMaxData):
+	""" Simple function for getting surface thicknesses from min and max surf positions data
+	
+	Args:
+		minMaxData: (iter of len-2 iter) [min,max]; the minimum and maximum z-val (or any val) bounding a surface
+			 
+	Returns
+		surfThicknesses: (iter of floats) max-min for each value in minMaxData
+ 
+	"""
+	outData = list()
+	for minVal,maxVal in minMaxData:
+		outData.append( maxVal-minVal )
+	return outData
+
+def getAverageMinMaxZPositionsForSubsetOfAtomGroups(traj, groupIndices, nMaxZ=None, nMinZ=None):
+	""" Gets the average z positions of a group of atom indices BUT only using n-atoms with the lowest/highest z-values (use case is to get an estimate of changing surface height without knowing that the same atoms will always be at the surface) 
+	
+	Args:
+		traj: (TrajectoryBase object)
+		groupIndices: (int list) Indices for atoms in this group
+		nMaxZ: (int) The maximum number of indices used to calculate the maxZ
+		nMinZ: (int) The maximum number of indices used to calculate minZ
+
+	Returns
+		outVals: iter of len-2 iters, Each element has [minZ,maxZ]. Id nMaxZ/nMinZ arent set then both values (minZ,maxZ) will be the same
+ 
+	"""
+	nMinZ = len(groupIndices) if nMinZ is None else nMinZ
+	nMaxZ = len(groupIndices) if nMaxZ is None else nMaxZ
+
+	outVals = list()
+
+	for currStep in traj:
+		currCartCoords = currStep.unitCell.cartCoords
+		zVals = sorted([currCartCoords[idx][2] for idx in groupIndices])
+		revSorted = sorted(zVals, reverse=True)
+		avgMin = sum(zVals[:nMinZ]) / nMinZ
+		avgMax = sum(revSorted[:nMaxZ]) / nMaxZ
+		outVals.append( [avgMin, avgMax] )
+
+	return outVals
+
+
 def getMinMaxZPositionsAtomGroups(traj, groupIndices, minZ=None, maxZ=None):
 	""" Returns the minimum and maximum z-positions for a group of atoms in every currStep in traj. Example use-case is seeing evolution of a surface 
 	

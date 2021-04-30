@@ -8,14 +8,88 @@ import plato_pylib.shared.ucell_class as uCellHelp
 import gen_basis_helpers.analyse_md.traj_core as trajHelp
 import gen_basis_helpers.analyse_md.surf_norm_z.get_minmax_positions as tCode
 
+
+class TestGetSurfaceThicknessesFromMinMaxData(unittest.TestCase):
+
+	def setUp(self):
+		self.valsA = [ [0,4], [9,12] ]
+
+	def _runTestFunct(self):
+		return tCode.getLayerThicknessDataFromMinMaxData(self.valsA)
+
+	def testSimpleCaseA(self):
+		expVals = [4,3]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+
+class TestGetAverageMinMaxForSubsetOfGroups(unittest.TestCase):
+
+	def setUp(self):
+		self.traj = createTestTrajA()
+		self.groupIndices = [x for x in range(6)]
+		self.nMinZ, self.nMaxZ = None, None
+
+	def _runTestFunct(self):
+		args   = [self.traj, self.groupIndices]
+		kwargs = {"nMinZ":self.nMinZ, "nMaxZ":self.nMaxZ}
+		return tCode.getAverageMinMaxZPositionsForSubsetOfAtomGroups(*args, **kwargs)
+
+	def testExpCaseA_fullGroup(self):
+		expValA = sum([2,4,5,7,8,9])/6
+		expValB = sum([3,5,9,6,8,7])/6
+		expVals = [ [expValA, expValA], [expValB,expValB] ]
+		actVals = self._runTestFunct()
+		self._checkExpAndActEqual(expVals, actVals)
+	
+	def testExpCaseA_fullGroup_nMax2(self):
+		self.nMaxZ = 2
+
+		#Figure out expected
+		expMinA = sum([2,4,5,7,8,9])/6
+		expMinB = sum([3,5,9,6,8,7])/6
+		expMaxA = (8+9)/2
+		expMaxB = (8+9)/2
+		expVals = [ [expMinA, expMaxA], [expMinB, expMaxB] ]
+
+		#Test
+		actVals = self._runTestFunct()
+		self._checkExpAndActEqual(expVals, actVals)
+
+	def testExpCase_fullGroup_nMin2(self):
+		self.nMinZ = 2
+
+		#Figure out expected
+		expMaxA, expMaxB = sum([2,4,5,7,8,9])/6, sum([3,5,9,6,8,7])/6
+		expMinA, expMinB = (2+4)/2, (3+5)/2
+		expVals = [ [expMinA,expMaxA], [expMinB,expMaxB] ]
+
+		#Test
+		actVals = self._runTestFunct()
+		self._checkExpAndActEqual(expVals, actVals)
+
+	def testHalfGroup_nMinAndMax2(self):
+		self.groupIndices = [0,1,2]
+		self.nMinZ, self.nMaxZ = 2,2
+
+		#Figure out expected
+		expMinA, expMinB = (2+4)/2, (3+5)/2
+		expMaxA, expMaxB = (4+5)/2, (5+9)/2
+		expVals = [ [expMinA,expMaxA], [expMinB,expMaxB] ]
+
+		#Test
+		actVals = self._runTestFunct()
+		self._checkExpAndActEqual(expVals,actVals)
+
+	def _checkExpAndActEqual(self,expVals,actVals):
+		self.assertEqual( len(expVals), len(actVals) )
+		for exp,act in zip(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+
 class TestExpectedMinMaxValsStandard(unittest.TestCase):
 
 	def setUp(self):
-		self.coordsA = [ [1,1,2,"X"], [1,1,4,"Y"], [1,1,5,"Y"],
-		                 [1,1,7,"X"], [1,1,8,"Y"], [1,1,9,"Y"] ]
-		self.coordsB = [ [1,1,3,"X"], [1,1,5,"Y"], [1,1,9,"Y"],
-		                 [1,1,6,"X"], [1,1,8,"Y"], [1,1,7,"Y"] ]
-
 		self.lattParams = [10,10,10]
 		self.lattAngles = [90,90,90]
 		self.groupX = [0,3]
@@ -25,18 +99,7 @@ class TestExpectedMinMaxValsStandard(unittest.TestCase):
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		#Create the unit cells
-		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
-		self.cellB = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
-		self.cellA.cartCoords = self.coordsA
-		self.cellB.cartCoords = self.coordsB
-
-		#Create traj steps
-		self.trajStepA = trajHelp.TrajStepBase(unitCell=self.cellA)
-		self.trajStepB = trajHelp.TrajStepBase(unitCell=self.cellB)
-
-		#create trajectories
-		self.trajA = trajHelp.TrajectoryInMemory([self.trajStepA,self.trajStepB])
+		self.trajA = createTestTrajA()
 
 	def _runTestFunct(self):
 		return tCode.getMinMaxZPositionsAtomGroups(self.trajA, self.currAtomGroup, minZ=self.minZ, maxZ=self.maxZ)
