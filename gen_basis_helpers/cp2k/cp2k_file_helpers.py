@@ -449,7 +449,7 @@ def _attachFunctionToModderInstance(key, function, instance):
 	instance.extraKeys.append(key)
 	instance.extraFuncts.append(function)
 
-#Simply all options i messed with pre-refactor
+#Simply all options i messed with pre-refactor and probably a few more random ones added later
 def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 
 	if useDict.get("kpts",None) is not None:
@@ -626,6 +626,8 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 		val = "ON" if useDict["motionPrintVelocities".lower()] is True else "OFF"
 		cp2kObj.CP2K_INPUT.MOTION.PRINT_list[-1].VELOCITIES.Section_parameters = val
 
+	if useDict.get("subsysInpVelocities".lower(),None) is not None:
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.VELOCITY.Default_keyword = useDict["subsysInpVelocities".lower()]
 
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):

@@ -297,6 +297,13 @@ class testModifyCp2kObj(unittest.TestCase):
 		for region in thermoRegions:
 			region.addToPyCp2kObj.assert_called_with(self.startCP2KObj)
 
+	def testAddInpVelocities(self):
+		testVelocities = [[1,2,3], [4,5,6]]
+		kwargDict = {"subsysInpVelocities": testVelocities}
+		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
+		expStr = _loadExpectedOutputVelocitiesReadIn()
+		actStr = self.startCP2KObj.get_input_string()
+		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
 
 
 def _getDefObjInputStr():
@@ -631,7 +638,6 @@ def _loadExpectedOutNudgedBandFile_noReplicasSet():
 
 	return newStr + outStr
 
-
 def _loadExpectedOutputHirshfeldOpts():
 	outStr = _getDefObjInputStr()
 	newStr  = "  &DFT\n"
@@ -644,12 +650,17 @@ def _loadExpectedOutputHirshfeldOpts():
 	outStr = outStr.replace("  &DFT\n",newStr)
 	return outStr
 
-
-
-
-
-
-
+def _loadExpectedOutputVelocitiesReadIn():
+	outStr  = _getDefObjInputStr()
+	newStr  = "&FORCE_EVAL\n"
+	newStr += "  &SUBSYS\n"
+	newStr += "    &VELOCITY\n"
+	newStr += "      1 2 3\n"
+	newStr += "      4 5 6\n"
+	newStr += "    &END VELOCITY\n"
+	newStr += "  &END SUBSYS\n"
+	outStr = outStr.replace("&FORCE_EVAL\n",newStr)
+	return outStr
 
 
 
