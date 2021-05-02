@@ -419,7 +419,32 @@ def getTimeAndGeomClosestToInpTimeForInpTraj(inpTime, inpTrajInMem, equiDist=1e-
 	Notes:
 		TrajectoryInMemory must be ordered by time; which SHOULD always be the case anyway but..
 	"""
-	#Find the index
+
+	trajStep = getTrajStepClosestToInpTimeForInpTraj(inpTime, inpTrajInMem, equiDist=equiDist, prioritiseLate=prioritiseLate)
+	outGeom = copy.deepcopy( trajStep.unitCell )
+	outTime = trajStep.time
+
+	if convAngToBohr:
+		outGeom.convAngToBohr()
+
+	return outTime, outGeom
+
+
+def getTrajStepClosestToInpTimeForInpTraj(inpTime, inpTrajInMem, equiDist=1e-2, prioritiseLate=True):
+	""" Extracts a TrajStep from a trajectory closest to the input time
+	
+	Args:
+		inpTime: (float) The time you want to get a geometry for
+		inpTrajInMem: (TrajectoryInMemory) Input trajectory. MUST BE IN ORDER (small time to large time)
+		equiDist: (float) Two steps are considered EQUAL if they differ from inpTime by less than this amount
+		prioritiseLate: (Bool) If True then we take the latest step when two are equal.
+ 
+	Returns
+		outStep: (TrajStepBase obj)
+ 
+	Notes:
+		TrajectoryInMemory must be ordered by time; which SHOULD always be the case anyway but..
+	"""
 	for idx,tStep in enumerate(inpTrajInMem):
 		currDiff = abs(inpTime - tStep.time)
 
@@ -444,14 +469,5 @@ def getTimeAndGeomClosestToInpTimeForInpTraj(inpTime, inpTrajInMem, equiDist=1e-
 
 
 	minIdx = minIndices[-1] if prioritiseLate else minIndices[0]
-
-	#Use the indices to get the geometry; this only works this efficiently in trajInMemory
-	# (in other cases we'd need to consume a new iterator until we reached this step)
-	outGeom = copy.deepcopy( inpTrajInMem.trajSteps[minIdx].unitCell )
-	outTime = inpTrajInMem.trajSteps[minIdx].time
-	if convAngToBohr:
-		outGeom.convAngToBohr()
-	
-#	print("Quenched at {} fs".format(outTime))
-	return outTime, outGeom
+	return inpTrajInMem.trajSteps[minIdx]
 
