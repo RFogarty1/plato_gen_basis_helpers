@@ -71,3 +71,38 @@ class DistancePointPlaneColVar(CollectiveVarStandard):
 		colVar.Atom_point = self.atomPointIndex + 1
 		colVar.Atoms_plane = [x+1 for x in self.atomPlaneIndices]
 
+
+class DistancePointPlaneColVar_att2(CollectiveVarStandard):
+
+	def __init__(self, atomPlaneIndices, atomPointIndex):
+		""" Initializer
+		
+		NOTE:
+			Indices start at zero for this object. Mapping to cp2k index system (which starts at one) is handled internally
+
+		Args:
+			atomPlaneIndices: (len-3 iter). Indices for atoms which define the plane
+			atomPointIndex: (int) Index for atom defining the point
+
+		"""
+		self.atomPlaneIndices = atomPlaneIndices
+		self.atomPointIndex = atomPointIndex
+
+	def addColVarToSubsys(self, pyCp2kObj):
+		pyCp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.COLVAR_add()
+		colVar = pyCp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.COLVAR_list[-1].DISTANCE_POINT_PLANE
+
+		#Add the points for the plane
+		for idx in self.atomPlaneIndices:
+			colVar.POINT_add()
+			colVar.POINT_list[-1].Atoms = [idx+1]
+
+		#Add the points for the single atom point
+		colVar.POINT_add()
+		colVar.POINT_list[-1].Atoms = [self.atomPointIndex + 1]
+
+		#Tell CP2K which points are the plane and which are the single atom point
+		colVar.Atom_point = 4
+		colVar.Atoms_plane = [1,2,3]
+
+
