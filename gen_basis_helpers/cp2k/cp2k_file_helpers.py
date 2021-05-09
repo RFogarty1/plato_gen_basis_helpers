@@ -330,6 +330,13 @@ def _modCp2kObjBasedOnMolecularDynamicsOptDict(cp2kObj, useDict):
 		thermoRegions = useDict["mdThermoRegions".lower()]
 		[x.addToPyCp2kObj(cp2kObj) for x in thermoRegions]
 
+	if useDict.get("mdStartTime".lower(),None) is not None:
+		mdSection.Time_start_val = useDict["mdStartTime".lower()]
+
+	if useDict.get("mdStartStep".lower(),None) is not None:
+		mdSection.Step_start_val = useDict["mdStartStep".lower()]
+
+
 def _modCp2kObjBasedOnTrajPrintDict(cp2kObj, useDict):
 	motionPart = cp2kObj.CP2K_INPUT.MOTION
 	def initIfNeeded():

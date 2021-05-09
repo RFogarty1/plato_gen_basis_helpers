@@ -196,7 +196,8 @@ class testModifyCp2kObj(unittest.TestCase):
 	def testMDSection(self):
 		kwargDict = {"mdEnsemble":"NVT", "mdSteps":"100",
 		             "mdTimeStep":"0.5", "mdTemperature":"300",
-		             "mdThermostatType":"nose", "mdPrintKindTemps":True}
+		             "mdThermostatType":"nose", "mdPrintKindTemps":True,
+		             "mdStartTime":200, "mdStartStep":20}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputSimpleMDOptionsA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -486,6 +487,8 @@ def _loadExpectedOutputSimpleMDOptionsA():
 	newStr  = "&MOTION\n &MD\n"
 	newStr += "    ENSEMBLE NVT\n"
 	newStr += "    STEPS 100\n"
+	newStr += "    STEP_START_VAL 20\n"
+	newStr += "    TIME_START_VAL 200\n"
 	newStr += "    TIMESTEP 0.5\n"
 	newStr += "    TEMPERATURE 300\n"
 	newStr += "    TEMP_KIND TRUE\n"

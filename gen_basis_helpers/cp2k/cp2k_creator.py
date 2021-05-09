@@ -126,6 +126,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 	registeredKwargs.add("motionPrintVelocities")
 	registeredKwargs.add("motionPrintForces")
 	registeredKwargs.add("subsysInpVelocities")
+	registeredKwargs.add("mdStartTime")
+	registeredKwargs.add("mdStartStep")
 
 	def __init__(self,**kwargs):
 		""" Initializer for CP2K calc-object factory
@@ -399,7 +401,8 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		                         "scfOTEnergyGap", "scfOTSafeDIIS", "scfPrintRestartHistory_backupCopies", "scfPrintRestart_eachMD",
 		                         "scfPrintRestart_eachSCF", "scfPrintRestart_backupCopies", "hirshfeld_on", "hirshfeld_selfConsistent",
 		                         "hirshfeld_shapeFunction", "printForces", "printPdos", "ldosIndices", "scfHistoryEps", "subsysInpVelocities",
-		                         "motion_cellopt_constraint", "mdThermoRegions", "motionPrintVelocities", "motionPrintForces"]
+		                         "motion_cellopt_constraint", "mdThermoRegions", "motionPrintVelocities", "motionPrintForces",
+		                         "mdStartTime", "mdStartStep"]
 
 		for attr in directTranslateKwargs:
 			if getattr(self,attr) is not None:
