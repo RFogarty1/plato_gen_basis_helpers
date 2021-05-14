@@ -15,6 +15,10 @@ class TopStandard(coreAdsSiteHelp.FixedIndicesAdsSiteBase):
 		self.atomIdx = atomIdx
 		self.siteName = siteName
 
+	@property
+	def atomIndices(self):
+		return [self.atomIdx]
+
 	#May need this vectorised later? Which would likely mean a composite class
 	def positionFromGeom(self, inpGeom, inpCartCoords=None, inpIdx=None):
 		""" Returns position of this site when given an input geometry

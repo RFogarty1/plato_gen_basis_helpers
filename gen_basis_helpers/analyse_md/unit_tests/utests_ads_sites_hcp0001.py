@@ -9,10 +9,37 @@ import gen_basis_helpers.analyse_md.ads_sites_impl as adsImplHelp
 
 import gen_basis_helpers.analyse_md.ads_sites_hcp0001 as tCode
 
+
+class TestGetTopSiteObjs(unittest.TestCase):
+
+	def setUp(self):
+		self.inpIndices = [2,3,6]
+		self.siteNames = "top_test_a"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = loadTestCellA()
+
+	def _runTestFunct(self):
+		args = [self.cellA, self.inpIndices]
+		kwargs = {"siteNames": self.siteNames}
+		return tCode.getHcp0001TopAdsSites(*args, **kwargs)
+
+	def testExpectedCaseA(self):
+		expObjs = [adsImplHelp.TopStandard(idx, self.siteNames) for idx in self.inpIndices]
+		actObjs = self._runTestFunct()
+		self.checkExpectedAndActualObjsMatch(expObjs, actObjs)
+
+	def checkExpectedAndActualObjsMatch(self, expObjs, actObjs):
+		sortedExpected = sorted(expObjs, key=lambda x:x.atomIndices)
+		sortedActual = sorted(actObjs, key=lambda x:x.atomIndices)
+		self.assertEqual(sortedExpected, sortedActual)
+
 class TestGetBridgeSiteObjs(unittest.TestCase):
 
 	def setUp(self):
 		self.surfIndices = [1,4,16]
+		self.secondSetIndices = None
 		self.maxDist = None #To limit problems when using subset of the surface indices
 		self.distTol = 1 #Nearest nebs are those within this dist of the central atom
 		self.siteNames = "bridge_test"
@@ -23,7 +50,8 @@ class TestGetBridgeSiteObjs(unittest.TestCase):
 
 	def _runTestFunct(self):
 		args = [self.cellA, self.surfIndices]
-		kwargs = {"distTol":self.distTol, "maxDist":self.maxDist, "siteNames":self.siteNames}
+		kwargs = {"distTol":self.distTol, "maxDist":self.maxDist, "siteNames":self.siteNames,
+		          "otherSurfIndices":self.secondSetIndices}
 		return tCode.getHcp0001BridgeAdsSites(*args, **kwargs)
 
 	#Super limited for simplicity
@@ -45,6 +73,9 @@ class TestGetBridgeSiteObjs(unittest.TestCase):
 		expIdxPairs = [ [1,4], [1,16], [4,16] ]
 		expObjs = [adsImplHelp.BridgeStandard(idxPair, siteName=self.siteNames) for idxPair in expIdxPairs]
 		actObjs = self._runTestFunct()
+#		import pdb
+#		pdb.set_trace()
+
 		self.checkExpectedAndActualObjsMatch(expObjs, actObjs)
 
 #This is the distance matrix
@@ -60,6 +91,23 @@ class TestGetBridgeSiteObjs(unittest.TestCase):
 		actObjs = self._runTestFunct()
 		self.checkExpectedAndActualObjsMatch(expObjs, actObjs)
 
+	def testExpected_twoSitesOfSameIndicesPassed(self):
+		self.secondSetIndices = self.surfIndices
+		expIdxPairs = [ [1,4], [4,16] ]
+		expObjs = [adsImplHelp.BridgeStandard(idxPair, siteName=self.siteNames) for idxPair in expIdxPairs]
+		actObjs = self._runTestFunct()
+		self.checkExpectedAndActualObjsMatch(expObjs,actObjs)
+
+	def testExpected_twoSetsOfIndicesPassed(self):
+		self.surfIndices = [1,4]
+		self.secondSetIndices = [16]
+		expIdxPairs = [ [4,16] ]
+		expObjs = self._getExpObjsFromExpIdxPairs(expIdxPairs)
+		actObjs = self._runTestFunct()
+		self.checkExpectedAndActualObjsMatch(expObjs,actObjs)
+
+	def _getExpObjsFromExpIdxPairs(self, expIdxPairs):
+		return [adsImplHelp.BridgeStandard(idxPair, siteName=self.siteNames) for idxPair in expIdxPairs]
 
 	def checkExpectedAndActualObjsMatch(self, expObjs, actObjs):
 		sortedExpected = sorted(expObjs, key=lambda x:x.atomIndices)
