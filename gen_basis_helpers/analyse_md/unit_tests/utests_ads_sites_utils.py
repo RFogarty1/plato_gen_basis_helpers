@@ -8,6 +8,46 @@ import plato_pylib.shared.ucell_class as uCellHelp
 import gen_basis_helpers.analyse_md.ads_sites_impl as adsSiteImplHelp
 import gen_basis_helpers.analyse_md.ads_sites_utils as tCode
 
+
+class TestAssignAdsIndicesToAdsorptionSites(unittest.TestCase):
+
+	def setUp(self):
+		self.topIndices = [1,2]
+		self.adsIndices = [0]
+		self.maxHozDist = 4 #If somethings further than this its considered to be "None"
+		self.siteName = "site_a"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = loadTestCellA()
+		self.adsObjs = [adsSiteImplHelp.TopStandard(x, siteName=self.siteName) for x in self.topIndices]
+
+	def _runTestFunct(self):
+		args = [self.cellA, self.adsObjs, self.adsIndices]
+		kwargs = {"maxHozDist":self.maxHozDist}
+		return tCode.assignAdsIndicesToAdsorptionSites(*args, **kwargs)
+
+	def testExpectedCaseA(self):
+		expDict = {"None":list(), "site_a":[0]}
+		actDict = self._runTestFunct()
+		self.assertEqual(expDict, actDict)
+
+	def testExpectedCaseB(self):
+		self.maxHozDist = 2 #sqrt(8) is the hoz dist for the None site
+		self.topIndices = [0]
+		self.adsIndices = [1,2]
+		self.createTestObjs()
+		expDict = {"None":[2], "site_a":[1]}
+		actDict = self._runTestFunct()
+		self.assertEqual(expDict, actDict)
+
+	def testExpectedTooFarFromHozDist(self):
+		self.maxHozDist = 1
+		expDict = {"None":[0], "site_a":list()}
+		actDict = self._runTestFunct()
+		self.assertEqual(expDict, actDict)
+
+
 class TestAddAdsSitesStandard(unittest.TestCase):
 
 	def setUp(self):
