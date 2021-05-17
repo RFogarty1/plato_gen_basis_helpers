@@ -87,7 +87,7 @@ class TestStandardCreationObj(unittest.TestCase):
 		self.assertNotEqual( baseReqArgs.union(additional), baseReqArgs )
 		self.testCreatorObjA.requiredArgsToBeSet = additional
 		actReqArgs = self.testCreatorObjA.requiredArgsToBeSet
-		self.assertEqual( list(expReqArgs), list(actReqArgs) )
+		self.assertEqual( sorted(list(expReqArgs)), sorted(list(actReqArgs)) )
 
 	def testCreateRaisesWhenReqArgIsMissing(self):
 		self.assertTrue( "methodStr" in self.testCreatorObjA.requiredArgsToBeSet )
@@ -479,10 +479,20 @@ class TestGetHooksForCopyRestartFiles(unittest.TestCase):
 			mockedCopy.assert_any_call( inpPath,outPath )
 
 
+class TestGetDictOfSetOptions(unittest.TestCase):
 
+	def setUp(self):
+		self.inpKwargDict = {"methodStr":"method_a", "charge":"charge_b"}
+		self.createTestObjs()
 
+	def createTestObjs(self):
+		self.testObj = tCode.CP2KCalcObjFactoryStandard(**self.inpKwargDict)
 
-
+	def testExpectedDictA(self):
+		expDict = self.inpKwargDict
+		expDict["requiredArgsToBeSet"] = sorted(["methodStr","geom"]) #A very annoying default behaviour is to set this
+		actDict = self.testObj.regKwargDict
+		self.assertEqual(expDict, actDict)
 
 
 

@@ -173,7 +173,7 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		Note: When setting this attribute you are actually only setting values ON TOP OF those defined in self._baseReqArgsToBeSet. i.e. Even if you set this property to None there will still be some required attributes for the create function
 		
 		"""
-		return list( set(self._baseReqArgsToBeSet).union(self._additionalReqArgsToBeSet) )
+		return sorted( list( set(self._baseReqArgsToBeSet).union(self._additionalReqArgsToBeSet) ) )
 
 	@requiredArgsToBeSet.setter
 	def requiredArgsToBeSet(self, vals):
@@ -217,6 +217,16 @@ class CP2KCalcObjFactoryStandard(BaseCP2KCalcObjFactory):
 		for key in self.requiredArgsToBeSet:
 			if getattr(self,key) is None:
 				raise ValueError("{} Needs to be set to create a CP2K Calc Object".format(key))
+
+	@property	
+	def regKwargDict(self):
+		outDict = dict()
+		for key in self.registeredKwargs:
+			currVal = getattr(self,key)
+			if currVal is not None:
+				outDict[key] = currVal
+
+		return outDict
 
 	def create(self, **kwargs):
 		with dPlotBase.temporarilySetDataPlotterRegisteredAttrs(self,kwargs):
