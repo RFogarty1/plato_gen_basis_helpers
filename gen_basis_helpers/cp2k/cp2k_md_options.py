@@ -72,7 +72,8 @@ class MolDynamicsOptsCP2KStandard():
 
 class MetaDynamicsOptsCP2KStandard():
 
-	def __init__(self, metaVars, ntHills=None, doHills=True, hillHeight=None, printColvarCommonIter=3, heightNumbFmt="{:.4f}"):
+	def __init__(self, metaVars, ntHills=None, doHills=True, hillHeight=None, printColvarCommonIter=3,
+	             heightNumbFmt="{:.4f}", printHills=True, printHillsCommonIter=3):
 		""" Initializer
 		
 		Args:
@@ -81,6 +82,8 @@ class MetaDynamicsOptsCP2KStandard():
 			doHills: (Bool) True means create hills during the simulation; basically should always be true (maybe false when reading hills in)
 			hillHeight: (float) Hill height in Ha (default CP2K units for this)
 			heightNumbFmt: (str) format string for converting hillHeight into a string 
+			printHills: (Bool) True means cp2k prints the hills created during the simulation
+			printHillsCommonIter: (int) Determines how many values are written in a single output file. LEAVE AS DEFAULT
 
 		"""
 		self.metaVars = metaVars
@@ -89,13 +92,16 @@ class MetaDynamicsOptsCP2KStandard():
 		self.hillHeight = hillHeight
 		self.printColvarCommonIter = printColvarCommonIter
 		self.heightNumbFmt = heightNumbFmt
+		self.printHills = printHills
+		self.printHillsCommonIter = printHillsCommonIter
 
 	@property
 	def optDict(self):
 		outDict = {"metaVars":self.metaVars, "metaDyn_doHills":self.doHills, 
 		           "metaDyn_hillHeight": self.heightNumbFmt.format(self.hillHeight) if self.hillHeight is not None else None,
 		           "metaDyn_printColvarCommonIterLevels": self.printColvarCommonIter,
-		           "metaDyn_ntHills":self.ntHills}
+		           "metaDyn_ntHills":self.ntHills, "metaDyn_printHills":self.printHills,
+		           "metaDyn_printHillsCommonIterLevels":self.printHillsCommonIter}
 
 		outDict = {k:v for k,v in outDict.items() if v is not None}
 

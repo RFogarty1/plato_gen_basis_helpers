@@ -253,7 +253,8 @@ class testModifyCp2kObj(unittest.TestCase):
 	def testMetadynSection(self):
 		metaVar = colVarHelp.MetaVarStandard(index=2, scale=3)
 		kwargDict = {"metaVars":[metaVar], "metaDyn_doHills":True, "metaDyn_ntHills":5,
-		             "metaDyn_hillHeight":7, "metaDyn_printColvarCommonIterLevels":3}
+		             "metaDyn_hillHeight":7, "metaDyn_printColvarCommonIterLevels":3,
+		             "metaDyn_printHills":True, "metaDyn_printHillsCommonIterLevels":3}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputMetadynSectionA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -597,6 +598,9 @@ def _loadExpectedOutputMetadynSectionA():
 	newStr += "        &COLVAR\n"
 	newStr += "          COMMON_ITERATION_LEVELS 3\n"
 	newStr += "        &END COLVAR\n"
+	newStr += "        &HILLS ON\n"
+	newStr += "          COMMON_ITERATION_LEVELS 3\n"
+	newStr += "        &END HILLS\n"
 	newStr += "      &END PRINT\n"
 	newStr += "    &END METADYN\n"
 	newStr += "  &END FREE_ENERGY\n"

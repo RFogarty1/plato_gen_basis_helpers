@@ -402,6 +402,14 @@ def _modCp2kObjBasedOnMetadynamicsOptions(cp2kObj, useDict):
 		_initPrintListIfNeeded()
 		metaDynSection.PRINT_list[-1].COLVAR.Common_iteration_levels = int(useDict["metaDyn_printColvarCommonIterLevels".lower()])
 
+	if useDict.get("metaDyn_printHillsCommonIterLevels".lower(),None) is not None:
+		_initPrintListIfNeeded()
+		metaDynSection.PRINT_list[-1].HILLS.Common_iteration_levels = int(useDict["metaDyn_printHillsCommonIterLevels".lower()])
+
+	if useDict.get("metaDyn_printHills".lower(),None) is True:
+		_initPrintListIfNeeded()
+		metaDynSection.PRINT_list[-1].HILLS.Section_parameters = "ON"
+
 	if useDict.get("metaVars".lower(),None) is not None:
 		for mVar in useDict.get("metaVars".lower()):
 			mVar.addMetaVarToPyCp2kObj(cp2kObj)

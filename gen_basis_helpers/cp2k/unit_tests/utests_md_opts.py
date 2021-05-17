@@ -59,20 +59,23 @@ class TestMetaDynOptsObject(unittest.TestCase):
 		self.doHills = False
 		self.hillHeight = 3
 		self.heightNumbFmt = "{:.2f}".format(self.hillHeight)
+		self.printHills = True
 		self.printColvarCommonIter = 4
+		self.printHillsCommonIter = 5
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		kwargDict = {"ntHills":self.ntHills, "doHills":self.doHills, "hillHeight":self.hillHeight,
-		             "heightNumbFmt":self.heightNumbFmt,
-		             "printColvarCommonIter":self.printColvarCommonIter}
+		             "heightNumbFmt":self.heightNumbFmt, "printHills":self.printHills,
+		             "printColvarCommonIter":self.printColvarCommonIter, "printHillsCommonIter":self.printHillsCommonIter}
 		self.testObjA = tCode.MetaDynamicsOptsCP2KStandard(self.metaVars, **kwargDict)
 
 	def testExpectedKeysPresentInOptDictA_relevantOptsSet(self):
 		expDict = {"metaDyn_doHills":self.doHills, "metaDyn_ntHills":self.ntHills,
 		           "metaDyn_hillHeight": self.heightNumbFmt.format(self.hillHeight),
 		           "metaDyn_printColvarCommonIterLevels": self.printColvarCommonIter,
-		           "metaVars":self.metaVars}
+		           "metaVars":self.metaVars, "metaDyn_printHills":self.printHills,
+		           "metaDyn_printHillsCommonIterLevels":self.printHillsCommonIter}
 
 		actDict = self.testObjA.optDict
 
