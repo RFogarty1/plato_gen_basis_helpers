@@ -2,6 +2,8 @@
 import copy
 import itertools as it
 
+import numpy as np
+
 import plato_pylib.parseOther.parse_cp2k_files as parseCP2KHelp
 import plato_pylib.shared.ucell_class as uCellHelp
 import plato_pylib.shared.unit_convs as uConvHelp
@@ -461,4 +463,98 @@ def _getKindIdxToSymbolDict(eleList):
 			idx+=1
 	return outDict
 
+
+
+#Metadynamics files below
+def parseIterOfMetadynamicsHillsLogFiles(inpPaths):
+	""" Runs parseMetadynamicsHillsLogFile on each inpPath and merges the output
+	
+	Args:
+		inpPaths: (iter of str) Iter of *HILLS*.metadynLog paths
+			 
+	Returns
+		outDicts: (iter of dicts) 1 dict per collective variable (in order)
+
+	outDicts:
+		keys: "time", "position", "scale", "height"
+		values: Each is an iter of values; they should all be the same length. Units are exactly as they are in the output file
+ 
+	WARNING:
+		Only tested for up to two collective variables at time of writing
+ 
+	"""
+	outDicts = [parseMetadynamicsHillsLogFile(x) for x in inpPaths]
+	assert all([len(x)==len(outDicts[0]) for x in outDicts])
+
+	output = list()
+
+	for colVarIdx in range(len(outDicts[0])):
+		currDict = outDicts[0][colVarIdx]
+		for fIdx in range(1,len(outDicts)):
+			thisFileDict = outDicts[fIdx][colVarIdx]
+			currDict["time"].extend( thisFileDict["time"] )
+			currDict["position"].extend( thisFileDict["position"] )
+			currDict["scale"].extend( thisFileDict["scale"] )
+			currDict["height"].extend( thisFileDict["height"] )
+	
+		output.append(currDict)
+
+	return output
+
+def parseMetadynamicsHillsLogFile(inpPath):
+	""" Parses basic information from a *HILLS*.metadynLog file.
+	
+	Args:
+		inpPath: (str, file path) A *HILLS*.metadynLog file. Contains information on the hills spawned in an MD simulation
+			 
+	Returns
+		outDicts: (iter of dicts) 1 dict per collective variable (in order)
+
+	outDicts:
+		keys: "time", "position", "scale", "height"
+		values: Each is an iter of values; they should all be the same length. Units are exactly as they are in the output file
+ 
+	WARNING:
+		Only tested for up to two collective variables at time of writing
+
+	"""
+	genericArray = np.array(_parseGenericMetadynLogFile(inpPath))
+	
+	#Figure out how many variables we have
+	nCols = len( genericArray[0] )
+	nColVars = 1 + int( (nCols-4)/2 )
+	nExtraColVars = nColVars-1
+
+	#Parse column by column
+	#step 1 - get the shared values
+	timesAll = [x[0] for x in genericArray]
+	heightsAll = [x[3+2*nExtraColVars] for x in genericArray]
+
+	#Step 2 = parse the specific values and put in the dicts
+	outDicts = list()
+	for varIdx in range(nColVars):
+		colVarIdx = 1+varIdx
+		scaleIdx = colVarIdx + nColVars
+		currPositions = [x[colVarIdx] for x in genericArray]
+		currScales = [x[scaleIdx] for x in genericArray]
+		currTimes = [x for x in timesAll]
+		currHeights = [x for x in heightsAll]
+		currDict = {"time":currTimes, "position":currPositions, "scale":currScales, "height":currHeights}
+		outDicts.append(currDict)
+
+	return outDicts
+
+def _parseGenericMetadynLogFile(inpPath):
+	fileAsList = _readFileIntoList(inpPath)
+	idx = 0
+	outArray = list()
+	while idx<len(fileAsList):
+		splitLine = fileAsList[idx].strip().split()
+		if len(splitLine) == 0:
+			break
+		else:
+			outArray.append( [float(x) for x in splitLine] )
+		idx += 1
+
+	return outArray
 
