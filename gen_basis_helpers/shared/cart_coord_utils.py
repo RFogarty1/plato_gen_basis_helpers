@@ -12,6 +12,23 @@ from . import plane_equations as planeEqnHelp
 from . import simple_vector_maths as vectHelp
 
 
+
+def getAverageSurfacePlaneEquationForAtomIndices(inpGeom, indices):
+	""" Returns a planeEqn from axb with the d-value being the mean of that calculated for a set of atom indices
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		indices: (iter of ints) Indices of the atoms to use
+			 
+	Returns
+		outPlaneEqn: (ThreeDimPlaneEquation) 
+
+	"""
+	startPlaneEqn = getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpGeom)
+	outPlaneEqn = getAveragePlaneEqnForAtomIndices(inpGeom, indices, startPlaneEqn)
+	return outPlaneEqn
+
+
 def getAveragePlaneEqnForAtomIndices(inpGeom, indices, planeEqn):
 	""" Returns a planeEqn which uses the mean d-value for the atom indices supplied.
 	

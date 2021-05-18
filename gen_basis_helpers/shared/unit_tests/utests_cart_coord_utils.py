@@ -57,19 +57,9 @@ class TestGetDistanceOfAtomsFromPlaneEquation(unittest.TestCase):
 class TestGetAverageSurfacePlaneEqnForIndices(unittest.TestCase):
 
 	def setUp(self):
-		self.lattParams = [10,10,10]
-		self.lattAngles = [90,90,90]
-		self.coordsA = [ [2,2,3,"X"],
-		                 [3,3,3,"X"],
-		                 [5,5,5,"Y"],
-		                 [5,5,7,"Z"] ]
+		self.cellA =_loadCellA()
 		self.atomIndices = [2,3]
 		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
-		self.createTestObjs()
-
-	def createTestObjs(self):
-		self.cellA = uCell.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
-		self.cellA.cartCoords = self.coordsA
 
 	def _runTestFunct(self):
 		return tCode.getAveragePlaneEqnForAtomIndices(self.cellA, self.atomIndices, self.planeEqn)
@@ -79,6 +69,23 @@ class TestGetAverageSurfacePlaneEqnForIndices(unittest.TestCase):
 		expPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,expD)
 		actPlaneEqn = self._runTestFunct()
 		self.assertEqual(expPlaneEqn, actPlaneEqn)
+
+	def testForSurfPlaneEqnInterface(self):
+		expD = 6
+		expPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,expD)
+		actPlaneEqn = tCode.getAverageSurfacePlaneEquationForAtomIndices(self.cellA, self.atomIndices)
+		self.assertEqual(expPlaneEqn, actPlaneEqn)
+
+def _loadCellA():
+	lattParams, lattAngles = [10,10,10], [90,90,90]
+	cartCoords =  [ [2,2,3,"X"],
+		            [3,3,3,"X"],
+		            [5,5,5,"Y"],
+		            [5,5,7,"Z"] ]
+	outCell = uCell.UnitCell(lattParams=lattParams, lattAngles=lattAngles)
+	outCell.cartCoords = cartCoords
+	return outCell
+
 
 class TestShiftCoordsToLeaveEqualVacAboveAndBelow(unittest.TestCase):
 
