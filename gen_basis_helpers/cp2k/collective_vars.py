@@ -1,6 +1,11 @@
 
+import copy
 import itertools as it
+import numpy as np
+
 from ..shared import simple_vector_maths as vectHelp
+from ..shared import cart_coord_utils as cartHelp
+from ..shared import plane_equations as planeEqnHelp
 
 class MetaVarStandard():
 	""" Class representing a metavariable """
@@ -49,7 +54,17 @@ class CollectiveVarStandard():
 		"""
 		raise NotImplementedError("")
 
-
+	def getColvarValueFromInpGeom(self, inpGeom):
+		""" Gets the value of the collective variable from an input geometry. Units will be derived from those in inpGeom; so may differ from what cp2k actually uses (hence be careful)
+		
+		Args:
+			inpGeom: (plato_pylib UnitCell object)
+				 
+		Returns
+			colVarVal: (float) The value of the collective variable for inpGeom
+	 
+		"""
+		raise NotImplementedError("")
 
 class DistancePointPlaneColVar(CollectiveVarStandard):
 
@@ -123,6 +138,25 @@ class DistancePointPlaneColVar_fixedPointsForPlane(CollectiveVarStandard):
 		self.atomPointIndex = atomPointIndex
 		self.planeXyzVals = planeXyzVals
 
+	@classmethod
+	def fromInpCellAndAtomIndices(cls, inpCell, atomPointIndex, planeAtomIndices):
+		""" Alternative initializer. Uses axb for the plane equation and gets the average of planeAtomIndices
+		
+		Args:
+			inpCell: (plato_pylib UnitCell object)
+			atomPointIndex: (int) Index (base-zero) of the atom which defines the point
+			planeAtomIndices: (len-3 iter of ints) Indices of three atoms which define the plane
+				 
+		WARNING:
+			Havent tested for the case where planeAtomIndices cross a periodic boundary. This really shouldnt be a problem often but...
+
+		"""
+		generalSurfPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell)
+		avPlaneEqn = cartHelp.getAveragePlaneEqnForAtomIndices(inpCell, planeAtomIndices, generalSurfPlaneEqn)
+		xyzVals = getXyzValsFromSurfacePlaneEquationAndInpCellStandard(avPlaneEqn, inpCell)
+		return cls(atomPointIndex, xyzVals)
+
+
 	def addColVarToSubsys(self, pyCp2kObj):
 		pyCp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.COLVAR_add()
 		colVar = pyCp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.COLVAR_list[-1].DISTANCE_POINT_PLANE
@@ -140,6 +174,37 @@ class DistancePointPlaneColVar_fixedPointsForPlane(CollectiveVarStandard):
 		#Tell CP2K which points are the plane and which are the single atom point
 		colVar.Atom_point = 4
 		colVar.Atoms_plane = [1,2,3]
+
+	#May need to specify right hand/left hand rules somewhere...
+	def getColvarValueFromInpGeom(self, inpGeom):
+		#1) Get the plane equation to use
+		usePlaneEqn = self._getPlaneEqnToUseFromInpGeom(inpGeom)
+
+		#2) Get minimum signed distance from plane; which is what we want
+		currArgs = [inpGeom, usePlaneEqn, [self.atomPointIndex]]
+		outVal = cartHelp.getDistancesOfAtomsFromPlaneEquation_nearestImageAware(*currArgs, signed=True)[0]
+		return outVal
+
+	def getColVarValueForInpGeomAndXyzPointCoord(self, inpGeom, inpXyz):
+		usePlaneEqn = self._getPlaneEqnToUseFromInpGeom(inpGeom)
+		
+		#Create a new cell with only these xyz as co-ords; which lets us get the colvar value
+		tempCell = copy.deepcopy(inpGeom)
+		tempCell.cartCoords = [ inpXyz[:3] + ["X"] ]
+		atomPointIdx = 0
+		currArgs = [tempCell, usePlaneEqn, [atomPointIdx]]
+		outVal = cartHelp.getDistancesOfAtomsFromPlaneEquation_nearestImageAware(*currArgs, signed=True)[0]
+		return outVal
+
+	def _getPlaneEqnToUseFromInpGeom(self, inpGeom):
+		vectA = [b-a for a,b in it.zip_longest(self.planeXyzVals[0], self.planeXyzVals[1])]
+		vectB = [b-a for a,b in it.zip_longest(self.planeXyzVals[0], self.planeXyzVals[2])]
+		normVector = vectHelp.getUnitVectorFromInpVector( [x for x in np.cross(vectB,vectA)] ) #Order chosen to match cp2k sign on reg-tests
+		generalPlaneEqn = planeEqnHelp.ThreeDimPlaneEquation(*normVector,0)
+		dVal = generalPlaneEqn.calcDForInpXyz(self.planeXyzVals[0])
+		outPlane = planeEqnHelp.ThreeDimPlaneEquation(*normVector, dVal)
+		return outPlane
+
 
 def getXyzValsFromSurfacePlaneEquationAndInpCellStandard(planeEqn, inpCell, unitLength=True):
 	""" Takes plane Equation (defining a slice through a surface, orthog to a/b) and input cell and returns 3 points in the plane

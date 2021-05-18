@@ -28,6 +28,42 @@ class TestMetaVarStandard(unittest.TestCase):
 		self.assertEqual(self.index, actIdx)
 		self.assertEqual(self.scale, actScale)
 
+#TODO: Alternative constructor which takes 3 atom points for a plane + the unit cell may be good
+#Would stop me having to define planePoints explicitly...
+class TestDistancePointPlaneFixedPointForPlane_getColvar(unittest.TestCase):
+
+	def setUp(self):
+		self.planeIndices = [0,1,2]
+		self.atomIdx = 3
+		self.cellA = _loadTestCellA()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.DistancePointPlaneColVar_fixedPointsForPlane.fromInpCellAndAtomIndices(self.cellA, self.atomIdx, self.planeIndices)
+
+	def _runTestFunct(self):
+		return self.testObjA.getColvarValueFromInpGeom(self.cellA)
+
+	def testExpectedCaseA_pbcsUnimportant(self):
+		expVal = -2 #Maybe other sign...will see
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testExpected_pbcsMatter(self):
+		self.cellA.cartCoords = [ [4,4,9,"X"],
+	                              [6,6,9,"X"],
+	                              [7,6,9,"X"],
+	                              [8,8,1,"Y"] ]
+		self.createTestObjs()
+		expVal = -2
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testExpectedForInpXyz(self):
+		inpXyz = [0,0,7]
+		expVal = -3 #Plane is at 4, direction seems to point downwards from CP2K point of view
+		actVal = self.testObjA.getColVarValueForInpGeomAndXyzPointCoord(self.cellA, inpXyz)
+		self.assertAlmostEqual(expVal, actVal)
 
 class TestDistancePointPlaneFixedPointForPlane(unittest.TestCase):
 
@@ -55,6 +91,34 @@ class TestDistancePointPlaneFixedPointForPlane(unittest.TestCase):
 		#Combine all
 		self.assertEqual( 4, actColSection.Atom_point )
 		self.assertEqual( [1,2,3], actColSection.Atoms_plane )
+
+	def testConstructorFromInpCellAndAtomIndices(self):
+		inpCell = _loadTestCellA()
+		#Mod cart coords a bit without changing the average plane equation
+		newCartCoords = inpCell.cartCoords
+		newCartCoords[0][2] += 1
+		newCartCoords[1][2] -= 1
+		inpCell.cartCoords = newCartCoords
+
+		#A bit implermentation dependent on the xyz values...
+		atomPointIdx, planeIndices = 3, [0,1,2]
+		expAtomPointIdx, expPlaneXyz = atomPointIdx, [ [0,0,4], [1,0,4], [0,1,4] ] 
+		actObj = tCode.DistancePointPlaneColVar_fixedPointsForPlane.fromInpCellAndAtomIndices(inpCell, atomPointIdx, planeIndices)
+
+		self.assertEqual( expAtomPointIdx, actObj.atomPointIndex )
+		for exp,act in it.zip_longest(expPlaneXyz, actObj.planeXyzVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+
+def _loadTestCellA():
+	lattParams, lattAngles = [10,10,10], [90,90,90]
+	cartCoords = [ [4,4,4,"X"],
+	               [6,6,4,"X"],
+	               [7,6,4,"X"],
+	               [8,8,6,"Y"] ]
+	outCell = uCellHelp.UnitCell(lattParams=lattParams, lattAngles=lattAngles)
+	outCell.cartCoords = cartCoords
+	return outCell
 
 
 class TestDistancePointPlaneColVarAtt2(unittest.TestCase):
