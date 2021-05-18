@@ -72,7 +72,6 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 		else:
 			runType = self.runType
 
-
 		#Parse accordingly
 		if runType is None:
 			parsedDict = parseCP2K.parseCpout(self.outFilePath)
@@ -100,67 +99,75 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 		parsedXyzDict = parseCP2K.parseXyzFromGeomOpt(self.outGeomPath)
 		return parsedXyzDict["all_geoms"][-1].cartCoords
 
-	def _parseMdStandard(self):
+	def _getRunDirs(self):
 		workFolder = os.path.split(self.outFilePath)[0]
+		if os.path.exists(self.outFilePath) and not(os.path.exists( os.path.join(workFolder,"run_1") )):
+			runDirs = [workFolder]
+		else:
+			rDirs = [x for x in os.listdir(workFolder) if os.path.isdir( os.path.join(workFolder,x) )]
+			rDirs = sorted( [x for x in rDirs if self._checkStringMatchesRunFormat(x)] )
+			runDirs = [os.path.join(workFolder, rDir) for rDir in rDirs]
+		return runDirs
+
+
+	def _parseMdStandard(self):
 		cpoutPaths, xyzPaths, tKindPaths, velPaths, forcePaths = list(), list(), list(), list(), list()
 
-		#This case should ONLY trigger if multiple runs wernt required
-		if os.path.exists(self.outFilePath) and not(os.path.exists( os.path.join(workFolder,"run_1") )):
-			cpoutPaths = [self.outFilePath]
-			xyzPaths = [self.outGeomPath]
-			tKindPaths = [os.path.join(workFolder,x) for x in os.listdir(workFolder) if x.endswith(".temp")]
-			velPaths = [os.path.join(workFolder,x) for x in os.listdir(workFolder) if x.endswith("vel-1.xyz")]
-			forcePaths = [os.path.join(workFolder,x) for x in os.listdir(workFolder) if x.endswith("frc-1.xyz")]
-	
-			#Deal with knd-temp/velocities/
-			if len(tKindPaths) != 1:
-				tKindPaths = [None]
-			if len(velPaths) != 1:
-				velPaths = [None]
-			if len(forcePaths) != 1:
-				forcePaths = [None]
+		runDirs = self._getRunDirs()
 
-			finalRunFolder = workFolder #So we can find restart files etc
-		else:
-			runDirs = [x for x in os.listdir(workFolder) if os.path.isdir( os.path.join(workFolder,x) )]
-			runDirs = sorted( [x for x in runDirs if self._checkStringMatchesRunFormat(x)] )
-			#NEXT: We want to check for one cpout and one xyz per path
-			for runDir in runDirs:
-				currDir = os.path.join(workFolder,runDir)
-				currXyz = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("pos-1.xyz")]
-				currCpout = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".cpout")]
-				currTKind = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".temp")]
-				currVel = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("vel-1.xyz")]
-				currForces = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("frc-1.xyz")]
+		#NEXT: We want to check for one cpout and one xyz per path
+		for runDir in runDirs:
+			currDir = runDir
+			currXyz = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("pos-1.xyz")]
+			currCpout = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".cpout")]
+			currTKind = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith(".temp")]
+			currVel = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("vel-1.xyz")]
+			currForces = [os.path.join(currDir,x) for x in os.listdir(currDir) if x.endswith("frc-1.xyz")]
 
+			assert len(currXyz)==1
+			assert len(currCpout)==1
+			cpoutPaths += currCpout
+			xyzPaths += currXyz
 
-				assert len(currXyz)==1
-				assert len(currCpout)==1
-				cpoutPaths += currCpout
-				xyzPaths += currXyz
+			#Deal with kind-temp/velocities/forces
+			if len(currTKind)==1:
+				tKindPaths += currTKind
+			else:
+				tKindPaths += [None]
+			
+			if len(currVel)==1:
+				velPaths += currVel
+			else:
+				velPaths += [None]
 
-				#Deal with kind-temp/velocities/forces
-				if len(currTKind)==1:
-					tKindPaths += currTKind
-				else:
-					tKindPaths += [None]
-				
-				if len(currVel)==1:
-					velPaths += currVel
-				else:
-					velPaths += [None]
+			if len(currForces)==1:
+				forcePaths += currForces
+			else:
+				forcePaths += [None]
 
-				if len(currForces)==1:
-					forcePaths += currForces
-				else:
-					forcePaths += [None]
-
-				finalRunFolder = os.path.join(workFolder,runDirs[-1])
+		finalRunFolder = runDirs[-1]
 
 		assert len(cpoutPaths) == len(xyzPaths)
 
 		parsedDict = parseMdHelp.parseMdInfoFromMultipleCpoutAndXyzPaths(cpoutPaths,xyzPaths, tempKindPaths=tKindPaths, velocityPaths=velPaths, forcePaths=forcePaths)
+		parsedMetaDict = self._parseExtraMetadynInfo(runDirs)
+		parsedDict.update(parsedMetaDict)
 		return types.SimpleNamespace(finalRunFolder=finalRunFolder,**parsedDict)
+
+	def _parseExtraMetadynInfo(self, runDirs):
+		outDict = dict()
+
+		outHillPaths = list()
+		for rDir in runDirs:
+			currPaths = [os.path.join(rDir, x) for x in os.listdir(rDir) if x.endswith("HILLS.metadynLog")]
+			if len(currPaths)>1:
+				raise ValueError("")
+			elif len(currPaths)==1:
+				outHillPaths.append(currPaths[0])
+
+		if len(outHillPaths)>0:
+			outDict["metadyn_hills"] = parseMdHelp.parseIterOfMetadynamicsHillsLogFiles(outHillPaths)
+		return outDict
 
 	def _parsedNudgedBandStandard(self):
 		parsedDict = parseNebHelp.parseNudgedBandCalcStandard(self.outFilePath, convAngToBohr=True)
