@@ -256,7 +256,8 @@ class testModifyCp2kObj(unittest.TestCase):
 		             "metaDyn_hillHeight":7, "metaDyn_printColvarCommonIterLevels":3,
 		             "metaDyn_printHills":True, "metaDyn_printHillsCommonIterLevels":3,
 		             "metaDyn_spawnHillsHeight": [ 1,2,3 ] , "metaDyn_spawnHillsPos": [ [2,3],[4,5],[6,7] ],
-		             "metaDyn_spawnHillsScale":  [ [1,2], [3,4], [5,6] ]  }
+		             "metaDyn_spawnHillsScale":  [ [1,2], [3,4], [5,6] ],
+		             "metaDyn_nHillsStartVal": 3}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputMetadynSectionA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -592,6 +593,7 @@ def _loadExpectedOutputMetadynSectionA():
 	newStr += "      DO_HILLS TRUE\n"
 	newStr += "      NT_HILLS 5\n"
 	newStr += "      WW 7\n"
+	newStr += "      NHILLS_START_VAL 3\n"
 	newStr += "      &METAVAR\n"
 	newStr += "        COLVAR 2\n"
 	newStr += "        SCALE 3\n"

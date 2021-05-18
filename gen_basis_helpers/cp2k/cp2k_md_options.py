@@ -154,7 +154,8 @@ class MetadynamicsSpawnHillsOptions():
 			scales.append( hillDict["scale"] )
 			positions.append( hillDict["pos"] )
 
-		outDict = {"metaDyn_spawnHillsHeight":heights, "metaDyn_spawnHillsPos":positions, "metaDyn_spanwHillsScale":scales}
+		outDict = {"metaDyn_spawnHillsHeight":heights, "metaDyn_spawnHillsPos":positions, "metaDyn_spawnHillsScale":scales,
+		           "metaDyn_nHillsStartVal": len(heights)}
 		return outDict
 
 	def __eq__(self, other):

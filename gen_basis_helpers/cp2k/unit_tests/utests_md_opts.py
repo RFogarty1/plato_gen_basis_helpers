@@ -67,7 +67,8 @@ class TestMetaDynSpawnHillsObj(unittest.TestCase):
 	def testExpectedOptDict(self):
 		expDict = {"metaDyn_spawnHillsHeight": [2.5, 2.7],
 		           "metaDyn_spawnHillsPos": [ [3.4], [8.2] ] ,
-		           "metaDyn_spanwHillsScale": [ [2.2], [5.3] ] }
+		           "metaDyn_spawnHillsScale": [ [2.2], [5.3] ],
+		           "metaDyn_nHillsStartVal":2 }
 		actDict = self.testObjA.optDict
 
 		#compare equality

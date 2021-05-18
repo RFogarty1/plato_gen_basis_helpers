@@ -423,6 +423,10 @@ def _modCp2kObjBasedOnMetadynamicsOptions(cp2kObj, useDict):
 	if useDict.get("metaDyn_spawnHillsScale".lower(),None) is not None:
 		metaDynSection.SPAWNED_HILLS_SCALE.Default_keyword = useDict.get("metaDyn_spawnHillsScale".lower())
 
+	#This might be doable automatically; but i think there are multiple ways to specify it
+	if useDict.get("metaDyn_nHillsStartVal".lower(),None) is not None:
+		metaDynSection.Nhills_start_val = useDict.get("metaDyn_nHillsStartVal".lower())
+
 def _modCp2kObjBasedOnNudgedBandReplicasSection(cp2kObj, useDict):
 	nebSection = cp2kObj.CP2K_INPUT.MOTION.BAND
 
