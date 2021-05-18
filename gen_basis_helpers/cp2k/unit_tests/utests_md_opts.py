@@ -1,8 +1,9 @@
 
-
+import copy
 import unittest
 import unittest.mock as mock
 
+import numpy as np
 
 import gen_basis_helpers.cp2k.method_register as methReg
 import gen_basis_helpers.cp2k.cp2k_md_options as tCode
@@ -51,6 +52,85 @@ class TestStandardMDOptsObject(unittest.TestCase):
 		for key in expMissingKeys:
 			self.assertTrue( key not in actDict.keys() )
 
+
+class TestMetaDynSpawnHillsObj(unittest.TestCase):
+
+	def setUp(self):
+		self.hillDictA = {"scale":[2.2], "pos":[3.4], "height":2.5}
+		self.hillDictB = {"scale":[5.3], "pos":[8.2], "height":2.7}
+		self.hillDicts = [self.hillDictA, self.hillDictB]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = tCode.MetadynamicsSpawnHillsOptions(self.hillDicts)
+
+	def testExpectedOptDict(self):
+		expDict = {"metaDyn_spawnHillsHeight": [2.5, 2.7],
+		           "metaDyn_spawnHillsPos": [ [3.4], [8.2] ] ,
+		           "metaDyn_spanwHillsScale": [ [2.2], [5.3] ] }
+		actDict = self.testObjA.optDict
+
+		#compare equality
+		for key in expDict.keys():
+			expVal, actVal = np.array(expDict[key]), np.array(actDict[key])
+			np.allclose(expVal,actVal)
+
+	def testEqualObjsCompareEqual(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertEqual(objA, objB)
+	
+	def testUnequalObjsCompareUnequal_diffNumberHills(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.hillDicts.append( {"scale":[1.2], "pos":[4.5], "height":8.2} )
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testUnequalObjsCompareUnequal_diffLenPositions(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.hillDictA["pos"].append(5)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testUnequalObjsCompareUnequal_diffScaleVals(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.hillDictA["scale"][0] += 1
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testUnequalObjsCompareUnequal_diffHeightVals(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.hillDictB["height"] += 2
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testFromIters(self):
+		scales = [self.hillDictA["scale"], self.hillDictB["scale"]]
+		heights = [self.hillDictA["height"], self.hillDictB["height"]]
+		positions = [self.hillDictA["pos"], self.hillDictB["pos"]]
+		objA = self.testObjA 
+		objB = tCode.MetadynamicsSpawnHillsOptions.fromIters( scales=scales, heights=heights, positions=positions )
+		self.assertEqual(objA, objB)
+
+	def testFromItersRaisesForMissingVals(self):
+		scales = [self.hillDictA["scale"], self.hillDictB["scale"]]
+		heights = [self.hillDictA["height"], self.hillDictB["height"]]
+		positions = [self.hillDictA["pos"], self.hillDictB["pos"]]
+		with self.assertRaises(AssertionError):
+			objB = tCode.MetadynamicsSpawnHillsOptions.fromIters( scales=scales, heights=heights)
+
+	def testFromItersRaisesForDiffLengths(self):
+		scales = [self.hillDictA["scale"], self.hillDictB["scale"]]
+		heights = [self.hillDictA["height"], self.hillDictB["height"], 7.5]
+		positions = [self.hillDictA["pos"], self.hillDictB["pos"]]
+		with self.assertRaises(AssertionError):
+			objB = tCode.MetadynamicsSpawnHillsOptions.fromIters( scales=scales, heights=heights, positions=positions)
+
 class TestMetaDynOptsObject(unittest.TestCase):
 
 	def setUp(self):
@@ -62,12 +142,14 @@ class TestMetaDynOptsObject(unittest.TestCase):
 		self.printHills = True
 		self.printColvarCommonIter = 4
 		self.printHillsCommonIter = 5
+		self.spawnHillsOpts = None
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		kwargDict = {"ntHills":self.ntHills, "doHills":self.doHills, "hillHeight":self.hillHeight,
 		             "heightNumbFmt":self.heightNumbFmt, "printHills":self.printHills,
-		             "printColvarCommonIter":self.printColvarCommonIter, "printHillsCommonIter":self.printHillsCommonIter}
+		             "printColvarCommonIter":self.printColvarCommonIter, "printHillsCommonIter":self.printHillsCommonIter,
+		             "spawnHillsOpts":self.spawnHillsOpts}
 		self.testObjA = tCode.MetaDynamicsOptsCP2KStandard(self.metaVars, **kwargDict)
 
 	def testExpectedKeysPresentInOptDictA_relevantOptsSet(self):
@@ -99,6 +181,17 @@ class TestMetaDynOptsObject(unittest.TestCase):
 
 		for key in expMissingKeys:
 			self.assertTrue( key not in actDict.keys() )
+
+	def testWithSpawnedHillsOptsSet(self):
+		expDict = {"key_a":"val_a", "key_n":"val_b"}
+		self.spawnHillsOpts = mock.Mock()
+		self.spawnHillsOpts.optDict = expDict
+		self.createTestObjs()
+		actDict = self.testObjA.optDict
+
+		for key in expDict.keys():
+			self.assertEqual( expDict[key], actDict[key] )
+
 
 
 

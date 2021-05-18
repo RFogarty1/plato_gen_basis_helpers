@@ -414,6 +414,14 @@ def _modCp2kObjBasedOnMetadynamicsOptions(cp2kObj, useDict):
 		for mVar in useDict.get("metaVars".lower()):
 			mVar.addMetaVarToPyCp2kObj(cp2kObj)
 
+	if useDict.get("metaDyn_spawnHillsHeight".lower(),None) is not None:
+		metaDynSection.SPAWNED_HILLS_HEIGHT.Default_keyword = useDict.get("metaDyn_spawnHillsHeight".lower())
+
+	if useDict.get("metaDyn_spawnHillsPos".lower(),None) is not None:
+		metaDynSection.SPAWNED_HILLS_POS.Default_keyword = useDict.get("metaDyn_spawnHillsPos".lower())
+
+	if useDict.get("metaDyn_spawnHillsScale".lower(),None) is not None:
+		metaDynSection.SPAWNED_HILLS_SCALE.Default_keyword = useDict.get("metaDyn_spawnHillsScale".lower())
 
 def _modCp2kObjBasedOnNudgedBandReplicasSection(cp2kObj, useDict):
 	nebSection = cp2kObj.CP2K_INPUT.MOTION.BAND

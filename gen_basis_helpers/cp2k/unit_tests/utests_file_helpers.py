@@ -254,7 +254,9 @@ class testModifyCp2kObj(unittest.TestCase):
 		metaVar = colVarHelp.MetaVarStandard(index=2, scale=3)
 		kwargDict = {"metaVars":[metaVar], "metaDyn_doHills":True, "metaDyn_ntHills":5,
 		             "metaDyn_hillHeight":7, "metaDyn_printColvarCommonIterLevels":3,
-		             "metaDyn_printHills":True, "metaDyn_printHillsCommonIterLevels":3}
+		             "metaDyn_printHills":True, "metaDyn_printHillsCommonIterLevels":3,
+		             "metaDyn_spawnHillsHeight": [ 1,2,3 ] , "metaDyn_spawnHillsPos": [ [2,3],[4,5],[6,7] ],
+		             "metaDyn_spawnHillsScale":  [ [1,2], [3,4], [5,6] ]  }
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputMetadynSectionA()
 		actStr = self.startCP2KObj.get_input_string()
@@ -602,6 +604,21 @@ def _loadExpectedOutputMetadynSectionA():
 	newStr += "          COMMON_ITERATION_LEVELS 3\n"
 	newStr += "        &END HILLS\n"
 	newStr += "      &END PRINT\n"
+	newStr += "      &SPAWNED_HILLS_POS\n"
+	newStr += "        2 3\n"
+	newStr += "        4 5\n"
+	newStr += "        6 7\n"
+	newStr += "      &END SPAWNED_HILLS_POS\n"
+	newStr += "      &SPAWNED_HILLS_SCALE\n"
+	newStr += "        1 2\n"
+	newStr += "        3 4\n"
+	newStr += "        5 6\n"
+	newStr += "      &END SPAWNED_HILLS_SCALE\n"
+	newStr += "      &SPAWNED_HILLS_HEIGHT\n"
+	newStr += "        1\n"
+	newStr += "        2\n"
+	newStr += "        3\n"
+	newStr += "      &END SPAWNED_HILLS_HEIGHT\n"
 	newStr += "    &END METADYN\n"
 	newStr += "  &END FREE_ENERGY\n"
 	newStr += "&END MOTION\n"

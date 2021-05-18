@@ -1,4 +1,5 @@
 
+import itertools as it
 
 class MolDynamicsOptsCP2KBase():
 	""" Object representing molecular dynamics specific options (e.g. ensemble to use) for CP2K"""
@@ -73,7 +74,7 @@ class MolDynamicsOptsCP2KStandard():
 class MetaDynamicsOptsCP2KStandard():
 
 	def __init__(self, metaVars, ntHills=None, doHills=True, hillHeight=None, printColvarCommonIter=3,
-	             heightNumbFmt="{:.4f}", printHills=True, printHillsCommonIter=3):
+	             heightNumbFmt="{:.4f}", printHills=True, printHillsCommonIter=3, spawnHillsOpts=None):
 		""" Initializer
 		
 		Args:
@@ -84,6 +85,7 @@ class MetaDynamicsOptsCP2KStandard():
 			heightNumbFmt: (str) format string for converting hillHeight into a string 
 			printHills: (Bool) True means cp2k prints the hills created during the simulation
 			printHillsCommonIter: (int) Determines how many values are written in a single output file. LEAVE AS DEFAULT
+			spawnHillsOpts: (MetadynamicsSpawnHillsOptions) Object specifying options related to spawninig hills initially
 
 		"""
 		self.metaVars = metaVars
@@ -94,6 +96,7 @@ class MetaDynamicsOptsCP2KStandard():
 		self.heightNumbFmt = heightNumbFmt
 		self.printHills = printHills
 		self.printHillsCommonIter = printHillsCommonIter
+		self.spawnHillsOpts = spawnHillsOpts
 
 	@property
 	def optDict(self):
@@ -104,10 +107,78 @@ class MetaDynamicsOptsCP2KStandard():
 		           "metaDyn_printHillsCommonIterLevels":self.printHillsCommonIter}
 
 		outDict = {k:v for k,v in outDict.items() if v is not None}
+		if self.spawnHillsOpts is not None:
+			outDict.update(self.spawnHillsOpts.optDict)
 
 		return outDict
 
+class MetadynamicsSpawnHillsOptions():
+	""" Class used to hold info for spawning hills, and to return it in a useful format to modify a pycp2k obj """
 
+	def __init__(self, hillDicts):
+		""" Initializer
+		
+		Args:
+			hillDicts: (iter of dicts)
+
+		hillDict:
+			Keys are "scale", "pos", "height". Values for scale and pos need to be an iter (even if length 1) while height is just a float. Units are whatever cp2k uses in restart files (i think positions are generally in bohr when its a length, while heights are generally in Hartree (I THINK). Regardless, if these were read from a metadynLog file use the same units there
+				 
+		"""
+		self.hillDicts = hillDicts
+		self._eqTol = 1e-6
+
+	@classmethod
+	def fromIters(cls, scales=None, heights=None, positions=None):
+		""" Alternative initializer
+		
+		Args: (ALL need to be set, despite the fact their keyword args)
+			scales: (iter of float-iters) Contains width-parameter of hills
+			heights: (iter of floats) Contains height-paramter of hills
+			positions: (iter of float-iters) Contains the positions of each hill 
+				 
+		"""
+		assert all([x is not None for x in [scales,heights,positions]])
+		assert all([len(x)==len(scales) for x in [scales,heights,positions]])
+		outDicts = list()
+		for scale, height, pos in it.zip_longest(scales, heights, positions):
+			currDict = {"scale":scale, "pos":pos, "height":height}
+			outDicts.append(currDict)
+		return cls(outDicts)
+
+	@property
+	def optDict(self):
+		heights, scales, positions = list(), list(), list()
+		for hillDict in self.hillDicts:
+			heights.append( hillDict["height"] )
+			scales.append( hillDict["scale"] )
+			positions.append( hillDict["pos"] )
+
+		outDict = {"metaDyn_spawnHillsHeight":heights, "metaDyn_spawnHillsPos":positions, "metaDyn_spanwHillsScale":scales}
+		return outDict
+
+	def __eq__(self, other):
+		eqTol = min(self._eqTol, other._eqTol)
+		if len(self.hillDicts) != len(other.hillDicts):
+			return False
+
+		floatIterKeys = ["height"]
+		iterOfFloatIterKeys = ["scale","pos"]
+		
+		for hillA,hillB in zip(self.hillDicts, other.hillDicts):
+			for attr in iterOfFloatIterKeys:
+				if len(hillA[attr]) != len(hillB[attr]):
+					return False
+				for valA, valB in zip( hillA[attr], hillB[attr] ):
+					if abs(valA-valB) > eqTol:
+						return False
+
+			for attr in floatIterKeys:
+				valA, valB = hillA[attr], hillB[attr]
+				if abs(valA-valB) > eqTol:
+					return False
+
+		return True
 
 class ThermostatOptsMultiRegions(ThermostatOptsBase):
 	""" Extension of ThermostatOptsBase that allows multiple regions to be defined """
