@@ -1,12 +1,15 @@
 
 import copy
 import itertools as it
+import math
 
 import numpy as np
 
 import plato_pylib.parseOther.parse_cp2k_files as parseCP2KHelp
 import plato_pylib.shared.ucell_class as uCellHelp
 import plato_pylib.shared.unit_convs as uConvHelp
+
+from ..analyse_md import analyse_metadyn_hills as metadynHillsHelp
 
 #TODO: Relative paths please
 import gen_basis_helpers.analyse_md.thermo_data as thermoDataHelp
@@ -557,4 +560,59 @@ def _parseGenericMetadynLogFile(inpPath):
 		idx += 1
 
 	return outArray
+
+def getGroupedMultiDimGaussHillsFromParsedHillsFileOutput(inpDicts):
+	""" Gets a instance representing the combined Gaussian functions from the output of parseMetadynamicsHillsLogFile. Should let the potential be visualised
+	
+	Args:
+		inpDicts: (iter of dicts) Each element corresponds to 1 collective variable. The dicts contain keys for scale/position/height for a set of Gaussian Hills
+			 
+	Returns
+		outHillsFunct: (GroupedMultiDimGaussHills) Instance representing the combination of hills. Has functions to evaluate each individual component AND their rums
+ 
+	"""
+	#Step 1 = get MetadynHillsInfo class
+	metaDynHillsInstance = getMetadynHillsInfoFromParsedHillsFileOutput(inpDicts)
+	return metaDynHillsInstance.createGroupedHills()
+
+#	#Step 1 = get all the 1 dimensional gaussian functions for each collective variable
+#	oneDimGauFuncts = list()
+#	for cVarIdx in range(len(inpDicts)):
+#		heights, positions, scales = [inpDicts[cVarIdx][key] for key in ["height","position","scale"]] 
+#		currFuncts = [metadynHillsHelp.OneDimGaussianHill(height=height,pos=pos,scale=scale) for height,pos,scale in it.zip_longest(heights, positions, scales)]
+#		oneDimGauFuncts.append( currFuncts )
+#
+#	#Step 2 = merge the 1 dimensional gaussian functions
+#	assert all([len(x)==len(oneDimGauFuncts[0]) for x in oneDimGauFuncts])
+#	multiDimFuncts = list()
+#	for hillIdx in range(len(oneDimGauFuncts[0])):
+#		currOneDims = [ x[hillIdx] for x in oneDimGauFuncts ]
+#		multiDimFuncts.append( metadynHillsHelp.MultiDimGaussHill(currOneDims) )
+#
+#	#Step 3 = combine all the multi dimensional gaussian functions
+#	return metadynHillsHelp.GroupedMultiDimGaussHills(multiDimFuncts)
+
+
+def getMetadynHillsInfoFromParsedHillsFileOutput(inpDicts):
+	""" Gets an instance representing combined Gaussian hill functions from the output of parseMetadynamicsHillsLogFile. The class makes it simpler to combine hills and look at potential evolution over time
+	
+	Args:
+		inpDicts: (iter of dicts) Each element corresponds to 1 collective variable. The dicts contain keys for scale/position/height for a set of Gaussian Hills
+			 
+	Returns
+		outObj: (MetadynHillsInfo instance) Data storage class essentially
+
+	"""
+	times = inpDicts[0]["time"]
+	heights, scales, positions = list(), list(), list()
+
+	for idx in range(len(times)):
+		heights.append( [x["height"][idx] for x in inpDicts] ) 
+		scales.append( [x["scale"][idx] for x in inpDicts] )
+		positions.append( [x["position"][idx] for x in inpDicts] )
+
+	outKwargs = {"times":times, "positions":positions, "scales":scales, "heights":heights}
+
+	return metadynHillsHelp.MetadynHillsInfo(**outKwargs)
+
 

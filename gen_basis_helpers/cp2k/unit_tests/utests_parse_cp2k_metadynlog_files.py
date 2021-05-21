@@ -1,11 +1,12 @@
 
-
+import copy
 import itertools as it
 import unittest
 import unittest.mock as mock
 
 import numpy as np
 
+import gen_basis_helpers.analyse_md.analyse_metadyn_hills as metadynHillsHelp
 import gen_basis_helpers.cp2k.parse_md_files as tCode
 
 class TestParseGenericMetadynLogFile(unittest.TestCase):
@@ -136,6 +137,48 @@ class TestParseIterOfMetadynHillsFiles(unittest.TestCase):
 		for key in expDict.keys():
 			expList,actList = expDict[key],actDict[key]
 			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expList,actList)]
+
+
+class TestGetGaussianFunctsFromMetadynHills(unittest.TestCase):
+
+	def setUp(self):
+		#First collective variable (meaning each is a 1-dimension Gaussian)
+		self.heightsA = [2,3,4] 
+		self.scalesA = [5,6,7]
+		self.positionsA = [8,9,10]
+		self.timeA = [1,2,3]
+
+		#Second collective variable
+		self.timeB = [1,2,3]
+		self.heightsB = [1,2,3]
+		self.scalesB = [4,5,6]
+		self.positionsB = [7,8,9]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.colVarDictA = {"time":self.timeA, "height":self.heightsA, "scale":self.scalesA, "position":self.positionsA}
+		self.colVarDictB = {"time":self.timeB, "height":self.heightsB, "scale":self.scalesB, "position":self.positionsB}
+		self.colVarDicts = [self.colVarDictA, self.colVarDictB]
+
+	def _runTestFunct(self):
+		return tCode.getGroupedMultiDimGaussHillsFromParsedHillsFileOutput(self.colVarDicts)
+
+	def _loadExpectedCaseA(self):
+		multiDimGaus = list()
+		for idx in range(3):
+			currMultiDimGau = metadynHillsHelp.MultiDimGaussHill.fromIters( heights=[self.heightsA[idx], self.heightsB[idx]],
+		                                                         scales=[self.scalesA[idx], self.scalesB[idx]],
+		                                                         positions=[self.positionsA[idx], self.positionsB[idx]])
+			multiDimGaus.append(currMultiDimGau) 
+
+		expObj = metadynHillsHelp.GroupedMultiDimGaussHills(multiDimGaus)
+		return expObj
+
+	def testExpectedA(self):
+		expObj = self._loadExpectedCaseA()
+		actObj = self._runTestFunct()
+		self.assertEqual(expObj, actObj)
 
 
 
