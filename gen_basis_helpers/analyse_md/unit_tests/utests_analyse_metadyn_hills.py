@@ -9,7 +9,187 @@ import numpy as np
 import gen_basis_helpers.analyse_md.analyse_metadyn_hills as tCode
 
 
-class TesetGetCombinedMetaDynHillsClass(unittest.TestCase):
+class TestGetPotValForEachStepOverTime(unittest.TestCase):
+
+	def setUp(self):
+		#Create the info object
+		self.infoObj = mock.Mock()
+
+		#Options for the run function
+		self.timeRange = None
+		self.minTimeDiff = 1e-3
+		self.timeTol = 1e-3
+		self.oneDimOutput = True
+		self.inpValsA = [ [1,2], [3,4] ]
+
+		#Stuff for mocking
+		self.times = [1,2]
+		self.expOutValsA = [3,4]
+		self.expOutValsB = [5,6]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.expDataA = [ [inpVal,outVal] for inpVal,outVal in it.zip_longest(self.inpValsA, self.expOutValsA) ]
+		self.expDataB = [ [inpVal,outVal] for inpVal,outVal in it.zip_longest(self.inpValsA, self.expOutValsB) ]
+
+		#
+		self.expPotObjs = [mock.Mock(), mock.Mock()]
+		self.expPotObjs[0].evalFunctAtVals.side_effect = lambda *args,**kwargs: self.expOutValsA
+		self.expPotObjs[1].evalFunctAtVals.side_effect = lambda *args,**kwargs: self.expOutValsB
+
+	def _runTestFunct(self):
+		args = [self.infoObj, self.inpValsA]
+		currKwargs = {"timeRange":self.timeRange, "timeTol":self.timeTol,
+		              "minTimeDiff":self.minTimeDiff, "oneDimOutput":self.oneDimOutput}
+		return tCode.getTimeVsPotAtValsForEachHillAdded(*args, **currKwargs)
+
+	@mock.patch("gen_basis_helpers.analyse_md.analyse_metadyn_hills._getTimeVsPotObjsForEachTimeHillAdded")
+	def testExpectedValsA_twoDimCase(self, mockGetTimeVsPotObjects):
+		#Setup test objs
+		mockGetTimeVsPotObjects.side_effect = lambda *args,**kwargs: [ [t,potObj] for t,potObj in it.zip_longest(self.times, self.expPotObjs) ]
+
+		expOutput = [ [self.times[0], self.expDataA],
+		              [self.times[1], self.expDataB] ]
+
+		actOutput = self._runTestFunct()
+
+		mockGetTimeVsPotObjects.assert_called_with(self.infoObj, timeRange=self.timeRange, timeTol=self.timeTol, minTimeDiff=self.minTimeDiff)
+		self.expPotObjs[0].evalFunctAtVals.assert_called_with(self.inpValsA)
+		self.expPotObjs[1].evalFunctAtVals.assert_called_with(self.inpValsA)
+		self.assertEqual(expOutput, actOutput)
+
+	@mock.patch("gen_basis_helpers.analyse_md.analyse_metadyn_hills._getTimeVsPotObjsForEachTimeHillAdded")
+	def testExpectedValsA_oneDimCase(self, mockGetTimeVsPotObjects):
+		#Swap to 1-dimensional
+		self.inpValsA = [ [2], [3] ]
+		self.createTestObjs()
+
+		#Setup test objs
+		mockGetTimeVsPotObjects.side_effect = lambda *args,**kwargs: [ [t,potObj] for t,potObj in it.zip_longest(self.times, self.expPotObjs) ]
+
+		expDataA = [ [x[0],y] for x,y in self.expDataA ]
+		expDataB = [ [x[0],y] for x,y in self.expDataB ]
+		expOutput = [ [self.times[0], expDataA], [self.times[1], expDataB] ]
+
+		actOutput = self._runTestFunct()
+
+		mockGetTimeVsPotObjects.assert_called_with(self.infoObj, timeRange=self.timeRange, timeTol=self.timeTol, minTimeDiff=self.minTimeDiff)
+		self.assertEqual(expOutput, actOutput)
+
+class TestGetPotObjForEachStepOverTime(unittest.TestCase):
+
+	def setUp(self):
+		#Create the info object
+		self.times = [2,3,1]
+		self.positions = [ [3,4], [5,6], [7,8] ]
+		self.scales =  [ [4,5], [6,7], [8,9] ]
+		self.heights = [ [2,3], [4,5], [6,7] ]
+		self.sortTimes = False
+
+		#Options for the run function
+		self.timeRange = None
+		self.minTimeDiff = 1e-3
+		self.timeTol = 1e-3
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"times":self.times, "positions":self.positions, "scales":self.scales,
+		              "heights":self.heights, "sortTimes":self.sortTimes}
+		self.testObjA = tCode.MetadynHillsInfo(**currKwargs)
+
+	def _runTestFunct(self):
+		currKwargs = {"timeRange":self.timeRange, "timeTol":self.timeTol, "minTimeDiff":self.minTimeDiff}
+		return tCode._getTimeVsPotObjsForEachTimeHillAdded(self.testObjA, **currKwargs)
+
+	def _loadMultiDimHillsInTimeOrder(self):
+		hillA = tCode.MultiDimGaussHill.fromIters(heights=[6,7], scales=[8,9], positions=[7,8])
+		hillB = tCode.MultiDimGaussHill.fromIters(heights=[2,3], scales=[4,5], positions=[3,4])
+		hillC = tCode.MultiDimGaussHill.fromIters(heights=[4,5], scales=[6,7], positions=[5,6])
+		return [hillA, hillB, hillC]
+
+	def testExpectedFunctValA_fullRange(self):
+		#Figure out the expected potential objects
+		hillA, hillB, hillC = self._loadMultiDimHillsInTimeOrder()
+
+		groupA = tCode.GroupedMultiDimGaussHills([hillA])
+		groupB = tCode.GroupedMultiDimGaussHills([hillA,hillB])
+		groupC = tCode.GroupedMultiDimGaussHills([hillA,hillB,hillC])
+
+		expTimesVsHills = [ [1,groupA], [2,groupB], [3,groupC] ]
+		actTimesVsHills = self._runTestFunct()
+		self.assertEqual(expTimesVsHills, actTimesVsHills)
+
+	def testExpected_minTimeSet(self):
+		hillA, hillB, hillC = self._loadMultiDimHillsInTimeOrder()
+		self.timeRange = [1.4, 20]
+		groupA = tCode.GroupedMultiDimGaussHills([hillB])
+		groupB = tCode.GroupedMultiDimGaussHills([hillB, hillC])
+
+		expTimesVsHills = [ [2,groupA], [3,groupB] ]
+		actTimesVsHills = self._runTestFunct()
+		self.assertEqual(expTimesVsHills, actTimesVsHills)
+
+	def testExpected_maxTimeSet(self):
+		hillA, hillB, hillC = self._loadMultiDimHillsInTimeOrder()
+		self.timeRange = [0,2.2]
+		groupA = tCode.GroupedMultiDimGaussHills([hillA])
+		groupB = tCode.GroupedMultiDimGaussHills([hillA,hillB])
+
+		expTimesVsHills = [ [1,groupA], [2,groupB] ]
+		actTimesVsHills = self._runTestFunct()
+		self.assertEqual(expTimesVsHills, actTimesVsHills)
+
+	def testExpected_ridicLargeMinTimeDiff(self):
+		self.minTimeDiff = 10
+		hillA, hillB, hillC = self._loadMultiDimHillsInTimeOrder()
+		groupA = tCode.GroupedMultiDimGaussHills([hillA,hillB,hillC])
+
+		expTimesVsHills = [ [1,groupA] ]
+		actTimesVsHills = self._runTestFunct()
+		self.assertEqual(expTimesVsHills, actTimesVsHills)
+
+
+class TestEvalPotOverTimeRangeHillsInfoObj(unittest.TestCase):
+
+	def setUp(self):
+		#Create the info object
+		self.times = [2,3,1]
+		self.positions = [ [3,4], [5,6], [7,8] ]
+		self.scales =  [ [4,5], [6,7], [8,9] ]
+		self.heights = [ [2,3], [4,5], [6,7] ]
+		self.sortTimes = False
+
+		#options for running the function
+		self.timeRange = None
+		self.timeTol = 1e-3
+		self.evalAtVals = [ [1,1], [3,4] ]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"times":self.times, "positions":self.positions, "scales":self.scales,
+		              "heights":self.heights, "sortTimes":self.sortTimes}
+		self.testObjA = tCode.MetadynHillsInfo(**currKwargs)
+
+	def _runTestFunct(self):
+		args = self.testObjA, self.evalAtVals
+		kwargs = {"timeRange":self.timeRange, "timeTol":self.timeTol}
+		return tCode.evalPotAddedOverTimeRangeForHillsInfoObj(*args, **kwargs)
+
+	#Results generated from excel
+	def testExpectedFullRangeA(self):
+		actVals = self._runTestFunct()
+		expVals = [7.30237550948453, 68.1534473578693]
+		expVals = [40.2600020863019, 57.7416360491726]
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals, actVals)]
+
+	def testExpectedSmallerTimeRange(self):
+		self.timeRange = [0.8,2.2]
+		expVals = [27.8511758765677, 39.5791113014523]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals, actVals)]
+
+class TestGetCombinedMetaDynHillsClass(unittest.TestCase):
 
 	def setUp(self):
 		#First obj
@@ -27,7 +207,7 @@ class TesetGetCombinedMetaDynHillsClass(unittest.TestCase):
 		self.sortTimesB = False
 
 		#Anything needed for running test funct can go here
-
+		self.copyData = False
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -40,7 +220,7 @@ class TesetGetCombinedMetaDynHillsClass(unittest.TestCase):
 		self.testObjB = tCode.MetadynHillsInfo(**kwargsB)
 
 	def _runTestFunct(self):
-		return tCode.getMergedMetadynHillsInfoInstance([self.testObjA, self.testObjB])
+		return tCode.getMergedMetadynHillsInfoInstance([self.testObjA, self.testObjB], copyData=self.copyData)
 
 	def _loadExpObjCombinedAB(self):
 		kwargs = {"times": self.timesA+self.timesB, "positions":self.positionsA+self.positionsB,
@@ -52,6 +232,18 @@ class TesetGetCombinedMetaDynHillsClass(unittest.TestCase):
 		actObj = self._runTestFunct()
 		self.assertEqual(expObj, actObj)
 
+
+	def testExpectedFromMergingTwo_withCopy(self):
+		#
+		self.copyData = True
+		expObj = copy.deepcopy( self._loadExpObjCombinedAB() )
+		actObj = self._runTestFunct()
+		self.assertEqual(expObj, actObj)
+
+		#Change one of the input lists; if datas been copied it shouldnt affect the output
+		self.testObjA.times[0] += 1
+		self.assertEqual(expObj, actObj)
+		
 
 class TestMetadynHillsInfoClass(unittest.TestCase):
 
