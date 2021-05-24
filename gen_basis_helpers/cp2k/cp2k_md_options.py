@@ -146,6 +146,22 @@ class MetadynamicsSpawnHillsOptions():
 			outDicts.append(currDict)
 		return cls(outDicts)
 
+	@classmethod
+	def fromMetadynHillInfo(cls, metaHillInfo, allowDiffHeights=False, heightTol=1e-3):
+		""" Alternative initializer
+		
+		Args:
+			metaHillInfo: (MetadynHillsInfo instance) This contains all info on spawned hill, including their time, and is generally how they are stored/manipulated by me at time of writing
+			allowDiffHeights: (Bool) Only False implemented for now; meaning for each hill each collective variable must have the same height parameter
+			heightTol: (float) For a single hill, the height for each collective variable must be within this to not raise an error when allowDiffHeights=False
+ 
+		"""
+		scales, positions = metaHillInfo.scales, metaHillInfo.positions
+		#TODO:  Check heights are consistent and raise if not
+		heights = [x[0] for x in metaHillInfo.heights]
+		return cls.fromIters(scales=scales, heights=heights, positions=positions)
+
+
 	@property
 	def optDict(self):
 		heights, scales, positions = list(), list(), list()
