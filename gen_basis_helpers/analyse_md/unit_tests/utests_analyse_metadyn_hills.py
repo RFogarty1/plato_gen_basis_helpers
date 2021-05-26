@@ -345,6 +345,26 @@ class TestMetadynHillsInfoClass(unittest.TestCase):
 		objA.multiplyHeightsByFactor(multFactor)
 		self.assertEqual(objA,objB)
 
+	def testToAndFromDictConsistent(self):
+		inpDict = self.testObjA.toDict()
+		objB = tCode.MetadynHillsInfo.fromDict(inpDict)
+		self.assertEqual(self.testObjA, objB)
+
+	def testGetNewObjWithLimitedTimeRange(self):
+		#Get the actual object created
+		timeRange = [0.8, 2.2]
+		actObj = self.testObjA.createNewObjFromLimitedTimeRange(timeRange=timeRange)
+
+		#Use createTestObjs() to initialise what should be the same object
+		self.times = self.times[:2]
+		self.positions = self.positions[:2]
+		self.scales = self.scales[:2]
+		self.heights = self.heights[:2]
+		self.createTestObjs()
+		expObj = self.testObjA
+
+		self.assertEqual(expObj, actObj)
+
 class TestMetadynHillsInfoClass_indicesWithinTimeRanges(unittest.TestCase):
 
 	def setUp(self):

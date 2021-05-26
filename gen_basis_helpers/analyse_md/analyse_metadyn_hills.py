@@ -5,8 +5,6 @@ import math
 import numpy as np
 
 
-
-
 def getTimeVsPotAtValsForEachHillAdded(inpObj, inpVals, timeRange=None, timeTol=1e-4, minTimeDiff=1e-3, oneDimOutput=True):
 	""" Gets [ [x,....z], [val] ] for the potential at each time a hill was added.
 	
@@ -180,6 +178,26 @@ class MetadynHillsInfo():
 			newVals = [ startVals[idx] for idx in sortedIndices ]
 			setattr(self, attr, newVals)
 
+	def createNewObjFromLimitedTimeRange(self, timeRange=None, timeTol=1e-4):
+		""" Creates a new instance with peaks outside timeRange filtered out
+		
+		Args:
+			timeRange: (len-2 iter) [minTime, maxTime]
+			timeTol: (float) Two times are considered the same if their values are within "timeTol"; purpose is to deal with float errors
+
+		Returns
+			outObj: (MetadynHillsInfo) Object with filtered hills
+	 
+		"""
+		outIndices = self._getIndicesWithinTimeRange(timeRange, timeTol)
+		outKeys = ["times", "positions", "scales", "heights"]
+		outDict = dict()
+		for key in outKeys:
+			currVals = getattr(self, key)
+			outDict[key] = [ currVals[idx] for idx in outIndices ]
+
+		return MetadynHillsInfo(**outDict)
+
 	def multiplyHeightsByFactor(self, factor):
 		""" Multiply the stored heights by a factor; example use is unit conversion
 		
@@ -262,6 +280,18 @@ class MetadynHillsInfo():
 				outIndices.append(idx)
 
 		return outIndices
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		return cls(**inpDict)
+
+
+	def toDict(self):
+		outAttrs = ["times", "positions", "scales", "heights"]
+		outDict = dict()
+		for attr in outAttrs:
+			outDict[attr] = getattr(self, attr)
+		return outDict
 
 
 	def __eq__(self, other):
