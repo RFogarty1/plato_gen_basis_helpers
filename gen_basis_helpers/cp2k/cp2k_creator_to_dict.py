@@ -1,6 +1,10 @@
 
 from ..shared import method_objs as methObjsHelp
 from . import cp2k_basis_obj as basisObjHelp
+from . import parse_md_files as parseMdHelp
+
+from ..analyse_md import analyse_metadyn_hills as aMetadynHillsHelp
+
 
 def getSimpleCreatorObjToDictMapObj():
 	outFuncts = list()
@@ -8,6 +12,7 @@ def getSimpleCreatorObjToDictMapObj():
 	outFuncts.append(_getSelectedDictsFromCreatorObj)
 	outFuncts.append(_getGeomConstraintInfoFromCreatorObj)
 	outFuncts.append(_getBasisObjsInfoFromCreatorObj)
+	outFuncts.append(_getColvarsInfoFromCreatorObj)
 	return methObjsHelp.GetDictFromCreatorObj(outFuncts)
 
 
@@ -37,6 +42,22 @@ def _getGeomConstraintInfoFromCreatorObj(creatorObj):
 		outDict["cell_constraints"] = creatorObj.geomConstraints.cellConstraints.toDict()
 	return outDict
 
+
+def _getColvarsInfoFromCreatorObj(creatorObj):
+	outDict = dict()
+	if creatorObj.colVars is None:
+		pass
+	else:
+		outData = list()
+		for var in creatorObj.colVars:
+			try:
+				val = var.toDict()
+			except AttributeError:
+				val = None
+			finally:
+				outData.append(val)
+		outDict["colVars"] = outData
+	return outDict
 
 def _getBasisObjsInfoFromCreatorObj(creatorObj):
 	outDict = dict()
@@ -80,4 +101,57 @@ def getBasisObjListFromDict(basisObjDict):
 		currObj = basisObjHelp.CP2KBasisObjStandard.fromDict(basisObjDict[key])
 		outList.append(currObj)
 	return outList
+
+
+
+
+#Other misc things maybe?
+
+def getMetadynHillsInfoFromStdOutObj(stdOutObj, creator=None, startHillsInfo=None, raiseIfNoInitHills=False):
+	""" Gets a MetadynHillsInfo from a standard output object; this contains all info on hills spawned in a metadynamics run
+	
+	Args:
+		stdOutObj: (StandardOutputObj) Contains all data from calculations
+		creator: (CP2KCalcObjFactoryStandard, Optional) Contains information on initially spawned hills
+		startHillsInfo: (MetadynHillsInfo, Optional) Contains information on initially spawned hills
+		raiseIfNoInitHills: (Bool) If True, raise a ValueError if no initially spawned hills are found
+
+	Returns
+		outHillsInfo: (MetadynHillsInfo) Contains info on all hills spawned
+ 
+	Raises:
+		AttributeError: If both creator and startHillsInfo are set
+
+	"""
+	if (creator is not None) and (startHillsInfo is not None):
+		raise ValueError("creator and startHillsInfo cant both be set")
+
+
+	#Create empty hill info obj; for when we dont read in any initial hills
+	currKwargs = {"times":list(), "positions":list(), "scales":list(), "heights":list()}
+	emptyHillInfoObj = aMetadynHillsHelp.MetadynHillsInfo(**currKwargs)
+	
+ 
+	if creator is not None:
+		if creator.metaDynOpts.spawnHillsOpts is not None:
+			startHills = creator.metaDynOpts.spawnHillsOpts.toMetadynHillInfo()
+		else:
+			startHills = emptyHillInfoObj
+	elif startHillsInfo is not None:
+		startHills = startHillsInfo
+	else:
+		startHills = emptyHillInfoObj
+
+	#Get the spawned hills info
+	assert len(stdOutObj.data)==1
+	assert len(stdOutObj.data[0])==1
+
+	spawnedHillsDictFmt = stdOutObj.data[0][0].parsedFile.metadyn_hills
+	spawnedHillsInfo = parseMdHelp.getMetadynHillsInfoFromParsedHillsFileOutput(spawnedHillsDictFmt)
+
+	output = aMetadynHillsHelp.getMergedMetadynHillsInfoInstance([startHills, spawnedHillsInfo])
+
+	return output
+
+
 

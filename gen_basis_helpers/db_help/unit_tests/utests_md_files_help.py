@@ -4,6 +4,7 @@ import types
 import unittest
 import unittest.mock as mock
 
+import gen_basis_helpers.analyse_md.analyse_metadyn_hills as aMetadynHillsHelp
 import gen_basis_helpers.shared.calc_runners as calcRunnersHelp
 import gen_basis_helpers.shared.label_objs as labelHelp
 
@@ -236,6 +237,79 @@ class TestGetStdMdFilesOutputDictFromStdInpCreatorAndOutput(unittest.TestCase):
 		mockCopy.assert_any_call( os.path.join(runDir, baseFileName), os.path.join(outDir, baseFileName) )
 		mockCopy.assert_any_call( os.path.join(runDir, baseFileName+".bak-1"), os.path.join(outDir, baseFileName+".bak-1") )
 		mockCopy.assert_any_call( os.path.join(runDir, baseFileName+".bak-2"), os.path.join(outDir, baseFileName+".bak-2") )
+
+
+class TestDumpMetadynHillsFile(unittest.TestCase):
+
+	def setUp(self):
+		self.startDir = "fake_dir"
+		self.hillsInfoObj = mock.Mock()
+		self.pathExt = "path_extension"
+		self.fileName = "fake_filename.file"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		pass
+
+	def _runTestFunct(self):
+		args = [self.startDir, self.hillsInfoObj]
+		kwargs = {"pathExt":self.pathExt, "fileName":self.fileName}
+		return tCode.dumpMetadynHillsFileAndGetFileDictStd(*args, **kwargs)
+
+	@mock.patch("gen_basis_helpers.db_help.md_files_help._dumpMetadynHillsToFile")
+	def testExpectedCallsToDumpFunctA(self, mockedDumpToFile):
+		expPath = os.path.join(self.startDir, self.pathExt, self.fileName)
+		expDict = {"metadyn_hills_path_ext": self.pathExt, "metadyn_hills_filename": self.fileName}
+		actDict = self._runTestFunct()
+		mockedDumpToFile.assert_called_with(expPath, self.hillsInfoObj)
+		self.assertEqual(expDict,actDict)
+
+class TestDumpHillsToFileBackend(unittest.TestCase):
+
+	def setUp(self):
+		self.inpDir = "test_dir"
+		self.fileName = "fake_filename"
+		self.hillsObj = mock.Mock()
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.inpPath = os.path.join(self.inpDir, self.fileName)
+
+	def _runTestFunct(self):
+		tCode._dumpMetadynHillsToFile(self.inpPath, self.hillsObj)
+
+	@mock.patch("gen_basis_helpers.db_help.md_files_help.ioHelp.dumpObjWithToDictToJson")
+	def testExpectedCallsMade(self, mockDumpToJson):
+		self._runTestFunct()
+		mockDumpToJson.assert_called_with(self.hillsObj, self.inpPath)
+
+
+class TestGetMetadynHillsObj(unittest.TestCase):
+
+	def setUp(self):
+		self.baseDbFolder = "test_folder_path"
+		self.dbExt = "db_ext"
+		self.hillPathExt = "hill_ext"
+		self.hillFilename = "hill_file.json"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.inpRecord = {"db_ext_path":self.dbExt, "metadyn_hills_path_ext": self.hillPathExt,
+		                  "metadyn_hills_filename": self.hillFilename}
+
+	def _runTestFunct(self):
+		return tCode.getMetadynHillsInfoObjFromBaseDbFolderAndRecord(self.baseDbFolder, self.inpRecord)
+
+	@mock.patch("gen_basis_helpers.db_help.md_files_help.ioHelp.readObjWithFromDictFromJsonFile")
+	def testExpectedCallsMade(self, mockReadObjFromFile):
+		expObj = mock.Mock()
+		expFilePath = os.path.join(self.baseDbFolder, self.dbExt, self.hillPathExt, self.hillFilename)
+		mockReadObjFromFile.side_effect = lambda *args, **kwargs: expObj
+
+		actObj = self._runTestFunct()
+
+		mockReadObjFromFile.assert_called_with( aMetadynHillsHelp.MetadynHillsInfo, expFilePath )
+		self.assertEqual(expObj, actObj)
 
 
 

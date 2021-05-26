@@ -4,9 +4,17 @@ import pathlib
 import re
 import shutil
 
+from ..analyse_md import analyse_metadyn_hills as aMetadynHillsHelp
 from ..analyse_md import thermo_data as thermoDataHelp
 from ..analyse_md import traj_core as trajHelp
+from ..misc import shared_io as ioHelp
 
+
+def getMetadynHillsInfoObjFromBaseDbFolderAndRecord(baseDbFolder, inpRecord):
+	extPath = os.path.join( *[inpRecord[key] for key in ["db_ext_path","metadyn_hills_path_ext","metadyn_hills_filename"]] )
+	fullPath = os.path.join( baseDbFolder, extPath )
+	outObj = ioHelp.readObjWithFromDictFromJsonFile(aMetadynHillsHelp.MetadynHillsInfo, fullPath)
+	return outObj
 
 
 def getMdThermoObjFromBaseDbFolderAndRecord(baseDbFolder, inpRecord):
@@ -161,4 +169,33 @@ class MDFilesFromOutObjsFileDumperStandard():
 		return outDict
 
 
+def dumpMetadynHillsFileAndGetFileDictStd(startDir, hillsInfoObj, pathExt=None, fileName=None):
+	""" Dumps information about metadynamics hills spawned to os.path.join(startDir,pathExt,fileName) and returns a dict containing useful info on where to find this file 
+	
+	Args:
+		startDir: (str) Path to a base folder for writing database related things. Files will be written to subpaths starting here. Generally this is the place your dumping *.json files for a particular notebook. 
+		hillsInfoObj:
+		pathExt: (str, Optional) The extension of where to put this relative to startDir. Generally use "md_path_ext" from getOutDictForMDFromStdOutObj_simple
+		fileName: (str, Optional) The name of the output file. Default is "metadyn_hills.json" 
+
+	Returns
+		outDict: Contains "metadyn_hills_path_ext" and "metadyn_hills_filename". When combined with "db_ext_path" and knowledge of the base directory for database files this is sufficient to get the full file path. The reason we use so many variables is to ensure a database can be transfered between systems as simply as possible [startDir is os.path.join(BASE_DB_FOLDER, db_ext_path)]
+ 
+	Raises:
+		 Errors
+	"""
+	pathExt = "" if pathExt is None else pathExt
+	fileName = "metadyn_hills.json" if fileName is None else fileName
+	outPath = os.path.join(startDir, pathExt, fileName)
+	
+	#Write the file
+	_dumpMetadynHillsToFile(outPath, hillsInfoObj)
+
+	#Get the relevant dict
+	outDict = {"metadyn_hills_path_ext":pathExt, "metadyn_hills_filename":fileName}
+	return outDict
+
+
+def _dumpMetadynHillsToFile(outPath, hillsInfoObj):
+	ioHelp.dumpObjWithToDictToJson(hillsInfoObj, outPath)
 
