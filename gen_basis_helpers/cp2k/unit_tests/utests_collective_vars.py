@@ -1,4 +1,5 @@
 
+import copy
 import itertools as it
 import unittest
 import unittest.mock as mock
@@ -108,6 +109,32 @@ class TestDistancePointPlaneFixedPointForPlane(unittest.TestCase):
 		self.assertEqual( expAtomPointIdx, actObj.atomPointIndex )
 		for exp,act in it.zip_longest(expPlaneXyz, actObj.planeXyzVals):
 			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+	def testEqualObjsCompareEqual(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertEqual(objA, objB)
+
+	def testUnequalObjsCompareUnequal_diffpointIdx(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.atomPointIndex += 1
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testUnequalObjsCompareUnequal_diffPlanePoints(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.planePoints[0][1] += 2
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testToAndFromDictConsistent(self):
+		objA = copy.deepcopy(self.testObjA)
+		inpDict = self.testObjA.toDict()
+		objB = tCode.DistancePointPlaneColVar_fixedPointsForPlane.fromDict(inpDict)
+		self.assertEqual(objA, objB)
 
 
 def _loadTestCellA():

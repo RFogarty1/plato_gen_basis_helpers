@@ -66,6 +66,36 @@ class CollectiveVarStandard():
 		"""
 		raise NotImplementedError("")
 
+
+
+#TODO: I should probably just make a standard equality mixin that covers all cases + uses try/except to avoid
+#errors where i dont specify the type...
+class EqualityMixinSimple():
+
+	def __eq__(self, other):
+		eqTol = min(self._eqTol, other._eqTol)
+
+		#Sort out attributes where i can directly compare them
+		for attr in self._directCmpAttrs:
+			valA, valB = getattr(self,attr), getattr(other,attr)
+			if valA != valB:
+				return False
+
+		#Sort attrs which are iters of float-iters
+		for attr in self._floatIterOfIterCmpAttrs:
+			iterOfItersA, iterOfItersB = getattr(self,attr), getattr(other,attr)
+			if len(iterOfItersA) != len(iterOfItersB):
+				return False
+			for iterA, iterB in zip(iterOfItersA, iterOfItersB):
+				if len(iterA)!=len(iterB):
+					return False
+				for valA, valB in zip(iterA,iterB):
+					if abs(valA - valB) > eqTol:
+						return False
+
+		return True
+
+
 class DistancePointPlaneColVar(CollectiveVarStandard):
 
 	def __init__(self, atomPlaneIndices, atomPointIndex):
@@ -122,7 +152,7 @@ class DistancePointPlaneColVar_att2(CollectiveVarStandard):
 		colVar.Atom_point = 4
 		colVar.Atoms_plane = [1,2,3]
 
-class DistancePointPlaneColVar_fixedPointsForPlane(CollectiveVarStandard):
+class DistancePointPlaneColVar_fixedPointsForPlane(CollectiveVarStandard, EqualityMixinSimple):
 
 	def __init__(self, atomPointIndex, planeXyzVals):
 		""" Initializer
@@ -137,6 +167,12 @@ class DistancePointPlaneColVar_fixedPointsForPlane(CollectiveVarStandard):
 		"""
 		self.atomPointIndex = atomPointIndex
 		self.planeXyzVals = planeXyzVals
+
+		#Configure for the equality method
+		self._eqTol = 1e-6
+		self._directCmpAttrs = ["atomPointIndex"]
+		self._floatIterOfIterCmpAttrs = ["planeXyzVals"]
+
 
 	@classmethod
 	def fromInpCellAndAtomIndices(cls, inpCell, atomPointIndex, planeAtomIndices):
@@ -204,6 +240,15 @@ class DistancePointPlaneColVar_fixedPointsForPlane(CollectiveVarStandard):
 		dVal = generalPlaneEqn.calcDForInpXyz(self.planeXyzVals[0])
 		outPlane = planeEqnHelp.ThreeDimPlaneEquation(*normVector, dVal)
 		return outPlane
+
+	def toDict(self):
+		outDict = {"atomPointIndex":self.atomPointIndex, "planeXyzVals":self.planeXyzVals}
+		return outDict
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		args = [ inpDict["atomPointIndex"], inpDict["planeXyzVals"] ]
+		return cls(*args)
 
 
 def getXyzValsFromSurfacePlaneEquationAndInpCellStandard(planeEqn, inpCell, unitLength=True):
