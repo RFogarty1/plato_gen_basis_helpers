@@ -5,6 +5,7 @@ import unittest.mock as mock
 
 import numpy as np
 
+import gen_basis_helpers.analyse_md.analyse_metadyn_hills as metaDynHillsHelp
 import gen_basis_helpers.cp2k.method_register as methReg
 import gen_basis_helpers.cp2k.cp2k_md_options as tCode
 
@@ -131,6 +132,47 @@ class TestMetaDynSpawnHillsObj(unittest.TestCase):
 		positions = [self.hillDictA["pos"], self.hillDictB["pos"]]
 		with self.assertRaises(AssertionError):
 			objB = tCode.MetadynamicsSpawnHillsOptions.fromIters( scales=scales, heights=heights, positions=positions)
+
+	def testToAndFromMetaHillsSameForTimeZeroInp(self):
+		objA = self.testObjA.toMetadynHillInfo()
+		tempObj = tCode.MetadynamicsSpawnHillsOptions.fromMetadynHillInfo(objA)
+		objB = tempObj.toMetadynHillInfo()
+		self.assertEqual(objA, objB)
+
+class TestMetadynSpawnHillsFromInfoObj(unittest.TestCase):
+
+	def setUp(self):
+		#Setup our hills object; each element is one hill
+		self.times = [2,1,3]
+		self.positions = [ [3,4], [5,6], [7,8] ]
+		self.scales =  [ [4,5], [6,7], [8,9] ]
+		self.heights = [ [2,2], [3,3], [4,4] ]
+		self.sortTimes = False
+
+		#run funct
+		self.allowVaryHeights = False #Not ever planning to actually implement true, but its doable by just spawning more hills
+		self.heightTol = 1e-3
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"times":self.times, "positions":self.positions, "scales":self.scales,
+		              "heights":self.heights, "sortTimes":self.sortTimes}
+		self.inpObjA = metaDynHillsHelp.MetadynHillsInfo(**currKwargs)
+
+	def _runTestFunct(self):
+		args = [self.inpObjA]
+		kwargs = {"allowDiffHeights":self.allowVaryHeights, "heightTol":self.heightTol}
+		return tCode.MetadynamicsSpawnHillsOptions.fromMetadynHillInfo(*args, **kwargs)
+
+	def _loadExpectedObjA(self):
+		scales,positions = self.scales, self.positions
+		heights = [x[0] for x in self.heights] #Assumption being that height is constant between collective variables 
+		return tCode.MetadynamicsSpawnHillsOptions.fromIters( scales=self.scales, heights=heights, positions=self.positions )
+
+	def testFromMetadynHillInfo(self):
+		expObj = self._loadExpectedObjA()
+		actObj = self._runTestFunct()
+		self.assertEqual(expObj, actObj)
 
 class TestMetaDynOptsObject(unittest.TestCase):
 

@@ -1,6 +1,8 @@
 
 import itertools as it
 
+from ..analyse_md import analyse_metadyn_hills as aMetadynHillsHelp
+
 class MolDynamicsOptsCP2KBase():
 	""" Object representing molecular dynamics specific options (e.g. ensemble to use) for CP2K"""
 
@@ -161,6 +163,23 @@ class MetadynamicsSpawnHillsOptions():
 		heights = [x[0] for x in metaHillInfo.heights]
 		return cls.fromIters(scales=scales, heights=heights, positions=positions)
 
+	def toMetadynHillInfo(self):
+		""" Gets a MetadynHillsInfo object with the assumption that all hills are spawned at t=0
+		
+		Returns
+			outObj: (MetadynHillsInfo object)
+	 
+		"""
+		outScales, outHeights, outPositions, outTimes = list(), list(), list(), list()
+		for currDict in self.hillDicts:
+			outScales.append(currDict["scale"])
+			outHeights.append([currDict["height"] for x in range(len(currDict["scale"]))])
+			outPositions.append(currDict["pos"])
+			outTimes.append( 0 )
+
+		outKwargs = {"times": outTimes, "positions": outPositions,
+		             "scales": outScales, "heights": outHeights}
+		return aMetadynHillsHelp.MetadynHillsInfo(**outKwargs)
 
 	@property
 	def optDict(self):
