@@ -459,6 +459,25 @@ class TestGroupedMultiDimGaussHills(unittest.TestCase):
 		objB = self.testObjA
 		self.assertNotEqual(objA, objB)
 
+	def testEvalGradientAtVals(self):
+		#setup (mocks)
+		expGradsA, expGradsB = [ [2], [3], [5] ],  [[4], [6], [9]]
+		self.gauA.evalGradientAtVals = mock.Mock()
+		self.gauB.evalGradientAtVals = mock.Mock()
+		
+		self.gauA.evalGradientAtVals.side_effect = lambda *args,**kwargs: expGradsA
+		self.gauB.evalGradientAtVals.side_effect = lambda *args,**kwargs: expGradsB
+
+		expOutVals = [ [6], [9], [14] ]
+
+		#run
+		actOutVals = self.testObjA.evalGradientAtVals( self.positions )
+
+		#test
+		self.gauA.evalGradientAtVals.assert_called_with( self.positions )
+		self.gauB.evalGradientAtVals.assert_called_with( self.positions )
+		self.assertEqual(expOutVals, actOutVals)
+
 
 class TestMultiDimGauHillFunction(unittest.TestCase):
 
@@ -508,6 +527,23 @@ class TestMultiDimGauHillFunction(unittest.TestCase):
 		testObj = tCode.MultiDimGaussHill.fromIters(heights=self.heights, positions=self.gauPos, scales=self.scales)
 		self.assertEqual(self.multiGau, testObj)
 
+	def testGetGradient(self):
+		#stetup
+		inpVals = [ [1,2], [3,4], [5,6]]
+		self.gauA, self.gauB = mock.Mock(), mock.Mock()
+		expGradient = [ [9, 5], [12, 2], [6, 9] ]
+		self.gauA.evalNthDerivativeAtVals.side_effect = lambda *args, **kwargs: [x[0] for x in expGradient]
+		self.gauB.evalNthDerivativeAtVals.side_effect = lambda *args, **kwargs: [x[1] for x in expGradient]
+		self.multiGau = tCode.MultiDimGaussHill([self.gauA,self.gauB])
+
+		#run
+		actGradient = self.multiGau.evalGradientAtVals(inpVals)
+
+		#test
+		self.gauA.evalNthDerivativeAtVals.assert_called_with( [x[0] for x in inpVals], n=1)
+		self.gauB.evalNthDerivativeAtVals.assert_called_with( [x[1] for x in inpVals], n=1)
+		for expVals, actVals in it.zip_longest(expGradient, actGradient):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals,actVals)]
 
 #Want this to have properties related to the scale/pos etc. vars
 class TestOneDimGauHillFunction(unittest.TestCase):
@@ -543,6 +579,17 @@ class TestOneDimGauHillFunction(unittest.TestCase):
 		self.createTestObjs()
 		objB = self.gauA
 		self.assertNotEqual(objA, objB)
+
+	def testGetZerothDerivReturnsExpected(self):
+		expVals = [1.60147480583362, 1.89191893781353, 2]
+		actVals = self.gauA.evalNthDerivativeAtVals(self.positions, n=0)
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals,actVals)]
+
+	def testGetFirstDerivReturnsExpected(self):
+		expVals = [0.355883290185248, 0.210213215312615, 0]
+		actVals = self.gauA.evalNthDerivativeAtVals(self.positions, n=1)
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals,actVals)]
+
 
 
 

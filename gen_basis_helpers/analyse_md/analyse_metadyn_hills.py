@@ -396,6 +396,36 @@ class GroupedMultiDimGaussHills():
 
 		return True
 
+	def evalGradientAtVals(self, posVals):
+		""" Gets the gradient vector at an iter of positions
+		
+		Args:
+			posVals: (Iter of len-n floats; where n is number of dimensions) For example, for two dimensions this may be [ [1,2], [3,4], [5,6] ] which will evaluate for 3 positions
+				 
+		Returns
+			grads: (iter of len-n floats; where n is the number of dimension) Each element is one gradient vector. Each element of the gradient vector is the derivative in one of the dimensions
+	
+		WARNING:
+			I havent tested this for multiple dimensions
+ 
+		"""
+		#Get the individual gradient vectors
+		individualGradientVectors = list()
+		for hill in self.multiDimGaus:
+			currGradVectors = hill.evalGradientAtVals(posVals)
+			individualGradientVectors.append( currGradVectors )
+
+		#Combine vectors
+		nDims = len(currGradVectors[0])
+		outVectors = list()
+		for pIdx, pos in enumerate(posVals):
+			currGradVector = list()
+			for dimIdx in range(nDims):
+				currVal = sum([x[pIdx][dimIdx] for x in individualGradientVectors])
+				currGradVector.append(currVal)
+			outVectors.append(currGradVector)
+
+		return outVectors
 
 class MultiDimGaussHill():
 	""" Combines a series of 1-dimensional GaussianHill functions and uses their product over multiple dims. e.g. if evaluating at xy we use f(x,y) = G(x)G(y) where G(x) and G(y) are the 1-dimensional Gaussian functions over x and y """
@@ -447,6 +477,24 @@ class MultiDimGaussHill():
 
 		return outVals
 
+	def evalGradientAtVals(self, posVals):
+		""" Gets the gradient vector at an iter of positions
+		
+		Args:
+			posVals: (Iter of len-n floats; where n is number of dimensions) For example, for two dimensions this may be [ [1,2], [3,4], [5,6] ] which will evaluate for 3 positions
+				 
+		Returns
+			grads: (iter of len-n floats; where n is the number of dimension) Each element is one gradient vector. Each element of the gradient vector is the derivative in one of the dimensions
+	 
+		"""
+		derivVals = list()
+		for idx,oneDimHill in enumerate(self.oneDimHills):
+			currPosVals = [x[idx] for x in posVals]
+			derivVals.append( oneDimHill.evalNthDerivativeAtVals(currPosVals,n=1) )
+
+		outGrads = [ [*vals] for vals in it.zip_longest(*derivVals) ]
+		return outGrads
+
 	def __eq__(self, other):
 		if len(self.oneDimHills) != len(other.oneDimHills):
 			return False
@@ -483,6 +531,30 @@ class OneDimGaussianHill():
 			distSqr = (posVals[idx]-self.pos)**2
 			outList[idx] = self.height*math.exp(-0.5*distSqr*(1/scaleFactor))
 		return outList
+
+	#TODO: Use hermite polynomials to easily extend this to higher order derivatives
+	def evalNthDerivativeAtVals(self, posVals, n=1):
+		""" Get values for the n-th derivative at a set of input parameters
+		
+		Args:
+			posVals: (iter of floats) Each represents an input position at which to evaluate the derivative
+			n: (int,Optional) The n-th derivative to take. 0 means return the function, 1 is the first derivative etc.
+				 
+		Returns
+			outVals: (iter of float)  Values of the n-th derivative at the input posVals
+	 
+		"""
+		zerothDerivVals = self.evalFunctAtVals(posVals)
+		if n==0:
+			outVals = zerothDerivVals
+		elif n==1:
+			prefactor = -1/(self.scale**2)
+			outVals = [ prefactor*(x-self.pos)*gau for x,gau in it.zip_longest(posVals,zerothDerivVals) ]
+
+		else:
+			raise NotImplementedError("")
+
+		return outVals
 
 	def __eq__(self, other):
 		eqTol = min(self._eqTol, other._eqTol)
