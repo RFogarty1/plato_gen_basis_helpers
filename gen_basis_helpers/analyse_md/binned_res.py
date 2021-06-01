@@ -1,5 +1,5 @@
 
-
+import numpy as np
 
 class BinnedResultsStandard():
 	""" Simple class for storing results of binning
@@ -31,6 +31,16 @@ class BinnedResultsStandard():
 		binEdges.append( binCentres[-1] + (0.5*binWidth) )
 		return cls(binCentres, binEdges, binVals)
 
+	@classmethod
+	def fromBinEdges(cls, binEdges, binVals=None):
+		binVals = dict() if binVals is None else binVals
+		outEdges = binEdges
+		outCentres = list()
+		for idx in range(len(binEdges)-1):
+			currCentre = binEdges[idx] + ((binEdges[idx+1]-binEdges[idx])/2)
+			outCentres.append(currCentre)
+		return cls(outCentres, binEdges, binVals)
+
 	def __eq__(self, other):
 		eqTol = min(self._eqTol, other._eqTol)
 
@@ -60,6 +70,98 @@ class BinnedResultsStandard():
 		return True
 
 
+def binResultsFromTwoDimDataSimple(inpData, binResObj, dimZeroLabel="xVals", dimOneLabel="yVals", raiseIfValsOutsideBins=False):
+	""" When given x vs y, this divides the values into the bins provided in binResObj 
+	
+	Args:
+		inpData: (iter of len-2 floats). x-values (i.e. inpData[idx][0]) determine which bin the data is placed in. y-values are some function we care about
+		binResObj: (BinnedResultsStandard) Contains information on the bins
+		dimZeroLabel: (str) The label to use
+ 
+	Returns
+		Nothing; works in place using binResObj. Values are placed in binResObj.binVals. If dimZeroLabel and dimOneLabel already exist then they are appended to the relevant lists; else the lists are created
+
+
+	NOTES:
+		a) For a bin with edges [minEdge,maxEdge] we will put x in that bin if minEdge<=x<maxEdge
+		b) Overlapping bins likely wont cause any kind of error; but will lead to unpredictable results 
+		c) Bins should be in order and continous
+
+	Raises:
+		 ValueError: If "raiseIfValsOutsideBins" is True and a value is found that doesnt fit into any of the bins
+	"""
+	#Sort the centres and widths
+	binCentres = binResObj.binCentres
+	sortedBinEdges = [ [binResObj.binEdges[idx], binResObj.binEdges[idx+1]] for idx in range(len(binResObj.binCentres))]
+
+
+	#Figure out the dict for the sorted bins
+	outDicts = [ {dimZeroLabel:list(), dimOneLabel:list()} for x in range(len(sortedBinEdges)) ]
+
+	edgeIdx, dataIdx = 0,0
+	numberPointsBinned = 0
+	while (edgeIdx<len(sortedBinEdges)) and (dataIdx<len(inpData)):
+		currMin, currMax = sortedBinEdges[edgeIdx]
+		currDataX, currDataY = inpData[dataIdx][0], inpData[dataIdx][1]
+
+		if (currDataX>=currMin) and (currDataX<currMax):
+			outDicts[edgeIdx][dimZeroLabel].append( currDataX )
+			outDicts[edgeIdx][dimOneLabel].append(  currDataY )
+			numberPointsBinned += 1
+			dataIdx += 1
+		elif currDataX>currMin:
+			edgeIdx += 1
+		else:
+			dataIdx += 1 #This should only trigger when x is too small to fit into any bins
+ 
+
+	if raiseIfValsOutsideBins:
+		if numberPointsBinned < len(inpData):
+			raise ValueError("Only {} values binned; out of {} present".format(numberPointsBinned, len(inpData) ))
+
+	#Initialise lists if needed
+	if binResObj.binVals.get(dimZeroLabel,None) is None:
+		binResObj.binVals[dimZeroLabel] = [list() for x in range(len(binCentres))]
+
+	if binResObj.binVals.get(dimOneLabel,None) is None:
+		binResObj.binVals[dimOneLabel] = [list() for x in range(len(binCentres))]
+
+	#Update bins with new values
+	for idx,unused in enumerate(binResObj.binCentres):
+		extraXVals, extraYVals = outDicts[idx][dimZeroLabel], outDicts[idx][dimOneLabel]
+
+		#Sort x-values out
+		binResObj.binVals.get(dimZeroLabel)[idx].extend( outDicts[idx][dimZeroLabel] )
+
+		#Sort y-values out
+		binResObj.binVals.get(dimOneLabel)[idx].extend( outDicts[idx][dimOneLabel] )
+
+
+
+
+def getEmptyBinResultsForValsStandard(inpVals, binWidth):
+	""" Gets reasonable same-width bins for which to put inpVals in at a later point. Bins are generated such that the min value in the centre of the first bin
+	
+	Args:
+		inpVals: (iter of floats) Representative data which we will be binning
+		binWidth: (float) The width of each bin
+
+	Returns
+		outBins: (BinnedResultsStandard object) This contains all the bins, but no data associated with them
+ 
+	NOTE:
+		Currently using np.arange as a backend; may have slight inconsistencies based on that
+
+	"""
+	minVal, maxVal = min(inpVals), max(inpVals)
+	lowerEdge = minVal - (0.5*binWidth)
+	upperEdge = maxVal + (0.5*binWidth)
+
+	outEdges = list(np.arange(lowerEdge, upperEdge, binWidth))
+	if outEdges[-1] < maxVal:
+		outEdges.append( outEdges[-1]+binWidth )
+
+	return BinnedResultsStandard.fromBinEdges(outEdges)
 
 
 

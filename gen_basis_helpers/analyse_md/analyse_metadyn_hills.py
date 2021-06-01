@@ -5,6 +5,84 @@ import math
 import numpy as np
 
 
+
+def getPESFromOneDimPosAndForceSimple(posVsForce):
+	""" Gets an estimated potential energy surface from a list of positions and forces
+	
+	Args:
+		posVsForce: (iter of len-2 iters) For each element x[0] is the position while x[1] is the force
+			 
+	Returns
+		posVsEnergy: (iter of len-2 iters) For each element x[0] is the position while x[1] is the energy. Units match the energy units used in the forces
+
+	Notes:
+		Simply does linear interpolation for everything.
+ 
+	"""
+	outVals = [ [posVsForce[0][0], 0] ]#Set the zero to the first data point passed
+
+	for idx,(pos,force) in enumerate(posVsForce[1:],start=1):
+		dist = pos - posVsForce[idx-1][0]
+		forceDiff = force - posVsForce[idx-1][1]
+		averageForce = forceDiff / dist
+		extraEnergy = averageForce*dist #Obivously the dist cancels out the above line so could technically be removed
+		currEnergy = outVals[idx-1][1] + extraEnergy
+		outVals.append( [pos,currEnergy] )
+
+	return outVals
+
+def getEstimateOfUnderlingForcesFromOneDimCVPositionData(posVals, timeVals, hillsInfo, massCV, frictionCoeff=0):
+	""" Gets an estimate of the underlying forces at each position of the collective variable. Originally made for a collective variable involving an atom moving from a fixed plane
+	
+	Uses the formula [dE/dr = frictionCoeff*v + massCV*accel - dE_{p}/dr] where dE/dr is the force from the unmodified potential energy surface, v is the velocity of the collective variable, and E_{p} is the energy of the added potential (contained in hillsInfo) 
+
+	Args:
+		posVals: (iter of floats) Positions of the collective variable
+		timeVals: (iter of floats) Same length as posVals; the times relating to each position
+		hillsInfo: (MetadynHillsInfo object) Contains information on the potential added to the simulation at any one point
+		massCV: (float) The mass associated with the collective variable
+		frictionCoeff: (float) Friction coefficient used in Langevin dynamics; this will cause a drag force that we factor out. Not sure how to set for more complicated collective variables than movement of a single atom but....
+			 
+	Returns
+		outData: (iter of len-2 iters) x-values are positions, y-values are estiamtes of the force at that position. Order determined from input otder
+ 
+	NOTES:
+		UNITS: The unit of mass will depend on units for position, hill energies and time used I guess. For hills in eV, positions in bohr and time in femtoseconds you should use atomicMass*protonMassInKg*joulesToEv / ( (metreToBohr**2)*(1e-15**2) )
+		LENGTH(Output): We get velocities and accelerations from posVals/times
+		VELOCITIES/ACCELS: We use the average values of these over a timestep
+		TimeVals: I assume these are all +ve (or zero) and this is a sort of key assumption. So dont have negative times please
+
+	"""
+	#Get velocities/accelerations/times for as much data as possible
+	vels, accels = _getVelocitiesAndAccelFromPositionsAndTimes(posVals, timeVals)
+	trimmedPositions = posVals[2:]
+	trimmedTimes = timeVals[2:]
+
+	#Figure out positions vs potential for these values
+	outForces = list()
+	for idx in range(len(accels)):
+		currPos, currTime = trimmedPositions[idx], trimmedTimes[idx]
+		currPotObj = hillsInfo.createGroupedHills(timeRange=[-1,currTime])
+		currPenaltyGradient = currPotObj.evalGradientAtVals( [[currPos]] )[0][0] 
+		currForce = massCV*accels[idx] - frictionCoeff*vels[idx] - currPenaltyGradient
+		outForces.append(currForce)
+
+	return [ [pos,force] for pos,force in it.zip_longest(trimmedPositions,outForces) ]
+
+
+def _getVelocitiesAndAccelFromPositionsAndTimes(inpPositions, inpTimes):
+	allVel, accel = list(), list()
+	for idx in range(1,len(inpPositions)):
+		deltaT = inpTimes[idx] - inpTimes[idx-1]
+		velocity = (inpPositions[idx] - inpPositions[idx-1]) / deltaT
+		allVel.append(velocity)
+		if idx > 1:
+			acceleration = (allVel[-1] - allVel[-2]) / deltaT
+			accel.append(acceleration)
+
+	return allVel[1:], accel
+
+
 def getTimeVsPotAtValsForEachHillAdded(inpObj, inpVals, timeRange=None, timeTol=1e-4, minTimeDiff=1e-3, oneDimOutput=True):
 	""" Gets [ [x,....z], [val] ] for the potential at each time a hill was added.
 	

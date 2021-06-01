@@ -9,6 +9,70 @@ import numpy as np
 import gen_basis_helpers.analyse_md.analyse_metadyn_hills as tCode
 
 
+class TestGetPESForOneDimSimple(unittest.TestCase):
+
+	def setUp(self):
+		self.inpVals = [ [1,2], [2,4], [5,25] ]
+
+	def _runTestFunct(self):
+		return tCode.getPESFromOneDimPosAndForceSimple(self.inpVals)
+
+	def testExpectedValsA(self):
+		expVals = [ [1,0], [2,2], [5, 23] ]
+		actVals = self._runTestFunct()
+		for exp,act in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+
+class TestGetEstimateOfUnderlyingForcesFromOneDimCVPosData(unittest.TestCase):
+
+	def setUp(self):
+		self.posVals = [2,4,7,11] #Note we need to derive velocities/accelerations from this
+		self.timeVals = [2,3,4,6]
+		self.mockVelocities = [10,15,21]
+		self.mockAccel = [5,6]
+		self.mockDerivatives = [[2], [5]]
+		self.frictionCoeff = 0
+		self.massCV = 5
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		expVelocitiesUntrimmed =  [ (4-2)/1, (7-4)/1, (11-7)/2 ]
+		self.expVelocities = expVelocitiesUntrimmed[1:]
+		deltaTimeA, deltaTimeB = self.timeVals[2]-self.timeVals[1], self.timeVals[3]-self.timeVals[2]
+		self.expAccels =  [ (expVelocitiesUntrimmed[1]-expVelocitiesUntrimmed[0])/deltaTimeA, (expVelocitiesUntrimmed[2]-expVelocitiesUntrimmed[1])/deltaTimeB ]
+		#Sort out the hills object 
+		self.hillsInfoObj = mock.Mock()
+		self.groupedHillsObjA, self.groupedHillsObjB = mock.Mock(), mock.Mock()
+		self.hillsInfoObj.createGroupedHills.side_effect = [self.groupedHillsObjA, self.groupedHillsObjB]
+		self.groupedHillsObjA.evalGradientAtVals.side_effect = lambda *args,**kwargs: [self.mockDerivatives[0]]
+		self.groupedHillsObjB.evalGradientAtVals.side_effect = lambda *args,**kwargs: [self.mockDerivatives[1]] 
+
+	def _runTestFunct(self):
+		args = [self.posVals, self.timeVals, self.hillsInfoObj, self.massCV]
+		kwargs = {"frictionCoeff": self.frictionCoeff}
+		return tCode.getEstimateOfUnderlingForcesFromOneDimCVPositionData(*args, **kwargs)
+
+	def testGetVelocitiesAndAccelHelper(self):
+		actVel, actAccel = tCode._getVelocitiesAndAccelFromPositionsAndTimes(self.posVals, self.timeVals)
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(self.expVelocities,actVel)]
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(self.expAccels, actAccel)]
+
+	@mock.patch("gen_basis_helpers.analyse_md.analyse_metadyn_hills._getVelocitiesAndAccelFromPositionsAndTimes")
+	def testExpectedCaseA_noFrictCoeff(self, mockGetVelAndAccel):
+		#Mock the relevant functions
+		mockGetVelAndAccel.side_effect = lambda *args,**kwargs: [self.mockVelocities, self.mockAccel]
+
+		#Figure out expected values
+		expValA = self.massCV*self.mockAccel[0] - self.mockDerivatives[0][0]
+		expValB = self.massCV*self.mockAccel[1] - self.mockDerivatives[1][0]
+		expVals = [ [self.posVals[2],expValA], [self.posVals[3],expValB] ]
+		actVals = self._runTestFunct()
+
+		for exp,act in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+
 class TestGetPotValForEachStepOverTime(unittest.TestCase):
 
 	def setUp(self):
