@@ -18,7 +18,7 @@ class TestGetPESForOneDimSimple(unittest.TestCase):
 		return tCode.getPESFromOneDimPosAndForceSimple(self.inpVals)
 
 	def testExpectedValsA(self):
-		expVals = [ [1,0], [2,2], [5, 23] ]
+		expVals = [ [1,0], [2,3], [5, 3 + (29/2)*3] ]
 		actVals = self._runTestFunct()
 		for exp,act in it.zip_longest(expVals, actVals):
 			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]

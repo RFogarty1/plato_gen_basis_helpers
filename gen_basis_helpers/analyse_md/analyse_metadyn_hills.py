@@ -23,9 +23,9 @@ def getPESFromOneDimPosAndForceSimple(posVsForce):
 
 	for idx,(pos,force) in enumerate(posVsForce[1:],start=1):
 		dist = pos - posVsForce[idx-1][0]
-		forceDiff = force - posVsForce[idx-1][1]
-		averageForce = forceDiff / dist
-		extraEnergy = averageForce*dist #Obivously the dist cancels out the above line so could technically be removed
+		forceSum = force + posVsForce[idx-1][1]
+		averageForce = forceSum / 2
+		extraEnergy = averageForce*dist
 		currEnergy = outVals[idx-1][1] + extraEnergy
 		outVals.append( [pos,currEnergy] )
 
@@ -47,7 +47,7 @@ def getEstimateOfUnderlingForcesFromOneDimCVPositionData(posVals, timeVals, hill
 		outData: (iter of len-2 iters) x-values are positions, y-values are estiamtes of the force at that position. Order determined from input otder
  
 	NOTES:
-		UNITS: The unit of mass will depend on units for position, hill energies and time used I guess. For hills in eV, positions in bohr and time in femtoseconds you should use atomicMass*protonMassInKg*joulesToEv / ( (metreToBohr**2)*(1e-15**2) )
+		UNITS: The unit of mass will depend on units for position, hill energies and time used I guess. For hills in eV, positions in bohr and time in femtoseconds you should use atomicMass*protonMassInKg*joulesToEv* (metreToBohr**-2)*(1e-15**2) )
 		LENGTH(Output): We get velocities and accelerations from posVals/times
 		VELOCITIES/ACCELS: We use the average values of these over a timestep
 		TimeVals: I assume these are all +ve (or zero) and this is a sort of key assumption. So dont have negative times please
