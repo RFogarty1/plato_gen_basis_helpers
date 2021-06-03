@@ -70,7 +70,7 @@ class BinnedResultsStandard():
 		return True
 
 
-def binResultsFromTwoDimDataSimple(inpData, binResObj, dimZeroLabel="xVals", dimOneLabel="yVals", raiseIfValsOutsideBins=False):
+def binResultsFromTwoDimDataSimple(inpData, binResObj, dimZeroLabel="xVals", dimOneLabel="yVals", raiseIfValsOutsideBins=True):
 	""" When given x vs y, this divides the values into the bins provided in binResObj 
 	
 	Args:
