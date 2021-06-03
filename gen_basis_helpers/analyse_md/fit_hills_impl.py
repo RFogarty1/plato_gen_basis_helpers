@@ -7,6 +7,36 @@ import scipy.optimize
 from . import analyse_metadyn_hills as aMetaHillsHelp
 
 
+def getOutDictForFitResSimple(fitHillsObj, dataToFit):
+	""" Gets a dictionary from the fit results that can be part of whats dumped to *.json
+	
+	Args:
+		fitHillsObj: (MetadynHillsInfo) Contains the fit Gaussian hills
+		dataToFit: (iter of len-2 iters) Data which was input to fit against
+			 
+	Returns
+		 outDict: Keys are "inpData", "fitData", "fitHills"
+ 
+	outDict:
+		inpData: dataToFit
+		fitData: (iter of len-2 iters) x vals taken from dataToFit, yVals are fitPotential(xVal)
+		fitHills: (MetadynHillsInfo.toDict()) Using MetadynHillsInfo.fromDict() on this will get a MetadynHillsInfo for the fit potential
+
+	"""
+	#Get data showing fit vs actual
+	xVals = [ x[0] for x in dataToFit ]
+	yVals = [ x[1] for x in dataToFit ]
+	potObj = fitHillsObj.createGroupedHills()
+	fitYVals = potObj.evalFunctAtVals( [ [x] for x in xVals ]  )
+	fitData = [ [x,y] for x,y in it.zip_longest(xVals, fitYVals) ]
+	
+	outDict= dict()
+	outDict["inpData"] = dataToFit
+	outDict["fitData"] = fitData
+	outDict["fitHills"] = fitHillsObj.toDict()
+	return outDict
+
+
 def fitHillsToOneDimDataSimple(posVsPot, nGaus=1, scaleAll=1):
 	""" Simple function for getting metadynamics hills to fit to a potential
 	
@@ -17,7 +47,7 @@ def fitHillsToOneDimDataSimple(posVsPot, nGaus=1, scaleAll=1):
  
 	Returns
 		fitObj: Data structure describing aspects of the fit
-		outHills: (MetadynHillsInfo) Contains
+		outHills: (MetadynHillsInfo) Contains the fit hills with time=0
  
 	"""
 	#Get start params 
