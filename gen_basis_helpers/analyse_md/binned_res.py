@@ -63,9 +63,28 @@ class BinnedResultsStandard():
 			valsA, valsB = binValsA[key], binValsB[key]
 			if len(valsA) != len(valsB):
 				return False
-			diffVals = [abs(x-y) for x,y in zip(valsA,valsB)]
-			if any([x>eqTol for x in diffVals]):
-				return False
+
+			try:
+				unused = iter(valsA[0])
+			#This will often trigger (e.g. if we're storing a single float value in each bin)
+			except TypeError:
+				diffVals = [abs(x-y) for x,y in zip(valsA,valsB)]
+				if any([x>eqTol for x in diffVals]):
+					return False
+
+			#The else code runs if an exception wasnt triggered; this should trigger if each bin contains an iter of floats for one property
+			else:
+				#Check lengths are the same
+				lenA = [len(x) for x in valsA]
+				lenB = [len(x) for x in valsB]
+				if lenA != lenB:
+					return False
+
+				#Check the values are equal
+				for iterA, iterB in zip(valsA,valsB):
+					diffVals = [abs(x-y) for x,y in zip(iterA,iterB)]
+					if any([x>eqTol for x in diffVals]):
+						return False
 
 		return True
 
@@ -162,6 +181,33 @@ def getEmptyBinResultsForValsStandard(inpVals, binWidth):
 		outEdges.append( outEdges[-1]+binWidth )
 
 	return BinnedResultsStandard.fromBinEdges(outEdges)
+
+
+def averageItersInEachBin(binResObj, keys=None):
+	""" Takes a BinnedResultsStandard where iters of values are stored in each bin (meaninng binResObj.binVals.key is an iter of iters for that one)
+	
+	Args:
+		binResObj: (BinnedResultsStandard) Objects containing results of binning
+		keys: (iter of str) Keys in binResObj.binVals to attempt to average over. Default is to do it for all keys which are an iter of iters
+			 
+	Returns
+		Nothing; works in place
+ 
+	"""
+	keys = binResObj.binVals.keys() if keys is None else keys
+
+	for key in keys:
+		currVals = binResObj.binVals[key]
+		try:
+			unused = iter(currVals[0])
+		except TypeError:
+			pass
+		#Runs if error not triggered; in that case currVals is an iter of iters
+		else:
+			avVals = list()
+			for valList in currVals:
+				avVals.append( sum(valList)/len(valList) )
+			binResObj.binVals[key] = avVals
 
 
 

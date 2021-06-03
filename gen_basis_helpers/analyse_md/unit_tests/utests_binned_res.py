@@ -26,6 +26,14 @@ class TestBinnedResultsObj(unittest.TestCase):
 		objB = self.testObjA
 		self.assertEqual(objA,objB)
 
+	def testEqualCompareEqual_iterOfIterBinVals(self):
+		self.valsA = [ [x] for x in self.valsA ]
+		self.createTestObjs()
+		objA = copy.deepcopy(self.testObjA)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertEqual(objA,objB)
+
 	def testUnequalCompareUnequal_diffLenBins(self):
 		objA = copy.deepcopy(self.testObjA)
 		self.binCentres.append(1)
@@ -62,6 +70,24 @@ class TestBinnedResultsObj(unittest.TestCase):
 		self.createTestObjs()
 		objB = self.testObjA
 		self.assertNotEqual(objA, objB)
+
+	def testUnequalCompareUnequal_diffLenIterOfIters(self):
+		self.valsA = [ [x] for x in self.valsA ]
+		self.createTestObjs()
+		objA = copy.deepcopy(self.testObjA)
+		self.valsA[0].append(2)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA,objB)
+
+	def testUnequalCompreUnequal_diffValsInIterOfIters(self):
+		self.valsA = [ [x] for x in self.valsA ]
+		self.createTestObjs()
+		objA = copy.deepcopy(self.testObjA)
+		self.valsA[0][0] += 2
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA,objB)		
 
 	def testFromConstantWidth(self):
 		binWidth = 1
@@ -137,5 +163,56 @@ class TestCreateEmptyBinsStandard(unittest.TestCase):
 		expObj = tCode.BinnedResultsStandard.fromBinEdges(expEdges)
 		actObj = self._runTestFunct()
 		self.assertEqual(expObj, actObj)
+
+class TestConvertBinListsIntoAverages(unittest.TestCase):
+
+	def setUp(self):
+		self.keys = ["xVals", "yVals"]
+		self.inpKeys = copy.deepcopy(self.keys)
+		self.binEdges = [1,2,3] #Means two bins
+		self.binValsKeyA = [ [5,7,12], [9,11,16] ] 
+		self.binValsKeyB = [ [3,5,10], [8,10,12] ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		binVals = {self.keys[0]: self.binValsKeyA,
+		           self.keys[1]: self.binValsKeyB}
+		self.binObjA = tCode.BinnedResultsStandard.fromBinEdges(self.binEdges, binVals=binVals)
+
+	def _runTestFunct(self):
+		return tCode.averageItersInEachBin(self.binObjA, keys=self.inpKeys)
+
+	def testExpectedValsA(self):
+		expBinVals = {"xVals": [8, 12], "yVals":[6, 10]}
+		expBinObj = tCode.BinnedResultsStandard.fromBinEdges(self.binEdges, binVals=expBinVals)
+		actBinObj = self.binObjA
+		self._runTestFunct()
+		self.assertEqual(expBinObj, actBinObj)
+
+	def testExpected_noKeysPassed(self):
+		self.inpKeys = None
+		expBinVals = {"xVals": [8, 12], "yVals":[6, 10]}
+		expBinObj = tCode.BinnedResultsStandard.fromBinEdges(self.binEdges, binVals=expBinVals)
+		actBinObj = self.binObjA
+		self._runTestFunct()
+		self.assertEqual(expBinObj, actBinObj)
+
+	def testExpected_singleKeyPassed(self):
+		self.inpKeys = ["yVals"]
+		expBinVals = {"yVals":[6, 10], "xVals":self.binValsKeyA}
+		expBinObj = tCode.BinnedResultsStandard.fromBinEdges(self.binEdges, binVals=expBinVals)
+		actBinObj = self.binObjA
+		self._runTestFunct()
+		self.assertEqual(expBinObj, actBinObj)
+
+	def testNoEffectIfBinValsNotIterOfIters(self):
+		self.binValsKeyA = [1,2]
+		self.binValsKeyB = [3,4]
+		self.createTestObjs()
+		expBin = copy.deepcopy(self.binObjA)
+		self._runTestFunct()
+		actBin = self.binObjA
+		self.assertEqual(expBin, actBin)
 
 
