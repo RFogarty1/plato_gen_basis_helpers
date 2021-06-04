@@ -10,7 +10,8 @@ def getSimpleCreatorObjToDictMapObj():
 	outFuncts = list()
 	outFuncts.append(getSelectedBasicInfoDictFromCreatorObj)
 	outFuncts.append(_getSelectedDictsFromCreatorObj)
-	outFuncts.append(_getGeomConstraintInfoFromCreatorObj)
+#	outFuncts.append(_getGeomConstraintInfoFromCreatorObj) #Doubt this was ever really used anyway
+	outFuncts.append(_getFullGeomConstraintInfoFromCreatorObj)
 	outFuncts.append(_getBasisObjsInfoFromCreatorObj)
 	outFuncts.append(_getColvarsInfoFromCreatorObj)
 	return methObjsHelp.GetDictFromCreatorObj(outFuncts)
@@ -42,6 +43,14 @@ def _getGeomConstraintInfoFromCreatorObj(creatorObj):
 		outDict["cell_constraints"] = creatorObj.geomConstraints.cellConstraints.toDict()
 	return outDict
 
+
+def _getFullGeomConstraintInfoFromCreatorObj(creatorObj):
+	outDict = dict()
+	if creatorObj.geomConstraints is None:
+		pass
+	else:
+		outDict["geom_constraints"] = creatorObj.geomConstrants.toDict()
+	return outDict
 
 def _getColvarsInfoFromCreatorObj(creatorObj):
 	outDict = dict()

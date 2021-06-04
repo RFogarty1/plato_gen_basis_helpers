@@ -31,6 +31,15 @@ class GeomConstraints():
 
 		return True
 
+	@classmethod
+	def fromDict(cls, inpDict):
+		atomicPosConstraints = inpDict["atomicPositionConstraints"]
+		cellConstraints = inpDict["cellConstraints"]
+		return cls(atomicPosConstraints, cellConstraints)
+
+	def toDict(self):
+		return {"atomicPositionConstraints": self.atomicPositionConstraints,
+		        "cellConstraints": self.cellConstraints}
 
 
 class CellConstraints():
@@ -133,6 +142,15 @@ class AtomicPositionConstraints():
 
 		return True
 
+	@classmethod
+	def fromDict(cls, inpDict):
+		atomicCartConstraints = [AtomicCartesianConstraint.fromDict(x) for x in inpDict["atomicCartConstraints"]]
+		return cls(atomicCartConstraints=atomicCartConstraints)
+
+	def toDict(self):
+		outDicts = [x.toDict() for x in self.atomicCartConstraints]
+		return {"atomicCartConstraints":outDicts}
+
 class AtomicCartesianConstraint():
 	""" Represents constraints to apply to cartesian co-ordinates of a single atom
 
@@ -166,6 +184,19 @@ class AtomicCartesianConstraint():
 			if getattr(self,x) is True:
 				return True
 		return False
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		atomIdx = inpDict["atomIdx"]
+		fixX, fixY, fixZ = [ inpDict[attr] for attr in ["fixX", "fixY", "fixZ"] ]
+		kwargs = {"fixX":fixX, "fixY":fixY, "fixZ":fixZ}
+		return cls(atomIdx, **kwargs)
+
+	def toDict(self):
+		attrs = ["atomIdx", "fixX", "fixY", "fixZ"]
+		outDict = {attr: getattr(self,attr) for attr in attrs}
+		return outDict
+
 
 
 

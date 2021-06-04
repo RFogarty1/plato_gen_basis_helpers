@@ -101,6 +101,33 @@ class TestGeomConstraintsClass(unittest.TestCase):
 		objB = tCode.GeomConstraints(atPosConstrB, self.cellConstraints)
 		self.assertNotEqual(objA,objB)
 
+
+class TestGeomConstraintsToAndFromDict(unittest.TestCase):
+
+	def setUp(self):
+		self.cellAnglesToFix = [False,True,False]
+		self.atomIndicesToFixX = [3,5]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#cart constraints
+		cartConstraints = list()
+		for idx in self.atomIndicesToFixX:
+			currConstraint = tCode.AtomicCartesianConstraint(idx, fixX=True)
+			cartConstraints.append( currConstraint )
+
+		#
+		self.testObjA = tCode.GeomConstraints.initWithNoConstraints()
+		self.testObjA.cellConstraints.anglesToFix = self.cellAnglesToFix
+		self.testObjA.atomicPositionConstraints.atomicCartConstraints = cartConstraints
+
+	def testConsistentCaseA(self):
+		expObj = self.testObjA
+		inpDict = expObj.toDict()
+		actObj = tCode.GeomConstraints.fromDict(inpDict)
+		self.assertEqual(expObj, actObj)
+
+
 class TestAtomicPositionConstraintsClass(unittest.TestCase):
 
 	def setUp(self):
@@ -150,6 +177,20 @@ class TestAtomicPositionConstraintsClass(unittest.TestCase):
 		objA = tCode.AtomicPositionConstraints(atomicCartConstraints = [atomicConstrA])
 		objB = tCode.AtomicPositionConstraints(atomicCartConstraints = [atomicConstrB])
 		self.assertNotEqual(objA,objB)
+
+	def testToAndFromDictConsistent(self):
+		#Setup in effect
+		testAtomIdx = 2
+		testConstraintA = tCode.AtomicCartesianConstraint(testAtomIdx, fixY=True)
+		testConstraintB = tCode.AtomicCartesianConstraint(testAtomIdx, fixZ=True)
+		self.atomicCartConstraints.append(testConstraintA)
+		self.atomicCartConstraints.append(testConstraintB)
+		self.createTestObjs()
+
+		#
+		expObj = self.testObjA
+		inpDict = expObj.toDict()
+		actObj = tCode.AtomicPositionConstraints.fromDict(inpDict)
 	
 class TestAtomicCartConstraints(unittest.TestCase):
 
@@ -191,5 +232,12 @@ class TestAtomicCartConstraints(unittest.TestCase):
 		self.fixX, self.fixY, self.fixZ = False, False, False		
 		self.createTestObjs()
 		self.assertFalse(self.testObjA.constraintsPresent)
+
+	def testToAndFromDictConsistent(self):
+		expObj = self.testObjA
+		inpDict = expObj.toDict()
+		actObj = tCode.AtomicCartesianConstraint.fromDict(inpDict)
+		self.assertEqual(expObj,actObj)
+
 
 
