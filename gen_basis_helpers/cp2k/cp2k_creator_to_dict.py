@@ -20,6 +20,7 @@ def getSimpleCreatorObjToDictMapObj():
 def getSelectedBasicInfoDictFromCreatorObj(creatorObj):
 	outDict = dict()
 	attrsToGet = ["absGridCutoff", "addedMOs", "charge", "kPts","relGridCutoff", "xcFunctional"]
+	attrsToGet += ["epsDef", "epsScf", "extrapolationMethod", "extrapolationOrder", "nGrids", "scfOuterEps"]
 	for currAttr in attrsToGet:
 		currVal = getattr(creatorObj, currAttr)
 		if currVal is not None:
