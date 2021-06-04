@@ -76,7 +76,7 @@ class MolDynamicsOptsCP2KStandard():
 class MetaDynamicsOptsCP2KStandard():
 
 	def __init__(self, metaVars, ntHills=None, doHills=True, hillHeight=None, printColvarCommonIter=3,
-	             heightNumbFmt="{:.4f}", printHills=True, printHillsCommonIter=3, spawnHillsOpts=None):
+	             heightNumbFmt="{:.7f}", printHills=True, printHillsCommonIter=3, spawnHillsOpts=None):
 		""" Initializer
 		
 		Args:
