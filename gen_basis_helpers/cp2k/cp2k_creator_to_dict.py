@@ -49,7 +49,7 @@ def _getFullGeomConstraintInfoFromCreatorObj(creatorObj):
 	if creatorObj.geomConstraints is None:
 		pass
 	else:
-		outDict["geom_constraints"] = creatorObj.geomConstrants.toDict()
+		outDict["geom_constraints"] = creatorObj.geomConstraints.toDict()
 	return outDict
 
 def _getColvarsInfoFromCreatorObj(creatorObj):

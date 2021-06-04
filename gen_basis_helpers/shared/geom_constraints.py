@@ -33,13 +33,13 @@ class GeomConstraints():
 
 	@classmethod
 	def fromDict(cls, inpDict):
-		atomicPosConstraints = inpDict["atomicPositionConstraints"]
-		cellConstraints = inpDict["cellConstraints"]
+		atomicPosConstraints = AtomicPositionConstraints.fromDict( inpDict["atomicPositionConstraints"] )
+		cellConstraints = CellConstraints.fromDict( inpDict["cellConstraints"] )
 		return cls(atomicPosConstraints, cellConstraints)
 
 	def toDict(self):
-		return {"atomicPositionConstraints": self.atomicPositionConstraints,
-		        "cellConstraints": self.cellConstraints}
+		return {"atomicPositionConstraints": self.atomicPositionConstraints.toDict(),
+		        "cellConstraints": self.cellConstraints.toDict()}
 
 
 class CellConstraints():
