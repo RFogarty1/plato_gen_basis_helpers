@@ -122,6 +122,32 @@ class TestGetOutOfPlaneDistTwoPoints(unittest.TestCase):
 		actDist = self._runTestFunct()
 		self.assertAlmostEqual(expDist, actDist)
 
+class TestGetInterPlaneDistTwoPoints(unittest.TestCase):
+
+	def setUp(self):
+		self.posA = [3,5,5]
+		self.posB = [3,7,8]
+		self.planeEqnA = tCode.ThreeDimPlaneEquation(0,0,1,4)
+
+	def _runTestFunct(self):
+		return tCode.getInterPlaneDistTwoPoints(self.posA, self.posB, self.planeEqnA)
+
+	def testWithInpPlaneBelow(self):
+		expVal = 3
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testWithInpPlaneAbove(self):
+		self.planeEqnA = tCode.ThreeDimPlaneEquation(0,0,1,20)
+		expVal = 3
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testWithInpPlaneInTheMiddle(self):
+		self.planeEqnA = tCode.ThreeDimPlaneEquation(0,0,1,6.5)
+		expVal = 3
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
 
 
 class TestGetVectorToMoveBetweenParralelPlanes(unittest.TestCase):

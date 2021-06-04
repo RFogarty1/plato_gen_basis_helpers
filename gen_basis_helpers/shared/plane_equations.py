@@ -149,6 +149,22 @@ def getOutOfPlaneDistTwoPoints(posA, posB, planeEqn):
 	return outOfPlaneDist
 
 
+def getInterPlaneDistTwoPoints(posA, posB, planeEqn):
+	""" Gets the inter-plane distance between two points. This is the distance between planeA and planeB, which are both parralel to planeEqn and contain posA and posB respectively
+	
+	Args:
+		posA: (len-3 iter) [x,y,z] Position of point A
+		posB: (len-3 iter) [x,y,z] Position of point B
+		planeEqn: (ThreeDimPlaneEquation)
+
+	Returns
+		outDist: (float) As description says; the distance between parralel planes containing point A and point B (and both parralel to planeEqn) 
+ 
+	"""
+	distFromPlaneA = planeEqn.getSignedDistanceOfPointFromPlane(posA)
+	distFromPlaneB = planeEqn.getSignedDistanceOfPointFromPlane(posB)
+	distAB = abs( distFromPlaneA - distFromPlaneB )
+	return distAB
 
 def getVectorToMoveFromParallelPlanesAToB(planeA, planeB, parallelTol=1e-6):
 	""" Gets the vector to move (in the shortest distance) from planeA to planeB.
