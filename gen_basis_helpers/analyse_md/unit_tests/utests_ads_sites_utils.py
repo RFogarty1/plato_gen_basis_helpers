@@ -1,5 +1,6 @@
 
 import copy
+import math
 import unittest
 import unittest.mock as mock
 
@@ -16,6 +17,7 @@ class TestAssignAdsIndicesToAdsorptionSites(unittest.TestCase):
 		self.adsIndices = [0]
 		self.maxHozDist = 4 #If somethings further than this its considered to be "None"
 		self.siteName = "site_a"
+		self.maxTotDist = None
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -24,7 +26,7 @@ class TestAssignAdsIndicesToAdsorptionSites(unittest.TestCase):
 
 	def _runTestFunct(self):
 		args = [self.cellA, self.adsObjs, self.adsIndices]
-		kwargs = {"maxHozDist":self.maxHozDist}
+		kwargs = {"maxHozDist":self.maxHozDist, "maxTotDist":self.maxTotDist}
 		return tCode.assignAdsIndicesToAdsorptionSites(*args, **kwargs)
 
 	def testExpectedCaseA(self):
@@ -43,6 +45,18 @@ class TestAssignAdsIndicesToAdsorptionSites(unittest.TestCase):
 
 	def testExpectedTooFarFromHozDist(self):
 		self.maxHozDist = 1
+		expDict = {"None":[0], "site_a":list()}
+		actDict = self._runTestFunct()
+		self.assertEqual(expDict, actDict)
+
+	def testExpectedWithMaxTotalDist_closeEnoughToBoth(self):
+		self.maxTotDist = 10
+		expDict = {"None":list(), "site_a":[0]}
+		actDict = self._runTestFunct()
+		self.assertEqual(expDict, actDict)
+
+	def testExpectedWithMaxTotalDist_tooFarFromBoth(self):
+		self.maxTotDist = math.sqrt(2) #Closest is sqrt(3)
 		expDict = {"None":[0], "site_a":list()}
 		actDict = self._runTestFunct()
 		self.assertEqual(expDict, actDict)
