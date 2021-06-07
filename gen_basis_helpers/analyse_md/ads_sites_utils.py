@@ -52,29 +52,26 @@ def assignAdsIndicesToAdsorptionSites(inpCell, adsSiteObjs, inpIndices, maxHozDi
 
 
 	#Get (PBC-aware) total distance and horizontal distance matrices between adsSiteObjs and inpIndices
+	inpCellCartCoords = inpCell.cartCoords #want to save accesing this multiple times
 	useCell = copy.deepcopy(inpCell)
 	nCoords = len(useCell.fractCoords)
-	adsSiteCoords = [ site.positionFromGeom(useCell) + ["ads_site"] for site in adsSiteObjs ]
+	adsSiteCoords = [ site.positionFromGeom(useCell, inpCartCoords=inpCellCartCoords) + ["ads_site"] for site in adsSiteObjs ]
 	useCell.cartCoords = useCell.cartCoords + adsSiteCoords
 	firstAdsSiteIdx = len(inpCell.cartCoords)
 	adsSiteIndices = [x for x in range(firstAdsSiteIdx,firstAdsSiteIdx+len(adsSiteCoords))]
 
-
-#	import pdb
-#	pdb.set_trace()
-
 	distMatrix = calcDistHelp.calcDistanceMatrixForCell_minImageConv(useCell, indicesA=inpIndices, indicesB=adsSiteIndices)
-	hozDistMatrix = calcDistHelp.calcHozDistMatrixForCell_minImageConv(useCell, indicesA=inpIndices, indicesB=adsSiteIndices)
+	hozDistMatrix = calcDistHelp.calcHozDistMatrixForCell_minImageConv(useCell, indicesA=inpIndices, indicesB=adsSiteIndices)	
 
 
 	#
 	cartCoords = useCell.cartCoords
 	surfPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(useCell)
-	adsSitePositions = [x.positionFromGeom(useCell, inpCartCoords=cartCoords) for x in adsSiteObjs]
+#	adsSitePositions = [x.positionFromGeom(useCell, inpCartCoords=cartCoords) for x in adsSiteObjs]
 	for mappedInpIdx,inpIdx in enumerate(inpIndices):
 		currPos = cartCoords[inpIdx][:3]
 		minHozDist, currSiteName = maxHozDist, "None"
-		for adsIdx,adsPos in enumerate(adsSitePositions):
+		for adsIdx,adsPos in enumerate(adsSiteCoords):
 			currHozDist = hozDistMatrix[mappedInpIdx][adsIdx]
 			if currHozDist < minHozDist:
 				#Check maximum distance criterion is satisfied

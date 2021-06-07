@@ -1,4 +1,5 @@
 
+import itertools as it
 import math
 import unittest
 import unittest.mock as mock
@@ -211,6 +212,58 @@ class TestGetNearestImageNebCoords(unittest.TestCase):
 		expCoord = [7,7,8]
 		actCoord = self._runTestFunct()
 		self._checkExpAndActCoordsEqual(expCoord,actCoord)
+
+	def testWhenPBCsMatter_bothInCell(self):
+		self.coordA = [7,7,9]
+		self.coordB = [7,7,1]
+		expCoord = [7,7,11]
+		actCoord = self._runTestFunct()
+		self._checkExpAndActCoordsEqual(expCoord, actCoord)
+
+	#This failed because the tolerance for folding back was ridic low (1% of lattice paramter value)
+	def testForBugFoundInProduction(self):
+		lattVects = [ [19.25998959324, 0, 0],
+		              [-9.62999479662, 16.6796402643698,0],
+		              [0, 0, 43.41297727459] ]
+		self.testCell = uCellHelp.UnitCell.fromLattVects(lattVects)
+
+		self.coordA = [0.2462955954, -0.0845611422, 5.8293155133, "X"]
+		self.coordB = [-1.65514675872001, -2.85419319106976, 27.8617855356, "Y"]
+
+		expCoord = [-1.65514675872001, -2.85419319106976, -15.55119173899]
+		actCoord = self._runTestFunct()
+		self._checkExpAndActCoordsEqual(expCoord, actCoord)
+
+
+class TestGetNearestImageNebCoordsMatrix(unittest.TestCase):
+
+	def setUp(self):
+		self.lattAngles, self.lattParams = [90,90,90], [10,10,10]
+		self.coordA, self.coordB = [7,7,7,"X"], [7,7,18,"Y"]
+		self.indicesA = [0,1]
+		self.indicesB = [x for x in self.indicesA]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testCell = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.testCell.cartCoords = [ self.coordA, self.coordB ]
+
+	def _runTestFunct(self):
+		args = [self.testCell]
+		kwargs = {"indicesA": self.indicesA, "indicesB":self.indicesB}
+		return tCode.getNearestImageNebCoordsMatrixBasic(*args, **kwargs)
+
+	def testFullMatrix_pbcsImportant(self):
+		expMatrix = [ [[self.coordA , self.coordA ], [self.coordA, [7,7,8,"Y"] ]   ],
+		              [[self.coordB, [7,7,17,"X"] ], [self.coordB, self.coordB]]   ]
+		actMatrix = self._runTestFunct()
+
+		for rIdx in range(len(expMatrix)):
+			for cIdx in range(len(expMatrix[0])):
+				[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expMatrix[rIdx][cIdx][0][:3],actMatrix[rIdx][cIdx][0][:3])]
+				[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expMatrix[rIdx][cIdx][1][:3],actMatrix[rIdx][cIdx][1][:3])]
+				self.assertEqual( expMatrix[rIdx][cIdx][0][-1], actMatrix[rIdx][cIdx][0][-1] )
+				self.assertEqual( expMatrix[rIdx][cIdx][1][-1], actMatrix[rIdx][cIdx][1][-1] )
 
 
 class TestCalcHozDistMatrix(unittest.TestCase):

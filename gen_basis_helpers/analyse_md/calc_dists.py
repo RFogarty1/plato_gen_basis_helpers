@@ -1,4 +1,5 @@
 
+import copy
 import math
 import numpy as np
 
@@ -88,13 +89,17 @@ def calcHozDistMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None,
 	#3) hozDit = math.sqrt(totalDist**2 - interPlanarDist**2)
 	totalDistMatrix = calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=indicesA, indicesB=indicesB) #Somehow this seems to come out wrong
 	surfPlane = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell)
+	nearestImageNebCoordsMatrix = getNearestImageNebCoordsMatrixBasic(inpCell, indicesA=indicesA, indicesB=indicesB)
+
+
 
 	outMatrix = np.zeros( [len(indicesA), len(indicesB)] )
 	for dMatrixIdxA, atomIdxA in enumerate(indicesA):
 		for dMatrixIdxB,atomIdxB in enumerate(indicesB):
 			currTotalDist = totalDistMatrix[dMatrixIdxA][dMatrixIdxB]
-			posA, posB = cartCoords[atomIdxA][:3], cartCoords[atomIdxB][:3]
-			currInterPlaneDist = getInterSurfPlaneSeparationTwoPositions(posA, posB, inpCell)
+
+			posA, posB = [x[:3] for x in nearestImageNebCoordsMatrix[dMatrixIdxA][dMatrixIdxB]] #Taking from here effectively handles PBCs
+			currInterPlaneDist = planeEqnHelp.getInterPlaneDistTwoPoints(posA, posB, surfPlane)
 
 			#Figure out the horizontal distance
 			if abs(currTotalDist-currInterPlaneDist) < minTotInterPlaneDist:
@@ -160,6 +165,60 @@ def getInterSurfPlaneSeparationTwoPositions(posA, posB, inpCell):
 	return planeEqnHelp.getInterPlaneDistTwoPoints(posA, nearestImageCoords, surfPlaneEqn)
 
 
+def getNearestImageNebCoordsMatrixBasic(inpCell, indicesA=None, indicesB=None):
+	""" Gets a matrix where each element contains [coordA,coordB] where A,B are row/column indices. coordA is the same co-ordinate found in inpCell; coordB is the nearest neighbour for it
+	
+	Args:
+		inpCell: (plato_pylib UnitCell object)
+		indicesA: (Optional, iter of ints) Indices of the atoms to include for the first dimension; Default is to include ALL atoms
+		indicesB: (Optional, iter of ints) Indices of the atoms to include for the second dimension; Default is indicesA
+			
+	Returns
+		outMatrix: (NxM matrix) outMatrix[n][m] = [coordN, coordM] where N and M are lengths of indicesA and indicesB
+ 
+	"""
+	#Sort out default args
+	fractCoords = inpCell.fractCoords
+	indicesA = [x for x in range(len(cartCoords))] if indicesA is None else indicesA
+	indicesB = indicesA if indicesB is None else indicesB
+
+	#Figure out the value for each row; we need useCell to exploit some relevant function in the ucell_class thing
+	useCell = uCellHelp.UnitCell(lattParams=inpCell.getLattParamsList(), lattAngles=inpCell.getLattAnglesList())
+	outMatrix = list()
+	for idxA in indicesA:
+		currRow = _getSingleRowOfNearestImageNebCoordsMatrix(fractCoords, useCell, idxA, indicesB)
+		outMatrix.append(currRow)
+
+	return outMatrix
+
+
+def _getSingleRowOfNearestImageNebCoordsMatrix(startFractCoords, useCell, idxA, indicesB):
+	#Setup the cell to have the fractCoords we want
+#	startFractCoords = inpCell.fractCoords
+	centralFractUnshifted = startFractCoords[idxA]
+	fractCoords = [centralFractUnshifted] + [startFractCoords[idx] for idx in indicesB]
+	useCell.fractCoords = fractCoords
+
+	#Shift the cell such that the first index is right at the centre + fold all atoms into the cell
+	centralFractShifted = [0.5,0.5,0.5]
+	fractShiftVector = [x-y for x,y in zip(centralFractShifted, centralFractUnshifted)]
+	reverseFractShiftVector = [-1*x for x in fractShiftVector]
+	uCellHelp.applyTranslationVectorToFractionalCoords(useCell, fractShiftVector, foldInAfter=False)
+	uCellHelp.foldAtomicPositionsIntoCell(useCell, tolerance=1e-5)
+
+	#Now shift it back; this now contains only the nearest image co-ords for the index 0 val
+	uCellHelp.applyTranslationVectorToFractionalCoords(useCell, reverseFractShiftVector, foldInAfter=False)
+
+	outRow = list()
+#	outFractCoords = useCell.fractCoords
+	outCartCoords = useCell.cartCoords
+	for coord in outCartCoords[1:]:
+		partA = [x for x in outCartCoords[0]]
+		partB = coord
+		outRow.append( [partA,partB] )
+
+	return outRow
+
 #TODO: Not sure if this works for dists >L/2. If not i maybe need to test and raise for it
 def getNearestImageNebCoordsBasic(inpCell, coordA, coordB):
 	""" Given cartCoordA, find the nearest image co-ordinate for coordB (useful, for example, when a bond crosses periodic boundaries)
@@ -173,23 +232,14 @@ def getNearestImageNebCoordsBasic(inpCell, coordA, coordB):
 		outCoord: The image of coordB which is nearest to coordA
 	
 	"""
-	lattVects = inpCell.lattVects
-	startCartCoords = [coordA[:3], coordB[:3]]
-	startFractCoords = [x[:3] for x in uCellHelp.getFractCoordsFromCartCoords(lattVects, startCartCoords)]
-
-	shiftFCoordA = [0.5,0.5,0.5]
-	fShiftVector = [x-y for x,y in zip(shiftFCoordA, startFractCoords[0])]
-	shiftFCoordB = [x+y for x,y in zip(startFractCoords[1],fShiftVector)]
-
-	#shiftFCoordB = _getFractCoordsFoldedIntoCell(shiftFCoordB)
-	shiftFCoordB = _getImageInCellForInpFractCoords(shiftFCoordB)
-	diffShiftFractVect = [b-a for b,a in zip(shiftFCoordB,shiftFCoordA)]
-	coordBFractVector = [x+y for x,y in zip(diffShiftFractVect, startFractCoords[0])]
-	nearestImageCoords = uCellHelp._getCartCoordsFromFract_NoElement(lattVects,coordBFractVector)
-
-	return nearestImageCoords
+	indicesA, indicesB = [0],[1]
+	useCell = copy.deepcopy(inpCell)
+	useCell.cartCoords = [ coordA[:3] + ["X"], coordB[:3] + ["X"] ] 
+	outMatrix = getNearestImageNebCoordsMatrixBasic(useCell, indicesA=indicesA, indicesB=indicesB)
+	return outMatrix[0][0][1][:3]
 
 
+#TODO: Remove; it was previously used in getNearestImageNebCoordsBasic but isnt anymore
 def _getImageInCellForInpFractCoords(inpCoord, tolerance=1e-2):
 
 	outCoords = list()
