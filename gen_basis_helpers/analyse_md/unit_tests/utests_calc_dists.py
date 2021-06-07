@@ -1,7 +1,7 @@
 
-
+import math
 import unittest
-import unittest.mock
+import unittest.mock as mock
 
 import numpy as np
 
@@ -211,4 +211,119 @@ class TestGetNearestImageNebCoords(unittest.TestCase):
 		expCoord = [7,7,8]
 		actCoord = self._runTestFunct()
 		self._checkExpAndActCoordsEqual(expCoord,actCoord)
+
+
+class TestCalcHozDistMatrix(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoordsA = [  [9,9,9, "X"],
+		                      [1,1,9, "Y"],
+		                      [1,2,1, "Z"] ] #Was 7, but setting to 1 should lead to same dists anyway
+		self.indicesA = None
+		self.indicesB = None
+		self.minTotInterPlaneDist = 1e-7
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoordsA
+
+	def _runTestFunct(self):
+		args = [self.cellA]
+		kwargs = {"indicesA":self.indicesA, "indicesB":self.indicesB,
+		          "minTotInterPlaneDist": self.minTotInterPlaneDist}
+		return tCode.calcHozDistMatrixForCell_minImageConv(*args,**kwargs)
+
+	def _loadExpXyXzYzDists(self):
+		xyDist = math.sqrt( 2**2 + 2**2 )
+		xzDist = math.sqrt( 2**2 + 3**2 )
+		yzDist = 1
+
+		return xyDist, xzDist, yzDist
+
+	def testExpValsA(self):
+		xyDist = math.sqrt( 2**2 + 2**2 )
+		xzDist = math.sqrt( 2**2 + 3**2 )
+		yzDist = 1
+		expMatrix = [ [0     , xyDist, xzDist],
+		              [xyDist, 0     , yzDist],
+		              [xzDist, yzDist, 0     ] ]
+
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expMatrix), np.array(actMatrix) ) )
+	
+	def testExpVals_asymIndicesSpecified(self):
+		self.indicesA = [0,2]
+		self.indicesB = [0,1,2]
+
+		xyDist, xzDist, yzDist = self._loadExpXyXzYzDists()
+		expMatrix = [ [0     , xyDist, xzDist],
+		              [xzDist, yzDist, 0     ] ]
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expMatrix), np.array(actMatrix) ) )
+
+	def testExpVals_reversedAsymIndicesSpecified(self):
+		self.indicesA = [2,0]
+		self.indicesB = [2,1,0]
+
+		xyDist, xzDist, yzDist = self._loadExpXyXzYzDists()
+
+		expMatrix = [ [0     , yzDist, xzDist],
+		              [xzDist, xyDist, 0     ] ]
+
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expMatrix), np.array(actMatrix) ) )
+
+	def testExpVals_onlyIndicesASet(self):
+		self.indicesA = [2,0]
+		self.indicesB = None
+
+		xyDist, xzDist, yzDist = self._loadExpXyXzYzDists()
+		expMatrix = [ [0     , xzDist],
+		              [xzDist, 0     ] ]
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expMatrix), np.array(actMatrix) ) )
+
+	@mock.patch("gen_basis_helpers.analyse_md.calc_dists.calcDistanceMatrixForCell_minImageConv")
+	@mock.patch("gen_basis_helpers.analyse_md.calc_dists.getInterSurfPlaneSeparationTwoPositions")
+	def testExpectedInterPlaneDistSlightlyLargerThanTotDist(self, mockCalcInterPlaneDist, mockGetDistMatrix):
+		self.cartCoordsA = [ [5,5,5,"X"] ]
+		self.createTestObjs()
+
+		interPlaneDist, totalDist = 1e-9, 1e-10
+		mockCalcInterPlaneDist.side_effect = lambda *args,**kwargs:  interPlaneDist
+		mockGetDistMatrix.side_effect = lambda *args, **kwargs: [[totalDist]]
+
+
+		expDistMatrix = [ [0] ]
+		actDistMatrix = self._runTestFunct()
+		self.assertEqual(expDistMatrix, actDistMatrix)
+
+
+class TestGetInterSurfPlaneSeparationTwoPositions(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.posA = [5,5,9]
+		self.posB = [3,3,7]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+
+	def _runTestFunct(self):
+		return tCode.getInterSurfPlaneSeparationTwoPositions(self.posA, self.posB, self.cellA)
+
+	def testCase_pbcsDontMatter(self):
+		expVal = 2
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testCase_pbcsMatter(self):
+		self.posB = [3,3,3]
+		expVal = 4
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
 

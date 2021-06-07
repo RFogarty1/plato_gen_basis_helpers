@@ -1,5 +1,5 @@
 
-
+import math
 import unittest
 import unittest.mock as mock
 
@@ -301,6 +301,26 @@ class TestFilterToExcludeOutsideOutOfPlaneDistanceFromPoints(unittest.TestCase):
 		expIndices = [0,1,2]
 		actIndices = self._runTestFunct()
 		self.assertEqual(expIndices,actIndices)
+
+	#Note this is horizontal distance
+	def testExpectedCase_pbcsMatter(self):
+		self.coordsA = [ [1,0,5,"X"], [1,0,0,"X"] ]
+		self.inpPointsA = [ [9,9,9,"X"] ]
+		self.maxDist = math.sqrt(5)+0.1
+		self.createTestObjs()
+		expIndices = [0,1]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
+	def testExpectedCase_pbcsMatter_oneReturned(self):
+		self.coordsA = [ [1,0,5,"X"], [1,1,0,"X"] ]
+		self.inpPointsA = [ [9,9,9,"X"] ]
+		self.maxDist = math.sqrt(5)+0.1
+		self.createTestObjs()
+		expIndices = [0]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices, actIndices)
+
 
 
 class TestFilterToExcludeIndicesBasedonNumberOfAtomsInSurfacePlanes(unittest.TestCase):

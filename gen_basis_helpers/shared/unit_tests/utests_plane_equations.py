@@ -122,6 +122,7 @@ class TestGetOutOfPlaneDistTwoPoints(unittest.TestCase):
 		actDist = self._runTestFunct()
 		self.assertAlmostEqual(expDist, actDist)
 
+
 class TestGetInterPlaneDistTwoPoints(unittest.TestCase):
 
 	def setUp(self):
@@ -199,4 +200,39 @@ class TestGetVectorToMoveBetweenParralelPlanes(unittest.TestCase):
 		self.assertEqual(expVector,actVector)
 
 
+class TestCheckPlanesAreParallel(unittest.TestCase):
+
+	def setUp(self):
+		self.coeffsA = [0,0,1,5] 
+		self.coeffsB = [0,0,1,8]
+		self.tolerance = 1e-5
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.planeEqnA = tCode.ThreeDimPlaneEquation(*self.coeffsA)
+		self.planeEqnB = tCode.ThreeDimPlaneEquation(*self.coeffsB)
+
+	def _runTestFunct(self):
+		args = [self.planeEqnA, self.planeEqnB]
+		kwargs = {"parallelTol":self.tolerance}
+		return tCode.checkPlanesAreParralelSimple(*args, **kwargs)
+
+	def testParralelCaseA(self):
+		expVal = True
+		actVal = self._runTestFunct()
+		self.assertEqual(expVal, actVal)
+
+	def testParralelCaseB_negativeDotProduct(self):
+		self.coeffsB[-2] *= -1
+		self.createTestObjs()
+		expVal = True
+		actVal = self._runTestFunct()
+		self.assertEqual(expVal, actVal)
+
+	def testNonParralelCaseA(self):
+		self.coeffsB[0] += 1
+		self.createTestObjs()
+		expVal = False
+		actVal = self._runTestFunct()
+		self.assertEqual(expVal, actVal)
 

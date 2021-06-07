@@ -1,4 +1,6 @@
 
+import copy
+
 from . import calc_dists as calcDistHelp
 from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
@@ -48,27 +50,44 @@ def assignAdsIndicesToAdsorptionSites(inpCell, adsSiteObjs, inpIndices, maxHozDi
 	assert "None" not in outDict.keys()
 	outDict["None"] = list()
 
+
+	#Get (PBC-aware) total distance and horizontal distance matrices between adsSiteObjs and inpIndices
+	useCell = copy.deepcopy(inpCell)
+	nCoords = len(useCell.fractCoords)
+	adsSiteCoords = [ site.positionFromGeom(useCell) + ["ads_site"] for site in adsSiteObjs ]
+	useCell.cartCoords = useCell.cartCoords + adsSiteCoords
+	firstAdsSiteIdx = len(inpCell.cartCoords)
+	adsSiteIndices = [x for x in range(firstAdsSiteIdx,firstAdsSiteIdx+len(adsSiteCoords))]
+
+
+#	import pdb
+#	pdb.set_trace()
+
+	distMatrix = calcDistHelp.calcDistanceMatrixForCell_minImageConv(useCell, indicesA=inpIndices, indicesB=adsSiteIndices)
+	hozDistMatrix = calcDistHelp.calcHozDistMatrixForCell_minImageConv(useCell, indicesA=inpIndices, indicesB=adsSiteIndices)
+
+
 	#
-	cartCoords = inpCell.cartCoords
-	surfPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell)
-	adsSitePositions = [x.positionFromGeom(inpCell, inpCartCoords=cartCoords) for x in adsSiteObjs]
-	for idx in inpIndices:
-		currPos = cartCoords[idx][:3]
+	cartCoords = useCell.cartCoords
+	surfPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(useCell)
+	adsSitePositions = [x.positionFromGeom(useCell, inpCartCoords=cartCoords) for x in adsSiteObjs]
+	for mappedInpIdx,inpIdx in enumerate(inpIndices):
+		currPos = cartCoords[inpIdx][:3]
 		minHozDist, currSiteName = maxHozDist, "None"
 		for adsIdx,adsPos in enumerate(adsSitePositions):
-			currDist = planeEqnHelp.getOutOfPlaneDistTwoPoints(currPos, adsPos, surfPlaneEqn)
-			if currDist<minHozDist:
-				#Check the maximum distance criterion is satisfied
+			currHozDist = hozDistMatrix[mappedInpIdx][adsIdx]
+			if currHozDist < minHozDist:
+				#Check maximum distance criterion is satisfied
 				if maxTotDist is None:
 					currSiteName = adsSiteObjs[adsIdx].siteName
-					minHozDist = currDist
+					minHozDist = currHozDist
 				else:
-					totDist = calcDistHelp.calcSingleDistBetweenCoords_minImageConv(inpCell, adsPos, currPos)
+					totDist = distMatrix[mappedInpIdx][adsIdx]
 					if totDist <= maxTotDist:
 						currSiteName = adsSiteObjs[adsIdx].siteName
-						minHozDist = currDist
+						minHozDist = currHozDist
 
-		outDict[currSiteName].append(idx)
+		outDict[currSiteName].append(inpIdx)
 
 	return outDict
 

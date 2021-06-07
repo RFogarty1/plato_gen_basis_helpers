@@ -6,6 +6,9 @@ import MDAnalysis.lib.distances as distLib
 
 from . import mdanalysis_interface as mdAnalysisInter
 
+from ..shared import plane_equations as planeEqnHelp
+from ..shared import cart_coord_utils as cartHelp
+
 import plato_pylib.shared.ucell_class as uCellHelp
 
 
@@ -48,14 +51,58 @@ def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None
 	indicesA = [x for x in range(len(cartCoords))] if indicesA is None else indicesA
 	indicesB = indicesA if indicesB is None else indicesB
 
+
 	#Get the coords
-	coordsA = np.array([ x[:3] for idx,x in enumerate(inpCell.cartCoords) if idx in indicesA ])
-	coordsB = np.array([ x[:3] for idx,x in enumerate(inpCell.cartCoords) if idx in indicesB ])
+	coordsA = np.array( [cartCoords[idx][:3] for idx in indicesA] )
+	coordsB = np.array( [cartCoords[idx][:3] for idx in indicesB] )
 
 	#Calculate the relevant distance matrix
 	dims = mdAnalysisInter.getMDAnalysisDimsFromUCellObj(inpCell)
 	distMatrix = distLib.distance_array(coordsA, coordsB, box=dims)
 	return distMatrix
+
+
+#NOTE: I could probably extend this to a different plane; but suspect it would need to contain at least one cell vector
+#(and maybe even two)
+def calcHozDistMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None, minTotInterPlaneDist=1e-5):
+	""" Calculates matrix of horizontal distances (i.e. distance along surface plane) for inpCell
+	
+	Args:
+		inpCell: (plato_pylib UnitCell object)
+		indicesA: (Optional, iter of ints) Indices of the atoms to include for the first dimension; Default is to include ALL atoms
+		indicesB: (Optional, iter of ints) Indices of the atoms to include for the second dimension; Default is indicesA
+		minTotInterPlaneDist: (float) We calculate hoz-distance by using totalDist-interPlaneDist. If these values are the same (e.g. hozDist=0 then float errors may make totalDist-interPlaneDist negative which leads to a domain error when square-rooting. minTotInterPlaneDist means to set hozDist to zero in this case
+ 
+	Returns
+		hozDistMatrix:  (NxM numpy array) distMatrix[n][m] gives the distance between atom n and m
+ 
+	"""
+
+	#Sort out default args
+	cartCoords = inpCell.cartCoords
+	indicesA = [x for x in range(len(cartCoords))] if indicesA is None else indicesA
+	indicesB = indicesA if indicesB is None else indicesB
+
+	#1) Get dist matrix
+	#2) Get interplanar (PBCs wont affect this if we use the surface plane specifically)
+	#3) hozDit = math.sqrt(totalDist**2 - interPlanarDist**2)
+	totalDistMatrix = calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=indicesA, indicesB=indicesB) #Somehow this seems to come out wrong
+	surfPlane = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell)
+
+	outMatrix = np.zeros( [len(indicesA), len(indicesB)] )
+	for dMatrixIdxA, atomIdxA in enumerate(indicesA):
+		for dMatrixIdxB,atomIdxB in enumerate(indicesB):
+			currTotalDist = totalDistMatrix[dMatrixIdxA][dMatrixIdxB]
+			posA, posB = cartCoords[atomIdxA][:3], cartCoords[atomIdxB][:3]
+			currInterPlaneDist = getInterSurfPlaneSeparationTwoPositions(posA, posB, inpCell)
+
+			#Figure out the horizontal distance
+			if abs(currTotalDist-currInterPlaneDist) < minTotInterPlaneDist:
+				outMatrix[dMatrixIdxA][dMatrixIdxB] = 0
+			else:
+				outMatrix[dMatrixIdxA][dMatrixIdxB] = math.sqrt(currTotalDist**2 - currInterPlaneDist**2)
+
+	return outMatrix
 
 def calcSingleDistBetweenCoords_minImageConv(inpCell, coordA, coordB):
 	""" Gets the distance between two co-ordinates in inpCell using the minimum image convention; thus, this will return the smallest distance possible with the PBCs
@@ -93,6 +140,24 @@ def calcSingleAngleBetweenCoords_minImageConv(inpCell, coordA, coordB, coordC):
 	angles = distLib.calc_angles(*args, box=dims)
 	assert len(angles)==1
 	return math.degrees(angles[0])
+
+
+
+def getInterSurfPlaneSeparationTwoPositions(posA, posB, inpCell):
+	""" Gets the minimum separation along the surface normal for two (cartesian) positios when given inpCell. The surface plane is defined by axb
+	
+	Args:
+		posA: (len-3 float iter) [x,y,z]
+		posB: (len-3 float iter) [x,y,z]
+		inpCell: (plato_pylib UnitCell object). Used to get the a and b lattice vectors
+ 
+	Returns
+		outDist: (float) Absolute distance between the surface planes containing posA and posB [these planes are parralel to axb but have different d values when a plane is defined as ax + by +cz = d
+ 
+	"""
+	surfPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell)
+	nearestImageCoords = getNearestImageNebCoordsBasic(inpCell, posA, posB)
+	return planeEqnHelp.getInterPlaneDistTwoPoints(posA, nearestImageCoords, surfPlaneEqn)
 
 
 #TODO: Not sure if this works for dists >L/2. If not i maybe need to test and raise for it

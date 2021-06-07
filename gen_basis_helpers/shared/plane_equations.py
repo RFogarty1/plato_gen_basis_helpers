@@ -140,6 +140,9 @@ def getOutOfPlaneDistTwoPoints(posA, posB, planeEqn):
 	Returns
 		 outDist: The out of plane distance between the two points. This is the distance that would remain if we shifted posA along the surface normal such that it was in the same plane (with planeEqn) as posB 
  
+	IMPORTANT:
+		This is obviously NOT aware of periodic boundaries. Likely you want to pass the nearest images in
+
 	"""
 	distFromPlaneA = planeEqn.getSignedDistanceOfPointFromPlane(posA[:3])
 	distFromPlaneB = planeEqn.getSignedDistanceOfPointFromPlane(posB[:3])
@@ -184,9 +187,7 @@ def getVectorToMoveFromParallelPlanesAToB(planeA, planeB, parallelTol=1e-6):
 		 ValueError: If the planes intersect. This wont be perfect due to float errors.
 	"""
 	#Check for non parallel plane (presumably dot products can be used)
-	normVectA, normVectB = [ vectHelp.getUnitVectorFromInpVector(planeA.coeffs[:3]), vectHelp.getUnitVectorFromInpVector(planeB.coeffs[:3]) ]
-	absDotProd = vectHelp.getDotProductTwoVectors(normVectA, normVectB)
-	if abs(absDotProd-1)>parallelTol:
+	if not checkPlanesAreParralelSimple(planeA, planeB, parallelTol=parallelTol):
 		raise ValueError("planeEqns with coefficients {} and {} ARE NOT PARRALEL".format( planeA.coeffs[:3], planeB.coeffs[:3] ))
 
 	#Get the distance between planes if their parralel
@@ -195,5 +196,25 @@ def getVectorToMoveFromParallelPlanesAToB(planeA, planeB, parallelTol=1e-6):
 	normVector = vectHelp.getUnitVectorFromInpVector(planeA.coeffs[:3])
 	tVect = [signedDist*x for x in normVector]
 	return tVect
+
+
+def checkPlanesAreParralelSimple(planeEqnA, planeEqnB, parallelTol=1e-6):
+	""" Tries to check whether two planes are parallel by using the dot products of their normal vectors. 
+	
+	Args:
+		planeEqnA: (ThreeDimPlaneEquation) 
+		planeEqnB: (ThreeDimPlaneEquation)
+		parallelTol: The magnitude of dot products between planeA and planeB normal vectors needs to be this close to 1 (tolerance is here to account for float errors)
+			 
+	Returns
+		isParallel: (Bool) Returns True if planes are parallel and False otherwise
+ 
+	"""
+	normVectA, normVectB = [ vectHelp.getUnitVectorFromInpVector(planeEqnA.coeffs[:3]), vectHelp.getUnitVectorFromInpVector(planeEqnB.coeffs[:3]) ]
+	absDotProd = abs(vectHelp.getDotProductTwoVectors(normVectA, normVectB))
+	if abs(absDotProd-1)>parallelTol:
+		return False
+	return True
+
 
 

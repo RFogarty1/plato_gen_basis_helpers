@@ -5,6 +5,7 @@ import itertools as it
 import plato_pylib.shared.ucell_class as uCellHelp
 
 from . import get_neb_lists as nebListHelp
+from . import calc_dists as distsHelp
 from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
@@ -205,18 +206,20 @@ class FilterToExcludeIndicesWithoutNebsAmongstRemaning(FilterIndicesFunction):
 
 		return sorted(outIndices)
 
-
 class FilterToExcludeIndicesFurtherOutOfPlaneThanCutoff(FilterIndicesFunction):
-	""" Returns only the indices for atoms with out-of-plane distances within a cutoff of a list of input points.
+	"""DEPRECATED/BROKEN: DONT USE. The planeEqn argument is now a dud thing really; the surface plane is actually used.
+
+ Returns only the indices for atoms with out-of-plane distances within a cutoff of a list of input points.
 
 	Original use case was to get indices of atoms with adsorbates above them (which meant a horizontal distance was needed rather than the total distance) """
 
 	def __init__(self, maxDist, planeEqn, inpPoints):
-		""" Initializer
+		""" DEPRECATED/BROKEN: DONT USE. The planeEqn argument is now a dud thing really; the surface plane is actually used.
+		 Initializer
 		
 		Args:
 			maxDist: (float)
-			planeEqn: (ThreeDimPlaneEquation) Defines the plane to use
+			planeEqn: (ThreeDimPlaneEquation) Defines the plane to use.
 			inpPoints: (iter of len-3 iters) out-of-plane distance will be determined from these points
  
 		"""
@@ -227,11 +230,26 @@ class FilterToExcludeIndicesFurtherOutOfPlaneThanCutoff(FilterIndicesFunction):
 	def filterFunct(self, getIndicesInstance, inpGeom, inpIndices):
 		relCoords = [x[:3] for idx,x in enumerate(inpGeom.cartCoords) if idx in inpIndices]
 
+		useCell = uCellHelp.UnitCell(lattParams=inpGeom.getLattParamsList(), lattAngles=inpGeom.getLattAnglesList())
+		surfPlaneEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(useCell)
+		assert planeEqnHelp.checkPlanesAreParralelSimple(surfPlaneEqn, self.planeEqn)
+
+		startCartCoords = inpGeom.cartCoords
+		useCartCoords = [startCartCoords[idx][:3] for idx in inpIndices] + self.inpPoints
+		useCell.cartCoords = useCartCoords
+
+		#Get the horizontal distance matrix between self.inpPoints and inpIndices
+		inpIndicesInUseCell = [x for x in range(len(inpIndices))]
+		pointIndicesInUseCell = [x for x in range( len(inpIndicesInUseCell) , len(inpIndicesInUseCell) + len(self.inpPoints) )]   
+		hozDistMatrix = distsHelp.calcHozDistMatrixForCell_minImageConv(useCell, indicesA=inpIndicesInUseCell, indicesB=pointIndicesInUseCell)
+
+
+		#Get inter-plane and total distances in a pbc aware way.
 		outIndices = list()
-		for idx,coord in enumerate(relCoords):
-			currDists = cartHelp.getDistancesFromPointAlongPlane(coord, self.inpPoints, self.planeEqn)
+		for useGeomIdx,inpIdx in enumerate(inpIndices):
+			currDists = hozDistMatrix[useGeomIdx][:]
 			if any([x<self.maxDist for x in currDists]):
-				outIndices.append( inpIndices[idx] )
+				outIndices.append( inpIdx )
 
 		return outIndices
 

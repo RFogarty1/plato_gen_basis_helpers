@@ -34,6 +34,7 @@ class TestAssignAdsIndicesToAdsorptionSites(unittest.TestCase):
 		actDict = self._runTestFunct()
 		self.assertEqual(expDict, actDict)
 
+
 	def testExpectedCaseB(self):
 		self.maxHozDist = 2 #sqrt(8) is the hoz dist for the None site
 		self.topIndices = [0]
@@ -58,6 +59,16 @@ class TestAssignAdsIndicesToAdsorptionSites(unittest.TestCase):
 	def testExpectedWithMaxTotalDist_tooFarFromBoth(self):
 		self.maxTotDist = math.sqrt(2) #Closest is sqrt(3)
 		expDict = {"None":[0], "site_a":list()}
+		actDict = self._runTestFunct()
+		self.assertEqual(expDict, actDict)
+
+	def testExpectedWhenPbcsMatter(self):
+		cartCoords = [ [9,9,9,"X"],
+		               [1,1,1,"Y"],
+		               [6,6,5,"Z"] ]
+		self.cellA.cartCoords = cartCoords
+		self.maxHozDist = math.sqrt(8) + 0.1 #Index 1 should work here, if PBCs accounted for
+		expDict = {"None":list(), "site_a":[0]}
 		actDict = self._runTestFunct()
 		self.assertEqual(expDict, actDict)
 
