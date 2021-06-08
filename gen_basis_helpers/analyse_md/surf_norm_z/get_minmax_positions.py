@@ -1,5 +1,6 @@
 
-
+import copy
+import itertools as it
 
 
 def getLayerThicknessDataFromMinMaxData(minMaxData):
@@ -98,3 +99,41 @@ def getAverageZPositionForAtomGroup(traj, groupIndices):
 		avZVal = sum(zVals)/len(zVals)
 		outVals.append( avZVal )
 	return outVals
+
+
+def getZPositionsForAtomIndices(traj, inpIndices, retTimeVsZ=False, deltaZ=False):
+	""" Returns iter of z-positions for each atom index in inpIndices. Useful for seeing how much they change over time
+	
+	Args:
+		traj: (TrajectoryBase object)
+		inpIndices: (iter of ints) Indices of atoms to get z-values for
+		retTimeVsZ: (Bool) If True then, for each inpIndice, we return iter of [[timeA,zValA],[timeB,zValB]] insteads of just an iter of zVal
+		deltaZ: (Bool) If True then set the first z to zero and make all others relative to it
+ 
+	Returns
+		outZVals: (iter of len-n iters). Assuming retTimeVsZ is False, the element [n][m] will give the nth inpIndice and the z-coordinate at the mth step value in Traj. E.g. [ [2,3,4], [5,6,7] ] may be returned for len-2 inpIndices and three data points in traj
+ 
+	"""
+	outCoords = [list() for x in inpIndices]
+	for step in traj:
+		currCartCoords = step.unitCell.cartCoords
+		for listIdx,atomIdx in enumerate(inpIndices):
+			outCoords[listIdx].append( currCartCoords[atomIdx][-2] )
+
+	#Convert to deltaZ if requested
+	if deltaZ:
+		for idx,unused in enumerate(outCoords):
+			refVal = outCoords[idx][0]
+			outCoords[idx] = [x-refVal for x in outCoords[idx]]
+
+	#Deal with attaching times if needed
+	if retTimeVsZ:
+		outTimes = [copy.deepcopy([step.time for step in traj]) for x in outCoords]
+		output = list()
+		for times, coords in it.zip_longest(outTimes, outCoords):
+			output.append( [ [t,c] for t,c in it.zip_longest(times,coords) ] )
+	else:
+		output = outCoords
+
+	return output
+

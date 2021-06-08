@@ -138,7 +138,7 @@ class TestExpectedMinMaxValsStandard(unittest.TestCase):
 			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
 
 
-class GetAverageZPosForGroupOfAtoms(unittest.TestCase):
+class TestGetAverageZPosForGroupOfAtoms(unittest.TestCase):
 
 	def setUp(self):
 		self.atomGroup = [1,3]
@@ -152,6 +152,58 @@ class GetAverageZPosForGroupOfAtoms(unittest.TestCase):
 		expVals = [ (4+7)/2, (5+6)/2 ]
 		actVals = self._runTestFunct()
 		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals, actVals)]
+
+
+class TestGetZPositionsForAtomIndices(unittest.TestCase):
+
+	def setUp(self):
+		self.inpIndices = [0,2,3]
+		self.times = [10,20]
+		self.retTimeVsZ = False
+		self.deltaZ = False
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.trajA = createTestTrajA()
+		for idx,step in enumerate(self.trajA):
+			step.time = self.times[idx]
+
+	def _runTestFunct(self):
+		args = [self.trajA, self.inpIndices]
+		kwargs = {"retTimeVsZ":self.retTimeVsZ, "deltaZ":self.deltaZ}
+		return tCode.getZPositionsForAtomIndices(*args, **kwargs)
+
+	def testExpectedValsA(self):
+		expCoords = [ [2, 3],
+		              [5, 9],
+		              [7, 6] ]
+		actCoords = self._runTestFunct()
+		self.assertEqual( len(expCoords), len(actCoords) )
+		for exp,act in zip(expCoords,actCoords):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+	def testExpectedTimeVsZPos(self):
+		self.retTimeVsZ = True
+		expCoords = [ [ [10,2], [20,3] ],
+		              [ [10,5], [20,9] ],
+		              [ [10,7], [20,6] ] ]
+		actCoords = self._runTestFunct()
+		self.assertEqual( len(expCoords), len(actCoords) )
+
+		for exp, act in zip(expCoords, actCoords):
+			for expA,actA in it.zip_longest(exp,act):
+				self.assertAlmostEqual(expA[0],actA[0])
+				self.assertAlmostEqual(expA[1],actA[1])
+
+	def testExpectedDeltaZPos(self):
+		self.deltaZ = True
+		expCoords = [ [0, 1],
+		              [0, 4],
+		              [0,-1] ]
+		actCoords = self._runTestFunct()
+		self.assertEqual( len(expCoords), len(actCoords) )
+		for exp,act in zip(expCoords,actCoords):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
 
 
 def createTestTrajA():
