@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 import unittest
 import unittest.mock as mock
 
@@ -60,10 +61,11 @@ class TestMetaDynSpawnHillsObj(unittest.TestCase):
 		self.hillDictA = {"scale":[2.2], "pos":[3.4], "height":2.5}
 		self.hillDictB = {"scale":[5.3], "pos":[8.2], "height":2.7}
 		self.hillDicts = [self.hillDictA, self.hillDictB]
+		self.minScale = 1e-5
 		self.createTestObjs()
 
 	def createTestObjs(self):
-		self.testObjA = tCode.MetadynamicsSpawnHillsOptions(self.hillDicts)
+		self.testObjA = tCode.MetadynamicsSpawnHillsOptions(self.hillDicts, minScale=self.minScale)
 
 	def testExpectedOptDict(self):
 		expDict = {"metaDyn_spawnHillsHeight": [2.5, 2.7],
@@ -76,6 +78,15 @@ class TestMetaDynSpawnHillsObj(unittest.TestCase):
 		for key in expDict.keys():
 			expVal, actVal = np.array(expDict[key]), np.array(actDict[key])
 			np.allclose(expVal,actVal)
+
+	def testZeroScaleWhenValBelowTolerance(self):
+		""" Want to make sure 0 is output when scale is below a constant; cp2k then treats it as an infinitely wide hill """
+		self.hillDictA["scale"] = [1e-4]
+		self.minScale = 1e-3
+		self.createTestObjs()
+		expScales = [[0], [5.3]]
+		actScales = self.testObjA.optDict["metaDyn_spawnHillsScale"]
+		[self.assertAlmostEqual(e[0],a[0]) for e,a in it.zip_longest(expScales, actScales)]
 
 	def testEqualObjsCompareEqual(self):
 		objA = copy.deepcopy(self.testObjA)

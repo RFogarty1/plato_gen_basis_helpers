@@ -190,6 +190,26 @@ def evalPotAddedOverTimeRangeForHillsInfoObj(inpObj, evalAtVals, timeRange=None,
 	return outVals
 
 
+
+def addBlankDimensionToMetadynHillsInfoInstance(inpInstance, scaleVals=0, posVals=0):
+	""" Adds a dimension of blank valued peaks (heights=same as first dim) to a MetadynHillsInfo instance. Original purpose was to use hills from a 1-dimension-colvar simulation in a 2-dimension-colvar simulation
+	
+	Args:
+		inpInstance: (MetadynHillsInfo object)
+		scaleVals: (float) The scale of the blank hills to add. CP2K interprets scale=0 as an infinitely flat Gaussian, which presumably stops the blank dimension interfering with the other one
+
+	Returns
+		Nothing; works in place
+ 
+	"""
+	attrsToAppendTo = ["heights", "positions", "scales"]
+
+	for idx in range( len(inpInstance.times) ):
+		inpInstance.heights[idx].append( inpInstance.heights[idx][0] )
+		inpInstance.positions[idx].append( posVals )
+		inpInstance.scales[idx].append( scaleVals )
+
+
 def getMergedMetadynHillsInfoInstance(inpInstances, copyData=True):
 	""" Takes iter of MetadynHillsInfo instances and returns a merged version
 	

@@ -253,6 +253,49 @@ class TestEvalPotOverTimeRangeHillsInfoObj(unittest.TestCase):
 		actVals = self._runTestFunct()
 		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expVals, actVals)]
 
+
+class TestAddDimensionToMetadynHillsInstance(unittest.TestCase):
+
+	def setUp(self):
+		self.times = [ 1, 2]
+		self.positions = [ [4], [5] ]
+		self.scales = [ [5], [6] ]
+		self.heights = [ [8], [9] ]
+		self.sortTimes = False
+
+		#Functions for the call
+		self.inpScales = 2
+		self.inpPosVals = 4
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"times":self.times, "positions":self.positions, "scales":self.scales,
+		              "heights":self.heights, "sortTimes":self.sortTimes}
+		self.testObjA = tCode.MetadynHillsInfo(**currKwargs)
+
+	def _runTestFunct(self):
+		currKwargs = {"scaleVals":self.inpScales, "posVals":self.inpPosVals}
+		tCode.addBlankDimensionToMetadynHillsInfoInstance(self.testObjA, **currKwargs)
+
+	def _getExpObjCaseA(self):
+		times, positions, scales = [copy.deepcopy(x) for x in [self.times, self.positions, self.scales] ]
+		heights = copy.deepcopy(self.heights)
+		positions[0].append( self.inpPosVals ), positions[1].append( self.inpPosVals )
+		scales[0].append( self.inpScales ), scales[1].append( self.inpScales )
+		heights[0].append(self.heights[0][0]), heights[1].append(self.heights[1][0])
+
+		currKwargs = {"times":times, "positions":positions, "scales":scales, 
+		              "heights":heights, "sortTimes":self.sortTimes}
+		return tCode.MetadynHillsInfo(**currKwargs)
+
+	def testExpectedCaseA(self):
+		expObj = self._getExpObjCaseA()
+		self._runTestFunct()
+		actObj = self.testObjA
+		self.assertEqual(expObj, actObj)
+
+
 class TestGetCombinedMetaDynHillsClass(unittest.TestCase):
 
 	def setUp(self):

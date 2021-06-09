@@ -117,17 +117,19 @@ class MetaDynamicsOptsCP2KStandard():
 class MetadynamicsSpawnHillsOptions():
 	""" Class used to hold info for spawning hills, and to return it in a useful format to modify a pycp2k obj """
 
-	def __init__(self, hillDicts):
+	def __init__(self, hillDicts, minScale=1e-5):
 		""" Initializer
 		
 		Args:
 			hillDicts: (iter of dicts)
+			minScale: If a scale parameter is below this we set it to zero explicitly. Hopefully helps make sure we can use the cp2k option to set hills infinitely wide when scale=0
 
 		hillDict:
 			Keys are "scale", "pos", "height". Values for scale and pos need to be an iter (even if length 1) while height is just a float. Units are whatever cp2k uses in restart files (i think positions are generally in bohr when its a length, while heights are generally in Hartree (I THINK). Regardless, if these were read from a metadynLog file use the same units there
 				 
 		"""
 		self.hillDicts = hillDicts
+		self.minScale = minScale
 		self._eqTol = 1e-6
 
 	@classmethod
@@ -186,7 +188,11 @@ class MetadynamicsSpawnHillsOptions():
 		heights, scales, positions = list(), list(), list()
 		for hillDict in self.hillDicts:
 			heights.append( hillDict["height"] )
-			scales.append( hillDict["scale"] )
+			currScales = hillDict["scale"]
+			useScales = list()
+			for scale in currScales:
+				useScales.append( scale if scale>self.minScale else 0 )
+			scales.append(useScales)
 			positions.append( hillDict["pos"] )
 
 		outDict = {"metaDyn_spawnHillsHeight":heights, "metaDyn_spawnHillsPos":positions, "metaDyn_spawnHillsScale":scales,
