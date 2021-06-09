@@ -6,6 +6,7 @@ import numpy as np
 from ..shared import simple_vector_maths as vectHelp
 from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
+from ..analyse_md import calc_dists as calcDistsHelp
 
 class MetaVarStandard():
 	""" Class representing a metavariable """
@@ -80,6 +81,17 @@ class EqualityMixinSimple():
 			valA, valB = getattr(self,attr), getattr(other,attr)
 			if valA != valB:
 				return False
+
+		#Deal with comparison of floats
+		try:
+			currAttr = self._floatCmpAttrs[0]
+		except (AttributeError, IndexError):
+			pass
+		else:
+			for attr in self._floatCmpAttrs:
+				floatA, floatB = getattr(self, attr), getattr(other,attr)
+				if abs(floatA-floatB) > eqTol:
+					return False
 
 		#Sort attrs which are iters of float-iters
 		for attr in self._floatIterOfIterCmpAttrs:
@@ -276,4 +288,74 @@ def getXyzValsFromSurfacePlaneEquationAndInpCellStandard(planeEqn, inpCell, unit
 	pointC = [ a+v2 for a,v2 in it.zip_longest(pointA,vectB) ]
 
 	return [pointA, pointB, pointC]
+
+class CoordinationNumberCollectiveVariable(CollectiveVarStandard, EqualityMixinSimple):
+
+	def __init__(self, coordCentreIndices=None, coordinatingIndices=None, refDist=None, powerNumerator=8, powerDenominator=14):
+		""" Initializer
+		
+
+		Args:
+			coordCentreIndices: (iter of ints) Base zero atom indices. Corresponds to the atoms_from keyword in cp2k; these indices (usually just one) are those we are co-ordinating (e.g. the Metal centre in [M(H2O)_n]
+			coordinatingIndices: (iter of ints) Base zero atom indices. Corresponds to the atoms_to keyword in cp2k; these indices are those which co-ordinate (e.g. atoms on the ligands in [ML_n])
+			refDist: (float) R_0 distance (in bohr) for CP2K. Probably best to set to ~the expected I-J co-ordination distance (e.g. maybe the bondlength in the target)
+			powerNumerator: (int) The power to raise the numerator term to. 8 is used in the tutorial i found
+			powerDenominator: (int) The power to raise the denominator term to. 14 is used in the tutorial. Suspect this should be set higher than powerNumerator ~ always
+			
+
+		NOTE:
+			The functional form used for j co-ordinating i is: 1/N_i \sum_i \sum_j ( fract{1 - (r_ij/R0)^powerNumerator} {1 - (r_ij/R0)^powerDenominator} ) 
+
+		"""
+		self.coordCentreIndices = coordCentreIndices
+		self.coordinatingIndices = coordinatingIndices
+		self.refDist = refDist
+		self.powerNumerator = powerNumerator
+		self.powerDenominator = powerDenominator
+
+		#Configure for the equality method
+		self._eqTol = 1e-6
+		self._directCmpAttrs = ["coordCentreIndices", "coordinatingIndices", "powerNumerator", "powerDenominator"]
+		self._floatCmpAttrs = ["refDist"]
+		self._floatIterOfIterCmpAttrs = []
+
+	def toDict(self):
+		directOutAttrs = ["coordCentreIndices", "coordinatingIndices", "powerNumerator", "powerDenominator", "refDist"]
+		outDict = {key:getattr(self,key) for key in directOutAttrs}
+		return outDict
+
+	@classmethod
+	def fromDict(cls,inpDict):
+		return cls(**inpDict)
+
+	def addColVarToSubsys(self, pyCp2kObj):
+		pyCp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.COLVAR_add()
+		colVar = pyCp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.COLVAR_list[-1].COORDINATION
+		colVar.Atoms_from = [x+1 for x in self.coordCentreIndices]
+		colVar.Atoms_to = [x+1 for x in self.coordinatingIndices]
+		colVar.R0 = "[bohr] {:.5f}".format(self.refDist)
+		colVar.Nn = self.powerNumerator	
+		colVar.Nd = self.powerDenominator
+
+	def getColvarValueFromInpGeom(self, inpGeom):
+		allVals = self._getColvarsForCoordCentres(inpGeom)
+		return sum(allVals)
+
+	def _getColvarsForCoordCentres(self, inpGeom):
+		outVals = list()
+		for centreIdx in self.coordCentreIndices:
+			currVal = self._getColvarForOneCoordCentre(inpGeom, centreIdx, self.coordinatingIndices)
+			outVals.append(currVal)
+		return outVals
+
+	def _getColvarForOneCoordCentre(self, inpGeom, coordCentre, coordinatingIndices):
+		dists = calcDistsHelp.calcDistanceMatrixForCell_minImageConv(inpGeom, indicesA=[coordCentre], indicesB=coordinatingIndices)
+		outVal = 0
+		for dist in dists[0]:
+			distOverRef = dist/self.refDist
+			numerator = 1 - (distOverRef**self.powerNumerator)
+			denominator = 1 - (distOverRef**self.powerDenominator)
+			outVal += numerator/denominator
+		return outVal
+
 

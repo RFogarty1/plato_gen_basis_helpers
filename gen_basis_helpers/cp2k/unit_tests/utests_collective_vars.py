@@ -232,4 +232,82 @@ class TestGetXyzValsFromSurfPlaneEquation(unittest.TestCase):
 
 
 
+class TestCoordinationNumberColvar(unittest.TestCase):
+
+	def setUp(self):
+		#The co-ords used to test
+		self.lattParams, self.lattAngles = [100,100,100], [90,90,90]
+		self.cartCoords = [ [10,10,10,"X"],
+		                    [10,10,11,"Y"],
+		                    [10,10,12,"Z"],
+		                    [11,11,13,"Z"] ]
+
+		#The collective variable
+		self.powerNumerator = 5
+		self.powerDenominator = 7
+		self.coordCentreIndices = [0,1]
+		self.coordinatingIndices = [2,3]
+		self.refDist = 1.8
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargs = {"coordCentreIndices":self.coordCentreIndices, "coordinatingIndices":self.coordinatingIndices,
+		          "refDist":self.refDist, "powerNumerator":self.powerNumerator, "powerDenominator":self.powerDenominator}
+		self.testObjA = tCode.CoordinationNumberCollectiveVariable(**kwargs)
+		self.pyCp2kObj = methReg.createCP2KObjFromMethodStr("spe_standard")
+
+		#The unit cell object
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+	def testExpectedModdingOfPycp2kObj(self):
+		self.testObjA.addColVarToSubsys(self.pyCp2kObj)
+		actColVar = self.pyCp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.COLVAR_list[-1].COORDINATION
+
+		self.assertEqual(self.powerNumerator, actColVar.Nn)
+		self.assertEqual(self.powerDenominator, actColVar.Nd)
+		self.assertEqual("[bohr] {:.5f}".format(self.refDist), actColVar.R0)
+		self.assertEqual([x+1 for x in self.coordCentreIndices], actColVar.Atoms_from)
+		self.assertEqual([x+1 for x in self.coordinatingIndices], actColVar.Atoms_to)
+
+	#Values figure out in excel
+	def testGetExpectedValForInpGeom_singleCoordCentre(self):
+		self.coordCentreIndices = [0]
+		self.createTestObjs()
+		expVal = 0.920432364553172
+		actVal = self.testObjA.getColvarValueFromInpGeom(self.cellA)
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testGetExpectedValForInpGeom_twoCoordCentres(self):
+		expVal = 2.36304417858783
+		actVal = self.testObjA.getColvarValueFromInpGeom(self.cellA)
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testEqualObjsCompareEqual(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertEqual(objA, objB)
+
+	def testUnequalObjsCompareUnequal_diffCoordIndices(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.coordinatingIndices[-1] += 2
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testUnequalObjsCompareUnequal_diffRefDist(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.refDist +=  1
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testToDictAndFromDictConsistent(self):
+		expObj = self.testObjA
+		useDict = self.testObjA.toDict()
+		actObj = tCode.CoordinationNumberCollectiveVariable.fromDict(useDict)
+		self.assertEqual(expObj,actObj)
+
+
 
