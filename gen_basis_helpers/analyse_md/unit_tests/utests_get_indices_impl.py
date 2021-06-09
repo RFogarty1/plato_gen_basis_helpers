@@ -10,6 +10,38 @@ import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 import gen_basis_helpers.analyse_md.get_indices_from_geom_impl as tCode
 
 
+class TestGetSortedIndicesBasedOnDistanceFromAtomIdx(unittest.TestCase):
+
+	def setUp(self):
+		self.inpIdx = 1
+		self.inpIndices = [0,3]
+
+		self.lattParamsA, self.lattAnglesA = [10,10,10], [90,90,90]
+		self.cartCoords = [ [1,1,1,"A"],
+		                    [1,1,9,"B"],
+		                    [2,2,7,"D"],
+		                    [1,1,7,"C"]
+		                  ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParamsA, lattAngles=self.lattAnglesA)
+		self.cellA.cartCoords = self.cartCoords
+
+	def _runTestFunct(self):
+		return tCode.getSortedIndicesBasedOnDistanceFromInpAtomIdx(self.cellA, self.inpIdx, self.inpIndices)
+
+	def testExpectedCaseA(self):
+		expIndices = self.inpIndices
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices,actIndices)
+
+	def testExpectedCaseB(self):
+		self.inpIndices = [0,2,3]
+		expIndices = [0,3,2]
+		actIndices = self._runTestFunct()
+		self.assertEqual(expIndices,actIndices)
 
 #Also handles getIndicesGroupedBySurfLayerForFirstNLayers
 class TestGetSurfaceIndicesStandard(unittest.TestCase):

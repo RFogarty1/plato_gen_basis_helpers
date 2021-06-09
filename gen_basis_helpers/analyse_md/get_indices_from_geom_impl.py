@@ -13,6 +13,25 @@ from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
 
+def getSortedIndicesBasedOnDistanceFromInpAtomIdx(inpGeom, inpAtomIdx, inpIndices):
+	""" Takes a lsit of atom indices, and returns them reordered by their distance from the atom defined by inpAtomIdx
+	
+	Args:
+		inpGeom: (plato_pylib UnitCell object)
+		inpAtomIdx: (int) Index of the atom we want to order by distance from
+		inpIndices: (iter of ints) Indices of the atoms we want to order by
+			 
+	Returns
+		outIndices: (iter of ints) inpIndices reordered based on distance from inpAtomIdx
+ 
+	"""
+	dists = calcDistHelp.calcDistanceMatrixForCell_minImageConv(inpGeom, indicesA=[inpAtomIdx],indicesB=inpIndices)
+	taggedDists = [ [idx,val] for idx,val in enumerate(dists[0])]
+	sortedTaggedDists = sorted(taggedDists, key=lambda x:x[1])
+	outIdxVals = [x[0] for x in sortedTaggedDists]
+
+	return [inpIndices[idx] for idx in outIdxVals]
+
 
 def getIndicesOfWaterBilayersStartingClosestToSurface(inpGeom, surfaceDetector, maxBilayerThickness=0.3, waterDetector=None, expWaterPerLayer=None, maxNLayers=None, planeEqn=None):
 	""" Gets the indices of water molecules in bilayers starting with the one closest to the surface. This works by calling "getIndicesOfWaterBilayerClosestToSurface" repeatedly and likely isnt very computationally efficient
