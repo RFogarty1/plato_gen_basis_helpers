@@ -1,8 +1,11 @@
 
 
 import copy
+import itertools as it
 import unittest
 import unittest.mock as mock
+
+import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.analyse_md.traj_core as trajHelp
 import gen_basis_helpers.analyse_md.manip_traj as tCode
@@ -92,5 +95,201 @@ class TestGetTrajSplitIntoPieces(unittest.TestCase):
 		self.assertNotEqual( actOutput[0].trajSteps[0], self.inpTrajA.trajSteps[0] )
 
 
+class TestAddVelocitiesToTrajInMem(unittest.TestCase):
 
+	def setUp(self):
+		self.posConvFactor = 1
+		self.timeConvFactor = 1
+
+		#Global cell
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#Other
+		self.times = [2,4,8]
+		self.coordsA = [ [1,1,1,"X"], [2,2,2,"Y"] ]  
+		self.coordsB = [ [2,2,1,"X"], [4,1,4,"Y"] ]
+		self.coordsC = [ [4,1,4,"X"], [8,8,8,"Y"] ]
+
+		self.velKey = "velocities_from_pos"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the cells
+		cells = [uCellHelp.UnitCell(lattParams=[x for x in self.lattParams], lattAngles=[x for x in self.lattAngles]) for a in range(3)]
+		for idx,coords in enumerate([self.coordsA, self.coordsB, self.coordsC]):
+			cells[idx].cartCoords = coords
+
+		#Create the trajectory
+		self.stepA = trajHelp.TrajStepFlexible(unitCell=cells[0], step=0, time=self.times[0])
+		self.stepB = trajHelp.TrajStepFlexible(unitCell=cells[1], step=1, time=self.times[1])
+		self.stepC = trajHelp.TrajStepFlexible(unitCell=cells[2], step=2, time=self.times[2])
+		self.inpTraj = trajHelp.TrajectoryInMemory( [self.stepA, self.stepB, self.stepC] )
+
+	def _runTestFunct(self):
+		args = [self.inpTraj]
+		kwargs = {"posConvFactor":self.posConvFactor, "timeConvFactor":self.timeConvFactor,
+		          "velKey":self.velKey}
+		return tCode.addVelocitiesToTrajInMemNVT(*args, **kwargs)
+
+	def _loadVelocitiesCaseA(self):
+		deltaTimeA, deltaTimeB = 2, 4
+
+		#So coordsB-coordsA
+		velA = [ [(2-1)/deltaTimeA, (2-1)/deltaTimeA, (1-1)/deltaTimeA],
+		         [(4-2)/deltaTimeA, (1-2)/deltaTimeA, (4-2)/deltaTimeA] ]
+
+		#CoordsC - coordsB here
+		velB = [ [(4-2)/deltaTimeB, (1-2)/deltaTimeB, (4-1)/deltaTimeB],
+		         [(8-4)/deltaTimeB, (8-1)/deltaTimeB, (8-4)/deltaTimeB] ]
+
+		return [velA, velB]
+
+	def testExpectedCaseA(self):
+		expTraj = copy.deepcopy(self.inpTraj)
+		expVelocities = self._loadVelocitiesCaseA()
+
+		expTraj.trajSteps[0].addExtraAttrDict( {self.velKey: {"value":expVelocities[0], "cmpType":"numericalArray"} })
+		expTraj.trajSteps[1].addExtraAttrDict( {self.velKey: {"value":expVelocities[1], "cmpType":"numericalArray"} })
+		self._runTestFunct()
+		self.assertEqual(expTraj, self.inpTraj)
+		self.assertEqual(self.inpTraj, expTraj)
+
+
+	def testExpectedCaseA_plusConversionFactors(self):
+		self.posConvFactor = 2
+		self.timeConvFactor = 10
+		self.createTestObjs()
+
+		#Figure out expected
+		expTraj = copy.deepcopy(self.inpTraj)
+		expVelocities = self._loadVelocitiesCaseA()
+		convFactor = self.posConvFactor/self.timeConvFactor
+
+		for idx,expVelOneAtom in enumerate(expVelocities[0]):
+			expVelocities[0][idx] = [ x*convFactor for x in expVelocities[0][idx] ]
+		for idx,expVelOneAtom in enumerate(expVelocities[1]):
+			expVelocities[1][idx] = [ x*convFactor for x in expVelocities[1][idx] ]
+
+		expTraj.trajSteps[0].addExtraAttrDict( {self.velKey: {"value":expVelocities[0], "cmpType":"numericalArray"} })
+		expTraj.trajSteps[1].addExtraAttrDict( {self.velKey: {"value":expVelocities[1], "cmpType":"numericalArray"} })
+
+		#Run test and compare
+		self._runTestFunct()
+		self.assertEqual(expTraj, self.inpTraj)
+		self.assertEqual(self.inpTraj, expTraj)
+
+
+
+class TestAddAtomicTempsToTraj(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.velsA = [ [0,0,100], [0,0,-100], [0,200,0] ]
+		self.velsB = [ [0,0,200], [0,0,-300], [0,500,0] ]
+
+		self.coordsA = [ [0,0,0,"X"], [1,1,1,"Y"], [2,2,2,"Y"] ]
+		self.coordsB =  [ [0,0,0,"X"], [1,1,1,"Y"], [2,2,2,"Y"] ]
+		self.massDict = {"X":2, "Y":4}
+		self.velKey = "vel_key"
+		self.atomTempsKey = "atom_temps"
+		self.inpIndices = [0,1,2]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellB = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coordsA
+		self.cellB.cartCoords = self.coordsB
+
+		extraAttrDictA = {self.velKey: {"value":self.velsA, "cmpType":"numericalArray"}}
+		extraAttrDictB = {self.velKey: {"value":self.velsB, "cmpType":"numericalArray"}}
+		self.trajStepA = trajHelp.TrajStepFlexible(unitCell=self.cellA, extraAttrDict=extraAttrDictA)
+		self.trajStepB = trajHelp.TrajStepFlexible(unitCell=self.cellB, extraAttrDict=extraAttrDictB)
+
+		self.inpTrajA = trajHelp.TrajectoryInMemory([self.trajStepA,self.trajStepB])
+
+	def _runTrajStepFunct(self):
+		args = [self.trajStepA]
+		kwargs = {"velKey":self.velKey, "massDict":self.massDict}
+		return tCode._getAtomicTempArrayForTrajStep(*args, **kwargs)
+
+	def _runModTrajFunct(self):
+		args = [self.inpTrajA]
+		kwargs = {"atomTempKey":self.atomTempsKey, "massDict":self.massDict, "velKey":self.velKey}
+		return tCode.addAtomicTempsToTraj(*args, **kwargs)
+
+	def testExpectedCaseForTrajStepA(self):
+		#Expected velocitiy simply calculated in excel quickly
+		expTemps = [0.80181570000775, 1.6036314000155, 6.414525600062]
+		actTemps = self._runTrajStepFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expTemps, actTemps)]
+
+	def testExpectedForTwoStepTraj(self):
+		expTempsA = [0.80181570000775, 1.6036314000155, 6.414525600062]
+		expTempsB = [3.207262800031, 14.4326826001395, 40.0907850003875]
+
+		expTraj = copy.deepcopy(self.inpTrajA)
+		expTraj.trajSteps[0].addExtraAttrDict( {self.atomTempsKey: {"value":expTempsA, "cmpType":"numericalArray"} } )
+		expTraj.trajSteps[1].addExtraAttrDict( {self.atomTempsKey: {"value":expTempsB, "cmpType":"numericalArray"} } )
+
+		self._runModTrajFunct()
+		actTraj = self.inpTrajA
+
+		self.assertEqual(expTraj, actTraj)
+
+	def testExpectedWhenOneStepHasNoVelocities(self):
+		expTempsB = [3.207262800031, 14.4326826001395, 40.0907850003875]
+		self.inpTrajA.trajSteps[0].__dict__.pop(self.velKey)
+		self.inpTrajA.trajSteps[0].numericalArrayCmpAttrs.pop()
+		expTraj = copy.deepcopy(self.inpTrajA)
+		expTraj.trajSteps[1].addExtraAttrDict( {self.atomTempsKey: {"value":expTempsB, "cmpType":"numericalArray"} } )
+
+		self._runModTrajFunct()
+		actTraj = self.inpTrajA
+
+		self.assertEqual(expTraj, actTraj)
+
+class TestGetTimeVsTempForTraj(unittest.TestCase):
+
+	def setUp(self):
+		self.inpIndices = None
+		self.tempsA = [2.1, 4.2, 1]
+		self.tempsB = [3.5, 5.3, 1]
+		self.times = [10, 20]
+		self.atomTempKey = "atom_temps"
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.stepA = trajHelp.TrajStepFlexible(time=self.times[0], extraAttrDict={self.atomTempKey:{"value":self.tempsA, "cmpType":"numericalArray"}})
+		self.stepB = trajHelp.TrajStepFlexible(time=self.times[1],extraAttrDict={self.atomTempKey:{"value":self.tempsB, "cmpType":"numericalArray"}})
+		self.trajA = trajHelp.TrajectoryInMemory( [self.stepA, self.stepB] )
+
+	def _runTestFunct(self):
+		args = [self.trajA]
+		kwargs = {"inpIndices": self.inpIndices, "atomTempKey": self.atomTempKey}
+		return tCode.getTimeVsTempForTraj(*args, **kwargs)
+
+	def testExpectedNoIndicesPassed(self):
+		expVals = [ [self.times[0], (2.1+4.2+1)/3], [self.times[1], (3.5+5.3+1)/3] ]
+		actVals = self._runTestFunct()
+
+		for exp,act in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+	def testExpected_indicesPassed(self):
+		self.inpIndices = [0,2]
+		expVals = [ [self.times[0], (2.1+1)/2], [self.times[1], (3.5+1)/2] ]
+		actVals = self._runTestFunct()
+
+		for exp,act in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+	def testExpectedIfOneStepHasNoAtomTemps(self):
+		self.trajA.trajSteps[0].__dict__.pop(self.atomTempKey)
+		expVals = [[self.times[1], (3.5+5.3+1)/3]]
+		actVals = self._runTestFunct()
+
+		for exp,act in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
 

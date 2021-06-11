@@ -130,17 +130,40 @@ class TrajStepBase():
 		else:
 			if len(arrA) != len(arrB):
 				return False
-			
-			for rowA, rowB in it.zip_longest(arrA, arrB):
-				if len(rowA) != len(rowB):
-					return False
-	
-				for valA, valB in it.zip_longest(rowA, rowB):
-					absDiff = abs(valA-valB)
-					if absDiff > eqTol:
+
+			#Check for 1-d or 2-d iterable (greater dims will just error somewhere probably)
+			arrAIsIter = self._checkIsIter(arrA[0])
+			arrBIsIter = self._checkIsIter(arrB[0])
+			if arrAIsIter and arrBIsIter:
+				for rowA, rowB in it.zip_longest(arrA, arrB):
+					if len(rowA) != len(rowB):
 						return False
+	
+					for valA, valB in it.zip_longest(rowA, rowB):
+						absDiff = abs(valA-valB)
+						if absDiff > eqTol:
+							return False
+			
+			elif arrAIsIter or arrBIsIter:
+				return False
+
+			#This means we have a 1-dim iterable
+			else:
+				if len(arrA)!=len(arrB):
+					return False
+				diffs = [abs(a-b) for a,b in it.zip_longest(arrA,arrB)]
+				if any([diff>eqTol for diff in diffs]):
+					return False
 
 		return True
+
+	def _checkIsIter(self, inpObj):
+		try:
+			iter(inpObj)
+		except TypeError:
+			return False
+		return True
+
 
 
 class TrajStepFlexible(TrajStepBase):

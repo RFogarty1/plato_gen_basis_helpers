@@ -213,6 +213,16 @@ class TestTrajStepFlexible(unittest.TestCase):
 		self.assertNotEqual(objA, self.testObjA)
 		self.assertNotEqual(self.testObjA, objA)
 
+	def testTwoUnequalObjsCompareUnequal_newOneDimNumericalArray(self):
+		atomicTemps = [1.5,2.5]
+		self.extraAttrB = {"atomic_temps": {"value": atomicTemps, "cmpType":"numericalArray"}}
+		self.createTestObjs()
+		objA = copy.deepcopy(self.testObjA)
+		self.extraAttrB["atomic_temps"]["value"][0] += 1
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
 	#Note this test should fail if cmpAttrs arent set properly with to/from dict
 	def testToDictAndFromDictConsistent(self):
 		#We expect more keys than this; but want to test at least these are present
