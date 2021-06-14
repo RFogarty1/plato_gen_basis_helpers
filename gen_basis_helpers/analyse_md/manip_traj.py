@@ -72,6 +72,34 @@ def getTrajSplitIntoEqualSections(inpTraj, nStepsEach, createView=True):
 	return [trajCoreHelp.TrajectoryInMemory(steps) for steps in outSteps]
 
 
+def getTrajBetweenTimes(inpTraj, minTime=0, maxTime=None, timeTol=1e-5):
+	""" Get input trajectory with ONLY the steps which fall between minTime and maxTime
+	
+	Args:
+		inpTraj: (TrajectoryInMemory) MD trajectory
+		minTime: (float, Optional) Minimum time to include in the trajectory. 
+		maxTime: (float, Optional) Maximum time to include in the trajectory; default in np.inf
+		timeTol: (float, Optional) A time is considered outside the range iff time+timeTol>maxTime and time-timeTol<minTime
+
+	Returns
+		outTraj: (TrajectoryInMemory) For now this will share data with inpTraj (i.e. changing inpTraj WILL change whatever you assign outTraj to)
+ 
+	Raises:
+		ValueError: If minTime > maxTime
+	"""
+	maxTime = np.inf if maxTime is None else maxTime
+
+	if maxTime < minTime:
+		raise ValueError("maxTime > minTime required; Actual values are minTime={}, maxTime={}".format(minTime,maxTime))
+
+
+	outSteps = list()
+	for idx,currStep in enumerate(inpTraj):
+		currTime = currStep.time
+		if (currTime > minTime-timeTol) and (currTime < maxTime + timeTol):
+			outSteps.append(currStep)
+	return trajCoreHelp.TrajectoryInMemory(outSteps)
+
 def addVelocitiesToTrajInMemNVT(inpTraj, posConvFactor=1, timeConvFactor=1, velKey="velocities_from_pos"):
 	""" Calculates velocities based on differences in positions between steps and adds to the trajectory object. Note that this means that the last traj step wont have a velocity associated with it
 	

@@ -293,3 +293,79 @@ class TestGetTimeVsTempForTraj(unittest.TestCase):
 		for exp,act in it.zip_longest(expVals,actVals):
 			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
 
+
+class TestGetTrajBetweenTimeSteps(unittest.TestCase):
+
+	def setUp(self):
+		self.timeTol = 1e-5
+		self.minTime = 0
+		self.maxTime = None
+		self.timeTol = 1e-5
+
+		self.steps = [1,2,3,4]
+		self.times = [20, 10,40,30]
+
+		self.createTestFunct()
+
+	def createTestFunct(self):
+		self.stepA = trajHelp.TrajStepFlexible(step=self.steps[0], time=self.times[0])
+		self.stepB = trajHelp.TrajStepFlexible(step=self.steps[1], time=self.times[1])
+		self.stepC = trajHelp.TrajStepFlexible(step=self.steps[2], time=self.times[2])
+		self.stepD = trajHelp.TrajStepFlexible(step=self.steps[3], time=self.times[3])
+
+		self.allSteps = [self.stepA, self.stepB, self.stepC, self.stepD]
+		self.inpTraj = trajHelp.TrajectoryInMemory(self.allSteps)
+
+	def _runTestFunct(self):
+		currKwargs = {"minTime":self.minTime, "maxTime":self.maxTime, "timeTol":self.timeTol}
+		return tCode.getTrajBetweenTimes(self.inpTraj, **currKwargs)
+
+	def _getTrajFromStepIndices(self, stepIndices):
+		outSteps = list()
+		for idx in stepIndices:
+			currStepIdx, currTime = self.steps[idx], self.times[idx]
+			currTrajStep = trajHelp.TrajStepFlexible(step=currStepIdx, time=currTime)
+			outSteps.append(currTrajStep)
+		return trajHelp.TrajectoryInMemory(outSteps)
+
+	def testExpectedVals_NothingSet(self):
+		expStepIndices = [0,1,2,3]
+		expTraj = self._getTrajFromStepIndices(expStepIndices)
+		actTraj = self._runTestFunct()
+		self.assertEqual(expTraj, actTraj)
+
+	def testExpectedVals_minSet(self):
+		self.minTime = 19
+		expStepIndices = [0,2,3]
+		expTraj = self._getTrajFromStepIndices(expStepIndices)
+		actTraj = self._runTestFunct()
+		self.assertEqual(expTraj,actTraj)
+
+	def testExpectedVals_maxSet(self):
+		self.maxTime = 31
+		expStepIndices = [0,1,3]
+		expTraj = self._getTrajFromStepIndices(expStepIndices)
+		actTraj = self._runTestFunct()
+		self.assertEqual(expTraj,actTraj)
+
+	def testExpectedvals_minAndMaxSet(self):
+		self.minTime, self.maxTime = 11,31
+		expStepIndices = [0,3]
+		expTraj = self._getTrajFromStepIndices(expStepIndices)
+		actTraj = self._runTestFunct()
+		self.assertEqual(expTraj, actTraj) 
+
+	def testExpectedVals_timeTolRelevant(self):
+		self.timeTol = 1
+		self.minTime = min(self.times) - 0.9*self.timeTol
+		expStepIndices = [0,1,2,3]
+		expTraj = self._getTrajFromStepIndices(expStepIndices)
+		actTraj = self._runTestFunct()
+		self.assertEqual(expTraj, actTraj)
+
+	def testRaisesIfMinTimeGreaterThanMaxTime(self):
+		self.minTime = 10
+		self.maxTime = self.minTime - 1
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
