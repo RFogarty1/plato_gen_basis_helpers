@@ -265,6 +265,45 @@ class MetadynHillsInfo():
 		if sortTimes:
 			self.sortTimes()
 
+
+	def addHill(self, time=None, positions=None, scales=None, heights=None):
+		""" Add a new hill to the object
+		
+		Args: (ALL REQUIRED; despite being keyword args)
+			time: (float) The time this hill was added to the simulation
+			positions: (iter of floats) Number of dimensions should match self.positions
+			scales: (iter of floats) Number of dimensions should match self.scales
+			heights: (iter of floats) Number of dimensions should match self.heights
+
+		Returns
+			What Function Returns
+	 
+		Raises:
+			AttributeError: If any of the input args are None
+			ValueError: If input hill is the wrong dimension in any of positions/scales/heights
+			ValueError: If input positions/scales/heights dont all have the same dimensionality
+		"""
+		#Check all arguments have been set to something
+		inpArgs = [time,positions,scales,heights]
+		inpLabels = ["time", "positions", "scales", "heights"]
+		if any([x is None for x in [time,positions,scales,heights]]):
+			idx = inpArgs.index(None)
+			raise AttributeError("None is an invalid value for {}".format(inpLabels[idx]))
+
+		#Check the number of dimensions is correct
+		currObjNumbDims = len(self.positions[0])
+		newDims = [len(positions), len(scales), len(heights)]
+		if not all([x==newDims[0] for x in newDims]):
+			raise ValueError("Dimensions for positions/scales/heights should all be the same but are {},{},{}".format(*newDims))
+
+		if newDims[0] != currObjNumbDims:
+			raise ValueError("Cant add an {}-dimension hill to a {}-dimension object".format(newDims[0],currObjNumbDims))
+
+		self.times.append(time)
+		self.positions.append(positions)
+		self.scales.append(scales)
+		self.heights.append(heights)
+
 	def sortTimes(self):
 		""" Sorts the values of self.times in ascending order, and updates over attrs accordingly
 		"""

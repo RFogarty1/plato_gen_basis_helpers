@@ -352,6 +352,66 @@ class TestGetCombinedMetaDynHillsClass(unittest.TestCase):
 		self.assertEqual(expObj, actObj)
 		
 
+
+class TestAddHillToMetadynHillsInfoClass(unittest.TestCase):
+
+	def setUp(self):
+		#Initial hills
+		self.times = [1]
+		self.positions = [ [2,3] ]
+		self.scales = [ [3,4] ]
+		self.heights = [ [5,6] ]
+		self.sortTimes = False
+
+		#New hill
+		self.newTime = 5
+		self.newPositions = [8,9]
+		self.newScales = [1,5]
+		self.newHeights = [3,8]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"times":self.times, "positions":self.positions, "scales":self.scales,
+		              "heights":self.heights, "sortTimes":self.sortTimes}
+		self.testObjA = tCode.MetadynHillsInfo(**currKwargs)
+
+	def _runTestFunct(self):
+		currKwargs = {"time":self.newTime, "positions":self.newPositions,
+		              "scales": self.newScales, "heights":self.newHeights}
+		self.testObjA.addHill(**currKwargs)
+
+	def testExpectedCaseA(self):
+		#Create the expected object the slow way
+		expObj = copy.deepcopy(self.testObjA)
+		expObj.times.append(self.newTime)
+		expObj.positions.append( self.newPositions )
+		expObj.scales.append(self.newScales)
+		expObj.heights.append(self.newHeights)
+
+		#Check the convenience function gives same result
+		self._runTestFunct()
+		actObj = self.testObjA
+		self.assertEqual(expObj, actObj)
+
+	def testRaisesIfNotAllInputsSameDimension(self):
+		self.newScales.append(4)
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
+	def testRaisesIfInputsAreWrongDimension(self):
+		self.newScales.append(4)
+		self.newPositions.append(5)
+		self.newHeights.append(6)
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
+	def testRaisesIfTimeIsNone(self):
+		self.newTime = None
+		with self.assertRaises(AttributeError):
+			self._runTestFunct()
+
+
 class TestMetadynHillsInfoClass(unittest.TestCase):
 
 	def setUp(self):
@@ -471,6 +531,8 @@ class TestMetadynHillsInfoClass(unittest.TestCase):
 		expObj = self.testObjA
 
 		self.assertEqual(expObj, actObj)
+
+
 
 class TestMetadynHillsInfoClass_indicesWithinTimeRanges(unittest.TestCase):
 
