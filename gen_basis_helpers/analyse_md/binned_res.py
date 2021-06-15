@@ -89,6 +89,55 @@ class BinnedResultsStandard():
 		return True
 
 
+def binCountsFromOneDimDataSimple(inpData, binResObj, countKey="counts", raiseIfValsOutsideBins=False, initIfNeeded=True):
+	""" Updates bins counts for
+	
+	Args:
+		inpData: (iter of floats) Will update counts of bins accordingly
+		binResObj: (BinnedResultsStandard)
+		raiseIfValsOutsideBins: (Bool) If True raise a ValueError if we find a value which we cant bin
+		initIfNeeded: (Bool) If True then it initialises the count key in the bins if its not already present as an initial step
+ 
+	Returns
+		 Nothing; works in place on binResObj. Values are placed/updated in binResObj.binVals[countKey]
+ 
+	Raises:
+		 ValueError: If "raiseIfValsOutsideBins" is True and a value is found that doesnt fit into any of the bins
+	"""
+	#Initialize the counts if needed
+	if initIfNeeded:
+		if binResObj.binVals.get(countKey,None) is None:
+			binResObj.binVals[countKey] = [0 for x in range(len(binResObj.binCentres))]
+
+	#Sort the inp data
+	sortedData = sorted(inpData)
+
+	#Sort the centres and widths
+	binCentres = binResObj.binCentres
+	binEdgePairs = [ [binResObj.binEdges[idx], binResObj.binEdges[idx+1]] for idx in range(len(binResObj.binCentres))]
+
+	#Bin the data
+	edgeIdx, dataIdx = 0,0
+	numberPointsBinned = 0
+	while (edgeIdx<len(binEdgePairs)) and (dataIdx<len(sortedData)):
+		currMin, currMax = binEdgePairs[edgeIdx] 
+		currVal = sortedData[dataIdx]
+
+		if (currVal>=currMin) and (currVal<currMax):
+			binResObj.binVals[countKey][edgeIdx] += 1
+			numberPointsBinned += 1
+			dataIdx += 1
+		elif currVal>currMin:
+			edgeIdx += 1
+		else:
+			dataIdx += 1 #This should only trigger when x is too small to fit into any bins
+ 
+
+	if raiseIfValsOutsideBins:
+		if numberPointsBinned < len(inpData):
+			raise ValueError("Only {} values binned; out of {} present".format(numberPointsBinned, len(inpData) ))
+
+
 def binResultsFromTwoDimDataSimple(inpData, binResObj, dimZeroLabel="xVals", dimOneLabel="yVals", raiseIfValsOutsideBins=True):
 	""" When given x vs y, this divides the values into the bins provided in binResObj 
 	
@@ -113,15 +162,17 @@ def binResultsFromTwoDimDataSimple(inpData, binResObj, dimZeroLabel="xVals", dim
 	binCentres = binResObj.binCentres
 	sortedBinEdges = [ [binResObj.binEdges[idx], binResObj.binEdges[idx+1]] for idx in range(len(binResObj.binCentres))]
 
+	#Sort the data
+	sortedData = sorted(inpData)
 
 	#Figure out the dict for the sorted bins
 	outDicts = [ {dimZeroLabel:list(), dimOneLabel:list()} for x in range(len(sortedBinEdges)) ]
 
 	edgeIdx, dataIdx = 0,0
 	numberPointsBinned = 0
-	while (edgeIdx<len(sortedBinEdges)) and (dataIdx<len(inpData)):
+	while (edgeIdx<len(sortedBinEdges)) and (dataIdx<len(sortedData)):
 		currMin, currMax = sortedBinEdges[edgeIdx]
-		currDataX, currDataY = inpData[dataIdx][0], inpData[dataIdx][1]
+		currDataX, currDataY = sortedData[dataIdx][0], sortedData[dataIdx][1]
 
 		if (currDataX>=currMin) and (currDataX<currMax):
 			outDicts[edgeIdx][dimZeroLabel].append( currDataX )
@@ -135,8 +186,8 @@ def binResultsFromTwoDimDataSimple(inpData, binResObj, dimZeroLabel="xVals", dim
  
 
 	if raiseIfValsOutsideBins:
-		if numberPointsBinned < len(inpData):
-			raise ValueError("Only {} values binned; out of {} present".format(numberPointsBinned, len(inpData) ))
+		if numberPointsBinned < len(sortedData):
+			raise ValueError("Only {} values binned; out of {} present".format(numberPointsBinned, len(sortedData) ))
 
 	#Initialise lists if needed
 	if binResObj.binVals.get(dimZeroLabel,None) is None:
@@ -156,10 +207,8 @@ def binResultsFromTwoDimDataSimple(inpData, binResObj, dimZeroLabel="xVals", dim
 		binResObj.binVals.get(dimOneLabel)[idx].extend( outDicts[idx][dimOneLabel] )
 
 
-
-
 def getEmptyBinResultsForValsStandard(inpVals, binWidth):
-	""" Gets reasonable same-width bins for which to put inpVals in at a later point. Bins are generated such that the min value in the centre of the first bin
+	""" Gets reasonable same-width bins for which to put inpVals in at a later point. Bins are generated such that the min value is in the centre of the first bin
 	
 	Args:
 		inpVals: (iter of floats) Representative data which we will be binning
@@ -173,6 +222,24 @@ def getEmptyBinResultsForValsStandard(inpVals, binWidth):
 
 	"""
 	minVal, maxVal = min(inpVals), max(inpVals)
+	return getEmptyBinResultsFromMinMaxAndWidthStandard(minVal, maxVal, binWidth)
+
+
+def getEmptyBinResultsFromMinMaxAndWidthStandard(minVal, maxVal, binWidth):
+	""" Gets reasonable same-width bins to put inpVals in at a later point. Bins are generated such that the bin value is in the centre of the first bin and the max value is in the centre of the final bin
+	
+	Args:
+		minVal: (float) Expected minimum value
+		maxVal: (float) Expected maximum value
+		binWidth: (float) The width of the bins
+
+	Returns
+		outBins: (BinnedResultsStandard object) This contains all the bins, but no data associated with them
+ 
+	NOTE:
+		Currently using np.arange as a backend; may have slight inconsistencies based on that
+
+	"""
 	lowerEdge = minVal - (0.5*binWidth)
 	upperEdge = maxVal + (0.5*binWidth)
 
@@ -211,3 +278,14 @@ def averageItersInEachBin(binResObj, keys=None):
 
 
 
+def getBinEdgePairsFromBinResObj(binResObj):
+	""" Gets [leftEdge, rightEdge] for each bin in binResObj
+	
+	Args:
+		binResObj:(BinnedResultsStandard) Bins must be in order
+			 
+	Returns
+		outEdges: (iter of len-2 floats) [leftEdge,rightEdge] for each bin in binResObj
+ 
+	"""
+	return [ [binResObj.binEdges[idx], binResObj.binEdges[idx+1]] for idx in range(len(binResObj.binCentres))]

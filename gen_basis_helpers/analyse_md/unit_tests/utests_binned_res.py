@@ -102,6 +102,42 @@ class TestBinnedResultsObj(unittest.TestCase):
 		self.assertEqual(expObj,actObj)
 
 
+class TestBinCountResultsForOneDimData(unittest.TestCase):
+
+	def setUp(self):
+		self.dataA = [ 1, 2, 5, 2, 2]
+		self.binEdges = [0, 3, 6]
+		self.countLabel = "counts"
+		self.raiseIfValsOutsideBins = True
+		self.initIfNeeded = True
+		self.binVals = None
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.binResObjA = tCode.BinnedResultsStandard.fromBinEdges(self.binEdges,binVals=self.binVals)
+
+	def _runTestFunct(self):
+		args = [self.dataA, self.binResObjA]
+		currKwargs = {"countKey":self.countLabel, "raiseIfValsOutsideBins":self.raiseIfValsOutsideBins,
+		              "initIfNeeded":self.initIfNeeded}
+		return tCode.binCountsFromOneDimDataSimple(*args,**currKwargs)
+
+	def testExpectedResultsA_uninitialised(self):
+		expResObj = copy.deepcopy(self.binResObjA)
+		expResObj.binVals = {self.countLabel: [4,1] }
+		self._runTestFunct()
+		actResObj = self.binResObjA
+		self.assertEqual(expResObj, actResObj)
+
+	def testExpectedResultsA_initialised(self):
+		self.binVals = {self.countLabel:[10,12]}
+		self.createTestObjs()
+		expResObj = copy.deepcopy(self.binResObjA)
+		expResObj.binVals = {self.countLabel:[14,13]}
+		self._runTestFunct()
+		actResObj = self.binResObjA
+		self.assertEqual(expResObj, actResObj)
+
 class TestBinResultsForTwoDimData(unittest.TestCase):
 
 	def setUp(self):
@@ -142,6 +178,14 @@ class TestBinResultsForTwoDimData(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			self._runTestFunct()
 
+	def testExpectedWhenInpDataUnsorted(self):
+		self.dataA = [ [3,9], [1,2], [4,16], [2,4] ]
+		expBinVals = {self.dimZeroLabel: [ [1,2,3], [4] ], self.dimOneLabel: [ [2,4,9], [16] ] }
+		self._runTestFunct()
+		actBinVals = self.binResA.binVals
+		self.assertEqual(expBinVals, actBinVals)
+
+
 class TestCreateEmptyBinsStandard(unittest.TestCase):
 
 	def setUp(self):
@@ -163,6 +207,25 @@ class TestCreateEmptyBinsStandard(unittest.TestCase):
 		expObj = tCode.BinnedResultsStandard.fromBinEdges(expEdges)
 		actObj = self._runTestFunct()
 		self.assertEqual(expObj, actObj)
+
+#Mostly covered by "TestCreateEmptyBinsStandard" really
+class TestCreateBinsFromMinMaxAndWidthStandard(unittest.TestCase):
+
+	def setUp(self):
+		self.minVal = 4
+		self.maxVal = 7
+		self.width = 1
+
+	def _runTestFunct(self):
+		args = [self.minVal, self.maxVal, self.width]
+		return tCode.getEmptyBinResultsFromMinMaxAndWidthStandard(*args)
+
+	def testExpectedCaseA(self):
+		expEdges = [3.5, 4.5, 5.5, 6.5, 7.5]
+		expObj = tCode.BinnedResultsStandard.fromBinEdges(expEdges)
+		actObj = self._runTestFunct()
+		self.assertEqual(expObj, actObj)
+
 
 class TestConvertBinListsIntoAverages(unittest.TestCase):
 
