@@ -105,7 +105,7 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 			runDirs = [workFolder]
 		else:
 			rDirs = [x for x in os.listdir(workFolder) if os.path.isdir( os.path.join(workFolder,x) )]
-			rDirs = sorted( [x for x in rDirs if self._checkStringMatchesRunFormat(x)] )
+			rDirs = sorted( [x for x in rDirs if self._checkStringMatchesRunFormat(x)], key=lambda x: int(x.split("_")[-1]) )
 			runDirs = [os.path.join(workFolder, rDir) for rDir in rDirs]
 		return runDirs
 
