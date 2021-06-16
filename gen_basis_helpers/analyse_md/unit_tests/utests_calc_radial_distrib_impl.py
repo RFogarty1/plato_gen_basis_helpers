@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 import unittest
 import unittest.mock as mock
 
@@ -10,6 +11,37 @@ import gen_basis_helpers.analyse_md.traj_core as trajCoreHelp
 import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 
 import gen_basis_helpers.analyse_md.calc_radial_distrib_impl as tCode
+
+
+class TestGetDistVsRdfPlotDataFromCalcRdfOpts(unittest.TestCase):
+
+	def setUp(self):
+		self.binEdges = [0,2,4]
+		self.rdfVals = [23,41]
+		self.offset = 0
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		binVals = {"rdf":self.rdfVals}
+		self.binResA = binResHelp.BinnedResultsStandard.fromBinEdges(self.binEdges, binVals=binVals)
+		self.optObjA = tCode.CalcPlanarRdfOptions(self.binResA, None)
+
+	def _runTestFunct(self):
+		return self.optObjA.getDistVsRdfData(offset=self.offset)
+
+	def testExpectedA(self):
+		expVals = [ [1,23], [3,41] ]
+		actVals = self._runTestFunct() 
+		for exp,act in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+	def testWithOffset(self):
+		self.offset = 20
+		expVals = [ [1,43], [3,61] ]
+		actVals = self._runTestFunct()
+		for exp, act in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
 
 class TestPopulateBinsWithPlanarRdfVals(unittest.TestCase):
 

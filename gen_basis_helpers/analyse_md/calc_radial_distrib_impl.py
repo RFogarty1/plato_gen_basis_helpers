@@ -12,7 +12,6 @@ from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
 
-
 def populatePlanarRdfsFromOptionsObjs(inpTraj, optionsObjs):
 	""" Populates bin result objs sotred on CalcPlanarRdfOptions instances
 	
@@ -51,6 +50,21 @@ class CalcPlanarRdfOptions():
 		self.indices = indices
 		self.planeEqn = planeEqn
 		self.volume = volume
+
+	def getDistVsRdfData(self, offset=0):
+		""" Returns [ [x1,rdf1], [x2,rdf2],... ] from self.binResObj; assuming its been populated
+		
+		Args:
+			offset: (float, Optional) Optionally pass a value to be summed to the rdf data. Useful for making plots which data shifted along y
+				 
+		Returns
+			outData: (iter of len-2 iters) x values are bin centres (calculated from the edges); y values are the rdf values
+	 
+		"""
+		binEdgePairs = binResHelp.getBinEdgePairsFromBinResObj(self.binResObj)
+		distVals = [ sum(edges)/len(edges) for edges in binEdgePairs ]
+		rdfVals = [x+offset for x in self.binResObj.binVals["rdf"]]
+		return [ [dist,rdf] for dist,rdf in it.zip_longest(distVals,rdfVals) ]
 
 def _populateBinsWithPlanarRdfVals(inpTraj, binResObjs, indices, planeEqn=None, volumes=None):
 	""" Gets planar rdf values for multiple binResObjs/atom groups separately. This can be used to efficiently calculate, for example, the effect of different bin sizing on the rdfs
