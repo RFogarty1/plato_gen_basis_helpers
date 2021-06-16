@@ -8,8 +8,8 @@ import numpy as np
 
 import plato_pylib.shared.ucell_class as uCellHelp
 
+import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 import gen_basis_helpers.analyse_md.calc_dists as tCode
-
 
 
 class TestCalcNearestDistance(unittest.TestCase):
@@ -379,4 +379,44 @@ class TestGetInterSurfPlaneSeparationTwoPositions(unittest.TestCase):
 		expVal = 4
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
+
+
+class TestCalcDistanceFromSurfPlaneForCell(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoords = [ [2,2,2,"X"],
+		                    [3,3,6,"Y"],
+		                    [4,4,9,"Z"] ]
+
+		self.indices = [0,1,2]
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+	def _runTestFunct(self):
+		return tCode.calcDistancesFromSurfPlaneForCell(self.cellA, self.indices, self.planeEqn)
+
+	def testExpectedDistsFromSurfacePlaneAtBottomOfCell(self):
+		expDists = [2,4,1]
+		actDists = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expDists,actDists)]
+
+	def testExpectedWhenDefaultArgsUsed(self):
+		self.planeEqn = None
+		self.indices = None
+		expDists = [2,4,1]
+		actDists = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expDists,actDists)]
+
+	def testExpectedDistsFromSurfPlaneAtCellMidpoint(self):
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,5)
+		self.indices = [0,1,2]
+		expDists = [3,1,4]
+		actDists = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expDists, actDists)]
+
 

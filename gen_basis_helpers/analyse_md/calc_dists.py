@@ -147,6 +147,44 @@ def calcSingleAngleBetweenCoords_minImageConv(inpCell, coordA, coordB, coordC):
 	return math.degrees(angles[0])
 
 
+def calcDistancesFromSurfPlaneForCell(inpCell, indices=None, planeEqn=None):
+	""" Calculates distances of atoms from a surface plane for inpCell
+	
+	Args:
+		inpCell: (plato_pylib UnitCell object) 
+		indices: (iter of ints) Indices of atoms to calculate this distance for. Default is to use all indices in the cell
+		planeEqn: (ThreeDimPlaneEquation object). MUST be parralel to axb; where axb are cell vector
+			 
+	Returns
+		outDists: (iter of floats; same length as indices) Each is the distance from the plane
+ 
+	"""
+	#Create a cell to use for this
+	useCell = copy.deepcopy(inpCell)
+	useCartCoords = useCell.cartCoords
+
+	#Deal with default args	
+	indices = [idx for idx in range(len(useCartCoords))] if indices is None else indices
+	planeEqn = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(useCell) if planeEqn is None else planeEqn
+
+	#Add an atom in the input planeEqn
+	newCoord = planeEqn.getPointClosestToOrigin() + ["X"]
+	useCartCoords.append(newCoord)
+	useCell.cartCoords = useCartCoords
+
+	#Get the nearest coords to the surface plane
+	indicesForAllAtoms = [idx for idx in range(len(useCartCoords))]
+	coordMatrix = getNearestImageNebCoordsMatrixBasic(useCell, indicesA=[indicesForAllAtoms[-1]], indicesB=indicesForAllAtoms)
+
+	#Get the distances
+	outDists = list()
+	for idx in indices:
+		coordA, coordB = coordMatrix[0][idx]
+		currDist = planeEqnHelp.getInterPlaneDistTwoPoints( coordA[:3], coordB[:3], planeEqn )
+		outDists.append(currDist)
+
+	return outDists
+
 
 def getInterSurfPlaneSeparationTwoPositions(posA, posB, inpCell):
 	""" Gets the minimum separation along the surface normal for two (cartesian) positios when given inpCell. The surface plane is defined by axb

@@ -64,13 +64,8 @@ def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indices
  
 	"""
 	#Sort annoying defaults
-	volInit = inpTraj.trajSteps[0].unitCell.volume
-	if volumes is None:
-		volumes = [volInit for x in range(len(binResObjs))]
-	else:
-		for idx,vol in enumerate(volumes):
-			if vol is None:
-				volumes[idx] = volInit
+	nBins = len(binResObjs)
+	volumes = _getVolumesFromTrajAndInpVolumesArg(inpTraj, nBins, volumes)
 
 	#Create objects to handle binning for each traj step
 	singleBinners = list()
@@ -89,6 +84,17 @@ def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indices
 	for resObj, idxListA, idxListB,vol in it.zip_longest(binResObjs, indicesA, indicesB, volumes):
 		nA, nB = len(idxListA), len(idxListB)
 		_addRdfToBinValsForBinsWithCounts(resObj, vol, nA, nB, nSteps)
+
+
+def _getVolumesFromTrajAndInpVolumesArg(inpTraj, nBins, volumes):
+	volInit = inpTraj.trajSteps[0].unitCell.volume
+	if volumes is None:
+		volumes = [volInit for x in range(nBins)]
+	else:
+		for idx,vol in enumerate(volumes):
+			if vol is None:
+				volumes[idx] = volInit
+	return volumes
 
 #SOOOOOOO: We need to know both number of atoms in group A and group B to get the normalisation factor
 def _addRdfToBinValsForBinsWithCounts(binRes, volTotal, nA, nB, nSteps, countKey="counts"):
