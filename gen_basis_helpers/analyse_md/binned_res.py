@@ -225,13 +225,14 @@ def getEmptyBinResultsForValsStandard(inpVals, binWidth):
 	return getEmptyBinResultsFromMinMaxAndWidthStandard(minVal, maxVal, binWidth)
 
 
-def getEmptyBinResultsFromMinMaxAndWidthStandard(minVal, maxVal, binWidth):
+def getEmptyBinResultsFromMinMaxAndWidthStandard(minVal, maxVal, binWidth, extremesAtCentre=True):
 	""" Gets reasonable same-width bins to put inpVals in at a later point. Bins are generated such that the bin value is in the centre of the first bin and the max value is in the centre of the final bin
 	
 	Args:
 		minVal: (float) Expected minimum value
 		maxVal: (float) Expected maximum value
 		binWidth: (float) The width of the bins
+		extremesAtCentre: (Bool) If True the we put minVal/maxVal at the centre of the bins (rather than the edges). 
 
 	Returns
 		outBins: (BinnedResultsStandard object) This contains all the bins, but no data associated with them
@@ -246,6 +247,11 @@ def getEmptyBinResultsFromMinMaxAndWidthStandard(minVal, maxVal, binWidth):
 	outEdges = list(np.arange(lowerEdge, upperEdge, binWidth))
 	if outEdges[-1] < maxVal:
 		outEdges.append( outEdges[-1]+binWidth )
+
+	#Shift the edges to the extremes if requested
+	if extremesAtCentre is False:
+		nonCentredOutEdges = [x+(0.5*binWidth) for x in outEdges[:-1]]
+		outEdges = nonCentredOutEdges
 
 	return BinnedResultsStandard.fromBinEdges(outEdges)
 
@@ -289,3 +295,5 @@ def getBinEdgePairsFromBinResObj(binResObj):
  
 	"""
 	return [ [binResObj.binEdges[idx], binResObj.binEdges[idx+1]] for idx in range(len(binResObj.binCentres))]
+
+

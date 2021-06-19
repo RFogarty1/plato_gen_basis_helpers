@@ -29,7 +29,30 @@ def populateRdfValsOnOptionObjs(inpTraj, optionsObjs):
 	#
 	_populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indicesB, volumes=volumes)
 
-class CalcRdfOptions():
+
+
+
+class CalcDistribOptionsBase():
+	""" Base class for Objects representing options for calculating distribution functions (e.g. radial distribution functions) """
+
+
+	def getDistVsDistribData(self, offset=0):
+		""" Returns [ [x1,rdf1], [x2,rdf2],... ] from self.binResObj; assuming its been populated
+		
+		Args:
+			offset: (float, Optional) Optionally pass a value to be summed to the rdf data. Useful for making plots which data shifted along y
+				 
+		Returns
+			outData: (iter of len-2 iters) x values are bin centres (calculated from the edges); y values are the rdf values
+	 
+		"""
+		binEdgePairs = binResHelp.getBinEdgePairsFromBinResObj(self.binResObj)
+		distVals = [ sum(edges)/len(edges) for edges in binEdgePairs ]
+		rdfVals = [x+offset for x in self.binResObj.binVals.get(self.distribKey)]
+		return [ [dist,rdf] for dist,rdf in it.zip_longest(distVals,rdfVals) ]
+
+
+class CalcRdfOptions(CalcDistribOptionsBase):
 	""" Object containing options to calculate a specific rdf function """
 
 	def __init__(self, binResObj, indicesA, indicesB, volume=None):
@@ -42,6 +65,7 @@ class CalcRdfOptions():
 			volume: (float or None) The total cell volume to assume; Default is to use the unit cell volume from first step of an input traj. Using the whole cell may not be sensible when calculating for slab geometries.
 
 		"""
+		self.distribKey = "rdf"
 		self.binResObj = binResObj
 		self.indicesA = indicesA
 		self.indicesB = indicesB

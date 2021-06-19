@@ -420,3 +420,40 @@ class TestCalcDistanceFromSurfPlaneForCell(unittest.TestCase):
 		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expDists, actDists)]
 
 
+
+class TestCalcIterOfAnglesForInpIndices(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoords = [ [1,1,7,"X"],
+		                    [1,1,9,"X"],
+		                    [1,3,1,"Y"], #135 degrees once PBCs taken into acount
+		                    [1,5,9,"Y"] ] #90 degrees with 0,1,this
+
+		self.angleIndices = [ [0,1,2], [0,1,3] ]
+		self.degrees = True
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+	def _runTestFunct(self):
+		return tCode.getInterAtomicAnglesForInpGeom(self.cellA, self.angleIndices, degrees=self.degrees)
+
+	def testExpected_orthogCell(self):
+		expAngles = [180-45,90]
+		actAngles = self._runTestFunct()
+		[self.assertAlmostEqual(e,a, places=5) for e,a in it.zip_longest(expAngles, actAngles)]
+
+	def testExpected_radians(self):
+		self.degrees = False
+		expAngles = [math.radians(x) for x in [180-45,90]]
+		actAngles = self._runTestFunct()
+		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expAngles,actAngles)]
+
+
+
+
+
+

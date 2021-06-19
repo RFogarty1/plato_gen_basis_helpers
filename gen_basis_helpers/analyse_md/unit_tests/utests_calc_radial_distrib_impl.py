@@ -13,6 +13,29 @@ import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 import gen_basis_helpers.analyse_md.calc_radial_distrib_impl as tCode
 
 
+class TestGetAverageDensityStandard(unittest.TestCase):
+
+	def setUp(self):
+		self.nSpecies = 10
+		self.massDict = {"X":10, "Y":20}
+		self.massConv = 2
+		self.volConv = 4
+		self.species = ["X","Y"]
+		self.stoics = [2,3]
+		self.volume = 10
+
+	def _runTestFunct(self):
+		args = [self.species, self.nSpecies, self.volume]
+		kwargs = {"stoics":self.stoics, "massDict":self.massDict,
+		          "massConv":self.massConv, "volConv":self.volConv}
+		return tCode.getAverageDensityStandard(*args,**kwargs)
+
+	def testExpectedCaseA(self):
+		massPerSpecies = 2*10 + 3*20
+		expVal = (self.nSpecies*self.massConv*massPerSpecies) / (self.volume*self.volConv)
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal,actVal)
+
 class TestGetDistVsRdfPlotDataFromCalcRdfOpts(unittest.TestCase):
 
 	def setUp(self):
@@ -27,7 +50,7 @@ class TestGetDistVsRdfPlotDataFromCalcRdfOpts(unittest.TestCase):
 		self.optObjA = tCode.CalcPlanarRdfOptions(self.binResA, None)
 
 	def _runTestFunct(self):
-		return self.optObjA.getDistVsRdfData(offset=self.offset)
+		return self.optObjA.getDistVsDistribData(offset=self.offset)
 
 	def testExpectedA(self):
 		expVals = [ [1,23], [3,41] ]

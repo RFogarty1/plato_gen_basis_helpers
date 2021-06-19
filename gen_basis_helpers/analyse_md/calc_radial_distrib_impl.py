@@ -4,6 +4,10 @@
 
 import itertools as it
 
+import plato_pylib.shared.ucell_class as uCellHelp
+import plato_pylib.shared.unit_convs as uConvHelp
+
+
 from . import binned_res as binResHelp
 from . import calc_dists as calcDistHelp
 from . import calc_distrib_core as calcDistribCoreHelp
@@ -12,12 +16,40 @@ from ..shared import cart_coord_utils as cartHelp
 from ..shared import plane_equations as planeEqnHelp
 
 
+
+def getAverageDensityStandard(species, numbMolecules, volume, stoics=None, massDict=None, massConv=1/uConvHelp.AVOGADRO_NUMBER, volConv=1):
+	""" Computes the average density of a system. Useful for getting a planar density from a planar rdf for example
+	
+	Args:
+		species: (iter of str) Each entry is an element symbol. These are the elements that make up one molecule; E.g. for water you could use ["H","O"] (if stoics set) or ["H","H","O"] (if stoics not set)
+		numbMolecules: (int) The number of molecules in the cell
+		volume: (float) The volume of the cell
+		stoics: (iter of ints) Represents the stoichiometry of each element in species. E.g. for water if species=["H","O"] then stoics is [2,1]
+		massDict: (dict) Keys are element symbols, values are mass. Default is to have mass in g/mol
+		massConv: (float) The conversion factor for the mass. Default value converts g/mol into g
+		volConv: (float) The conversion factor for the volume; a standard value is likely ANG_TO_CM**3
+
+	Returns
+		outDensity: (float) The average density
+ 
+	"""
+	#Sort out defaults
+	massDict = uCellHelp.getEleKeyToMassDictStandard() if massDict is None else massDict
+	stoics = [1 for x in species] if stoics is None else stoics
+
+	#Figure out the average density
+	massPerMolecule = sum( [massDict[s.capitalize()]*stoics[idx] for idx,s in enumerate(species)] )
+	totalMass = massConv*numbMolecules*massPerMolecule
+	totalVol = volume*volConv
+	return totalMass/totalVol
+
+
 def populatePlanarRdfsFromOptionsObjs(inpTraj, optionsObjs):
-	""" Populates bin result objs sotred on CalcPlanarRdfOptions instances
+	""" Populates bin result objs stored on CalcPlanarRdfOptions instances
 	
 	Args:
 		inpTraj: (TrajectoryInMemory object)
-		optionsObjs: (iter of CalcRdfOptions)
+		optionsObjs: (iter of CalcPlanarRdfOptions)
 			 
 	Returns
 		Nothing; works in place on x.binResObj in optionsObjs
@@ -33,7 +65,7 @@ def populatePlanarRdfsFromOptionsObjs(inpTraj, optionsObjs):
 	_populateBinsWithPlanarRdfVals(inpTraj, binResObjs, indices, planeEqn=planeEqns[0], volumes=volumes)
 
 
-class CalcPlanarRdfOptions():
+class CalcPlanarRdfOptions(calcDistribCoreHelp.CalcDistribOptionsBase):
 	""" Object containing options to calculate a specific radial distribution function """
 	
 	def __init__(self, binResObj, indices, planeEqn=None, volume=None):
@@ -46,25 +78,12 @@ class CalcPlanarRdfOptions():
 			volume: (None or float) The volume to use for calculating the rdf. None generally means use the full unit cell volume (may not be sensible for slabs/multi-phase cells)
 				 
 		"""
+		self.distribKey = "rdf"
 		self.binResObj = binResObj
 		self.indices = indices
 		self.planeEqn = planeEqn
 		self.volume = volume
 
-	def getDistVsRdfData(self, offset=0):
-		""" Returns [ [x1,rdf1], [x2,rdf2],... ] from self.binResObj; assuming its been populated
-		
-		Args:
-			offset: (float, Optional) Optionally pass a value to be summed to the rdf data. Useful for making plots which data shifted along y
-				 
-		Returns
-			outData: (iter of len-2 iters) x values are bin centres (calculated from the edges); y values are the rdf values
-	 
-		"""
-		binEdgePairs = binResHelp.getBinEdgePairsFromBinResObj(self.binResObj)
-		distVals = [ sum(edges)/len(edges) for edges in binEdgePairs ]
-		rdfVals = [x+offset for x in self.binResObj.binVals["rdf"]]
-		return [ [dist,rdf] for dist,rdf in it.zip_longest(distVals,rdfVals) ]
 
 def _populateBinsWithPlanarRdfVals(inpTraj, binResObjs, indices, planeEqn=None, volumes=None):
 	""" Gets planar rdf values for multiple binResObjs/atom groups separately. This can be used to efficiently calculate, for example, the effect of different bin sizing on the rdfs

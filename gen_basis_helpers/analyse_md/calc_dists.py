@@ -293,3 +293,38 @@ def _getImageInCellForInpFractCoords(inpCoord, tolerance=1e-2):
 
 	return outCoords
 
+
+def getInterAtomicAnglesForInpGeom(inpCell, angleIndices, degrees=True):
+	""" Gets a list of requested angles between atoms for inpCell taking PBCs into account.
+	
+	Args:
+		inpCell: (plato_pylib UnitCell object)
+		angleIndices: (iter of len-3 iters) Each element contains [idxA,idxB,idxC] which means calculate the angle between idA,idxB,idxC for indices in inpCell.cartCoords
+		degrees: (Bool) If True then return angles in degrees; else use radians
+
+	Returns
+		outAngles: (iter of floats) Length is the same as len(angleIndices); each is an angle calculated for a value in angleIndices
+ 
+	"""
+	cartCoords = inpCell.cartCoords
+
+	#Convert to format needed for mdAnalysis function
+	numbAngles = len(angleIndices)
+	cartCoordsA = np.array([ np.array(cartCoords[angleIndices[idx][0]][:3]) for idx in range(numbAngles) ])
+	cartCoordsB = np.array([ np.array(cartCoords[angleIndices[idx][1]][:3]) for idx in range(numbAngles) ])
+	cartCoordsC = np.array([ np.array(cartCoords[angleIndices[idx][2]][:3]) for idx in range(numbAngles) ])
+
+	#Calculate using md analysis
+	dims = mdAnalysisInter.getMDAnalysisDimsFromUCellObj(inpCell)
+	outAnglesRadians = distLib.calc_angles(cartCoordsA, cartCoordsB, cartCoordsC, box=dims)
+	outAnglesRadians = [x for x in outAnglesRadians]
+
+	#Convert output to the form i want
+	if degrees:
+		outAngles = [math.degrees(x) for x in outAnglesRadians]
+	else:
+		outAngles = outAnglesRadians
+
+	return outAngles
+
+

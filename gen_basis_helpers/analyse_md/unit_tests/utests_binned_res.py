@@ -215,10 +215,12 @@ class TestCreateBinsFromMinMaxAndWidthStandard(unittest.TestCase):
 		self.minVal = 4
 		self.maxVal = 7
 		self.width = 1
+		self.extremesAtCentre = True
 
 	def _runTestFunct(self):
 		args = [self.minVal, self.maxVal, self.width]
-		return tCode.getEmptyBinResultsFromMinMaxAndWidthStandard(*args)
+		kwargs = {"extremesAtCentre":self.extremesAtCentre}
+		return tCode.getEmptyBinResultsFromMinMaxAndWidthStandard(*args,**kwargs)
 
 	def testExpectedCaseA(self):
 		expEdges = [3.5, 4.5, 5.5, 6.5, 7.5]
@@ -226,6 +228,12 @@ class TestCreateBinsFromMinMaxAndWidthStandard(unittest.TestCase):
 		actObj = self._runTestFunct()
 		self.assertEqual(expObj, actObj)
 
+	def testExpected_extremesAtEdges(self):
+		self.extremesAtCentre = False
+		expEdges = [4,5,6,7]
+		expObj = tCode.BinnedResultsStandard.fromBinEdges(expEdges)
+		actObj = self._runTestFunct()
+		self.assertEqual(expObj, actObj)
 
 class TestConvertBinListsIntoAverages(unittest.TestCase):
 
