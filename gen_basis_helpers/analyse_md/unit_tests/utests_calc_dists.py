@@ -453,6 +453,49 @@ class TestCalcIterOfAnglesForInpIndices(unittest.TestCase):
 		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expAngles,actAngles)]
 
 
+class TestCalcNearestImageVectorMatrix(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoords = [ [1,1,7,"A"],
+		                    [1,1,9,"B"],
+		                    [1,3,1,"C"] ]
+
+		self.indicesA = None
+		self.indicesB = None
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+	def _runTestFunct(self):
+		kwargs = {"indicesA":self.indicesA, "indicesB":self.indicesB}
+		return tCode.getNearestImageVectorMatrixBasic(self.cellA, **kwargs)
+
+	def _loadStandardExpectedAllIndices(self):
+		zeroVector = [0,0,0]
+		aToB, aToC, bToC = [0,0,2] , [0,2,4]  , [0,2,2]
+		bToA, cToA, cToB = [0,0,-2], [0,-2,-4], [0,-2,-2]
+		outMatrix = [ [zeroVector, aToB      , aToC],
+		              [bToA      , zeroVector, bToC],
+		              [cToA      , cToB      , zeroVector] ]
+		return outMatrix
+
+	def testExpectedCaseA_allIndices(self):
+		expMatrix = self._loadStandardExpectedAllIndices()
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expMatrix), np.array(actMatrix) ) )
+
+	def testExpectedIndicesABPassed(self):
+		self.indicesA = [0,1]
+		self.indicesB = [2]
+		fullMatrix = self._loadStandardExpectedAllIndices()
+		expMatrix = [ [fullMatrix[0][2]],
+		              [fullMatrix[1][2]] ] 
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose(np.array(expMatrix), np.array(actMatrix)) )
 
 
 
