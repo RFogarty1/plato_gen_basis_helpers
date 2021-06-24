@@ -21,7 +21,6 @@ def populateInteratomicAngularDistribsFromOptionsObjs(inpTraj, optionsObjs):
 	indices = [x.indices for x in optionsObjs]
 	_populateBinsWithInteratomicAngularDistribs(inpTraj, binResObjs, indices)
 
-#TODO: Have some functions checking the bin edges are within a tolerance of the domain
 class CalcInteratomicAngularDistribOptions(calcDistribCoreHelp.CalcDistribOptionsBase):
 	
 
@@ -43,13 +42,7 @@ class CalcInteratomicAngularDistribOptions(calcDistribCoreHelp.CalcDistribOption
 			self._checkBinEdgesWithinDomain()
 
 	def _checkBinEdgesWithinDomain(self):
-		binEdges = self.binResObj.binEdges
-		minEdge, maxEdge = min(binEdges), max(binEdges)
-		if minEdge < self.domain[0]-abs(self.domainTol):
-			raise ValueError("Bin with an edge of {} is outside domain of {}".format(minEdge, self.domain))
-		if maxEdge > self.domain[1]+abs(self.domainTol):
-			raise ValueError("Bin with an edge of {} is outside domain of {}".format(maxEdge, self.domain))
-
+		binResHelp._checkBinEdgesWithinDomain(self.binResObj, self.domain, self.domainTol)
 
 
 def _populateBinsWithInteratomicAngularDistribs(inpTraj, binResObjs, indices):
@@ -72,34 +65,19 @@ def _populateBinsWithInteratomicAngularDistribs(inpTraj, binResObjs, indices):
 	multiBinner = _InteratomicAngularMultiBinnerFixedIndices(singleBinners)
 
 	#Run binners
+	nSteps = len(inpTraj.trajSteps)
 	for tStep in inpTraj.trajSteps:
 		multiBinner.updateCountsFromTrajStep(tStep)
 
 	#Calculate the pdf and adf from the counts and number of steps
 	for binResObj,idxList in it.zip_longest(binResObjs,indices):
 		nAngles = len(idxList)
-		_addAngularPdfAndRdfToBinObj(binResObj, nAngles)
+		_addAngularPdfAndRdfToBinObj(binResObj, nAngles*nSteps)
 
 #nSteps maybe not even needed actually
 def _addAngularPdfAndRdfToBinObj(inpBinObj, nAngles):
 	domain = [0,180]
-	domainWidth = abs(domain[1]-domain[0])
-
-	binEdgePairs = binResHelp.getBinEdgePairsFromBinResObj(inpBinObj)
-	binWidths = [abs(x[1]-x[0]) for x in binEdgePairs]
-	
-	#Get pdf (probability distribution function) and adf (angular distribution function)
-	totalAngles = inpBinObj.binVals
-	outPdfs, outAdfs = list(), list()
-	for currWidth, currCount in it.zip_longest(binWidths, inpBinObj.binVals["counts"]):
-		currPdf = currCount / nAngles
-		currAdf = currPdf * (domainWidth/currWidth)
-		outPdfs.append(currPdf), outAdfs.append(currAdf)
-
-	#Attach to the bins
-	inpBinObj.binVals["pdf"] = outPdfs
-	inpBinObj.binVals["adf"] = outAdfs
-
+	calcDistribCoreHelp._addPdfAndAdfToBinObj(inpBinObj, nAngles, domain)
 
 class _InteratomicAngularMultiBinnerFixedIndices():
 

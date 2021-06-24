@@ -244,3 +244,22 @@ def _getRadialToBinValsFromFullDistMatrix(distMatrix, indicesA=None, indicesB=No
 
 	return outVals
 
+def _addPdfAndAdfToBinObj(inpBinObj, nAngles, domain):
+	domainWidth = abs(domain[1]-domain[0])
+
+
+	binEdgePairs = binResHelp.getBinEdgePairsFromBinResObj(inpBinObj)
+	binWidths = [abs(x[1]-x[0]) for x in binEdgePairs]
+	
+	#Get pdf (probability distribution function) and adf (angular distribution function)
+	totalAngles = inpBinObj.binVals
+	outPdfs, outAdfs = list(), list()
+	for currWidth, currCount in it.zip_longest(binWidths, inpBinObj.binVals["counts"]):
+		currPdf = currCount / nAngles
+		currAdf = currPdf * (domainWidth/currWidth)
+		outPdfs.append(currPdf), outAdfs.append(currAdf)
+
+	#Attach to the bins
+	inpBinObj.binVals["pdf"] = outPdfs
+	inpBinObj.binVals["adf"] = outAdfs
+

@@ -297,3 +297,13 @@ def getBinEdgePairsFromBinResObj(binResObj):
 	return [ [binResObj.binEdges[idx], binResObj.binEdges[idx+1]] for idx in range(len(binResObj.binCentres))]
 
 
+#Backend checker for some distrib option classes
+def _checkBinEdgesWithinDomain(binResObj, domain, domainTol):
+	binEdges = binResObj.binEdges
+	minEdge, maxEdge = min(binEdges), max(binEdges)
+	if minEdge < domain[0]-abs(domainTol):
+		raise ValueError("Bin with an edge of {} is outside domain of {}".format(minEdge, domain))
+	if maxEdge > domain[1]+abs(domainTol):
+		raise ValueError("Bin with an edge of {} is outside domain of {}".format(maxEdge, domain))
+
+
