@@ -4,6 +4,8 @@ import copy
 import unittest
 import unittest.mock as mock
 
+import numpy as np
+
 import gen_basis_helpers.analyse_md.binned_res as tCode
 
 class TestBinnedResultsObj(unittest.TestCase):
@@ -286,4 +288,152 @@ class TestConvertBinListsIntoAverages(unittest.TestCase):
 		actBin = self.binObjA
 		self.assertEqual(expBin, actBin)
 
+
+#Needs slightly different setup to the other tests for this class
+class TestNDimensionalBinObj_equality(unittest.TestCase):
+
+	def setUp(self):
+		self.edges = [ [1,2,3],
+		               [6,5,4,3] ]
+		self.binVals = None
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObj = tCode.NDimensionalBinnedResults(self.edges, binVals=self.binVals)
+		self.testObj.initialiseCountsMatrix()
+
+	def testEqualObjsCompareEqual(self):
+		objA = copy.deepcopy(self.testObj)
+		self.createTestObjs()
+		objB = self.testObj
+		self.assertEqual(objA, objB)
+
+	def testUnequalCompareUnequal_extraDimensionInOne(self):
+		objA = copy.deepcopy(self.testObj)
+		self.edges.append( [5,6] )
+		self.createTestObjs()
+		objB = self.testObj
+		self.assertNotEqual(objA, objB)
+
+	def testUnequalCompareUnequal_diffEdgeValues(self):
+		objA = copy.deepcopy(self.testObj)
+		self.edges[1][0] += 2
+		self.createTestObjs()
+		objB = self.testObj
+		self.assertNotEqual(objA, objB)
+
+	def testUnequalCompareUnequal_diffKeysInBinVals(self):
+		#binVals should really only ever be np arrays; but shouldnt matter here
+		objA = copy.deepcopy(self.testObj)
+		self.binVals = {"any_key":"any_val"}
+		self.createTestObjs()
+		objB = self.testObj
+		self.assertNotEqual(objA, objB)
+
+	def testUnequalCompareUnequal_diffValsInCounts(self):
+		objA = copy.deepcopy(self.testObj)
+		objB = copy.deepcopy(self.testObj)
+
+		objA.initialiseCountsMatrix(), objB.initialiseCountsMatrix()
+		objA.binVals["counts"][0][0] += 1
+		self.assertNotEqual(objA, objB)
+
+
+class TestNDimensionalBinObj(unittest.TestCase):
+
+	def setUp(self):
+		self.edgesA = [1,2,3] 
+		self.edgesB = [6,5,4,3]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		edges = [ self.edgesA, self.edgesB ]
+		self.testObj = tCode.NDimensionalBinnedResults(edges)
+		self.testObj.initialiseCountsMatrix()
+
+	def testBinEdgesArray_2dim(self):
+		expArray = [ [None,None,None], [None,None,None] ]
+		expArray[0][0], expArray[0][1]  = [ [1,2], [6,5] ], [ [1,2], [5,4] ]
+		expArray[0][2], expArray[1][0]  = [ [1,2], [4,3] ], [ [2,3], [6,5] ]
+		expArray[1][1], expArray[1][2]  = [ [2,3], [5,4] ], [ [2,3], [4,3] ]
+
+		expArray = np.array(expArray)
+		actArray = self.testObj.binEdgesArray
+
+		self.assertTrue( np.allclose(expArray,actArray) )
+
+	def testBinEdgesArray_3dim(self):
+		self.edgesC = [7,8,9]
+		edges = [self.edgesA, self.edgesB, self.edgesC]
+		self.testObj = tCode.NDimensionalBinnedResults(edges)
+
+		#2,3,2 are number of bins along first 3 dimensions.
+		# Then we need 3 slots to hold EACH of the bin edge pairs
+		# THEN we need another 2 slots to hold upper and lower values of the bin
+		expArray = np.zeros( [2,3,2,len(edges),2] )
+
+		expArray[0][0][0] = [ np.array([1,2]), np.array([6,5]), np.array([7,8]) ] 
+		expArray[0][0][1] = [ np.array([1,2]), np.array([6,5]), np.array([8,9]) ]
+		expArray[0][1][0] = [ np.array([1,2]), np.array([5,4]), np.array([7,8]) ]
+		expArray[0][1][1] = [ np.array([1,2]), np.array([5,4]), np.array([8,9]) ]
+		expArray[0][2][0] = [ np.array([1,2]), np.array([4,3]), np.array([7,8]) ]
+		expArray[0][2][1] = [ np.array([1,2]), np.array([4,3]), np.array([8,9]) ]
+
+		expArray[1][0][0] = [ np.array([2,3]), np.array([6,5]), np.array([7,8]) ]
+		expArray[1][0][1] = [ np.array([2,3]), np.array([6,5]), np.array([8,9]) ]
+		expArray[1][1][0] = [ np.array([2,3]), np.array([5,4]), np.array([7,8]) ]
+		expArray[1][1][1] = [ np.array([2,3]), np.array([5,4]), np.array([8,9]) ]
+		expArray[1][2][0] = [ np.array([2,3]), np.array([4,3]), np.array([7,8]) ]
+		expArray[1][2][1] = [ np.array([2,3]), np.array([4,3]), np.array([8,9]) ]
+
+		actArray = self.testObj.binEdgesArray
+
+		self.assertTrue( np.allclose(expArray, actArray) )
+
+
+	def testExpectedBinCentresArray_3dim(self):
+		self.edgesC = [7,8,10] #Putting in a diff width one
+		edges = [self.edgesA, self.edgesB, self.edgesC]
+		self.testObj = tCode.NDimensionalBinnedResults(edges)
+
+		expArray = np.zeros( [2,3,2,len(edges)] )
+
+		#Only [X][X][1] are different from theyd be if using the matrix above to calculate
+		expArray[0][0][0] = [ 1.5, 5.5, 7.5 ] 
+		expArray[0][0][1] = [ 1.5, 5.5, 9 ]
+		expArray[0][1][0] = [ 1.5, 4.5, 7.5 ]
+		expArray[0][1][1] = [ 1.5, 4.5, 9 ]
+		expArray[0][2][0] = [ 1.5, 3.5, 7.5 ]
+		expArray[0][2][1] = [ 1.5, 3.5, 9 ]
+
+		expArray[1][0][0] = [ 2.5, 5.5, 7.5 ]
+		expArray[1][0][1] = [ 2.5, 5.5, 9 ]
+		expArray[1][1][0] = [ 2.5, 4.5, 7.5 ]
+		expArray[1][1][1] = [ 2.5, 4.5, 9 ]
+		expArray[1][2][0] = [ 2.5, 3.5, 7.5 ]
+		expArray[1][2][1] = [ 2.5, 3.5, 9 ]
+
+		actArray = self.testObj.binCentresArray
+		self.assertTrue( np.allclose(expArray,actArray) )
+
+	def testAddValsToBinCounts(self):
+
+		self.edgesA = [1,2,3] 
+		self.edgesB = [6,5,4,3]
+
+		valsToBin = [ [2.5, 3.5], #[1,2]
+		              [1.2, 5.5], #[0,0]
+		              [1.5,5.5], #[0,0] 
+		              [1.5,5], # [0,0] Edge case
+		              [2, 4.5] ] #Edge case; but its [1,1]
+
+		expCountsMatrix = copy.deepcopy(self.testObj.binVals["counts"])
+		expCountsMatrix[0][0] = 3
+		expCountsMatrix[1][1] = 1
+		expCountsMatrix[1][2] = 1
+
+		self.testObj.addBinValuesToCounts( valsToBin )
+
+		actCountsMatrix = self.testObj.binVals["counts"]
+		self.assertTrue( np.allclose(expCountsMatrix,actCountsMatrix) )
 

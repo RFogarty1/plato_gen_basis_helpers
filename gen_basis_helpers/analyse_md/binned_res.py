@@ -1,6 +1,8 @@
 
 import numpy as np
 
+import itertools as it
+
 class BinnedResultsStandard():
 	""" Simple class for storing results of binning
 
@@ -305,5 +307,152 @@ def _checkBinEdgesWithinDomain(binResObj, domain, domainTol):
 		raise ValueError("Bin with an edge of {} is outside domain of {}".format(minEdge, domain))
 	if maxEdge > domain[1]+abs(domainTol):
 		raise ValueError("Bin with an edge of {} is outside domain of {}".format(maxEdge, domain))
+
+
+
+class NDimensionalBinnedResults():
+	""" Class for storing results of binning procedures
+
+	"""
+
+	def __init__(self, edges, binVals=None):
+		""" Initializer
+		
+		Args:
+			edges: (iter of iter of floats) Each element is for one dimension. They should also be in order (though this wont be checked explicity)
+
+		Returns
+			What Function Returns
+	 
+		"""
+		self.edges = edges
+		self.binVals = binVals if binVals is not None else dict() #TODO: initialise? just need to make it an empty dict tbh
+
+
+	#TODO: add some tolerance attrs
+	def __eq__(self, other):
+
+		#1) Check the edges 
+		edgeArrayA, edgeArrayB = self.binEdgesArray, other.binEdgesArray
+		if edgeArrayA.shape != edgeArrayB.shape:
+			return False
+
+		if not np.allclose(self.binEdgesArray, other.binEdgesArray):
+			return False
+
+		#2) Check the bin values
+		keysA, keysB = self.binVals.keys(), other.binVals.keys()
+		if keysA != keysB:
+			return False
+
+		for key in keysA:
+			arrA, arrB = self.binVals[key], other.binVals[key]
+			if not np.allclose(arrA,arrB):
+				return False
+
+		return True
+
+
+	def _getBinEdgesList(self):
+		""" Gets an iter with bin edges for each dimension. Can be (much) more useful than the array format """
+		oneDimArrays = list()
+		for currEdges in self.edges:
+			currPairs = [ [currEdges[idx], currEdges[idx+1]] for idx in range(len(currEdges)-1)]
+			oneDimArrays.append(currPairs)
+
+		return oneDimArrays
+	
+	@property
+	def binEdgesArray(self):
+		""" Array containing all bin edges. For a 3-dim case binEdgesArray[idxA][idxB][idxC] will be a len-3 array [[minA,maxA], [minB,maxB], [minC,maxC]] which define edges for one bin in all dimensions """
+
+		#Get edges for 1-dimensional case
+		oneDimArrays = self._getBinEdgesList()
+
+		#Get the all indices and edges
+		outLens = [len(x) for x in oneDimArrays]
+		oneDimIndices = list()
+		for currLen in outLens:
+			currIndices = [x for x in range(currLen)]
+			oneDimIndices.append(currIndices)
+
+		outIndices = [x for x in it.product(*oneDimIndices)]
+		outVals = [x for x in it.product(*oneDimArrays)]
+
+		#Combine all into an array
+		outArray = np.zeros( outLens + [len(self.edges)] + [2] ) #The extra 2 is due to the min/max thing
+
+
+		for indices, vals in it.zip_longest(outIndices, outVals):
+			for valIdx in range(len(vals)):
+				outArray[indices][valIdx] = vals[valIdx]
+
+		return outArray
+		
+
+	@property
+	def binCentresArray(self):
+		""" Array contaning centres of each bin. For a 3-dim case binCentresArray[idxA][idxB][idxC] will be [centreA, centreB, centreC]"""
+
+		edgesArray = self.binEdgesArray
+		outShape = edgesArray.shape[:-1]
+		outArray = np.zeros(outShape)
+		allIndicesByDim = [ [x for x in range(currNumbEles)] for currNumbEles in outShape ]
+		allIndices = [ x for x in it.product(*allIndicesByDim) ]
+
+		for idxList in allIndices:
+			currVal = (edgesArray[idxList][1]+edgesArray[idxList][0])/2
+			outArray[idxList] = currVal
+
+		return outArray
+
+	def initialiseCountsMatrix(self, countKey="counts"):
+		""" Initializes the matrix/tensor used to store counts to zero
+		
+		Args:
+			countKey: (str) The matrix 
+				 
+		Returns
+			Nothing; works in place
+	 
+		"""
+		shapes = [len(x)-1 for x in self.edges]
+		self.binVals[countKey] = np.zeros(shapes)
+
+
+	#Probably gonna factor out a function that gets the indices to add to in order (so i could do more flexible things than +1)
+	def addBinValuesToCounts(self, valsToBin, countKey="counts"):
+		""" Updates bin values with counts
+		
+		Args:
+			valsToBin: (iter of len-n iters) Where n is equal to the number of dimensions (length of self.edges). We add 1 to the counts for each bin
+			countKey: (str) The key used for storing the counts matrix
+
+		NOTE:
+			Criteria to land in a bin with edges minEdge, maxEdge is minEdge<= x < maxEdge. Float imprecision probably mean this has little practical improtance though
+	
+		Returns
+			Nothing; works in place
+	 
+		"""
+		#Get pairs of edges for each bin (e.g. [[4,3],[3,2]]) . We sort each edge-pair into ascending order to make checks easier (e.g. [[4,3],[3,2]] becomes [[3,4],[2,3]])
+		allEdgePairs = self._getBinEdgesList()
+		sortedEdgePairs = list()
+		for edgePairs in allEdgePairs:
+			currPairs = [sorted(x) for x in edgePairs]
+			sortedEdgePairs.append(currPairs)
+
+		#Add each value
+		for currValToBin in valsToBin:
+			currIndices = [None for x in currValToBin]
+			#For 3-dim case (for example) this will loop over [2,3,6] and find the right bin for 2,3,6 for the 1-dim case
+			for idx,val in enumerate(currValToBin):
+				for binIdx, (minEdge,maxEdge) in enumerate(sortedEdgePairs[idx]):
+					if (minEdge <= val < maxEdge):
+						currIndices[idx] = binIdx
+
+			#Add a count in the relevant spot if a bin was found in EACH dimension
+			if all([x is not None for x in currIndices]):
+				self.binVals[countKey][tuple(currIndices)] += 1
 
 
