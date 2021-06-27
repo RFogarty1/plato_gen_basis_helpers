@@ -104,17 +104,8 @@ class _WaterRotationAngleMultiBinnerFixedIndices():
 		uniqueIndices = [ list(a) for a in set([tuple(x) for x in allIndices]) ]
 		indicesToUniqueIndicesMap = _getMapFromIterToUniqueVals(allIndices, uniqueIndices)
 
-
-		#OLD (...and faster) way
 		#Calculate all angles required (and no more)
 		allAngles = getWaterStandardRotationAnglesForInpCell(trajStep.unitCell, uniqueIndices)
-
-#		#divide + conquer-like way (weirdly slower....)
-#		allAngles = list()
-#		for uWaterIdxs in uniqueIndices:
-#			currAngles = getWaterStandardRotationAnglesForInpCell(trajStep.unitCell, [uWaterIdxs])
-#			assert len(currAngles)==1
-#			allAngles.append(currAngles[0])
 
 		#Pass calculated angles to the singleBinners of interest
 		totalIdx = 0
