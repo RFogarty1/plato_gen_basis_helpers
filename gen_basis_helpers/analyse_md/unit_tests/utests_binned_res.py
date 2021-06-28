@@ -437,3 +437,142 @@ class TestNDimensionalBinObj(unittest.TestCase):
 		actCountsMatrix = self.testObj.binVals["counts"]
 		self.assertTrue( np.allclose(expCountsMatrix,actCountsMatrix) )
 
+
+class TestGetLowerDimBinObj(unittest.TestCase):
+
+	def setUp(self):
+		#Define bins
+		self.edgesA = [1,2,3]
+		self.edgesB = [4,5,6]
+		self.edgesC = [7,8,9]
+
+		#Run options
+		self.keepDims = [0,2]
+		self.useIdxOther = [1]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.comboEdges = [self.edgesA, self.edgesB, self.edgesC]
+		self.binObjA = tCode.NDimensionalBinnedResults(self.comboEdges)
+
+		#Put various values there
+		#Use a weird key to make sure we dont rely on it being defualt val
+		self.binObjA.initialiseCountsMatrix(countKey="fake_counts") 
+		self.binObjA.binVals["fake_counts"][0][0][0] = 2
+		self.binObjA.binVals["fake_counts"][0][1][1] = 3
+		self.binObjA.binVals["fake_counts"][0][1][0] = 5
+		self.binObjA.binVals["fake_counts"][1][0][1] = 7
+
+	def _runTestFunct(self):
+		args = [self.binObjA, self.keepDims, self.useIdxOther]
+		return tCode.getLowerDimNDimBinObj_takeSingleBinFromOthers(*args)
+
+	def _loadExpectedBinsCaseA(self):
+		outObj = tCode.NDimensionalBinnedResults( [self.edgesA, self.edgesC] )
+		outObj.initialiseCountsMatrix(countKey="fake_counts")
+		outObj.binVals["fake_counts"][0][0] = 5
+		outObj.binVals["fake_counts"][0][1] = 3
+		return outObj
+
+	def testExpectedCaseA_3dim_to_2dim(self):
+		expBins = self._loadExpectedBinsCaseA()
+		actBins = self._runTestFunct()
+		self.assertEqual(expBins, actBins)
+
+	def testExpectedCaseB_3dim_to_1dim(self):
+		#Setup
+		self.keepDims = [0]
+		self.useIdxOther = [0,0]
+
+		#Figure out what we expect
+		expBinEdges = [self.edgesA]
+		expBinCounts = np.array( [[2,0]] )
+		expBinObj = tCode.NDimensionalBinnedResults( expBinEdges, binVals={"fake_counts":expBinCounts} )
+
+		#Run and test
+		actBinObj = self._runTestFunct()
+		self.assertEqual(expBinObj, actBinObj)
+
+
+	def testExpectedCaseSameBins(self):
+		self.keepDims = [0,1,2]
+		self.useIdxOther = list()
+		expBins = copy.deepcopy(self.binObjA)
+		actBins = self._runTestFunct()
+		self.assertEqual(expBins, actBins)
+
+
+
+
+class TestGetLowerDimObj_integrationMethod(unittest.TestCase):
+
+	def setUp(self):
+		#Define bins
+		self.edgesA = [1,2,3]
+		self.edgesB = [4,5,6]
+		self.edgesC = [7,8,9]
+
+		#Run options
+		self.keepDims = [0,2]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.comboEdges = [self.edgesA, self.edgesB, self.edgesC]
+		self.binObjA = tCode.NDimensionalBinnedResults(self.comboEdges)
+
+		#Put various values there
+		#Use a weird key to make sure we dont rely on it being defualt val
+		self.binObjA.initialiseCountsMatrix(countKey="fake_counts") 
+		self.binObjA.binVals["fake_counts"][0][0][0] = 1
+		self.binObjA.binVals["fake_counts"][0][0][1] = 2
+		self.binObjA.binVals["fake_counts"][0][1][0] = 3
+		self.binObjA.binVals["fake_counts"][0][1][1] = 4
+
+		self.binObjA.binVals["fake_counts"][1][0][0] = 5
+		self.binObjA.binVals["fake_counts"][1][0][1] = 6
+		self.binObjA.binVals["fake_counts"][1][1][0] = 7
+		self.binObjA.binVals["fake_counts"][1][1][1] = 8
+
+	def _runTestFunct(self):
+		return tCode.getLowerDimNDimBinObj_integrationMethod(self.binObjA, self.keepDims)
+
+	def _loadExpectedBinsCaseA_3d_to_2d(self):
+		outEdges = [self.edgesA, self.edgesC]
+		outBinObj = tCode.NDimensionalBinnedResults(outEdges)
+
+		#
+		outBinObj.initialiseCountsMatrix(countKey="fake_counts")
+
+		outBinObj.binVals["fake_counts"][0][0] = 1+3
+		outBinObj.binVals["fake_counts"][0][1] = 2+4
+		outBinObj.binVals["fake_counts"][1][0] = 5+7
+		outBinObj.binVals["fake_counts"][1][1] = 6+8
+
+		return outBinObj
+
+	def _loadExpectedBinsCasesB_3d_to_1d(self):
+		outEdges = [self.edgesB]
+		outBinObj = tCode.NDimensionalBinnedResults(outEdges)
+
+		outBinObj.initialiseCountsMatrix(countKey="fake_counts")
+		outBinObj.binVals["fake_counts"][0] = 1+2+5+6
+		outBinObj.binVals["fake_counts"][1] = 3+4+7+8
+
+		return outBinObj	
+
+	def testExpectedCaseA_3d_to_2d(self):
+		expBinObj = self._loadExpectedBinsCaseA_3d_to_2d()
+		actBinObj = self._runTestFunct()
+		self.assertEqual(expBinObj, actBinObj)
+
+	def testExpectedCaseB_3d_to_1d(self):
+		self.keepDims = [1]
+		expBinObj = self._loadExpectedBinsCasesB_3d_to_1d()
+		actBinObj = self._runTestFunct()
+		self.assertEqual(expBinObj, actBinObj)
+
+
+
+

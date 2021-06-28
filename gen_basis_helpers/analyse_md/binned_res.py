@@ -456,3 +456,97 @@ class NDimensionalBinnedResults():
 				self.binVals[countKey][tuple(currIndices)] += 1
 
 
+
+#We can extend this to allow different options for "integrating" over dimensions later
+#(e.g. averaging based on bin widths etc.)
+def getLowerDimNDimBinObj_integrationMethod(inpBinObj, keepDims):
+	""" Function that takes an NDimensionalBinnedResults instance, and returns a similar object with a lower number of dimensions by integrating (adding) over values stored in the input bin
+	
+	Args:
+		inpBinObj: (NDimensionalBinnedResults)
+		keepDims: (iter of ints) The indices of dimensions to keep (e.g. [0,2] may the input for turning 3-D data into 2-D data)
+			 
+	Returns
+		outBinObj: (NDimensionalBinnedResults) Lower dimensionality bin.
+ 
+	"""
+	#1) Get the edges
+	outEdges = list()
+	for idx in keepDims:
+		currEdges = inpBinObj.edges[idx]
+		outEdges.append(currEdges)
+
+	#2) Create a new bin object with these edges
+	outBinObj = NDimensionalBinnedResults(outEdges)
+
+	#3) For each value in binVals, we initialise to zero
+	# Then we loop over the (many dimensional) actual matrix; and add each of these indices to our new lower dim object	
+	for key in inpBinObj.binVals.keys():
+		outBinObj.initialiseCountsMatrix(countKey=key)
+		allIndices = np.ndindex(inpBinObj.binVals[key].shape)
+		currInpArray, currOutArray = inpBinObj.binVals[key], outBinObj.binVals[key]
+		for comboIdx in allIndices:
+			targIdx = tuple([comboIdx[idx] for idx in keepDims]) #Needs to be a tuple to use as a np index; list does weird things
+			currVal = currInpArray[comboIdx]
+			currOutArray[targIdx] += currVal
+
+	return outBinObj
+
+#Taking >1 bin from the thrown away dimension is tough since we need to figure out how to combine binVals of different bins
+def getLowerDimNDimBinObj_takeSingleBinFromOthers(inpBinObj, keepDims, useIdxOtherDims):
+	""" Function that takes an NDimensionalBinnedResults instance, and returns a similar object with a lower number of dimensions (or an equivalent instance if keepDims is set to all dims present). Use case, for example, is to bin data in 3 dimensions (a,b,c) when you really want the 2-D distribution of [b,c] between some values of a
+	
+	Args:
+		inpBinObj: (NDimensionalBinnedResults)
+		keepDims: (iter of ints) The indices of dimensions to keep (e.g. [0,2] may the input for turning 3-D data into 2-D data)
+		useIdxOtherDims: (iter of ints) The index of the bin to use for the dimension we throw away (ordered by dimension which we chuck)
+			 
+	Returns
+		outBinObj: (NDimensionalBinnedResults) Lower dimensionality bin. The dimensions are removed by keeping only one of the bins for them.
+
+	NOTE:
+		I'm pretty sure we're taking a view of inpBinObj here but I make zero promises it will stay this way; so its a bad idea to modify any bin data after doing this.
+
+	WARNING:
+		Only tested for getting 2-dim from 3-dim. Cant gaurantee higher dimensions will work (though they should)
+ 
+	"""
+	#1) Get the edges
+	outEdges = list()
+	for idx in keepDims:
+		currEdges = inpBinObj.edges[idx]
+		outEdges.append(currEdges)
+
+	#2)	Get an ordered combo of indices to keep and throw away
+	nDims = len(inpBinObj.edges)
+	keepBools = list()
+	for idx in range(nDims):
+		if idx in keepDims:
+			keepBools.append(True)
+		else:
+			keepBools.append(False)
+
+	#3) Figure out the slices we need
+	outSlices = list()
+	idxInUseIdx = 0
+	for idx,keep in enumerate(keepBools):
+		if keep:
+			outSlices.append( slice( len(inpBinObj.edges[idx]) ) )
+		else:
+			currIdx = useIdxOtherDims[idxInUseIdx]
+			outSlices.append( currIdx )
+			idxInUseIdx += 1
+
+	#4) Get all binVals
+	outBinVals = dict()
+
+	for key in inpBinObj.binVals.keys():
+		outData = inpBinObj.binVals[key][tuple(outSlices)]
+		outBinVals[key] = outData
+
+	#5) Create the output object
+	outBinObj = NDimensionalBinnedResults(outEdges, binVals=outBinVals )
+
+	return outBinObj
+
+
