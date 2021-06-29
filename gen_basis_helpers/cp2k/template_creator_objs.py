@@ -88,3 +88,11 @@ def _unused(inpObj):
 	kwargDict = {"metaDynOpts":metaObj}
 	inpObj._updateAttrsFromKwargs(**kwargDict)
 
+@registerCreatorModDeco("hirshfeld_iterative_standard")
+def _unused(inpObj):
+	kwargDict = {"hirshfeld_selfConsistent":True, "hirshfeld_shapeFunction":"density"}
+	inpObj._updateAttrsFromKwargs(**kwargDict)
+
+
+
+
