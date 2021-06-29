@@ -69,5 +69,30 @@ def _getAveragedDistribsFromPopulatedBinsMultiTraj(inpOptions):
 	return averagedRdfData
 
 
+def getCumulativeAverageOfBinCentresVsVals(inpVals):
+	""" Takes an iter of nx2 binCentres vs values and returns the cummulative average. For example, if we had 4 rdfs taken from equal length-trajectories the first would be inpVals[0]. inpVals[1] would turn into the average of the first/second. inpVals[2] would get turned into the average of the first/second/third.
+
+	The use case is seeing if more steps changes the rdf
+	
+	Args:
+		inpVals: (iter of nx2 binCentres vs values) Each generally represents one rdf (or similar). All should share binCentres
+			 
+	Returns
+		outVals: (iter of nx2 binCentres vs values) Each represents the total distribution function up to the relevant point (its the average of all previous inpVals) 
+ 
+	"""
+	outVals = list()
+	outVals.append( [ [binCentre,binVal] for binCentre,binVal in inpVals[0]] )
+	currSummed = [binVal for unused, binVal in inpVals[0]]
+
+	#Add each new set of values to previous sum and divide by number of points
+	for divIdx,currInpVals in enumerate(inpVals[1:],start=2):
+		currBinCentres = [binCentre for binCentre, unused in currInpVals]
+		currBinVals = [binVal for unused, binVal in currInpVals]
+		currSummed = [ x+y for x,y in it.zip_longest(currSummed, currBinVals) ]
+		currOutVals = [ [binCentre,binVal/divIdx] for binCentre,binVal in it.zip_longest(currBinCentres, currSummed)]
+		outVals.append(currOutVals)
+
+	return outVals
 
 

@@ -116,5 +116,30 @@ class TestAverageDistribFunctForEachInpTraj_rdf(unittest.TestCase):
 				[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
  
 
+class TestGetCumulativeAveragesOfBinCentresVsVals(unittest.TestCase):
+
+	def setUp(self):
+		self.binsVsValsA = [ [1,3], [2,5], [3, 9] ]
+		self.binsVsValsB = [ [1,4], [2,8], [3,12] ]
+		self.binsVsValsC = [ [1,8], [2,4], [3,20] ]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.bins = [self.binsVsValsA, self.binsVsValsB, self.binsVsValsC]
+
+	def _runTestFunct(self):
+		return tCode.getCumulativeAverageOfBinCentresVsVals(self.bins)
+
+	def testExpectedValsA(self):
+		expBinsA = [ [1,3], [2,5], [3, 9] ]
+		expBinsB = [ [1,(3+4)/2], [2, (5+8)/2], [3, (9+12)/2] ]
+		expBinsC = [ [1,(3+4+8)/3], [2,(5+8+4)/3], [3,(9+12+20)/3] ]
+
+		expBins = [expBinsA, expBinsB, expBinsC]
+		actBins = self._runTestFunct()
+
+		for expBinRes, actBinRes in it.zip_longest(expBins, actBins):
+			for expBin, actBin in it.zip_longest(expBinRes, actBinRes):
+				[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expBin,actBin)] #Each is [binCentre,binVal]
 
 
