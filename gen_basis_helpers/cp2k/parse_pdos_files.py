@@ -47,12 +47,21 @@ def getPdosKindsPathsFromCpoutPath(cpoutPath):
 
 	pattern = "k[0-9]+-1.pdos"
 	relPaths = list()
+	orderingIndices = list()
+
 	for outName in sorted( os.listdir( folderPath ) ):
 		currMatches = re.findall(pattern, outName)
 		if len(currMatches)==1:
+			currMatch = currMatches[0]
+			matchIdx = int( currMatch.replace("k","").replace("-1.pdos","") )
 			relPaths.append( os.path.join(folderPath,outName) )
-	return sorted(relPaths)
+			orderingIndices.append(matchIdx)
 
+	#Order the output paths
+	taggedPaths = [[idx,currPath] for idx,currPath in it.zip_longest(orderingIndices, relPaths)]
+	sortedPaths = [ currPath for idx,currPath in sorted(taggedPaths, key=lambda x:x[0]) ]  
+
+	return sortedPaths
 
 def getPdosAtomicListsPathsFromCpoutPath(cpoutPath):
 	""" Gets a list of paths containing pdos data for different atomic lists from path to the main output (cpout) file
@@ -69,11 +78,20 @@ def getPdosAtomicListsPathsFromCpoutPath(cpoutPath):
 	
 	pattern = "-list[0-9]+-1.pdos"
 	relPaths = list()
+	orderingIndices = list()
 	for outName in sorted( os.listdir( folderPath ) ):
 		currMatches = re.findall(pattern, outName)
 		if len(currMatches)==1:
+			currMatch = currMatches[0]
+			matchIdx = int( currMatch.replace("-list","").replace("-1.pdos","") )
 			relPaths.append( os.path.join(folderPath,outName) )
-	return sorted(relPaths)
+			orderingIndices.append(matchIdx)
+
+	#Order the output paths
+	taggedPaths = [[idx,currPath] for idx,currPath in it.zip_longest(orderingIndices, relPaths)]
+	sortedPaths = [ currPath for idx,currPath in sorted(taggedPaths, key=lambda x:x[0]) ]  
+
+	return sortedPaths
 
 
 class PdosFragmentStandard():

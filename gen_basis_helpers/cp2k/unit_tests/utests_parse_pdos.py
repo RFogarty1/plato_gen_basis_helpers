@@ -71,8 +71,8 @@ class TestGetFilePaths(unittest.TestCase):
 	def setUp(self):
 		self.fakeCpoutFolder = "fake_folder"
 		self.fakeCpoutName = "geom_opt"
-		self.extensions = ["-k1-1.pdos", ".cpout" , "-k2-1.pdos", "-list1-1.pdos",
-		                   "-list2-1.pdos", "-list3-1.pdos"]
+		self.extensions = ["-k1-1.pdos", ".cpout" , "-k11-1.pdos", "-k2-1.pdos" ,"-list1-1.pdos",
+		                   "-list2-1.pdos", "-list11-1.pdos","-list3-1.pdos"]
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -81,7 +81,7 @@ class TestGetFilePaths(unittest.TestCase):
 
 	@mock.patch("gen_basis_helpers.cp2k.parse_pdos_files.os.listdir")
 	def testGetKindBreakdownPathsA(self, mockedListDir):
-		currExts = ["-k1-1.pdos", "-k2-1.pdos"]
+		currExts = ["-k1-1.pdos", "-k2-1.pdos", "-k11-1.pdos"]
 		mockedListDir.side_effect = lambda *args,**kwargs: self.mockFilesPresent
 		expPaths = [os.path.join(self.fakeCpoutFolder, self.fakeCpoutName+x) for x in currExts]
 		actPaths = tCode.getPdosKindsPathsFromCpoutPath(self.cpoutPath)
@@ -90,13 +90,13 @@ class TestGetFilePaths(unittest.TestCase):
 
 	@mock.patch("gen_basis_helpers.cp2k.parse_pdos_files.os.listdir")
 	def testGetListBreakdownPathsA(self, mockedListDir):
-		currExts = ["-list1-1.pdos", "-list2-1.pdos", "-list3-1.pdos"]
+		currExts = ["-list1-1.pdos", "-list2-1.pdos", "-list3-1.pdos", "-list11-1.pdos"]
 		mockedListDir.side_effect = lambda *args,**kwargs: self.mockFilesPresent
 		expPaths = [os.path.join(self.fakeCpoutFolder, self.fakeCpoutName+x) for x in currExts]
 		actPaths = tCode.getPdosAtomicListsPathsFromCpoutPath(self.cpoutPath)
 		mockedListDir.assert_called_with(self.fakeCpoutFolder)
 		self.assertEqual(expPaths, actPaths)
- 
+
 
 class TestParseSinglePdos(unittest.TestCase):
 
