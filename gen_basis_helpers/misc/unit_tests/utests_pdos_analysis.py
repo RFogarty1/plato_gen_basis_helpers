@@ -172,3 +172,32 @@ class TestApplyShiftToPdosFrags(unittest.TestCase):
 		self.assertEqual(expObjB, actObjB)
 
 
+class TestNormalisePdosFrags(unittest.TestCase):
+
+	def setUp(self):
+		self.occsA = [5,10,15]
+		self.targMaxOcc = 1
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObjA = parsePdosHelp.PdosFragmentStandard(occs=self.occsA)
+
+	def _runTestFunct(self):
+		tCode.normalisePdosFragOccupancy([self.testObjA], targMaxOcc=self.targMaxOcc)
+
+	def testExpectedTargetMaxOne(self):
+		expOccs = [1/3, 2/3, 1]
+		expObj = parsePdosHelp.PdosFragmentStandard(occs=expOccs)
+		self._runTestFunct()
+		actObj = self.testObjA
+		self.assertEqual(expObj, actObj)
+
+	def testExpectedTargetMaxThree(self):
+		self.targMaxOcc = 3
+		expOccs = [1,2,3]
+		expObj = parsePdosHelp.PdosFragmentStandard(occs=expOccs)
+		self._runTestFunct()
+		actObj = self.testObjA
+		self.assertEqual(expObj, actObj)
+
+

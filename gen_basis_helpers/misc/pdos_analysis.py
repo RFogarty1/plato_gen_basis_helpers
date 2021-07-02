@@ -149,7 +149,7 @@ def applyEnergyShiftToPdosFragments(pdosFragments, eShift):
 	""" Applies a constant shift (in place) to all eigenvalues in pdosFragments. Standard use case is referencing things to the fermi energy
 	
 	Args:
-		pdosFragments: (iter of PdosFragmentStandard objects) Represents contribution from a group to the
+		pdosFragments: (iter of PdosFragmentStandard objects) Represents contribution from a group to the density of states
 		eShift: (float) Value of the shift to apply
 			 
 	Returns
@@ -162,4 +162,20 @@ def applyEnergyShiftToPdosFragments(pdosFragments, eShift):
 		pdosFrag.eigenValues = newEigenVals
 
 
+def normalisePdosFragOccupancy(pdosFragments, targMaxOcc=1):
+	""" Multiplies all occupancies by a constant such that the max occupancy is targMaxOcc. Generally this will be 1; in which case the occupancies will refer to fractional occupancies. This is a lazy alternative to me fixing the normalisation factor when calculating spectra
+	
+	Args:
+		pdosFragments: (iter of PdosFragmentStandard objects) Represents contribution from a group to the density of states
+		targMaxOcc: (float) Maximum occupancy after normalisation
+ 
+	Returns
+		Nothing; works in place
+ 
+	"""
+	for frag in pdosFragments:
+		maxOcc = max(frag.occs)
+		normFactor = targMaxOcc / maxOcc
+		newOccs = [occ*normFactor for occ in frag.occs]
+		frag.occs = newOccs
 
