@@ -1,4 +1,5 @@
 
+import copy
 import itertools as it
 import unittest
 import unittest.mock as mock
@@ -76,5 +77,98 @@ class TestGetSpecFragments(unittest.TestCase):
 		for intensities,label in it.zip_longest(expIntensities,expLabels):
 			mockedSpecFragObj.assert_any_call(expEnergies, intensities, label)
 		self.assertEqual( len(expIntensities), len(retVals) )
+
+
+
+class TestGetSummedPdosFragments(unittest.TestCase):
+
+	def setUp(self):
+		#Setup fragment args
+		self.eigenValsA = [-8, -6, 2]
+		self.eigenValsB = copy.deepcopy(self.eigenValsA)
+
+		self.occsA = [2,1,0]
+		self.occsB = copy.deepcopy(self.occsA)
+
+		self.fragNameA = "frag_a"
+		self.fragNameB = "frag_b"
+
+		self.breakdownHeadersA = ["s","p"]
+		self.breakdownHeadersB = ["s","p"]
+
+		#
+		self.breakdownsA = [ [0.5, 0.1], [0.3,0.2], [0.1,0.3] ]
+		self.breakdownsB = [ [0.3, 0.1], [0.2,0.5], [0.2,0.2] ]
+
+		#Options to pass to the run function
+		self.outFragName = None
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+
+		kwargsA = {"eigenValues":self.eigenValsA, "occs":self.occsA, "fragName":self.fragNameA,
+		           "breakdowns":self.breakdownsA, "breakdownHeaders":self.breakdownHeadersA}
+		kwargsB = {"eigenValues":self.eigenValsB, "occs":self.occsB, "fragName":self.fragNameB,
+		           "breakdowns":self.breakdownsB, "breakdownHeaders":self.breakdownHeadersB}
+
+		self.testObjA = parsePdosHelp.PdosFragmentStandard(**kwargsA)
+		self.testObjB = parsePdosHelp.PdosFragmentStandard(**kwargsB)
+
+		self.pdosFragments = [self.testObjA, self.testObjB]
+
+	def _runTestFunct(self):
+		args = [self.pdosFragments]
+		kwargs = {"outFragName": self.outFragName}
+		return tCode.getSummedPdosFragments_singleElement(*args, **kwargs)
+
+	def testExpected_validInput(self):
+		#Create the expected object
+		expBreakdowns = [ [0.8, 0.2], [0.5, 0.7], [0.3, 0.5] ]
+		expKwargs = {"eigenValues":self.eigenValsA, "occs":self.occsA, "fragName":self.outFragName,
+		             "breakdowns":expBreakdowns, "breakdownHeaders":self.breakdownHeadersA}
+		expObj = parsePdosHelp.PdosFragmentStandard(**expKwargs)
+		actObj = self._runTestFunct()
+		self.assertEqual(expObj,actObj)
+
+	def testRaises_diffHeaders(self):
+		self.breakdownHeadersB = [x for x in reversed(self.breakdownHeadersA)]
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
+	def testRaises_diffEigenVals(self):
+		self.eigenValsA[-1] += 0.5
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
+
+class TestApplyShiftToPdosFrags(unittest.TestCase):
+
+	def setUp(self):
+		self.eigenValsA = [2,3,4]
+		self.eigenValsB = [3,6]
+		self.shiftVal = 5
+		self.createTestObjs()
+
+	def _runTestFunct(self):
+		args = [self.pdosFragsA, self.shiftVal]
+		return tCode.applyEnergyShiftToPdosFragments(*args)
+
+	def createTestObjs(self):
+		self.testObjA = parsePdosHelp.PdosFragmentStandard(eigenValues=self.eigenValsA)
+		self.testObjB = parsePdosHelp.PdosFragmentStandard(eigenValues=self.eigenValsB)
+		self.pdosFragsA = [self.testObjA, self.testObjB]
+
+	def testExpectedCaseA(self):
+		eigensA, eigensB = [7,8,9], [8,11]
+		expObjA = parsePdosHelp.PdosFragmentStandard(eigenValues=eigensA)
+		expObjB = parsePdosHelp.PdosFragmentStandard(eigenValues=eigensB)
+		self._runTestFunct()
+
+		actObjA, actObjB = self.testObjA, self.testObjB
+		self.assertEqual(expObjA, actObjA)
+		self.assertEqual(expObjB, actObjB)
 
 

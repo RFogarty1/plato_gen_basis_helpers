@@ -105,3 +105,61 @@ def getSimXpsSpecFragmentsFromPdosFragmentStandard(pdosFragment, fragName=None, 
 
 	return outObjs
 
+
+def getSummedPdosFragments_singleElement(pdosFragments, outFragName=None):
+	""" Gets a pdos fragment which is the sum of the input fragments.
+	
+	Args:
+		pdosFragments: (iter of PdosFragmentStandard objects) Represents contribution from a group to the
+		outFragName: (str or None) The fragName on the output object 
+			 
+	Returns
+		outPdosFrag: (PdosFragmentStandard object) With breakdowns now the sum of the input objects
+ 
+	Raises:
+		 ValueError: If input objects are inconsistent in some way; e.g. they have different eigenvalues
+	"""
+	#0) Check that the fragments are consistent (slow implementation; could easily lose the copy really)
+	tempFrags = [copy.deepcopy(frag) for frag in pdosFragments]
+	for frag in tempFrags:
+		frag.breakdowns = None
+		frag.fragName = None
+
+	if any( [x!=tempFrags[0] for x in tempFrags] ):
+		raise ValueError("Inconsistencies found in fragments that were to be summed") 
+
+	#1) Get the sum of breakdowns
+	nBreakdowns = len(pdosFragments[0].breakdowns)
+	nSubBreakdowns = len(pdosFragments[0].breakdowns[0])
+	outBreakdowns = [  [0 for x in range(nSubBreakdowns)] for eigBreakdown in range(nBreakdowns) ]
+	for frag in pdosFragments:
+		currBreakdowns = frag.breakdowns
+		for bIdxA,vals in enumerate(currBreakdowns):
+			for bIdxB, val in enumerate(vals):
+				outBreakdowns[bIdxA][bIdxB] += val
+
+	outObj = copy.deepcopy(pdosFragments[0])
+	outObj.breakdowns = outBreakdowns
+	outObj.fragName = outFragName
+
+	return outObj
+
+
+def applyEnergyShiftToPdosFragments(pdosFragments, eShift):
+	""" Applies a constant shift (in place) to all eigenvalues in pdosFragments. Standard use case is referencing things to the fermi energy
+	
+	Args:
+		pdosFragments: (iter of PdosFragmentStandard objects) Represents contribution from a group to the
+		eShift: (float) Value of the shift to apply
+			 
+	Returns
+		Nothing; works in place
+ 
+	"""
+	for pdosFrag in pdosFragments:
+		currEigenVals = pdosFrag.eigenValues
+		newEigenVals = [x+eShift for x in currEigenVals]
+		pdosFrag.eigenValues = newEigenVals
+
+
+
