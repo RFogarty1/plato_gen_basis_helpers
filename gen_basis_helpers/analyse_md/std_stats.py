@@ -82,4 +82,66 @@ def _getDataDividedIntoTwoBlocks(inpData):
 	return outData
 
 
+#Moving averages: At time of writing these are effectively tested in analyse_thermo
+def getSimpleMovingAverage(inpData):
+	""" Gets the moving average of inpData at each point
+	
+	Args:
+		inpData: (iter of floats) The input data
+			 
+	Returns
+		movingAvg: (iter of floats). Each data point is sum(prevPoints)/len(prevPoints) [i.e. the moving average]
+ 
+	Raises:
+		 Errors
+	"""
+	currSum = 0
+	outVals = list()
+	for idx,val in enumerate(inpData, start=1):
+		currSum += val
+		currVal = currSum / idx
+		outVals.append(currVal)
+	return outVals
+
+
+def getCentralWindowAverageFromIter(inpIter, widthEachSide, fillValWhenNotCalc=None):
+	""" Gets a central-window moving average for the input data (each mean value is calculated from n values either side) 
+	
+	Args:
+		inpIter: (iter of Numbers) We take the moving averages of these numbers
+		widthEachSide: (int) Number of data points to take each side when calculating the mean
+		fillValWhenNotCalc: The value we output when we cant calculate a central moving average (e.g. we cant get a moving average for the first or last data points)
+
+	Returns
+		outVals: (iter of float) Central moving average. Each data point is an average of 2*widthEachSide + 1 data points
+ 
+	"""
+	stack = list()
+	outVals = list()
+	lenIter = len(inpIter)
+	reqStackSize = 2*widthEachSide + 1
+
+	#Initialise our stack
+	stack = [x for x in inpIter[:widthEachSide]]
+
+	#Calculate moving averages
+	for idx,val in enumerate(inpIter):
+
+		#Deal with the stack
+		if len(stack) == reqStackSize:
+			stack.pop(0)
+		
+		if idx < lenIter-widthEachSide:
+			stack.append(inpIter[idx+widthEachSide])
+
+		#Calculate moving average
+		if len(stack) < reqStackSize:
+			outVals.append(fillValWhenNotCalc)
+		else:
+			outVals.append( sum(stack)/len(stack) )
+		
+	return outVals
+
+
+
 

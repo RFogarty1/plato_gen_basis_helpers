@@ -3,6 +3,8 @@ import copy
 import itertools as it
 import math
 
+from . import std_stats as statsHelp
+
 from ..shared import creator_resetable_kwargs as resetableKwargFactory
 from ..shared import data_plot_base as dPlotBase
 from ..shared import table_maker_base as tableMakerHelp
@@ -106,13 +108,7 @@ def getMovingAverageFromThermoData(thermoData, prop, startIdx=0):
 		movingAvg: (float) Values of the moving average for each idx after startIdx (inclusive)
  
 	"""
-	currSum = 0
-	outVals = list()
-	for idx, val in enumerate(thermoData.dataDict[prop][startIdx:], start=1):
-		currSum += val
-		currVal = currSum/idx
-		outVals.append(currVal)
-	return outVals
+	return statsHelp.getSimpleMovingAverage(thermoData.dataDict[prop][startIdx:])
 
 def getSimpleCentralWindowAverageFromThermoData(thermoData, prop, widthEachSide, fillVal=None, startIdx=0):
 	""" 
@@ -131,7 +127,7 @@ def getSimpleCentralWindowAverageFromThermoData(thermoData, prop, widthEachSide,
 	inpIter = thermoData.dataDict[prop][startIdx:]
 	args = [inpIter, widthEachSide]
 	kwargs = {"fillValWhenNotCalc":fillVal}
-	return _getSimpleCentralWindowAverageFromIter(*args, **kwargs)
+	return _getSimpleCentralWindowAverageFromIter(*args,**kwargs)
 
 def _getSimpleCentralWindowAverageFromIter(inpIter, widthEachSide, fillValWhenNotCalc=None):
 	""" Gets a central-window moving average for the input data (each mean value is calculated from n values either side) 
@@ -145,32 +141,7 @@ def _getSimpleCentralWindowAverageFromIter(inpIter, widthEachSide, fillValWhenNo
 		outVals: (iter of float) Central moving average. Each data point is an average of 2*widthEachSide + 1 data points
  
 	"""
-	stack = list()
-	outVals = list()
-	lenIter = len(inpIter)
-	reqStackSize = 2*widthEachSide + 1
-
-	#Initialise our stack
-	stack = [x for x in inpIter[:widthEachSide]]
-
-	#Calculate moving averages
-	for idx,val in enumerate(inpIter):
-
-		#Deal with the stack
-		if len(stack) == reqStackSize:
-			stack.pop(0)
-		
-		if idx < lenIter-widthEachSide:
-			stack.append(inpIter[idx+widthEachSide])
-
-		#Calculate moving average
-		if len(stack) < reqStackSize:
-			outVals.append(fillValWhenNotCalc)
-		else:
-			outVals.append( sum(stack)/len(stack) )
-		
-	return outVals
-
+	return statsHelp.getCentralWindowAverageFromIter(inpIter, widthEachSide, fillValWhenNotCalc=fillValWhenNotCalc)
 
 
 class GetStatsForThermoProps(resetableKwargFactory.CreatorWithResetableKwargsTemplate):
