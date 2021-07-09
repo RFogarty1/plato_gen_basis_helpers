@@ -207,3 +207,37 @@ def _trimThermoDataBasedOnSlice(thermoData, sliceObj):
 	for prop in thermoData.dataDict.keys():
 		thermoData.dataDict[prop] = thermoData.dataDict[prop][sliceObj]
 
+
+def getThermoDataObjSampledEveryN(inpObj, sampleEveryN):
+	""" Samples ThermoDataStandard every N steps (step is defined as a data point in the ThermoDataObj).
+	
+	Args:
+		inpObj: (ThermoDataStandard)
+		sampleEveryN: (int) How frequently to sample. e.g. if set to 10 we take every 10 steps 
+			 
+	Returns
+		outThermo: (ThermoDataStandard)
+
+	NOTES:
+		a) Nothing gets copied by default. This isnt a problem if using the data as read-only; but be careful if planning to modify data at any point
+ 
+	"""
+	#1) figure out the indices
+	assert inpObj.dataListLengthsAllEqual
+	outIndices = list()
+	allProps = list(inpObj.props)
+	currPropVals = inpObj.dataDict[allProps[0]]  #Doesnt matter which one; since lengths are all equal
+
+	for idx,val in enumerate(currPropVals):
+		if idx%sampleEveryN == 0:
+			outIndices.append(idx)
+
+	#2) Use these indices to sample each list in dataDict
+	outDataDict = dict()
+	for prop in allProps:
+		allVals = inpObj.dataDict[prop]
+		filteredVals = [ allVals[idx] for idx in outIndices ]
+		outDataDict[prop] = filteredVals
+
+	return ThermoDataStandard(outDataDict)
+

@@ -165,6 +165,34 @@ class TestMergingThermoDataStandard(unittest.TestCase):
 		self.assertEqual(expObj, actObj)
 
 
+class TestSampleEveryN(unittest.TestCase):
+
+	def setUp(self):
+		self.inpSteps = [1,2,3,4,5,6]
+		self.inpTemps = [10, 20, 30, 40, 50, 60]
+		self.everyN = 2
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"step":self.inpSteps, "temp":self.inpTemps}
+		self.inpObj = tCode.ThermoDataStandard(kwargDict)
+
+	def _runTestFunct(self):
+		return tCode.getThermoDataObjSampledEveryN(self.inpObj, self.everyN)
+
+	def testExpectedCaseA(self):
+		kwargDict = {"step":[1,3,5], "temp":[10,30,50]}
+		expObj = tCode.ThermoDataStandard(kwargDict)
+		actObj = self._runTestFunct()
+		self.assertEqual(expObj, actObj)
+
+	def testRaisesIfDataListLengthsUnequal(self):
+		self.inpTemps.append(20)
+		self.createTestObjs()
+		with self.assertRaises(AssertionError):
+			self._runTestFunct()
+
+
 
 
 
