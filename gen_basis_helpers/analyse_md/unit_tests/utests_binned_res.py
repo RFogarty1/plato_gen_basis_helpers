@@ -576,3 +576,57 @@ class TestGetLowerDimObj_integrationMethod(unittest.TestCase):
 
 
 
+class TestAddProbabilitiesToBinObj(unittest.TestCase):
+
+	def setUp(self):
+		self.edgesA = [ 0, 1, 3, 5 ] #Non-uniform; to make things a bit annoying
+		self.edgesB = [ 2, 4, 6 ]
+
+		#Sort out the counts
+		self.counts = np.zeros((3,2))
+		self.counts[0][0] = 4
+		self.counts[0][1] = 7
+		self.counts[1][0] = 2
+		self.counts[1][1] = 5
+		self.counts[2][0] = 3
+		self.counts[2][1] = 0
+
+		#Args for the function
+		self.countKey = "fake_counts_key"
+		self.outKey = "prob_distrib_key"
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		binVals = {self.countKey: self.counts}
+		edges = [self.edgesA, self.edgesB]
+		self.testObjA = tCode.NDimensionalBinnedResults(edges, binVals=binVals) 
+
+	def _runTestFunct(self):
+		args = [self.testObjA]
+		kwargs = {"countKey":self.countKey, "outKey":self.outKey}
+		return tCode.addProbabilityDensitiesToNDimBinsSimple(*args, **kwargs)
+
+	def _loadExpectedResultsA(self):
+		expBinObj = copy.deepcopy(self.testObjA)
+		expBinObj.initialiseCountsMatrix(countKey=self.outKey)
+
+		outMatrix = expBinObj.binVals[self.outKey]
+		totalArea = 5*4
+		totalCounts = 4 + 7 + 2 +5 + 3 + 0
+		outMatrix[0][0] = (4/totalCounts) * (2/totalArea)
+		outMatrix[0][1] = (7/totalCounts) * (2/totalArea)
+		outMatrix[1][0] = (2/totalCounts) * (4/totalArea)
+		outMatrix[1][1] = (5/totalCounts) * (4/totalArea)
+		outMatrix[2][0] = (3/totalCounts) * (4/totalArea)
+		outMatrix[2][1] = 0
+
+		return expBinObj
+
+	def testExpectedResultsA(self):
+		expBinObjA = self._loadExpectedResultsA()
+		self._runTestFunct()
+		actBinObjA = self.testObjA
+		self.assertEqual(expBinObjA, actBinObjA)
+
+

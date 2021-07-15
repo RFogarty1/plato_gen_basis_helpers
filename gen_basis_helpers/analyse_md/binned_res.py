@@ -550,3 +550,45 @@ def getLowerDimNDimBinObj_takeSingleBinFromOthers(inpBinObj, keepDims, useIdxOth
 	return outBinObj
 
 
+def addProbabilityDensitiesToNDimBinsSimple(binObj, countKey="counts", outKey="pdf"):
+	""" Adds total probabilities to NDimensionalBinnedResults. This is probability DENSITY for finding a result in a given bin ASSUMING all results are in a bin. (This may be different to what you want if you dont bin all possibilities). Usually this is probably what you want. Multiplying bin area by probability density gets the probability of finding a value in that bin
+	
+	Args:
+		binObj: (NDimensionalBinnedResults)
+		countKey: (str) Where to find counts for using to calculate probability
+		outKey: (str) The key to use for storing the probability density data
+
+	NOTES:
+		a) I assume that a uniform probability distribution would lead to two bins of equal area having equal counts. This is not the case for radial distribution functions, where the width of the bin doesnt map directly to the volume of space it represents; e.g. binEdges=[0,1,2] leads to the second bin representing a much greater volume than the first for radial distribution functions.
+
+	Returns
+		Nothing; works in place
+ 
+	"""
+
+	#1) Get the areas for each bin
+	allEdges = binObj.binEdgesArray
+	volumesArray = np.zeros(allEdges.shape[:-2]) #[-2] index is a list of len-2 arrays [lowerEdge,upperEdge]
+
+	edgeArrayIdxIterator = np.ndindex(allEdges.shape[:-2])
+	for idx in edgeArrayIdxIterator:
+		currEdges = allEdges[tuple(idx)]
+		currLengths = [ abs(x[1]-x[0]) for x in currEdges ]
+		currVolume = np.prod(currLengths)
+		volumesArray[tuple(idx)] = currVolume
+
+	#2) Get the probabilities
+	countMatrix = binObj.binVals[countKey]
+	totalCounts = np.sum(countMatrix)
+	totalVolume = np.sum(volumesArray)
+
+	fractVolArray = np.where(True, volumesArray/totalVolume, 0)
+	outMatrix = np.where(True, countMatrix/totalCounts  ,0)
+	outMatrix = np.where(True, outMatrix*fractVolArray, 0)
+
+
+	binObj.binVals[outKey] = outMatrix
+
+
+
+
