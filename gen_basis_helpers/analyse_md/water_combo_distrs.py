@@ -15,7 +15,7 @@ def getMultipleWaterComboDistribBinsFromOptObjs(inpTraj, optsObjsGroups):
 	
 	Args:
 		inpTraj: (TrajectoryInMemory object)
-		optsObjsGroups: (iter of iter of calcOptions objects). Currently these can have "CalcStandardWaterOrientationDistribOptions" or "CalcWaterPlanarDistribOptions_fromOxy" option objs (a mixture is fine). 
+		optsObjsGroups: (iter of iter of calcOptions objects). Currently these can have "CalcStandardWaterOrientationDistribOptions" or "CalcWaterPlanarDistribOptions_fromOxy" or "CalcWaterOxyMinimumDistOptions" option objs (a mixture is fine). 
 			 
 	Returns
 		outRes: (iter of NDimensionalBinnedResults) One of these per element in optsObjs
@@ -27,11 +27,16 @@ def getMultipleWaterComboDistribBinsFromOptObjs(inpTraj, optsObjsGroups):
 
 	#Figure out if we need to calculate angular AND planar parameters or just one
 	#Note if we need angles/planar for ANY ENTRY in optsObjsGroups we calculate for all
-	calcAngles, calcPlanar = True, True
-	if all( [isinstance(optObj, waterRotHelp.CalcStandardWaterOrientationDistribOptions) for optObj in it.chain(*optsObjsGroups)] ):
-		calcPlanar = False
-	elif all( [isinstance(optObj, CalcWaterPlanarDistribOptions_fromOxy) for optObj in it.chain(*optsObjsGroups)] ):
-		calcAngles = False
+	calcAngles, calcPlanar, calcOxyDists = False, False, False
+	chainedOptsObjs = [x for x in it.chain(*optsObjsGroups)]
+
+	if any( [isinstance(optObj,CalcWaterPlanarDistribOptions_fromOxy) for optObj in chainedOptsObjs] ):
+		calcPlanar = True
+	if any( [isinstance(optObj, waterRotHelp.CalcStandardWaterOrientationDistribOptions) for optObj in chainedOptsObjs] ):
+		calcAngles = True
+	if any( [isinstance(optObj, CalcWaterOxyMinimumDistOptions) for optObj in chainedOptsObjs] ):
+		calcOxyDists = True
+
 
 	#TODO: All options objs have to have the same planeEqn for now; enforce this here
 	if calcPlanar:
@@ -39,6 +44,26 @@ def getMultipleWaterComboDistribBinsFromOptObjs(inpTraj, optsObjsGroups):
 		allPlaneEqns = [x.planeEqn for x in allOptsObjs if isinstance(x,CalcWaterPlanarDistribOptions_fromOxy)]
 		assert all([x==allPlaneEqns[0] for x in allPlaneEqns])
 		planeEqn = allPlaneEqns[0]
+	else:
+		planeEqn = None
+
+	#For calcualting min oxy-dists we need only a single set of atoms too. Unfortunate but just too hard to code
+	#the clever alternative
+	if calcOxyDists:
+		allOptsObjs = [x for x in it.chain(*optsObjsGroups)]
+		allOtherIndices = [x.atomIndices for x in allOptsObjs if isinstance(x,CalcWaterOxyMinimumDistOptions)]
+		assert all([x==allOtherIndices[0] for x in allOtherIndices])
+		oxyDistOtherIndices = allOtherIndices[0]
+	else:
+		oxyDistOtherIndices = None
+
+
+	#ABOVE: REFACTOR THAT ALL INTO THE CALC_REQUIRED; the tests should be trivially fast in terms of cpu time
+	#OR: Just have a backend class configuring which to calculate; or _ComboValsCalculator
+	currKwargs = {"calcAngles":calcAngles, "calcPlanarDists":calcPlanar, "planeEqn":planeEqn,
+	              "calcMinOxyDists":calcOxyDists, "minOxyDistsOtherIndices":oxyDistOtherIndices}
+	calcValsObj = _ComboValsCalculator(**currKwargs)
+	
 
 	#Get bin objects (which also checks that each element in optsObjs uses a single set of waterIndices)
 	outBinObjs = [_getOutBinObjForCombinedWaterRotations(optsObjGroup) for optsObjGroup in optsObjsGroups]
@@ -52,15 +77,7 @@ def getMultipleWaterComboDistribBinsFromOptObjs(inpTraj, optsObjsGroups):
 	#Bin Values
 	for trajStep in inpTraj:
 		#1) Calculate anything required
-		if calcAngles:
-			allAngles = waterRotHelp.getWaterStandardRotationAnglesForInpCell(trajStep.unitCell, uniqueIndices)
-		else:
-			allAngles = None
-
-		if calcPlanar:
-			allPlanarDists = _getPlanarDistsForWaterIndices_usingOxyPos(trajStep.unitCell, uniqueIndices, planeEqn)
-		else:
-			allPlanarDists = None
+		calcValsDict = calcValsObj.calcAllRequiredVals(trajStep.unitCell, uniqueIndices)
 
 		totalIdx = 0 #
 		#Bin each 
@@ -74,11 +91,11 @@ def getMultipleWaterComboDistribBinsFromOptObjs(inpTraj, optsObjsGroups):
 			relevantIndices = [ indicesToUniqueIndicesMap[idx] for idx in range(totalIdx, totalIdx+nWater) ]
 
 			#1) Populate with required angles/planar distances
-			_populateBinValsFromAngles(currOptsObjs, allAngles, relevantIndices, currBinVals)
-			_populateBinValsFromPlanarDists(currOptsObjs, allPlanarDists, relevantIndices, currBinVals)
+			_populateBinValsFromAngles(currOptsObjs, calcValsDict["rotAngles"], relevantIndices, currBinVals)
+			_populateBinValsFromPlanarDists(currOptsObjs, calcValsDict["planarDists"], relevantIndices, currBinVals)
+			_populateBinValsFromMinOxyDists(currOptsObjs, calcValsDict["oxyDists"], relevantIndices, currBinVals)
 
-			#1) Get ALL angles and planar distances required
-
+			#
 			totalIdx += nWater
 			outBinObjs[groupIdx].addBinValuesToCounts(currBinVals)
 
@@ -90,8 +107,55 @@ def getMultipleWaterComboDistribBinsFromOptObjs(inpTraj, optsObjsGroups):
 	return outBinObjs
 
 
+
+class _ComboValsCalculator():
+	""" Backend class whose main function takes a unitCell and set of water indices and calculates any angles/distances etc. required. NEVER CALL THIS OUTSIDE THIS MODULE PLEASE """
+
+	#Note planeEqn=None is fine even with calcPlanarDists=True; it will just use some default plane equation in that case
+	def __init__(self, calcAngles=False, calcPlanarDists=False, planeEqn=None, calcMinOxyDists=False, minOxyDistsOtherIndices=None):
+		self.calcAngles = calcAngles
+		self.calcPlanarDists = calcPlanarDists
+		self.planeEqn = planeEqn
+		self.calcMinOxyDists = calcMinOxyDists
+		self.minOxyDistsOtherIndices = minOxyDistsOtherIndices
+
+
+	def calcAllRequiredVals(self, inpCell, uniqueIndices):
+		""" Calculates the required angles and distances and puts them in a dictionary (vals are None if a value wasnt calculated)
+		
+		Args:
+			inpCell: (plato_pylib UnitCell object)
+			uniqueIndices: (iter of len-3 ints) Contains the iter of indices for water molecules
+ 
+		Returns
+			outDict: Keys are properties (see below); If the property was calcualted values are an iter of calculated values (e.g a list of distances from planeEqn if calcPlanarDists=True). If the property was not calculated then the value will be None
+	
+		Keys in outDict:
+			Currently "rotAngles", "planarDists"
+ 
+		"""
+		planarDists = _getPlanarDistsForWaterIndices_usingOxyPos(inpCell, uniqueIndices, self.planeEqn) if self.calcPlanarDists else None
+		rotAngles = waterRotHelp.getWaterStandardRotationAnglesForInpCell(inpCell, uniqueIndices) if self.calcAngles else None
+		oxyDists = _getMinOxyDistsForWaterIndices(inpCell, uniqueIndices, self.minOxyDistsOtherIndices) if self.calcMinOxyDists else None
+		outDict = {"rotAngles":rotAngles, "planarDists":planarDists, "oxyDists":oxyDists}
+		return outDict
+
+
 def _getPlanarDistsForWaterIndices_usingOxyPos(inpGeom, waterIndices, planeEqn):
-	#1) Get oxygen indices from the water indices
+	useOxyIndices = _getOxyIndicesFromInpGeomAndWaterIndices(inpGeom, waterIndices)
+	allDists = calcDistHelp.calcDistancesFromSurfPlaneForCell(inpGeom, indices=useOxyIndices, planeEqn=planeEqn)
+	return allDists
+
+
+def _getMinOxyDistsForWaterIndices(inpGeom, waterIndices, otherIndices):
+	#1) Get oxygen indices from the water indices[ducpliated from above]
+	useOxyIndices = _getOxyIndicesFromInpGeomAndWaterIndices(inpGeom, waterIndices)
+	allDists = calcDistHelp.calcDistanceMatrixForCell_minImageConv(inpGeom, indicesA=useOxyIndices, indicesB=otherIndices)
+	minDists = [min(x) for x in allDists] 
+	return minDists
+
+
+def _getOxyIndicesFromInpGeomAndWaterIndices(inpGeom, waterIndices):
 	useOxyIndices = list()
 	fractCoords = inpGeom.fractCoords
 	
@@ -101,8 +165,8 @@ def _getPlanarDistsForWaterIndices_usingOxyPos(inpGeom, waterIndices, planeEqn):
 		assert len(currOxyIndices)==1
 		useOxyIndices.append(currOxyIndices[0])
 
-	allDists = calcDistHelp.calcDistancesFromSurfPlaneForCell(inpGeom, indices=useOxyIndices, planeEqn=planeEqn)
-	return allDists
+	return useOxyIndices
+
 
 def _populateBinValsFromAngles(optsObjs, allAngles, relevantIndices, inpBinValArray):
 	if allAngles is None:
@@ -127,6 +191,19 @@ def _populateBinValsFromPlanarDists(optsObjs, allDists, relevantIndices, inpBinV
 		for optIdx, optObj in enumerate(optsObjs):
 			if isinstance(optObj, CalcWaterPlanarDistribOptions_fromOxy):
 				inpBinValArray[outIdx][optIdx] = allDists[relIdx]
+
+
+#TODO: Actually write this
+def _populateBinValsFromMinOxyDists(optsObjs, allDists, relevantIndices, inpBinValArray):
+	if allDists is None:
+		return None
+
+	#Very similar to above
+	for outIdx,relIdx in enumerate(relevantIndices):
+		for optIdx, optObj in enumerate(optsObjs):
+			if isinstance(optObj, CalcWaterOxyMinimumDistOptions):
+				inpBinValArray[outIdx][optIdx] = allDists[relIdx]
+
 
 
 #Code dealing with pure rotational distributions
@@ -229,6 +306,25 @@ class CalcWaterPlanarDistribOptions_fromOxy(calcDistribCoreHelp.CalcDistribOptio
 		self.binResObj = binResObj
 		self.waterIndices = waterIndices
 		self.planeEqn = planeEqn
+		self.volume = volume
+
+
+class CalcWaterOxyMinimumDistOptions(calcDistribCoreHelp.CalcDistribOptionsBase):
+	""" Contains options for calculating minimum atom-(water-oxygen) distance for all indices in atomIndices """
+
+	def __init__(self, binResObj, waterIndices, atomIndices, volume=None):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			waterIndices: (iter of len-3 ints) Contains the iter of indices for water molecules
+			atomIndices: (iter of ints) The indices of the atoms to calculate the rdf values from (calculated between these atom indices and the water oxygen atoms)
+			volume: (None or float) The volume to use for calculating the rdf. None generally means use the full unit cell volume (may not be sensible for slabs/multi-phase cells)
+		"""
+		self.distribKey = "rdf"
+		self.binResObj = binResObj
+		self.waterIndices = waterIndices
+		self.atomIndices = atomIndices
 		self.volume = volume
 
 

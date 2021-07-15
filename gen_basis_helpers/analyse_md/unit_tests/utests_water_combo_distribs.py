@@ -24,22 +24,25 @@ class TestGetCombinedWaterRotationDistribs_iterOfOpts(unittest.TestCase):
 		self.aziEdgesA   = [-20, 10, 100]
 		self.pitchEdgesA = [-30, 0, 30] 
 		self.planarEdgesA = [0,2,7.1] #7.1 means centre of mass likely would exclude waterAzi90_pitch20 from bin; but using oxy means it wont
+		self.oxyDistEdgesA = [0,2.5,5.5] #Dists are 3 and 4 (and need PBCs to get right) at time of writing
 
 		self.aziEdgesB = [-50, 5, 100]
 		self.pitchEdgesB = [-30, 10, 50]
 		self.planarEdgesB = [0, 10]
+		self.oxyDistEdgesB = [0, 10, 20]
 
 		#Other options
 		self.waterIndicesA = [ [0,1,2], [6,7,8], [9,10,11] ]
 		self.waterIndicesB = [ [3,4,5], [6,7,8], [11,9,10] ] #Swap the order of elements in last; should break some possible implementations
+		self.oxyDistIndices = [ 0 ] #Means we look at distance of water oxygens from these atom indices
 
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		#Define some rotated water molecules
 		#setting up water with an angle of 90 degrees and sqrt(2) bondlengths makes this simpler
-		waterAzi90_pitch20 = [ [0,0,0+7,"O"], [ -1, 0.94, 0.34+7, "H"] , [1   ,0.94, 0.34+7,"H" ] ] #Translated by +7 for planar dists stuff 
-		waterAzi0_pitch20  = [ [0,0,0,"O"], [0.94, 1.0, 0.34, "H"] , [0.94, -1 , 0.34,"H"] ] 
+		waterAzi90_pitch20 = [ [0,0,0+7,"O"], [ -1, 0.94, 0.34+7, "H"] , [1   ,0.94, 0.34+7,"H" ] ] #Translated by +7 for planar dists stuff [means dist=3]
+		waterAzi0_pitch20  = [ [0,0,0+1,"O"], [0.94, 1.0, 0.34+1, "H"] , [0.94, -1 , 0.34+1,"H"] ] 
 		waterAzi0_pitchm20 = [ [0,0,0,"O"], [0.94, 1.0, -0.34, "H"], [0.94, -1 ,-0.34,"H"] ] 
 
 		#Sort the trajectory; default is to use a one step trajectory
@@ -52,19 +55,24 @@ class TestGetCombinedWaterRotationDistribs_iterOfOpts(unittest.TestCase):
 		self.aziBinsA = binResHelp.BinnedResultsStandard.fromBinEdges(self.aziEdgesA)
 		self.pitchBinsA = binResHelp.BinnedResultsStandard.fromBinEdges(self.pitchEdgesA)
 		self.planarBinsA = binResHelp.BinnedResultsStandard.fromBinEdges(self.planarEdgesA)
+		self.oxyDistBinsA = binResHelp.BinnedResultsStandard.fromBinEdges(self.oxyDistEdgesA)
 
 		self.aziBinsB = binResHelp.BinnedResultsStandard.fromBinEdges(self.aziEdgesB)
 		self.pitchBinsB = binResHelp.BinnedResultsStandard.fromBinEdges(self.pitchEdgesB)
 		self.planarBinsB = binResHelp.BinnedResultsStandard.fromBinEdges(self.planarEdgesB)
+		self.oxyDistBinsB = binResHelp.BinnedResultsStandard.fromBinEdges(self.oxyDistEdgesB)
+
 
 		#Create options objs
 		self.aziOptsA = waterRotHelp.CalcStandardWaterOrientationDistribOptions(self.aziBinsA , self.waterIndicesA, angleType="azimuth")
 		self.pitchOptsA = waterRotHelp.CalcStandardWaterOrientationDistribOptions(self.pitchBinsA, self.waterIndicesA, angleType="pitch")
 		self.planarOptsA = tCode.CalcWaterPlanarDistribOptions_fromOxy(self.planarBinsA, self.waterIndicesA)
+		self.oxyDistOptsA = tCode.CalcWaterOxyMinimumDistOptions(self.oxyDistBinsA, self.waterIndicesA, self.oxyDistIndices)
 
 		self.aziOptsB = waterRotHelp.CalcStandardWaterOrientationDistribOptions(self.aziBinsB , self.waterIndicesB, angleType="azimuth")
 		self.pitchOptsB = waterRotHelp.CalcStandardWaterOrientationDistribOptions(self.pitchBinsB, self.waterIndicesB, angleType="pitch")
 		self.planarOptsB = tCode.CalcWaterPlanarDistribOptions_fromOxy(self.planarBinsB, self.waterIndicesB)
+		self.oxyDistOptsB = tCode.CalcWaterOxyMinimumDistOptions(self.oxyDistBinsB, self.waterIndicesB, self.oxyDistIndices)
 
 		self.optsObjs = [ [self.aziOptsA, self.pitchOptsA], [self.aziOptsB, self.pitchOptsB] ]
 
@@ -85,7 +93,7 @@ class TestGetCombinedWaterRotationDistribs_iterOfOpts(unittest.TestCase):
 		expBinObjB.binVals["counts"][0][1] = 1
 		expBinObjB.binVals["counts"][0][0] = 2
 
-		#Sort the normalised counts (same as unnormalised for the simple case)
+		#Sort the normalised counts (same as unnormalised for the simple case with 1 step)
 		expBinObjA.initialiseCountsMatrix(countKey="normalised_counts")
 		expBinObjB.initialiseCountsMatrix(countKey="normalised_counts")
 		np.copyto( expBinObjA.binVals["normalised_counts"], expBinObjA.binVals["counts"] )
@@ -106,7 +114,7 @@ class TestGetCombinedWaterRotationDistribs_iterOfOpts(unittest.TestCase):
 		expBinObjB.binVals["counts"][0][1][0] = 1
 		expBinObjB.binVals["counts"][0][0][0] = 2
 
-		#Sort the normalised counts (same as unnormalised for the simple case)
+		#Sort the normalised counts (same as unnormalised for the simple case with 1 step)
 		expBinObjA.initialiseCountsMatrix(countKey="normalised_counts")
 		expBinObjB.initialiseCountsMatrix(countKey="normalised_counts")
 		np.copyto( expBinObjA.binVals["normalised_counts"], expBinObjA.binVals["counts"] )
@@ -114,17 +122,46 @@ class TestGetCombinedWaterRotationDistribs_iterOfOpts(unittest.TestCase):
 
 		return [expBinObjA, expBinObjB]
 
+	def _getExpectedCaseWithDistCriteria(self):
+		edgesA, edgesB = [self.aziEdgesA, self.pitchEdgesA, self.oxyDistEdgesA], [self.aziEdgesB, self.pitchEdgesB, self.oxyDistEdgesB] 
+		expBinObjA, expBinObjB = binResHelp.NDimensionalBinnedResults(edgesA), binResHelp.NDimensionalBinnedResults(edgesB)
+		expBinObjA.initialiseCountsMatrix()
+		expBinObjB.initialiseCountsMatrix()
+
+		#Sort unnormalised counts
+		expBinObjA.binVals["counts"][0][0][1] = 2
+		expBinObjA.binVals["counts"][1][1][0] = 1
+
+		expBinObjB.binVals["counts"][0][1][0] = 1
+		expBinObjB.binVals["counts"][0][0][0] = 2
+		
+		#Sort the normalised counts (same as unnormalised for the simple case with 1 step)
+		expBinObjA.initialiseCountsMatrix(countKey="normalised_counts")
+		expBinObjB.initialiseCountsMatrix(countKey="normalised_counts")
+		np.copyto( expBinObjA.binVals["normalised_counts"], expBinObjA.binVals["counts"] )
+		np.copyto( expBinObjB.binVals["normalised_counts"], expBinObjB.binVals["counts"] )
+
+		return [expBinObjA, expBinObjB]
+
+
 	def testExpectedCaseA(self):
 		expBinObjs = self._getExpectedCaseA()
 		actBinObjs = self._runTestFunct()
 		self.assertEqual(expBinObjs, actBinObjs)
-
 
 	def testExpectedCaseWithPlanarDistsA(self):
 		self.optsObjs = [ [self.aziOptsA, self.pitchOptsA, self.planarOptsA], [self.aziOptsB, self.pitchOptsB, self.planarOptsB] ]
 		expBinObjs = self._getExpectedCaseWithPlanarDists()
 		actBinObjs = self._runTestFunct()
 		self.assertEqual(expBinObjs, actBinObjs)
+
+	#If doign another; you can easily just use azi OR pitch (no need for the 3-dimensional bins at all)
+	def testExpectedCaseWithMinOxyDistFromFirstWater(self):
+		self.optsObjs = [ [self.aziOptsA, self.pitchOptsA, self.oxyDistOptsA], [self.aziOptsB, self.pitchOptsB, self.oxyDistOptsB] ]
+		expBinObjs = self._getExpectedCaseWithDistCriteria()
+		actBinObjs = self._runTestFunct()
+		self.assertEqual(expBinObjs, actBinObjs)
+
 
 
 class TestGetCombinedWaterRotationDistribs(unittest.TestCase):
