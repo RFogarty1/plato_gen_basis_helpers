@@ -591,4 +591,124 @@ def addProbabilityDensitiesToNDimBinsSimple(binObj, countKey="counts", outKey="p
 
 
 
+def getAverageForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
+	""" Gets the average value of a property given the probability density function. Works simply by summing (centralVal*probability*width) for each bin
+	
+	Args:
+		binEdges:
+		pdfData: ([x,y]) x values are bin CENTRES, y values are the probability density function or something similar (g(r) should be fine?)
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
+		normaliseBySum: (Bool) If True we do sum(pdfData) and divide the output by it. This may let the function work for certain cases where y-values are only proportional to pdf. NOTE: We use the sum betweenVals if that is set
+			 
+	Returns
+		outVal: (float) The average x-value based on probability densities
+ 
+	"""
+
+	return _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, multByXVals=True)	
+
+
+def getIntegralOverPdfSimple(binEdges, pdfVals, betweenVals=None, normByFullSum=False):
+	""" Gets the sum of probabilities between range given the probability density function. Works simply by summing (probability*width) for each bin
+	
+	Args:
+		binEdges: (iter of floats, must be in order) Edge for each bin
+		pdfData: ([x,y]) x values are bin CENTRES, y values are the probability density function or something similar (g(r) should be fine?)
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
+		normByFullSum: (Bool) If True then we divide by sum(width*pdf) for ALL input values; This may let us use quantities that are proportional to pdfVals as long as the full distribution is included in pdfVals
+
+	Returns:
+		outVal: (float) Sum of probabilities over range given
+ 
+	"""
+	outVal = _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=False, multByXVals=False)	
+	if normByFullSum:
+		divFactor = _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, multByXVals=False)
+		outVal *= 1/divFactor
+	return outVal
+
+
+def _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, multByXVals=False):
+
+	#1) Check data is in order
+	floatTol = 1e-6
+	sortedEdges = sorted(binEdges)
+	deltaEdges = [abs(x-y) for x,y in it.zip_longest(binEdges, sortedEdges)]
+	assert all([ x<floatTol for x in deltaEdges] ), "Bin edges need to be in order"
+
+	#2) Filter out any bins not in between vals
+	binEdgePairs = [ [binEdges[idx], binEdges[idx+1]] for idx in range(len(binEdges)-1)]
+	useEdgePairs, usePdf = list(), list()
+
+	useEdges, usePdf = list(), list()
+	for pIdx, edgePair in enumerate(binEdgePairs):
+
+		if betweenVals is None:
+			useEdgePairs.append(edgePair)
+			usePdf.append(pdfVals[pIdx])
+
+		else:
+			if min(edgePair)>min(betweenVals) and max(edgePair)<max(betweenVals):
+				useEdgePairs.append(edgePair)
+				usePdf.append(pdfVals[pIdx])
+
+	#3) Get bin widths and centres
+	binWidths, binCentres = list(),list()
+	for edgePair in useEdgePairs:
+		currWidth = edgePair[1]-edgePair[0]
+		currCentre = edgePair[0] + (0.5*currWidth)
+		binWidths.append(currWidth)
+		binCentres.append(currCentre)
+
+	#4) Sum over
+	outSum = 0
+	pdfSum = 0
+	for width, centre, val in it.zip_longest(binWidths, binCentres, usePdf):
+		if multByXVals:
+			outSum += centre*width*val
+		else:
+			outSum += width*val
+		pdfSum += width*val
+
+	#5) Normalise if requested
+	if normaliseBySum:
+		outSum *= 1/pdfSum
+
+	return outSum
+
+
+
+def getBinEdgesFromCentresFixedWidthAssumed(binCentres):
+	""" Gets iter of binEdges when given centres of the bins. Can only work by assuming that each bin has equal width
+	
+	Args:
+		binCentres: (iter of floats)
+			 
+	Returns
+		binEdges: (iter of floats) The edges of the bins. Length is len(binCentres)+1
+ 
+	Raises:
+		AssertionError: If binCentre arent in order
+		AssertionError: If the bin centres are such that a constant width is not possible (e.g binCentres=[1,3,10])
+
+	"""
+	#Check data are ordered
+	floatTol = 1e-7
+	sortedCentres = sorted(binCentres)
+	deltaCentres = [ abs(x-y) for x,y in it.zip_longest(sortedCentres, binCentres) ]
+	assert all([x<floatTol for x in deltaCentres]), "binCentres need to be in ascending order"
+
+	#Check all bin widths are the same
+	estWidths = [binCentres[idx] - binCentres[idx-1] for idx in range(1,len(binCentres))]
+	assert all([abs(x-estWidths[0])<floatTol for x in estWidths] )
+
+	#Get bin edges
+	useWidth = estWidths[0]
+	edges = [ binCentres[0]-(0.5*useWidth), binCentres[0]+(0.5*useWidth)  ]
+	for centre in binCentres[1:]:
+		edges.append( centre+(0.5*useWidth) ) 
+
+	return edges
+
+
 

@@ -1,6 +1,7 @@
 
 
 import copy
+import itertools as it
 import unittest
 import unittest.mock as mock
 
@@ -629,4 +630,101 @@ class TestAddProbabilitiesToBinObj(unittest.TestCase):
 		actBinObjA = self.testObjA
 		self.assertEqual(expBinObjA, actBinObjA)
 
+
+class TestGetAverageValsForPdf(unittest.TestCase):
+
+	def setUp(self):
+		self.betweenVals = None
+		self.normaliseSum = False
+
+		#Edges are [0,2,3,5,8]
+		self.binEdges =   [0, 2, 3, 5, 8]
+		self.pdfVals = [0.4, 0.2, 0.3, 0.6] #Dont care how physical these are
+
+
+	def _runTestFunct(self):
+		args = [self.binEdges, self.pdfVals]
+		currKwargs = {"betweenVals":self.betweenVals,"normaliseBySum":self.normaliseSum}
+		return tCode.getAverageForPdfValsSimple(*args, **currKwargs)
+
+	def testExpectedNoRange(self):
+		expVal = 15.4
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testRaisesIfEdgesOutOfOrder(self):
+		self.binEdges = [2,3,1,5,3.1]
+		with self.assertRaises(AssertionError):
+			self._runTestFunct()
+
+	def testExpectedBetweenVals(self):
+		""" Note both edges of each bin need to be in range """
+		self.betweenVals = [0.5, 5.5]
+		expVal = 2.9
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testExpectedNormaliseWithBetweenValsSet(self):
+		""" Make sure normalise factor uses only relevant pdf when betweenVals is set """
+		self.betweenVals = [0.5,5.5]
+		self.normaliseSum = True
+		expVal = 2.9/0.8 #Note we use divide by the total probability rather than sum of densities 
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+class TestGetEdgesFromCentres_fixedWidth(unittest.TestCase):
+
+	def setUp(self):
+		self.centres = [1,3,5]
+
+	def _runTestFunct(self):
+		return tCode.getBinEdgesFromCentresFixedWidthAssumed(self.centres)
+
+	def testExpectedCaseA(self):
+		expVals = [0,2,4,6]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals, actVals)]
+
+	def testRaisesWhenCentresOutOfOrder(self):
+		self.centres = [x for x in reversed(self.centres)]
+		with self.assertRaises(AssertionError):
+			self._runTestFunct()
+
+	def testRaisesWhenEqualWidthsImpossible(self):
+		self.centres = [1,3,10]
+		with self.assertRaises(AssertionError):
+			self._runTestFunct()
+
+
+#Same backend used as TestGetAverageValsForPdf; hence why we limit number of tests here
+class TestIntegrateOverPdfSimple(unittest.TestCase):
+
+	def setUp(self):
+		self.betweenVals = None
+		self.normByFullSum  = False
+		self.binEdges =   [0, 2, 3, 5, 8]
+		self.pdfVals = [0.4, 0.2, 0.3, 0.6] #Dont care how physical these are
+
+	def _runTestFunct(self):
+		args = [self.binEdges, self.pdfVals]
+		currKwargs = {"betweenVals":self.betweenVals, "normByFullSum":self.normByFullSum}
+		return tCode.getIntegralOverPdfSimple(*args, **currKwargs)
+
+	def testExpectedCaseA(self):
+		expVal = 3.4
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testExpectedCaseB_betweenVals(self):
+		self.betweenVals = [0.5,5.5]
+		expVal = 0.8
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal,actVal)
+
+	def testExpected_betweenVals_normByTotal(self):
+		self.normByFullSum = True
+		self.betweenVals = [0.5,5.5]
+		expVal = 0.8/3.4
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
 
