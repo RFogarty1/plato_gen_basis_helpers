@@ -67,7 +67,7 @@ class CalcRdfOptions(CalcDistribOptionsBase):
 			minDistAToB: (Bool) If False we do a normal rdf. If True, for every atom in group A we only bin the SHORTEST distance to group B. Original use was to get fraction of oxygen atoms within a certain distance of Mg atoms.
 
 		"""
-		self.distribKey = "rdf"
+		self.distribKey = "pdf" if minDistAToB else "rdf"
 		self.binResObj = binResObj
 		self.indicesA = indicesA
 		self.indicesB = indicesB
@@ -116,8 +116,9 @@ def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indices
 			binWidths = [ binEdges[idx]- binEdges[idx-1] for idx in range(1,len(binEdges)) ]
 			totalWidth = sum(binWidths)
 			totalCounts = sum([x for x in resObj.binVals["counts"]])
-			rdfVals = [ (counts/totalCounts)*(width/totalWidth) for width, counts in it.zip_longest(binWidths, resObj.binVals["counts"]) ]
-			resObj.binVals["rdf"] = rdfVals
+#			rdfVals = [ (counts/totalCounts)*(totalWidth/width) for width, counts in it.zip_longest(binWidths, resObj.binVals["counts"]) ]
+			pdfVals = [ (counts/totalCounts)*(1/width) for width, counts in it.zip_longest(binWidths, resObj.binVals["counts"]) ]
+			resObj.binVals["pdf"] = pdfVals
 		else:
 			nA, nB = len(idxListA), len(idxListB)
 			_addRdfToBinValsForBinsWithCounts(resObj, vol, nA, nB, nSteps)
@@ -250,12 +251,15 @@ def _getRadialToBinValsFromFullDistMatrix(distMatrix, indicesA=None, indicesB=No
 		else:
 			pass
 
-	#Get values to bin grouped by indexA
+	#Get values to bin grouped by indexA [TODO: Unit tests dont really cover the mapping]
 	twoDimValsToBin = [ list() for x in range(len(indicesA)) ]
+	idxAToListIdx = {inpIdx:outIdx for outIdx,inpIdx in enumerate(indicesA)}
+
 	for currPair in uniquePairs:
 		idxA, idxB = currPair
 		if idxA != idxB:
-			twoDimValsToBin[idxA].append( distMatrix[idxA][idxB] )
+			mappedIdx = idxAToListIdx[idxA]
+			twoDimValsToBin[mappedIdx].append( distMatrix[idxA][idxB] )
 
 
 	#Decide whether to bin all values or just the minimum between all A and B (they give totally different info)

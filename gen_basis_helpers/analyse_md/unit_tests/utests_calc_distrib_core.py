@@ -75,11 +75,11 @@ class TestPopulateBinsWithRdfBetweenAtomGroups(unittest.TestCase):
 
 
 		expCounts = [1,0]
-		expRdfVals = [ 1*(3.5)/5, 0] #No sense dividing by volume elements now 
-		actRdfVals = self.binResObjA.binVals["rdf"]
+		expPdfVals = [ 1/3.5, 0] #No sense dividing by volume elements now 
+		actPdfVals = self.binResObjA.binVals["pdf"]
 
 		self.assertEqual(expCounts, self.binResObjA.binVals["counts"])
-		self.assertAlmostEqual(expRdfVals, actRdfVals)
+		self.assertAlmostEqual(expPdfVals, actPdfVals)
 
 
 	@unittest.skip("")
