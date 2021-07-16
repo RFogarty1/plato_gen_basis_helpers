@@ -25,9 +25,10 @@ def populateRdfValsOnOptionObjs(inpTraj, optionsObjs):
 	indicesA = [x.indicesA for x in optionsObjs]
 	indicesB = [x.indicesB for x in optionsObjs]
 	volumes = [x.volume for x in optionsObjs]
+	minDistAToB = [x.minDistAToB for x in optionsObjs]
 
 	#
-	_populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indicesB, volumes=volumes)
+	_populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indicesB, volumes=volumes, minDistAToB=minDistAToB)
 
 
 
@@ -55,7 +56,7 @@ class CalcDistribOptionsBase():
 class CalcRdfOptions(CalcDistribOptionsBase):
 	""" Object containing options to calculate a specific rdf function """
 
-	def __init__(self, binResObj, indicesA, indicesB, volume=None):
+	def __init__(self, binResObj, indicesA, indicesB, volume=None, minDistAToB=False):
 		""" Initializer
 		
 		Args:
@@ -63,6 +64,7 @@ class CalcRdfOptions(CalcDistribOptionsBase):
 			indicesA: (iter of ints) Contains the indices of atoms to get an rdf FROM (e.g. for g_{AB} indicesA should contain all indices of atom type A)
 			indicesB: (iter of ints) Contains the indices of atoms to get an rdf TO (e.g. for g_{AB} indicesB should contain all indices of atom type B)
 			volume: (float or None) The total cell volume to assume; Default is to use the unit cell volume from first step of an input traj. Using the whole cell may not be sensible when calculating for slab geometries.
+			minDistAToB: (Bool) If False we do a normal rdf. If True, for every atom in group A we only bin the SHORTEST distance to group B. Original use was to get fraction of oxygen atoms within a certain distance of Mg atoms.
 
 		"""
 		self.distribKey = "rdf"
@@ -70,10 +72,10 @@ class CalcRdfOptions(CalcDistribOptionsBase):
 		self.indicesA = indicesA
 		self.indicesB = indicesB
 		self.volume = volume
-
+		self.minDistAToB = minDistAToB
 
 #TODO: Probably introduce some command objects to determine the options for these; so i can individually specify the runs but get them all combined this way
-def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indicesB, volumes=None):
+def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indicesB, volumes=None, minDistAToB=None):
 	""" Gets rdf functions for multiple binResObjs/atom groups simultaneously. This can be used to efficiently calculate multiple rdf for different element combinations (e.g. g_{OH}/g_{OO}) or the same element combo with varying bin widths
 	
 	Args:
@@ -82,7 +84,8 @@ def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indices
 		indicesA: (iter of iter of ints) Each element corresponds to one binResObj. Within that each element contains the indices of atoms to get an rdf FROM (e.g. for g_{AB} indicesA should contain all indices of atom type A)
 		indicesB: (iter of iter of ints) Each element corresponds to one binResObj. Within that each element contains the indices of atoms to get an rdf TO (e.g. for g_{AB} indicesB should contain all indices of atom type B)
 		volumes: (iter of floats) The total cell volume to assume for each case; Default is to use the unit cell volume. Using the whole cell may not be sensible when calculating for slab geometries.
- 
+		minDistAToB: (iter of Bools) See the description on the opts object. Default is all to be False 
+
 	Returns
 		Nothing; works in place
  
@@ -90,11 +93,12 @@ def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indices
 	#Sort annoying defaults
 	nBins = len(binResObjs)
 	volumes = _getVolumesFromTrajAndInpVolumesArg(inpTraj, nBins, volumes)
+	minDistAToB = [False for x in range(nBins)] if minDistAToB is None else minDistAToB
 
 	#Create objects to handle binning for each traj step
 	singleBinners = list()
-	for resObj, idxListA, idxListB in it.zip_longest(binResObjs, indicesA, indicesB):
-		currBinner = _RdfBinnerFixedIndices(resObj, idxListA, idxListB)
+	for resObj, idxListA, idxListB, doMinDist in it.zip_longest(binResObjs, indicesA, indicesB, minDistAToB):
+		currBinner = _RdfBinnerFixedIndices(resObj, idxListA, idxListB, minDistAToB=doMinDist)
 		singleBinners.append(currBinner)
 	multiBinner = _MultiRdfBinnerFixedIndices(singleBinners)
 
@@ -105,9 +109,18 @@ def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indices
 		nSteps += 1
 
 	#Attach the rdf
-	for resObj, idxListA, idxListB,vol in it.zip_longest(binResObjs, indicesA, indicesB, volumes):
-		nA, nB = len(idxListA), len(idxListB)
-		_addRdfToBinValsForBinsWithCounts(resObj, vol, nA, nB, nSteps)
+	for resObj, idxListA, idxListB,vol, doMinDist in it.zip_longest(binResObjs, indicesA, indicesB, volumes, minDistAToB):
+		if doMinDist:
+			#WARNING: Test coverage isnt great; only got the case of a single count over two bins
+			binEdges = resObj.binEdges
+			binWidths = [ binEdges[idx]- binEdges[idx-1] for idx in range(1,len(binEdges)) ]
+			totalWidth = sum(binWidths)
+			totalCounts = sum([x for x in resObj.binVals["counts"]])
+			rdfVals = [ (counts/totalCounts)*(width/totalWidth) for width, counts in it.zip_longest(binWidths, resObj.binVals["counts"]) ]
+			resObj.binVals["rdf"] = rdfVals
+		else:
+			nA, nB = len(idxListA), len(idxListB)
+			_addRdfToBinValsForBinsWithCounts(resObj, vol, nA, nB, nSteps)
 
 
 def _getVolumesFromTrajAndInpVolumesArg(inpTraj, nBins, volumes):
@@ -171,7 +184,7 @@ class _MultiRdfBinnerFixedIndices():
 
 class _RdfBinnerFixedIndices():
 
-	def __init__(self, resBins=None, indicesA=None, indicesB=None):
+	def __init__(self, resBins=None, indicesA=None, indicesB=None, minDistAToB=False):
 		""" Initializer
 		
 		Args:
@@ -183,22 +196,24 @@ class _RdfBinnerFixedIndices():
 		self.resBins = resBins
 		self.indicesA = indicesA
 		self.indicesB = indicesB
+		self.minDistAToB = minDistAToB
 
 	def updateCountsFromTrajStep(self, trajStep):
 		raise NotImplementedError("")
 
 	def updateCountsFromDistMatrix(self, distMatrix):
-		valsToBin = _getRadialToBinValsFromFullDistMatrix(distMatrix, indicesA=self.indicesA, indicesB=self.indicesB)
+		valsToBin = _getRadialToBinValsFromFullDistMatrix(distMatrix, indicesA=self.indicesA, indicesB=self.indicesB, minDistAToB=self.minDistAToB)
 		binResHelp.binCountsFromOneDimDataSimple(valsToBin, self.resBins)
 
 #May be able to actually make this more general than distances
-def _getRadialToBinValsFromFullDistMatrix(distMatrix, indicesA=None, indicesB=None):
+def _getRadialToBinValsFromFullDistMatrix(distMatrix, indicesA=None, indicesB=None, minDistAToB=False):
 	""" Takes a distance matrix and extracts relevant distances to bin based on indicesA and indicesB
 	
 	Args:
 		distMatrix: (nxm matrix) distMatrix[idxA][idxB] 
 		indicesA: (iter of ints) Indices of atoms in rows to bin. Default is to use ALL
 		indicesB: (iter of ints) Indices of atoms in columns to bin. Default is to use ALL
+		minDistAToB: (Bool) If True only bin the SHORTEST AB contact for each index in A (False will do normal rdf stuff)
  
 	Returns
 		outVals: (iter of floats; len(indicesA)*len(indicesB)) Values which we will be binning later.
@@ -235,12 +250,19 @@ def _getRadialToBinValsFromFullDistMatrix(distMatrix, indicesA=None, indicesB=No
 		else:
 			pass
 
-	#Get the distances to bin
-	outVals = list()
+	#Get values to bin grouped by indexA
+	twoDimValsToBin = [ list() for x in range(len(indicesA)) ]
 	for currPair in uniquePairs:
 		idxA, idxB = currPair
 		if idxA != idxB:
-			outVals.append( distMatrix[idxA][idxB] )
+			twoDimValsToBin[idxA].append( distMatrix[idxA][idxB] )
+
+
+	#Decide whether to bin all values or just the minimum between all A and B (they give totally different info)
+	if minDistAToB:
+		outVals = [min(x) for x in twoDimValsToBin]
+	else:
+		outVals = [x for x in it.chain(*twoDimValsToBin)]
 
 	return outVals
 

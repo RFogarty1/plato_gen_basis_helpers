@@ -66,6 +66,22 @@ class TestPopulateBinsWithRdfBetweenAtomGroups(unittest.TestCase):
 		tCode.populateRdfValsOnOptionObjs(self.trajA, [optsObj])
 		self.assertEqual(expBinObj, self.binResObjA)
 
+	#Note distances are 3,4
+	def testExpectedForMinVals(self):
+		self.binEdges = [0,3.5,5]
+		self.createTestObjs()
+		optsObj = tCode.CalcRdfOptions(self.binResObjA, self.indicesA, self.indicesB, minDistAToB=True)
+		tCode.populateRdfValsOnOptionObjs(self.trajA, [optsObj])
+
+
+		expCounts = [1,0]
+		expRdfVals = [ 1*(3.5)/5, 0] #No sense dividing by volume elements now 
+		actRdfVals = self.binResObjA.binVals["rdf"]
+
+		self.assertEqual(expCounts, self.binResObjA.binVals["counts"])
+		self.assertAlmostEqual(expRdfVals, actRdfVals)
+
+
 	@unittest.skip("")
 	def testExpectedReverseIndices(self):
 		self.assertTrue(False)
