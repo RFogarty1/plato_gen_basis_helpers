@@ -582,9 +582,9 @@ def addProbabilityDensitiesToNDimBinsSimple(binObj, countKey="counts", outKey="p
 	totalCounts = np.sum(countMatrix)
 	totalVolume = np.sum(volumesArray)
 
-	fractVolArray = np.where(True, volumesArray/totalVolume, 0)
+#	fractVolArray = np.where(True, volumesArray/totalVolume, 0)
 	outMatrix = np.where(True, countMatrix/totalCounts  ,0)
-	outMatrix = np.where(True, outMatrix*fractVolArray, 0)
+	outMatrix = np.where(True, outMatrix*(1/volumesArray), 0)
 
 
 	binObj.binVals[outKey] = outMatrix

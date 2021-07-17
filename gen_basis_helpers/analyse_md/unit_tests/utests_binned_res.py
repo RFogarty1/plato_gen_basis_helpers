@@ -615,11 +615,11 @@ class TestAddProbabilitiesToBinObj(unittest.TestCase):
 		outMatrix = expBinObj.binVals[self.outKey]
 		totalArea = 5*4
 		totalCounts = 4 + 7 + 2 +5 + 3 + 0
-		outMatrix[0][0] = (4/totalCounts) * (2/totalArea)
-		outMatrix[0][1] = (7/totalCounts) * (2/totalArea)
-		outMatrix[1][0] = (2/totalCounts) * (4/totalArea)
-		outMatrix[1][1] = (5/totalCounts) * (4/totalArea)
-		outMatrix[2][0] = (3/totalCounts) * (4/totalArea)
+		outMatrix[0][0] = (4/totalCounts) * (1/2)  # * (2/totalArea)
+		outMatrix[0][1] = (7/totalCounts) * (1/2) #* (2/totalArea)
+		outMatrix[1][0] = (2/totalCounts) * (1/4) #* (4/totalArea)
+		outMatrix[1][1] = (5/totalCounts) * (1/4) #* (4/totalArea)
+		outMatrix[2][0] = (3/totalCounts) * (1/4) #* (4/totalArea)
 		outMatrix[2][1] = 0
 
 		return expBinObj
