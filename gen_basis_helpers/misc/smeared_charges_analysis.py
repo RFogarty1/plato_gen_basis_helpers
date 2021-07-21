@@ -1,5 +1,5 @@
 
-
+import itertools as it
 import math
 
 import numpy as np
@@ -47,16 +47,22 @@ def getCoulombInteractionEnergyStandard(inpGeom, exponentDict, charges, indicesA
 		outVal: (float) The total interaction energy between atoms in indicesA and indicesB
  
 	"""
+	#Get interaction matrix
 	cartCoords = inpGeom.cartCoords
 	exponents = [ exponentDict[coord[-1]] for coord in cartCoords ]
-
 	coulombInteractionMatrix = getCoulombInteractionMatrix(inpGeom, exponents, charges, indicesA, indicesB, distLenConv=distLenConv)
-
 	interactionMatrix = np.where( np.isnan(coulombInteractionMatrix), 0, coulombInteractionMatrix)
-	outSum = np.sum( interactionMatrix )
-	outVal = (0.5*outSum)*eConv
 
-	return outVal
+	#Add all interactions up
+	outSum = 0
+	allIdxPairs = [list(x) for x in it.product(indicesA,indicesB)]
+	for idxA, idxB in np.ndindex(interactionMatrix.shape):
+		if [indicesB[idxB],indicesA[idxA]] in allIdxPairs:
+			outSum += 0.5*interactionMatrix[idxA][idxB]
+		else:
+			outSum += interactionMatrix[idxA][idxB]
+
+	return outSum*eConv
 
 
 #0.5*sum(Matrix) is the interaction energy
@@ -102,7 +108,7 @@ def getCoulombInteractionMatrix(inpGeom, exponents, charges, indicesA, indicesB,
 
 
 def getIntegralTwoSphericalGaussianSmearedDensities(dist, alphaA, alphaB):
-	""" Calculates the Hartree integral (  \int \\fract{\\rho(r)\\rho(r')}{|r-r'|} dr dr' ) for two charge densities described by single spherical Gaussian functions. Used to get hartree energy by multiplying by q_{A}q_{B}.
+	""" Calculates the Hartree integral ( c_1c_2  \int \\fract{\\rho(r)\\rho(r')}{|r-r'|} dr dr' ) for two charge densities described by single spherical Gaussian functions. Used to get hartree energy by multiplying by q_{A}q_{B}. Note c_1 and c_2 are the coefficients which lead to the Gaussians being normalised; so (alpha/pi)^{3/2}
 
 	Note the formula is taken from the plato manual
 	
@@ -115,9 +121,10 @@ def getIntegralTwoSphericalGaussianSmearedDensities(dist, alphaA, alphaB):
 		outVal: (float) Value of the integral
  
 	"""
+	gauPrefactorProduct = ( (alphaA/math.pi)**(3/2) ) * ( (alphaB/math.pi)**(3/2) )
 	prefactor = (math.pi**3) / ( ((alphaA*alphaB)**(3/2))*dist )
 	erfArg = math.sqrt( (alphaA*alphaB)/(alphaA+alphaB) ) * dist
 	erfTerm = math.erf(erfArg)
-	return prefactor*erfTerm
+	return prefactor*erfTerm*gauPrefactorProduct
 
 

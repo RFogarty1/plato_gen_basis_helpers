@@ -38,11 +38,18 @@ class TestGetInteractionEnergy(unittest.TestCase):
 		return tCode.getCoulombInteractionEnergyStandard(*args,**kwargs)
 
 	def testInteractionEnergyFullMatrix(self):
-		abInt, acInt, bcInt =  -0.122988187418763, 1.0087131757143, -1.07721183320534
+		abInt, acInt, bcInt = -0.089752956514025, 0.092015940407703, -0.277933876243776
 		expVal = self.eConv*(abInt + acInt + bcInt)
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
 
+	def testInteractionEnergyPartialMatrix(self):
+		self.indicesA = [0,1]
+		self.indicesB = [2]
+		abInt, acInt, bcInt = -0.089752956514025, 0.092015940407703, -0.277933876243776
+		expVal = self.eConv*(acInt + bcInt)
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
 
 class TestGetCoulombInteractionMatrix(unittest.TestCase):
 
@@ -69,7 +76,8 @@ class TestGetCoulombInteractionMatrix(unittest.TestCase):
 		return tCode.getCoulombInteractionMatrix(*args, **kwargs)
 
 	def testExpectedCaseA_allIndices(self):
-		abInt, acInt, bcInt = -0.045676515372138, 0.383681617880166, -0.452108035764169
+		abInt, acInt, bcInt = -0.033333301221433, 0.034999864913425, -0.116649423063794
+
 		selfInt = np.nan
 		expMatrix = np.array( [ [selfInt, abInt  , acInt  ],
 		                        [abInt  , selfInt, bcInt  ],
@@ -81,14 +89,16 @@ class TestGetCoulombInteractionMatrix(unittest.TestCase):
 		self.indicesA = [1]
 		self.indicesB = [0,2]
 
-		abInt, bcInt = -0.045676515372138, -0.452108035764169
+		abInt, bcInt = -0.033333301221433, -0.116649423063794
+
 		expMatrix = np.array( [[abInt, bcInt]] )
 		actMatrix = self._runTestFunct()
 		self.assertTrue( np.allclose(expMatrix,actMatrix) )
 
 	def testExpectedCaseC_distConv(self):
 		self.distLenConv = 1/3
-		abInt, acInt, bcInt = -0.122988187418763, 1.0087131757143, -1.07721183320534
+		abInt, acInt, bcInt = -0.089752956514025, 0.092015940407703, -0.277933876243776
+
 		selfInt = np.nan
 		expMatrix = np.array( [ [selfInt, abInt  , acInt  ],
 		                        [abInt  , selfInt, bcInt  ],
@@ -110,13 +120,13 @@ class TestGetEnergyForTwoSmearedCharges(unittest.TestCase):
 
 	def testExpectedCaseA(self):
 		""" Basically equivalent to me coding the algebra twice so...... """
-		expVal = 0.087904579502652 #Just figured out in excel
+		expVal = 0.33333333331686 #Just figured out in excel
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
 
 	def testExpectedCaseB_erfNearZero(self):
 		self.dist = 0.5
-		expVal = 0.383270113820452
+		expVal = 1.4533566434154
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
 
