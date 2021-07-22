@@ -11,11 +11,15 @@ def dumpObjWithToDictToJson(inpObj, outFile):
 		outFile: (str) Path to the output file
  
 	"""
+	outDict = inpObj.toDict()
+	dumpDictToJson(outDict, outFile)
+
+
+def dumpDictToJson(inpDict, outFile):
 	outDir = os.path.split(outFile)[0]
 	pathlib.Path(outDir).mkdir(parents=True, exist_ok=True)
 	with open(outFile,"wt") as f:
-		f.write(json.dumps(inpObj.toDict()))
-
+		f.write(json.dumps(inpDict))
 
 def readObjWithFromDictFromJsonFile(inpCls, inpFile):
 	""" Initializes instance of inpCls directly from JSON file (inpFile) if inpCls has a fromDict() class method (i.e. alternative initializer)
@@ -28,8 +32,13 @@ def readObjWithFromDictFromJsonFile(inpCls, inpFile):
 		outInstance: Instance of inpCls with attributes taken from inpFile
  
 	"""
-	with open(inpFile,"rt") as f:
-		currDict = json.loads(f.read())
-		outObj = inpCls.fromDict(currDict)
+	currDict = readDictFromJson(inpFile)
+	outObj = inpCls.fromDict(currDict)
 	return outObj
+
+def readDictFromJson(inpFile):
+	with open(inpFile,"rt") as f:
+		outDict = json.loads(f.read())
+	return outDict
+
 
