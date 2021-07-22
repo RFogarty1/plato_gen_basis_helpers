@@ -656,6 +656,9 @@ def _standardModCp2kObjBasedOnDict(cp2kObj, useDict):
 	if useDict.get("subsysInpVelocities".lower(),None) is not None:
 		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].SUBSYS.VELOCITY.Default_keyword = useDict["subsysInpVelocities".lower()]
 
+	if useDict.get("dftPrintDensityCube".lower(),None) is not None:
+		val = "ON" if useDict["dftPrintDensityCube".lower()] is True else "OFF"
+		cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.E_DENSITY_CUBE.Section_parameters = val
 
 def addGeomAndBasisInfoToSimpleCP2KObj(cp2kObj, uCell, elementBasisInfo, section="forceEval".lower()):
 	""" Takes cp2kObj and adds in keywords for the basis set and the geometry (subsys section). NOTE: This should only be called ONCE on the object. Also it probably isnt general enough to always work

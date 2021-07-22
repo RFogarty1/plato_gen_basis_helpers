@@ -214,11 +214,12 @@ class testModifyCp2kObj(unittest.TestCase):
 		             "scfOTStepsize" : 0.1, "dftInpWfnRestartFilename":"fake_restart_wfn.wfn",
 		             "printForces":False, "printPdos":True, "ldosIndices":[[1,2],[3,4]],
 		             "motion_cellopt_constraint":"XY",
-		             "motionPrintForces":True, "motionPrintVelocities":True}
-
+		             "motionPrintForces":True, "motionPrintVelocities":True,
+		             "dftPrintDensityCube":True}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutputMiscOptsA()
 		actStr = self.startCP2KObj.get_input_string()
+
 		self.assertEqual( sorted(expStr.replace(" ","")), sorted(actStr.replace(" ","")) )
 
 	def testTrajPrintOptsA(self):
@@ -521,6 +522,7 @@ def _loadExpectedOutputMiscOptsA():
 	newDftRestartPart = "&DFT\n    WFN_RESTART_FILE_NAME fake_restart_wfn.wfn\n"
 	newPrintForces = "    &FORCES OFF"
 	newPrintPdosPart = "&DFT\n    &PRINT\n      &PDOS ON\n        &LDOS\n          LIST 1 2\n        &END LDOS\n        &LDOS\n          LIST 3 4\n        &END LDOS\n      &END PDOS\n    &END PRINT\n"
+	newDftPrintDensityCubePart = "&END PDOS\n        &E_DENSITY_CUBE ON\n        &END E_DENSITY_CUBE\n"
 	newMotionPart = "&MOTION\n  &CELL_OPT\n    CONSTRAINT XY\n  &END CELL_OPT\n"
 	newMotionPart += "  &PRINT\n    &VELOCITIES ON\n    &END VELOCITIES\n    &FORCES ON\n    &END FORCES\n  &END PRINT\n&END MOTION\n"
 	outStr = outStr.replace("    &QS\n" ,  newQsPart)
@@ -535,6 +537,7 @@ def _loadExpectedOutputMiscOptsA():
 	outStr = outStr.replace("&DFT\n", newDftRestartPart)
 	outStr = outStr.replace("    &FORCES On", newPrintForces)
 	outStr = outStr.replace("&DFT\n", newPrintPdosPart)
+	outStr = outStr.replace("&END PDOS\n", newDftPrintDensityCubePart)
 	outStr += newMotionPart
 	return outStr
 
