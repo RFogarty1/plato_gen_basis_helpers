@@ -11,6 +11,14 @@ class HeatMapPlotterSimple(dPlotHelp.DataPlotterBase):
 
 	registeredKwargs = set(dPlotHelp.DataPlotterBase.registeredKwargs)
 	registeredKwargs.add("addColorbar")
+	registeredKwargs.add("mapToXyzFunct")
+
+
+
+	def __init__(self,*args, **kwargs):
+		super().__init__(*args,**kwargs)
+		if self.mapToXyzFunct is None:
+			self.mapToXyzFunct = mapBinEdgesAndDataToXYZStandard
 
 
 	#Overwriting docstring
@@ -37,11 +45,11 @@ class HeatMapPlotterSimple(dPlotHelp.DataPlotterBase):
 
 	def _getToPlotData(self, plotData=None):
 		if plotData is not None:
-			outX, outY, outZ = mapBinEdgesAndDataToXYZStandard(plotData[0], plotData[1])
+			outX, outY, outZ = self.mapToXyzFunct(plotData[0], plotData[1])
 			toPlot = [ [outX,outY,outZ] ] #Need to loop over this; hence has to be an array
 		else:
 			if self.data is not None:
-				outX, outY, outZ = mapBinEdgesAndDataToXYZStandard(self.data[0], self.data[1])
+				outX, outY, outZ = self.mapToXyzFunct(self.data[0], self.data[1])
 				toPlot = [ [outX,outY,outZ] ] #Need to loop over this; hence has to be an array
 			else:
 				toPlot = list()
@@ -102,6 +110,62 @@ def mapBinEdgesAndDataToXYZStandard(binEdgesArray, binDataArray):
 				outY[idxX][idxY] = binEdgesArray[idxX][idxY][1][0]
 
 	return outX, outY, outZ
+
+
+def mapFourVertexCoordsAndDataToXYZStandard(verticesArray, dataArray, ignoreDim=2):
+	""" Standard function for mapping bin edges and data to the format matplotlib needs for making a "pcolormesh" plot (basically a heat map)
+	
+	Args:
+		verticesArray: (nxmx4x3 array) Each [n][m] contains vertices in order botLeft,botRight, topLeft, topRight
+		dataArray:
+		ignoreDim: (int) Each vertex is x,y,z. But we need this to be 2-d so must ignore ONE of these. 0 means ignore x, one means ignore y, two means ignore z
+ 
+	Returns
+		X,Y,Z: Returned as a len-3 list. These should be passed sequentially into matplotlib.pyplot.pcolormesh to get a heatmap. X and Y are both (n+1)x(m+1) arrays and contain edges of the relevant rectangles we use in our plot (indices refer to nth rectangle across/up). Z contains all the values in an nxm matrix. 
+ 
+	NOTE:
+		verticesArray should be in a sensible order. I dont know what happens if the paralellotopes are out of order but it wont be anything good (and i wont explicitly catch the error)
+
+	"""
+	nX = np.array(verticesArray).shape[0] + 1
+	nY = np.array(verticesArray).shape[1] + 1
+
+	outX = np.zeros( (nX,nY) )
+	outY = np.zeros( (nX,nY) )
+	outZ = copy.deepcopy(dataArray)
+
+	useDims = [idx for idx in range(3) if idx!=ignoreDim]
+
+	if ignoreDim != 2:
+		raise NotImplementedError("Can only use ignore z for now")
+
+	#Do the normal cases first (we take left/bottom indices)
+	for idxX in range(nX-1):
+		for idxY in range(nY-1):
+			outX[idxX][idxY] = verticesArray[idxX][idxY][0][useDims[0]]
+			outY[idxX][idxY] = verticesArray[idxX][idxY][0][useDims[1]]
+
+
+	for idxX in range(nX):
+		for idxY in range(nY):
+			if (idxX!=nX-1) and (idxY!=nY-1):
+				outX[idxX][idxY] = verticesArray[idxX][idxY][0][useDims[0]]
+				outY[idxX][idxY] = verticesArray[idxX][idxY][0][useDims[1]]
+			elif (idxX==nX-1) and (idxY!=nY-1):
+				outX[idxX][idxY] = verticesArray[idxX-1][idxY][-1][useDims[0]]
+				outY[idxX][idxY] = verticesArray[idxX-1][idxY][0][useDims[1]]
+			elif (idxX!=nX-1) and (idxY==nY-1):
+				outX[idxX][idxY] = verticesArray[idxX][idxY-1][0][useDims[0]]
+				outY[idxX][idxY] = verticesArray[idxX][idxY-1][-1][useDims[1]]
+			elif (idxX==nX-1) and (idxY==nY-1):
+				outX[idxX][idxY] = verticesArray[idxX-1][idxY-1][-1][useDims[0]]
+				outY[idxX][idxY] = verticesArray[idxX-1][idxY-1][-1][useDims[1]]
+			else:
+				raise ValueError("Shouldnt be possible to reach here")
+
+
+	return outX, outY, outZ
+
 
 
 
