@@ -15,11 +15,22 @@ def getStandardExponentDict_Cardenas2016_neutralVals():
 	
 	"""
 	startDict = _getStandardHubbardVals_Cardenas2016_neutralVals()
-	outDict = dict()
-	prefactor = math.pi / 8
-	for key in startDict.keys():
-		outDict[key] = prefactor * ( (startDict[key]*uConvHelp.EV_TO_HA)**2 )
+	outDict = {k:_getStandardExponentFromHubbard_eV_to_atomicUnits(v) for k,v in startDict.items()}
+	return outDict
 
+
+def getStandardExponentDict_Cardenas2016_anionVals():
+	""" Get dictionary of {element:exponent} using ATOMIC UNITS """
+	hubbardDict = {"O":9.61, "Mg":2.52}
+	outDict = {k:_getStandardExponentFromHubbard_eV_to_atomicUnits(v) for k,v in hubbardDict.items()}
+	return outDict
+
+def getStandardExponentDict_Cardenas2016_cationVals():
+	""" Get dictionary of {element:exponent} using ATOMIC UNITS
+	
+	"""
+	hubbardDict = {"H":2*92, "O":2*21.5, "Mg":2*7.39} #Hubbard parameter and hardness are equivalent except a factor of 2
+	outDict = {k:_getStandardExponentFromHubbard_eV_to_atomicUnits(v) for k,v in hubbardDict.items()}
 	return outDict
 
 def _getStandardHubbardVals_Cardenas2016_neutralVals():
@@ -29,6 +40,10 @@ def _getStandardHubbardVals_Cardenas2016_neutralVals():
 	"""
 	outDict = {"H":2*12.84, "O":2*12.16, "Mg":2*7.65}
 	return outDict
+
+def _getStandardExponentFromHubbard_eV_to_atomicUnits(hubbard):
+	prefactor = math.pi / 8
+	return prefactor* ( (uConvHelp.EV_TO_HA*hubbard)**2 )
 
 
 def getCoulombInteractionEnergyStandard(inpGeom, exponentDict, charges, indicesA, indicesB, distLenConv=1, eConv=1):
