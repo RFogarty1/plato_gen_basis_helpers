@@ -77,11 +77,6 @@ class TestEstimateCoulombEnergyBetweenIndicesInGeom(unittest.TestCase):
 		actInt = self._runTestFunct()
 		self.assertAlmostEqual(expInt, actInt)
 
-	def testGetInteractionEnergyRaisesIfIndicesOverlap(self):
-		self.indicesB = self.indicesA
-		with self.assertRaises(ValueError):
-			self._runTestFunct()
-
 	def testExpectedCaseA_lenConvThree(self):
 		self.lenConv = 3
 
@@ -93,6 +88,13 @@ class TestEstimateCoulombEnergyBetweenIndicesInGeom(unittest.TestCase):
 		actInt = self._runTestFunct()
 		self.assertAlmostEqual(expInt, actInt)
 
+	def testExpectedIntEnergyAll(self):
+		""" Total Coulomb energy between all charges in the system """
+		intAB, intAC, intAD = -0.71998, 0.959973333333333, 0.287992
+		intBC, intBD, intCD = -0.431988, -0.431988, 0.575984
+		expInt = intAB + intAC + intAD + intBC + intBD + intCD
+		actInt = self._runTestFunct()
+		self.assertAlmostEqual(expInt,actInt)
 
 class TestCoulombEnergyFromDistsAndCharges(unittest.TestCase):
 

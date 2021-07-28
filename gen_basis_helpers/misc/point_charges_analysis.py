@@ -23,19 +23,21 @@ def getCoulombEnergyBetweenIndicesForPointCharges(inpGeom, charges, indicesA, in
 
 	"""
 
-	#Check indicesA and indicesB are mutually exclusive;
-	if len( set(indicesA).intersection( set(indicesB) ) )!=0:
-		raise ValueError("Overlapping indices found; which isnt allowed") 
-
-	#Calcylate the interactions
+	#Calculate the interactions
 	coulombMatrix = getCoulombEnergyInteractionMatrix(inpGeom, charges, indicesA, indicesB, lenConv=lenConv)
+	interactionMatrix = np.where( np.isinf(coulombMatrix), 0, coulombMatrix)
 
-	totalInts = 0
-	for idxA,valA in enumerate(indicesA):
-		for idxB,valB in enumerate(indicesB):
-			totalInts += coulombMatrix[idxA][idxB]
+	outSum = 0
+	allIdxPairs = [list(x) for x in it.product(indicesA,indicesB)]
 
-	return totalInts
+	#The index checking gets a bit slow
+	for idxA, idxB in np.ndindex(interactionMatrix.shape):
+		if (idxA in indicesA) and (idxA in indicesB) and (idxB in indicesA) and (idxB in indicesB):
+			outSum += 0.5*interactionMatrix[idxA][idxB]
+		else:
+			outSum += interactionMatrix[idxA][idxB]
+
+	return outSum
 
 
 #Tested indirectly with getCoulombEnergyBetweenIndicesForPointCharges
