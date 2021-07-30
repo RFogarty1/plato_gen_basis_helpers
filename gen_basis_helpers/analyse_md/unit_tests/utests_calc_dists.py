@@ -64,6 +64,7 @@ class TestCalcDistMatrix(unittest.TestCase):
 		                [5,5,6,"Y"] ]
 		self.indicesA = None
 		self.indicesB = None
+		self.sparseMatrix = False
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -71,7 +72,7 @@ class TestCalcDistMatrix(unittest.TestCase):
 		self.cellA.cartCoords = self.coords
 
 	def _runTestFunct(self):
-		kwargs = {"indicesA":self.indicesA, "indicesB":self.indicesB}
+		kwargs = {"indicesA":self.indicesA, "indicesB":self.indicesB, "sparseMatrix":self.sparseMatrix}
 		return tCode.calcDistanceMatrixForCell_minImageConv(self.cellA, **kwargs)
 
 	def testExpVal_pbcsIrrelevant(self):
@@ -107,6 +108,35 @@ class TestCalcDistMatrix(unittest.TestCase):
 		actArray = self._runTestFunct()
 
 		self.assertTrue( np.allclose(expArray,actArray) )
+
+	def testWithTwoIndicesPassed_sparseMatrixTrueA(self):
+		self.coords = [ [5,5,5,"X"],
+		                [5,5,6,"Y"],
+		                [5,5,7,"Z"] ]
+		self.sparseMatrix = True
+		self.indicesA, self.indicesB = [0,2], [0,1]
+		self.createTestObjs()
+
+		expMatrix = np.array( [ [0,1,2], [1,np.nan,1], [2,1,np.nan] ] )
+		actMatrix = self._runTestFunct()
+
+		self.assertTrue( np.allclose(expMatrix,actMatrix, equal_nan=True) )
+
+	def testWithTwoIndicesPassed_sparseMatrixTrueB(self):
+		""" This one has more np.nan than the other; with no overlapping indices """
+		self.coords = [ [5,5,5,"X"],
+		                [5,5,6,"Y"],
+		                [5,5,7,"Z"] ]
+		self.indicesA, self.indicesB = [0], [2]
+		self.sparseMatrix = True
+		self.createTestObjs()
+
+		expMatrix = np.array( [ [np.nan, np.nan, 2],
+		                        [np.nan, np.nan, np.nan],
+		                        [2, np.nan, np.nan] ] )
+		actMatrix = self._runTestFunct()
+
+		self.assertTrue( np.allclose(expMatrix,actMatrix, equal_nan=True) )
 
 
 class TestCalcSingleDistance(unittest.TestCase):
@@ -391,6 +421,7 @@ class TestCalcDistanceFromSurfPlaneForCell(unittest.TestCase):
 
 		self.indices = [0,1,2]
 		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
+		self.sparseMatrix = False
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -398,7 +429,7 @@ class TestCalcDistanceFromSurfPlaneForCell(unittest.TestCase):
 		self.cellA.cartCoords = self.cartCoords
 
 	def _runTestFunct(self):
-		return tCode.calcDistancesFromSurfPlaneForCell(self.cellA, self.indices, self.planeEqn)
+		return tCode.calcDistancesFromSurfPlaneForCell(self.cellA, self.indices, self.planeEqn, sparseMatrix=self.sparseMatrix)
 
 	def testExpectedDistsFromSurfacePlaneAtBottomOfCell(self):
 		expDists = [2,4,1]
@@ -419,6 +450,13 @@ class TestCalcDistanceFromSurfPlaneForCell(unittest.TestCase):
 		actDists = self._runTestFunct()
 		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expDists, actDists)]
 
+	def testExpectedVals_sparseMatrix(self):
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,5)
+		self.indices = [0,2]
+		self.sparseMatrix = True
+		expDists = [3,np.nan,4]
+		actDists = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expDists), np.array(actDists), equal_nan=True ) )
 
 
 class TestCalcIterOfAnglesForInpIndices(unittest.TestCase):

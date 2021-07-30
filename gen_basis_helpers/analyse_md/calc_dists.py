@@ -36,14 +36,15 @@ def calcNearestDistanceBetweenTwoSetsOfIndices(inpCell, indicesA=None, indicesB=
 	return np.min(distMatrix)
 
 
-def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None):
+def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None, sparseMatrix=False):
 	""" Calculates the distance matrix for coords in inpCell using the nearest image convention
 	
 	Args:
 		inpCell: (plato_pylib UnitCell object)
 		indicesA: (Optional, iter of ints) Indices of the atoms to include for the first dimension; Default is to include ALL atoms
 		indicesB: (Optional, iter of ints) Indices of the atoms to include for the second dimension; Default is indicesA
- 
+		sparseMatrix: (Optional, Bool) If True the the matrix returned will be NxN (N being number of atoms in inpCell) even when indicesA or indicesB set. In that case we just set the unwanted indices to np.nan
+
 	Returns
 		 distMatrix: (NxN numpy array) distMatrix[n][m] gives the distance between atom n and m
  
@@ -61,7 +62,12 @@ def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None
 	#Calculate the relevant distance matrix
 	dims = mdAnalysisInter.getMDAnalysisDimsFromUCellObj(inpCell)
 	distMatrix = distLib.distance_array(coordsA, coordsB, box=dims)
+	if sparseMatrix:
+		outDim = len(cartCoords)
+		distMatrix = _getTwoDimSparseMatrix(distMatrix, outDim, indicesA, indicesB)
+
 	return distMatrix
+
 
 
 #NOTE: I could probably extend this to a different plane; but suspect it would need to contain at least one cell vector
@@ -91,8 +97,6 @@ def calcHozDistMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None,
 	totalDistMatrix = calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=indicesA, indicesB=indicesB) #Somehow this seems to come out wrong
 	surfPlane = cartHelp.getABPlaneEqnWithNormVectorSameDirAsC_uCellInterface(inpCell)
 	nearestImageNebCoordsMatrix = getNearestImageNebCoordsMatrixBasic(inpCell, indicesA=indicesA, indicesB=indicesB)
-
-
 
 	outMatrix = np.zeros( [len(indicesA), len(indicesB)] )
 	for dMatrixIdxA, atomIdxA in enumerate(indicesA):
@@ -148,13 +152,14 @@ def calcSingleAngleBetweenCoords_minImageConv(inpCell, coordA, coordB, coordC):
 	return math.degrees(angles[0])
 
 
-def calcDistancesFromSurfPlaneForCell(inpCell, indices=None, planeEqn=None):
+def calcDistancesFromSurfPlaneForCell(inpCell, indices=None, planeEqn=None, sparseMatrix=False):
 	""" Calculates distances of atoms from a surface plane for inpCell
 	
 	Args:
 		inpCell: (plato_pylib UnitCell object) 
 		indices: (iter of ints) Indices of atoms to calculate this distance for. Default is to use all indices in the cell
 		planeEqn: (ThreeDimPlaneEquation object). MUST be parralel to axb; where axb are cell vector
+		sparseMatrix: (Optional, Bool) If True the the matrix returned will be len-N (N being number of atoms in inpCell) even when indices is set. In that case we just set the unwanted indices to np.nan
 			 
 	Returns
 		outDists: (iter of floats; same length as indices) Each is the distance from the plane
@@ -183,6 +188,11 @@ def calcDistancesFromSurfPlaneForCell(inpCell, indices=None, planeEqn=None):
 		coordA, coordB = coordMatrix[0][idx]
 		currDist = planeEqnHelp.getInterPlaneDistTwoPoints( coordA[:3], coordB[:3], planeEqn )
 		outDists.append(currDist)
+
+	#Convert output to sparse form if requested
+	if sparseMatrix:
+		outDists = _getOneDimSparseMatrix(outDists, len(inpCell.cartCoords), indices)
+		outDists = outDists.tolist()
 
 	return outDists
 
@@ -354,5 +364,58 @@ def getInterAtomicAnglesForInpGeom(inpCell, angleIndices, degrees=True):
 		outAngles = outAnglesRadians
 
 	return outAngles
+
+
+
+def _getTwoDimSparseMatrix(inpMatrix, outDim, indicesA, indicesB):
+	""" Gets a sparsely populated 2-D matrix from a given inpMatrix. This allows us to not worry about how atom indices map to indicesA and indicesB, while still not calculating more values than we need
+	
+	Args:
+		inpMatrix: (NxM matrix) N and M are dimensions of indicesA and indicesB. inpMatrix[1][2] contains value between indicesA[1] and indicesB[2]
+		outDim: (int) The length of one side of the output (square) matrix
+		indicesA: (iter of ints) Indices used to build inpMatrix rows
+		indicesB: (iter of ints) Indices used to build inpMatrix columns
+ 
+	Returns
+		outMatrix: (NxN matrix) Where N is outDim. outMatrix[idxA][idxB] gets the value between idxA and idxB; if the information wasnt in inpMatrix then the value will be np.nan.
+ 
+	"""
+	outMatrix = np.empty( (outDim,outDim) )
+	outMatrix[:] = np.nan
+
+	allInpIndices = [ tuple([idxA,idxB]) for idxA,idxB in it.product( range(len(indicesA)), range(len(indicesB)) ) ]
+	allOutIndices = [ tuple([idxA,idxB]) for idxA,idxB in it.product( indicesA, indicesB ) ]
+
+	for inpIdx,outIdx in it.zip_longest(allInpIndices,allOutIndices):
+		outMatrix[ outIdx ] = inpMatrix[ inpIdx ]
+		outMatrix[ tuple(reversed(outIdx)) ] = inpMatrix[ inpIdx ]
+
+	return outMatrix
+
+
+def _getOneDimSparseMatrix(inpMatrix, outDim, indices):
+	""" Get a sparsely populated 1-d matrix from a given 1-d matrix. 
+	
+	Args:
+		inpMatrix: (len-N matrix, or iter of floats) N is len(indices) in this case
+		outDim: (int) The length of one side of the output matrix; should be number of atoms in general
+		indices: (iter of ints) Indices used to build inpMatrix
+ 
+	Returns
+		outMatrix: (len-N numpy array) Where N is outDim. outMatrix[idx] gets the value for a given atom index; if the information wasnt in inpMatrix then the value will be np.nan 
+ 
+	"""
+	outMatrix = np.empty( (outDim) )
+	outMatrix[:] = np.nan
+
+	inpIndices = [ idx for idx in range(len(indices)) ]
+	outIndices = [ idx for idx in indices ]
+
+	for inpIdx,outIdx in it.zip_longest(inpIndices, outIndices):
+		outMatrix[outIdx] = inpMatrix[inpIdx]
+
+	return outMatrix
+
+
 
 
