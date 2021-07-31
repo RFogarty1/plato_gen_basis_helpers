@@ -66,9 +66,6 @@ class TestNudgedBandReplicas(unittest.TestCase):
 			endCoords.append( currCoords)
 
 
-#		import pdb
-#		pdb.set_trace()
-
 #		startCoords = [ self.lenConvFactor*self.coordsStart ]
 
 		self.assertTrue(False)
@@ -85,16 +82,21 @@ class TestNudgedBandOpts(unittest.TestCase):
 		self.procsPerReplicaEnv = 8
 		self.springConstant = None
 		self.nebType = "CI-NEB"
+		self.alignFrames = False
+		self.rotateFrames = False
+		self.printInitConfigInfo = True
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		kwargDict = {"numbReplicas":self.numbReplicas, "procsPerReplicaEnv":self.procsPerReplicaEnv,
-		             "springConstant":self.springConstant, "nebType":self.nebType}
+		             "springConstant":self.springConstant, "nebType":self.nebType, "alignFrames":self.alignFrames,
+		             "rotateFrames":self.rotateFrames, "printInitConfigInfo":self.printInitConfigInfo}
 		self.testObjA = tCode.NudgedBandOptsStd(**kwargDict)
 
 	def testExpectedOptDictA(self):
 		expOptDict = {"nudgedband_numbReplicas":self.numbReplicas, "nudgedband_procsPerReplicaEnv":self.procsPerReplicaEnv,
-		              "nudgedband_type":self.nebType}
+		              "nudgedband_type":self.nebType, "nudgedband_alignFrames":self.alignFrames,
+		              "nudgedband_rotateFrames":self.rotateFrames, "nudgedband_printInitConfigInfo":self.printInitConfigInfo}
 		actOptDict = self.testObjA.optDict
 
 		for key in expOptDict.keys():

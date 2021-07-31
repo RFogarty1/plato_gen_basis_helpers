@@ -38,7 +38,7 @@ class NudgedBandReplicas():
 
 class NudgedBandOptsStd():
 
-	def __init__(self, numbReplicas=None, procsPerReplicaEnv=None, springConstant=None, nebType=None):
+	def __init__(self, numbReplicas=None, procsPerReplicaEnv=None, springConstant=None, nebType=None, alignFrames=True, rotateFrames=True, printInitConfigInfo=True):
 		""" Initializer
 		
 		Args (Leaving any as None should lead to CP2K defaults being used):
@@ -46,19 +46,29 @@ class NudgedBandOptsStd():
 			procsPerReplicaEnv: (int) Number of processors per replica environment. I THINK you need to set this such that floor(nProcs/procesPerReplicaEnv) = numbReplicas or CP2K will calculate extra geometries + be generally super ineficient
 			springConstant: (float) Value of the spring constant linking replicas. Units are whatever cp2k uses
 			nebType: (str) Type of nudged elastic band calculation to use. IT-NEB (Improved tangent-NEB) or CI-NEB (Climbing image NEB) are the two most likely options
-				 
+			alignFrames: (Bool) Corresponds to the align_frames keyword. Probably usually safeist to set to False (it can mess with the final geometry)
+			rotateFrames: (Bool) Corresponds to the rotate_frames keyword. Probably usually safeist to set to False (it can mess with the final geometry)
+			printInitConfigInfo: (Bool) Whether to print a file with the initial configuration information (Program_run_info/INITIAL_CONFIGURATION_INFO keyword in CP2K)
+			
+ 
 		"""
 		self.numbReplicas = numbReplicas
 		self.procsPerReplicaEnv = procsPerReplicaEnv
 		self.springConstant = springConstant
 		self.nebType = nebType
+		self.alignFrames = alignFrames
+		self.rotateFrames = rotateFrames
+		self.printInitConfigInfo = printInitConfigInfo
 
 	@property
 	def optDict(self):
 		attrToKeyMap = {"numbReplicas":"nudgedband_numbReplicas",
 		                "procsPerReplicaEnv": "nudgedband_procsPerReplicaEnv",
 		                "springConstant": "nudgedBand_springConstant",
-		                "nebType": "nudgedband_type"}
+		                "nebType": "nudgedband_type",
+		                "alignFrames": "nudgedband_alignFrames",
+		                "rotateFrames":"nudgedband_rotateFrames",
+		                "printInitConfigInfo":"nudgedband_printInitConfigInfo"}
 		outDict = dict()
 
 		for key in attrToKeyMap.keys():

@@ -283,7 +283,7 @@ class testModifyCp2kObj(unittest.TestCase):
 
 	def testNudgedBandOptionsSection(self):
 		kwargDict = {"nudgedband_numbReplicas": 12, "nudgedband_procsPerReplicaEnv": 2, "nudgedBand_springConstant": "5e-2",
-		             "nudgedband_type": "IT-NEB"}
+		             "nudgedband_type": "IT-NEB", "nudgedband_rotateFrames":False, "nudgedband_alignFrames":False, "nudgedband_printInitConfigInfo":True}
 		tCode.modCp2kObjBasedOnDict(self.startCP2KObj, kwargDict)
 		expStr = _loadExpectedOutNudgedBandFile_noReplicasSet()
 		actStr = self.startCP2KObj.get_input_string()
@@ -662,6 +662,11 @@ def _loadExpectedOutNudgedBandFile_noReplicasSet():
 	newStr += "    K_SPRING 5e-2\n"
 	newStr += "    NPROC_REP 2\n"
 	newStr += "    NUMBER_OF_REPLICA 12\n"
+	newStr += "    ALIGN_FRAMES FALSE\n"
+	newStr += "    ROTATE_FRAMES FALSE\n"
+	newStr += "    &PROGRAM_RUN_INFO\n"
+	newStr += "      INITIAL_CONFIGURATION_INFO TRUE\n"
+	newStr += "    &END PROGRAM_RUN_INFO\n"
 	newStr += "  &END BAND\n"
 	newStr += "&END MOTION\n"
 

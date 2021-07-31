@@ -453,6 +453,16 @@ def _modCp2kObjBasedOnNudgedBandReplicasSection(cp2kObj, useDict):
 	if useDict.get("nudgedBand_type".lower(),None) is not None:
 		nebSection.Band_type = useDict["nudgedBand_type".lower()]
 
+	if useDict.get("nudgedband_alignFrames".lower(),None) is not None:
+		nebSection.Align_frames = useDict["nudgedband_alignFrames".lower()]
+
+	if useDict.get("nudgedband_rotateFrames".lower(),None) is not None:
+		nebSection.Rotate_frames = useDict["nudgedband_rotateFrames".lower()]
+
+	if useDict.get("nudgedband_printInitConfigInfo".lower(), None) is not None:
+		nebSection.PROGRAM_RUN_INFO.Initial_configuration_info = useDict["nudgedband_printInitConfigInfo".lower()]
+
+
 def _modCp2kObjBasedOnHirshfeldOptions(cp2kObj, useDict):
 	hirshSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.HIRSHFELD
 
