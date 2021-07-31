@@ -5,6 +5,7 @@ from . import collective_vars as colVarHelp
 from . import cp2k_creator as cp2kCreatorHelp
 from . import cp2k_misc_objs as cp2kMiscObjHelp
 from . import cp2k_md_options as cp2kMdOptsHelp
+from . import cp2k_nudged_band_options as cp2kNebHelp
 from ..shared import register_key_decorator as regKeyDeco
 
 
@@ -92,6 +93,12 @@ def _unused(inpObj):
 def _unused(inpObj):
 	kwargDict = {"hirshfeld_selfConsistent":True, "hirshfeld_shapeFunction":"density"}
 	inpObj._updateAttrsFromKwargs(**kwargDict)
+
+@registerCreatorModDeco("nudged_band_ci_simple")
+def _unused(inpObj):
+	nebKwargDict = {"numbReplicas":9, "procsPerReplicaEnv":20, "alignFrames":False, "rotateFrames":False, "printInitConfigInfo":True, "nebType":"CI-NEB"}
+	nebObj = cp2kNebHelp.NudgedBandOptsStd(**nebKwargDict)
+	inpObj.nudgedBandOpts = nebObj
 
 
 
