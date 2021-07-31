@@ -5,6 +5,7 @@ import pathlib
 import types
 
 import plato_pylib.parseOther.parse_cp2k_files as parseCP2K
+import plato_pylib.parseOther.parse_cube_files as parseCubeHelp
 
 from ..shared import method_objs as methodObjs
 from . import cp2k_file_helpers as pyCP2KHelpers
@@ -92,6 +93,9 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 			outObj = self._parsedNudgedBandStandard()
 		else:
 			raise ValueError("{} is an invalid runType".format(runType))
+
+		#Add parsing of cube files here if their present; Will probably add more stuff later too
+		self._parseElectronDensityCubeFileIfPresent(outObj)
 
 		return outObj
 
@@ -181,6 +185,16 @@ class CP2KCalcObj(methodObjs.CalcMethod):
 		if inpStr != inpStr[slice(*matchObj.span())]:
 			return False
 		return True
+
+	def _parseElectronDensityCubeFileIfPresent(self, outObj):
+		expPath = os.path.splitext(self.outFilePath)[0] + "-ELECTRON_DENSITY-1_0.cube"
+
+		try:
+			parsedCubeFile = parseCubeHelp.parseCubeFile(expPath) 
+		except FileNotFoundError:
+			pass
+		else:
+			outObj.parsedElectronDensityCubes = [parsedCubeFile] #List means i can extend to multiple later if needed
 
 #Optional descriptors that can be added
 def addInpPathDescriptorToCP2KCalcObjCLASS(inpCls):
