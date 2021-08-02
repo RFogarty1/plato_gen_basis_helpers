@@ -96,9 +96,10 @@ def _unused(inpObj):
 
 @registerCreatorModDeco("nudged_band_ci_simple")
 def _unused(inpObj):
-	nebKwargDict = {"numbReplicas":9, "procsPerReplicaEnv":20, "alignFrames":False, "rotateFrames":False, "printInitConfigInfo":True, "nebType":"CI-NEB"}
+	nebKwargDict = {"numbReplicas":8, "procsPerReplicaEnv":24, "alignFrames":False, "rotateFrames":False, "printInitConfigInfo":True, "nebType":"CI-NEB"}
 	nebObj = cp2kNebHelp.NudgedBandOptsStd(**nebKwargDict)
 	inpObj.nudgedBandOpts = nebObj
+	inpObj.runType = "BAND"
 
 
 
