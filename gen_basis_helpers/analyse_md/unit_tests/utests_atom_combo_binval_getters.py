@@ -8,6 +8,7 @@ import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.analyse_md.atom_combo_core as atomComboCoreHelp
 import gen_basis_helpers.analyse_md.atom_combo_opts_obj_maps as atomComboObjsMapHelp
+import gen_basis_helpers.analyse_md.atom_combo_populators as atomComboPopulators
 import gen_basis_helpers.analyse_md.binned_res as binResHelp
 import gen_basis_helpers.analyse_md.calc_distrib_core as calcDistribCoreHelp
 import gen_basis_helpers.analyse_md.calc_radial_distrib_impl as calcRadImpl
@@ -139,8 +140,98 @@ class TestMinDistsEquality(unittest.TestCase):
 		self.assertNotEqual(objA, objB)
 
 
+class TestDiscHBondCounterBetweenGroupsOxyDistFilter(unittest.TestCase):
+
+	#TODO: Take from the populators mostly
+	def setUp(self):
+		#1) All geometric parameters for testing
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#roll 90,pitch=45, OH len~1, HOH angle 104.5. Then just added translation vectors
+		self.waterACoords = [ [0,0,0,"O"], [-0.13,0,0.99,"H"], [0.99,0,-0.13,"H"] ]
+		#translation = [2,0,0]; no rotations
+		self.waterBCoords = [ [2,0,0,"O"], [2.61, 0.79, 0, "H"], [2.61,-0.79,0,"H"] ]
+		#translation = [2+(2*0.61), 2*0.79, 0]
+		self.waterCCoords = [ [3.22, 1.58, 0, "O"],  [3.83, 2.37, 0, "H"], [3.83, 0.79, 0, "H"] ]
+		#translation = [2+(2*0.61), -2*0.79,0]
+		self.waterDCoords = [ [3.22, -1.58, 0, "O"], [3.83, -0.79, 0, "H"], [3.83, -2.37, 0, "H"] ]
+
+		self.xCoord = [[0,0,0,"X"]]
+		self.coords = self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords + self.xCoord
+
+		#
+		self.oxyIndices = [0,3,6,9]
+		self.hyIndices = [ [1,2], [4,5], [7,8], [10,11] ]
+		self.distFilterIndices = [12]
+		self.distFilterVals = [0,3], [3,5] #AB should be one group, with CD as the other. + easy to flip this
+		self.maxOO = 3 #AC h-bond would be possible iff this was set high enough i suspect
+		self.maxAngle = 35
+		self.acceptor = True
+		self.donor = True
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Get a sparse matrix populator + populate it
+		currArgs = [self.oxyIndices, self.hyIndices, self.distFilterIndices, self.distFilterVals, self.acceptor, self.donor]
+		currKwargs = {"maxOO":self.maxOO}		
+		self.populator = atomComboPopulators._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
+
+		self.sparseMatrixObj = atomComboCoreHelp._SparseMatrixCalculatorStandard([self.populator])
+		self.sparseMatrixObj.calcMatricesForGeom(self.cellA)
+
+		#Get the test obj
+		currKwargs = {"maxOO":self.maxOO,"maxAngle":self.maxAngle}		
+		self.testObj = tCode._DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(*currArgs, **currKwargs)
 
 
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseMatrixObj)
 
+	def testExpectedCaseA_donorAndAcceptor(self):
+		#Note that waterB donates to waterC and waterD; and thats all for default
+		expVals = [0,2,0,0]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpectedCaseA_donorOnly(self):
+		self.donor, self.acceptor = True, False
+		self.createTestObjs()
+		expVals = [0,2,0,0]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpectedCaseA_acceptorOnly(self):
+		self.donor, self.acceptor = False, True
+		self.createTestObjs()
+		expVals = [0,0,0,0]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpectedCase_flippedFilterValues(self):
+		self.distFilterVals = [x for x in reversed(self.distFilterVals)]
+		self.createTestObjs()
+		expVals = [0,0,1,1]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	#1 donor and 1 acceptor each
+	def testExpectedCase_betweenSame(self):
+		self.distFilterVals = [ self.distFilterVals[0], self.distFilterVals[0] ]
+		self.createTestObjs()
+		expVals = [1,1,0,0]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testDistFilterIndicesNone(self):
+		self.distFilterIndices = None
+		self.createTestObjs()
+		expVals = [1,3,1,1]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
 
 

@@ -71,7 +71,10 @@ def _getPrimaryIndicesFromOptObj(optObj):
 	try:
 		outIndices = optObj.indicesA
 	except AttributeError:
-		outIndices = optObj.indices
+		try:
+			outIndices = optObj.indices
+		except AttributeError:
+			outIndices = optObj.primaryIndices
 
 	return outIndices
 

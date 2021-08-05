@@ -2,6 +2,7 @@
 
 import unittest
 
+import gen_basis_helpers.analyse_md.atom_combo_populators as atomComboPopulatorHelp
 import gen_basis_helpers.analyse_md.atom_combo_binval_getters as binValGettersHelp
 import gen_basis_helpers.analyse_md.atom_combo_core as atomComboCoreHelp
 import gen_basis_helpers.analyse_md.calc_distrib_core as calcDistribCoreHelp
@@ -37,8 +38,8 @@ class TestGetMatrixPopulators(unittest.TestCase):
 		self.planarOptsA = calcDistrImplHelp.CalcPlanarRdfOptions(dudBinObj, self.planarIndicesA, planeEqn=self.planeEqnA)
 
 		#Expected objects
-		self.expDistPopulator = atomComboCoreHelp._DistMatrixPopulator(self.fromIndicesA, self.toIndicesA)
-		self.expPlanarPopulator = atomComboCoreHelp._PlanarDistMatrixPopulator(self.planarIndicesA, self.planeEqnA)
+		self.expDistPopulator = atomComboPopulatorHelp._DistMatrixPopulator(self.fromIndicesA, self.toIndicesA)
+		self.expPlanarPopulator = atomComboPopulatorHelp._PlanarDistMatrixPopulator(self.planarIndicesA, self.planeEqnA)
 
 	def testExpected_distMatrixOnly(self):
 		expObj = self.expDistPopulator

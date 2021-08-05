@@ -1,5 +1,6 @@
 
 
+from . import atom_combo_populators as atomComboPopulatorHelp
 from . import atom_combo_binval_getters as binValGettersHelp
 from . import atom_combo_core as coreComboHelp
 from . import calc_distrib_core as calcDistrCoreHelp
@@ -77,13 +78,21 @@ def getOneDimBinValGetterFromOptsObj(optsObj):
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CalcRdfOptions)
 @TYPE_TO_POPULATOR_REGISTER_DECO(calcDistrCoreHelp.CalcRdfOptions)
 def _(inpObj):
-	return coreComboHelp._DistMatrixPopulator(inpObj.indicesA, inpObj.indicesB)
+	return atomComboPopulatorHelp._DistMatrixPopulator(inpObj.indicesA, inpObj.indicesB)
 
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CalcPlanarDistOptions)
 @TYPE_TO_POPULATOR_REGISTER_DECO(calcRadialDistrImplHelp.CalcPlanarRdfOptions)
 def _(inpObj):
 	planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0) if inpObj.planeEqn is None else inpObj.planeEqn
-	return coreComboHelp._PlanarDistMatrixPopulator(inpObj.indices, planeEqn)
+	return atomComboPopulatorHelp._PlanarDistMatrixPopulator(inpObj.indices, planeEqn)
+
+
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.DiscHBondCounterWithOxyDistFilterOptions)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices, inpObj.distFilterVals]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
+	return atomComboPopulatorHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
+
 
 
 #Registration of standard binners below
@@ -101,6 +110,12 @@ def _(inpObj):
 def _(inpObj):
 	planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0) if inpObj.planeEqn is None else inpObj.planeEqn
 	return binValGettersHelp._PlanarDistsGetOneDimValsToBin(planeEqn, inpObj.indices)
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.DiscHBondCounterWithOxyDistFilterOptions)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices, inpObj.distFilterVals]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
+	return binValGettersHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(*currArgs, **currKwargs)
 
 
 
