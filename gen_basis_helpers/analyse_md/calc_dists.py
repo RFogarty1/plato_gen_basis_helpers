@@ -54,6 +54,12 @@ def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None
 	indicesA = [x for x in range(len(cartCoords))] if indicesA is None else indicesA
 	indicesB = indicesA if indicesB is None else indicesB
 
+	#Edge case: Empty list passed for one of the indices
+	if (indicesA==list()) or (indicesB==list()):
+		if sparseMatrix:
+			outMatrix = np.empty( (len(cartCoords),len(cartCoords)) )
+			outMatrix[:] = np.nan
+			return outMatrix
 
 	#Get the coords
 	coordsA = np.array( [cartCoords[idx][:3] for idx in indicesA] )
@@ -383,12 +389,13 @@ def _getTwoDimSparseMatrix(inpMatrix, outDim, indicesA, indicesB):
 	outMatrix = np.empty( (outDim,outDim) )
 	outMatrix[:] = np.nan
 
-	allInpIndices = [ tuple([idxA,idxB]) for idxA,idxB in it.product( range(len(indicesA)), range(len(indicesB)) ) ]
-	allOutIndices = [ tuple([idxA,idxB]) for idxA,idxB in it.product( indicesA, indicesB ) ]
+	#this is a smallish bottleneck; but unsure if theres any faster way to do it
+	allInpIndices = ( tuple([idxA,idxB]) for idxA,idxB in it.product( range(len(indicesA)), range(len(indicesB)) ) )
+	allOutIndices = ( tuple([idxA,idxB]) for idxA,idxB in it.product( indicesA, indicesB ) )
 
 	for inpIdx,outIdx in it.zip_longest(allInpIndices,allOutIndices):
-		outMatrix[ outIdx ] = inpMatrix[ inpIdx ]
-		outMatrix[ tuple(reversed(outIdx)) ] = inpMatrix[ inpIdx ]
+		outMatrix[ tuple(outIdx) ] = inpMatrix[ tuple(inpIdx) ]
+		outMatrix[ tuple(reversed(outIdx)) ] = inpMatrix[ tuple(inpIdx) ]
 
 	return outMatrix
 

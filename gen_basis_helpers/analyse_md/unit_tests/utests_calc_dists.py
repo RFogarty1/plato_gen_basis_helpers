@@ -138,6 +138,17 @@ class TestCalcDistMatrix(unittest.TestCase):
 
 		self.assertTrue( np.allclose(expMatrix,actMatrix, equal_nan=True) )
 
+	def testForEmptyIdxLists_sparseMatrixTrue(self):
+		expMatrix = np.array( [ [np.nan, np.nan],
+		                        [np.nan, np.nan] ] )
+		self.indicesA, self.indicesB = list(), list()
+		self.sparseMatrix = True
+		self.createTestObjs()
+
+		actMatrix = self._runTestFunct()
+
+		self.assertTrue( np.allclose(expMatrix,actMatrix, equal_nan=True) )
+
 
 class TestCalcSingleDistance(unittest.TestCase):
 

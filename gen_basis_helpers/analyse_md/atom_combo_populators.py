@@ -44,18 +44,14 @@ class _DistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 		else:
 			self._populatePartiallyPopulatedMatrix(inpGeom, outDict)
 
+	#Note: Figuring out which elements were already populated, and avoiding recalculating, was waaaaay too slow
+	#Possibly faster way is here, but i couldnt get it to work https://stackoverflow.com/questions/8317022/get-intersecting-rows-across-two-2d-numpy-arrays
 	def _populatePartiallyPopulatedMatrix(self, inpGeom, outDict):
 		useMatrix = outDict["distMatrix"]
 
-		#Figure out indices we need to calculate
-		nanIndices = np.argwhere( np.isnan(useMatrix) )
-		relIndicesForward = set( (idxA,idxB) for idxA,idxB in it.product(self.fromIndices,self.toIndices) )
-
-		allNanIndices = set([tuple(x) for x in nanIndices.tolist()])
-		forwardIndicesIntersection = relIndicesForward.intersection(allNanIndices)
-		forwardFromIndices   = sorted(list( set((x[0] for x in forwardIndicesIntersection)) )) 
-		forwardToIndices = sorted(list( set((x[1] for x in forwardIndicesIntersection)) ))
-
+		#Get relevant indices (see note above)
+		forwardFromIndices = self.fromIndices
+		forwardToIndices = self.toIndices
 
 		#Calculate only for the relevant indices
 		currKwargs = {"indicesA":forwardFromIndices, "indicesB":forwardToIndices, "sparseMatrix":True}
@@ -190,6 +186,9 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(atomComboCoreHelp
 		self.acceptor = acceptor
 		self.donor = donor
 		self.maxOO = maxOO
+		#Optimisation flag that I doubt i'll ever access. Safer to set to True but so much slower
+		#If True we initialise our sparse matrix to be full of NaN; else we just leave it as "empty" (i.e. random/undefined) values. 
+		self.nanMatrix = False 
 
 	@property
 	def maxLevel(self):
@@ -234,6 +233,10 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(atomComboCoreHelp
 			if np.isnan( useMatrix[tuple(idx)] ):
 				filteredOutIndices.append( idx )
 
+		#
+		if len(filteredOutIndices)==0:
+			return 0
+
 		#populate the output matrix
 		allNewAngles = calcDistsHelp.getInterAtomicAnglesForInpGeom(inpGeom, filteredOutIndices)
 
@@ -246,14 +249,16 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(atomComboCoreHelp
 		#Iniitialise the matrix
 		cartCoords = inpGeom.cartCoords
 		outMatrix = np.empty( (len(cartCoords), len(cartCoords), len(cartCoords)) )
-		outMatrix[:] = np.nan
+		if self.nanMatrix:
+			outMatrix[:] = np.nan #Almost the FULL runtime for large systems (since the matrix gets SO large + its so sparsely populated)
 
-		#Get the angle indices
+		#Get the angle indices (fast)
 		outAngleIndices = self._getFullOutAngleIndicesRequired(inpGeom, outDict)
 
-		#Get the angles we need
+		#Get the angles we need (seems to take ~none of the runtime)
 		outAngles = calcDistsHelp.getInterAtomicAnglesForInpGeom(inpGeom, outAngleIndices)
 
+		#Generally quite quick
 		for currIdx, currAngle in it.zip_longest(outAngleIndices, outAngles):
 			outMatrix[tuple(currIdx)] = currAngle
 

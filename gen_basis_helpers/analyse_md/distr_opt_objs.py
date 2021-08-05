@@ -17,10 +17,11 @@ class CalcPlanarDistOptions(calcRadImpl.CalcPlanarRdfOptions):
 class DiscHBondCounterWithOxyDistFilterOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 	""" Object contains options for counting discrete number of hydrogen bonds from one group to another """
 
-	def __init__(self, oxyIndices, hyIndices, distFilterIndices=None, distFilterVals=None, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
+	def __init__(self, binResObj, oxyIndices, hyIndices, distFilterIndices=None, distFilterVals=None, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
 		""" Initializer
 		
 		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
 			oxyIndices: (iter of ints) The oxygen indices for each water molecule
 			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
 			distFilterIndices: (iter of ints) These are the indices we look at X-O distances for. They are used to divide water molecules into two groups. Default=None; meaning ALL water are placed in both groups (so we count hydrogen bonds between all water)
@@ -32,6 +33,7 @@ class DiscHBondCounterWithOxyDistFilterOptions(calcDistrCoreHelp.CalcDistribOpti
  
 		"""
 		self.distribKey = "nHbonds"
+		self.binResObj = binResObj
 		self.oxyIndices = oxyIndices
 		self.hyIndices = hyIndices
 		self.distFilterVals = distFilterVals #Default to [[0,1000],[0,1000]
