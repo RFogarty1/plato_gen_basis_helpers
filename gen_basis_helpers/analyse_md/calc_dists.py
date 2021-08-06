@@ -350,6 +350,10 @@ def getInterAtomicAnglesForInpGeom(inpCell, angleIndices, degrees=True):
 		outAngles: (iter of floats) Length is the same as len(angleIndices); each is an angle calculated for a value in angleIndices
  
 	"""
+	#1) Check indices not empty; if empty just return empty list
+	if len(angleIndices)==0:
+		return list()
+
 	cartCoords = inpCell.cartCoords
 
 	#Convert to format needed for mdAnalysis function

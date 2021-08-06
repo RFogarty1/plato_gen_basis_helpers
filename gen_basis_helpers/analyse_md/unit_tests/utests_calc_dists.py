@@ -501,6 +501,12 @@ class TestCalcIterOfAnglesForInpIndices(unittest.TestCase):
 		actAngles = self._runTestFunct()
 		[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(expAngles,actAngles)]
 
+	def testExpected_noIndicesPassed(self):
+		""" More convenient to just return no angles than to raise an error """
+		self.angleIndices = list()
+		expAngles = list()
+		actAngles = self._runTestFunct()
+		self.assertEqual(expAngles,actAngles)
 
 class TestCalcNearestImageVectorMatrix(unittest.TestCase):
 

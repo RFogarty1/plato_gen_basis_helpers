@@ -228,14 +228,18 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(atomComboCoreHelp
 
 		#Filter based on which are already present
 		useMatrix = outDict["angleMatrix"]
-		filteredOutIndices = list()
-		for idx in outAngleIndices:
-			if np.isnan( useMatrix[tuple(idx)] ):
-				filteredOutIndices.append( idx )
+#		filteredOutIndices = list()
+#		for idx in outAngleIndices:
+#			if np.isnan( useMatrix[tuple(idx)] ):
+#				filteredOutIndices.append( idx )
 
-		#
-		if len(filteredOutIndices)==0:
-			return 0
+#		#
+#		if len(filteredOutIndices)==0:
+#			return 0
+
+		#Note: The filter thing will break if self.nanMatrix is False; this caused a very annoying bug
+		#Trying to filter previously calculated angles is generally unlikely to help speed-wise regardless
+		filteredOutIndices = outAngleIndices
 
 		#populate the output matrix
 		allNewAngles = calcDistsHelp.getInterAtomicAnglesForInpGeom(inpGeom, filteredOutIndices)
