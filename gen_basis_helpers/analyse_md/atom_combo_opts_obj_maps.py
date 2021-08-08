@@ -12,12 +12,15 @@ from ..shared import register_key_decorator as regKeyDecoHelp
 from ..shared import plane_equations as planeEqnHelp
 
 
+#Globals here + Decorators here
 _TYPE_TO_POPULATOR_DICT = dict()
 _TYPE_TO_BINNER_DICT = dict()
 
 TYPE_TO_POPULATOR_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_TYPE_TO_POPULATOR_DICT)
 TYPE_TO_BINNER_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_TYPE_TO_BINNER_DICT)
 
+
+#Main functions here
 def getSparseMatrixCalculatorFromOptsObjIter(optsObjIter):
 	""" Function maps an iter of opts objects into a single _SparseMatrixCalculatorStandard object. This should handle calculation of any sparse matrices required in an efficient way
 	
@@ -93,6 +96,12 @@ def _(inpObj):
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
 	return atomComboPopulatorHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.WaterPlanarDistOptions)
+def _(inpObj):
+	planeEqn =  _getDefaultPlaneEquation() if inpObj.planeEqn is None else inpObj.planeEqn
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, planeEqn]
+	currKwargs = {"primaryIdxType":inpObj.primaryIdxType}
+	return atomComboPopulatorHelp._WaterPlanarDistPopulator(*currArgs, **currKwargs)
 
 
 #Registration of standard binners below
@@ -118,5 +127,16 @@ def _(inpObj):
 	return binValGettersHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(*currArgs, **currKwargs)
 
 
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.WaterPlanarDistOptions)
+def _(inpObj):
+	planeEqn =  _getDefaultPlaneEquation() if inpObj.planeEqn is None else inpObj.planeEqn
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, planeEqn]
+	currKwargs = {"primaryIdxType":inpObj.primaryIdxType}
+	return binValGettersHelp._WaterPlanarDistBinValGetter(*currArgs, **currKwargs)
 
+
+
+#Utility functions
+def _getDefaultPlaneEquation():
+	return planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
 

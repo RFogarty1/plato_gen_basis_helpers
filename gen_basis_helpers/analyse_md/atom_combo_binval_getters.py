@@ -74,6 +74,42 @@ class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSpars
 				return False
 		return True
 
+class _WaterPlanarDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, oxyIndices, hyIndices, planeEqn, primaryIdxType="O"):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			planeEqn: (ThreeDimPlaneEquation) The plane equation to calculate distance distribution from
+			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
+				 
+		"""
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.planeEqn = planeEqn
+		self.primaryIdxType = primaryIdxType
+
+	def getValsToBin(self, sparseMatrixCalculator):	
+		currBinner = self._getBinner()
+		return currBinner.getValsToBin(sparseMatrixCalculator)
+
+	def _getBinner(self):
+		indicesToBin = self._getIndicesToBin()
+		currBinner = _PlanarDistsGetOneDimValsToBin(self.planeEqn, indicesToBin)
+		return currBinner
+
+	def _getIndicesToBin(self):
+		if self.primaryIdxType.upper() == "O":
+			return self.oxyIndices
+		elif self.primaryIdxType.upper() == "HA":
+			return [x[0] for x in self.hyIndices]
+		elif self.primaryIdxType.upper() == "HB":
+			return [x[1] for x in self.hyIndices]
+		else:
+			raise ValueError("")
+
 
 class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 

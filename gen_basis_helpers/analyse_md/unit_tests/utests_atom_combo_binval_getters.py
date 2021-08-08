@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 import unittest
 
 import numpy as np
@@ -140,9 +141,62 @@ class TestMinDistsEquality(unittest.TestCase):
 		self.assertNotEqual(objA, objB)
 
 
+class TestWaterPlanarDistBinValGetter(unittest.TestCase):
+
+	#Note: Largely duplicating the populators
+	def setUp(self):
+		#1) All geometric parameters for testing
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#pitch=90, OH len~1, HOH angle 104.5. Then just added translation vectors (also rounded coords)
+		self.waterACoords = [ [0.0, 0.0, 0.0, 'O'], [0, 0.79, 0.61, 'H'], [0, -0.79, 0.61, 'H'] ]
+		self.waterBCoords = [ [0.0, 0.0, 5.0, 'O'], [0,  0.79, 5.61, 'H'], [0, -0.79, 5.61, 'H']]
+		self.coords = self.waterACoords + self.waterBCoords
+		self.outDict = dict()
+
+		#Options for the populator
+		self.primaryIdxType = "O"
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,4)
+		self.oxyIndices = [0,3]
+		self.hyIndices = [ [1,2], [4,5] ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geom
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Sparse matrix calculator + populate it
+		currArgs = [self.oxyIndices, self.hyIndices, self.planeEqn]
+		currKwargs = {"primaryIdxType":self.primaryIdxType}
+		self.populator = atomComboPopulators._WaterPlanarDistPopulator(*currArgs, **currKwargs)
+
+		self.sparseMatrixObj = atomComboCoreHelp._SparseMatrixCalculatorStandard([self.populator])
+		self.sparseMatrixObj.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = tCode._WaterPlanarDistBinValGetter(*currArgs, **currKwargs)
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseMatrixObj)
+
+	def testExpected_oxyIndices(self):
+		expVals = [4,1]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
+
+	def testExpected_haIndices(self):
+		self.primaryIdxType = "HA"
+		self.createTestObjs()
+		expVals = [3.39, 1.61]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals, actVals)]
+
+
 class TestDiscHBondCounterBetweenGroupsOxyDistFilter(unittest.TestCase):
 
-	#TODO: Take from the populators mostly
+	#NOTE: Taken from the populators mostly
 	def setUp(self):
 		#1) All geometric parameters for testing
 		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]

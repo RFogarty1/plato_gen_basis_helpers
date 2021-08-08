@@ -161,6 +161,44 @@ class _PlanarDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 		return True
 
 
+class _WaterPlanarDistPopulator(atomComboCoreHelp._SparseMatrixPopulator):
+
+
+	def __init__(self, oxyIndices, hyIndices, planeEqn, primaryIdxType="O"):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			planeEqn: (ThreeDimPlaneEquation) The plane equation to calculate distance distribution from
+			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
+ 
+		"""
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.planeEqn = planeEqn
+		self.primaryIdxType = primaryIdxType
+		self.level = 0
+
+	@property
+	def maxLevel(self):
+		return self.level
+
+	@property
+	def primaryIndices(self):
+		if self.primaryIdxType.upper() == "O":
+			return self.oxyIndices
+		elif self.primaryIdxType.upper() == "HA":
+			return [x[0] for x in self.hyIndices]
+		elif self.primaryIdxType.upper() == "HB":
+			return [x[1] for x in self.hyIndices]
+		else:
+			raise ValueError("primaryIdxType = {} is an invalid value".format(self.primaryIdxType))
+
+	def populateMatrices(self, inpGeom, outDict, level):
+		populator = _PlanarDistMatrixPopulator(self.primaryIndices, self.planeEqn, level=0)
+		populator.populateMatrices(inpGeom, outDict, 0)
+
 
 
 class _DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(atomComboCoreHelp._SparseMatrixPopulator):

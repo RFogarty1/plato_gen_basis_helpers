@@ -234,7 +234,6 @@ class TestPlanarDistMatrixPopulator(unittest.TestCase):
 		for expMatrix,actMatrix in it.zip_longest(expMatrices,actMatrices):
 			self.assertTrue( np.allclose(expMatrix,actMatrix,equal_nan=True) )
 
-@unittest.skip("")
 class TestDiscHBondCounterWithDistFilterPopulator(unittest.TestCase):
 
 	def setUp(self):
@@ -261,6 +260,7 @@ class TestDiscHBondCounterWithDistFilterPopulator(unittest.TestCase):
 		self.maxOO = 3 #AC h-bond would be possible iff this was set high enough i suspect
 		self.acceptor = True
 		self.donor = True
+		self.nanMatrix = True
 
 		self.createTestObjs()
 
@@ -273,6 +273,7 @@ class TestDiscHBondCounterWithDistFilterPopulator(unittest.TestCase):
 		currArgs = [self.oxyIndices, self.hyIndices, self.distFilterIndices, self.distFilterVals]
 		currKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO}
 		self.testObj = tCode._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
+		self.testObj.nanMatrix = self.nanMatrix
 
 		#Get an outDict[covers one interface]
 		self.outDict = dict()
@@ -439,7 +440,114 @@ class TestDiscHBondCounterWithDistFilterPopulator(unittest.TestCase):
 
 
 
+class TestWaterPlanarDistPopulator(unittest.TestCase):
 
+
+	def setUp(self):
+		#1) All geometric parameters for testing
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#pitch=90, OH len~1, HOH angle 104.5. Then just added translation vectors (also rounded coords)
+		self.waterACoords = [ [0.0, 0.0, 0.0, 'O'], [0, 0.79, 0.61, 'H'], [0, -0.79, 0.61, 'H'] ]
+		self.waterBCoords = [ [0.0, 0.0, 5.0, 'O'], [0,  0.79, 5.61, 'H'], [0, -0.79, 5.61, 'H']]
+		self.coords = self.waterACoords + self.waterBCoords
+		self.outDict = dict()
+
+		#Options for the populator
+		self.primaryIdxType = "O"
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,4)
+		self.oxyIndices = [0,3]
+		self.hyIndices = [ [1,2], [4,5] ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geom
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create the populator object
+		currArgs = [self.oxyIndices, self.hyIndices, self.planeEqn]
+		currKwargs = {"primaryIdxType":self.primaryIdxType}
+		self.testObj = tCode._WaterPlanarDistPopulator(*currArgs, **currKwargs)
+
+	def _runTestFunct(self):
+		level = 0
+		self.testObj.populateMatrices(self.cellA, self.outDict, level)
+
+	def testPrimaryIndices(self):
+		#1) oxy
+		expIndices = self.oxyIndices
+		actIndices = self.testObj.primaryIndices
+		self.assertEqual(expIndices, actIndices)
+
+		#2) "hA"
+		self.primaryIdxType = "Ha"
+		self.createTestObjs()
+		expIndices = [1,4]
+		actIndices = self.testObj.primaryIndices
+		self.assertEqual(expIndices,actIndices)
+
+		#3) "hB"
+		self.primaryIdxType = "Hb"
+		self.createTestObjs()
+		expIndices = [2,5]
+		actIndices = self.testObj.primaryIndices
+		self.assertEqual(expIndices,actIndices)
+
+	def testExpectedCaseA_nonePresent(self):
+		expUniquePlaneEquations = [ self.planeEqn ]
+		expMatrix = np.empty( (6) )
+		expMatrix[:] = np.nan
+
+		expMatrix[0] = 4
+		expMatrix[3] = 1
+
+		self._runTestFunct()
+
+		actMatrix = self.outDict["planarDists"][0]
+		actUniquePlaneEqns = self.outDict["uniquePlaneEquations"]
+
+		self.assertEqual(expUniquePlaneEquations, actUniquePlaneEqns)
+		self.assertTrue( np.allclose(expMatrix, actMatrix, equal_nan=True) )
+
+	def testExpectedCaseB_nonePresent(self):
+		self.primaryIdxType = "HA"
+		self.createTestObjs()
+		expUniquePlaneEquations = [ self.planeEqn ]
+		expMatrix = np.empty( (6) )
+		expMatrix[:] = np.nan
+
+		expMatrix[1] = 3.39
+		expMatrix[4] = 1.61
+
+		self._runTestFunct()
+
+		actMatrix = self.outDict["planarDists"][0]
+		actUniquePlaneEqns = self.outDict["uniquePlaneEquations"]
+
+		self.assertEqual(expUniquePlaneEquations, actUniquePlaneEqns)
+		self.assertTrue( np.allclose(expMatrix, actMatrix, equal_nan=True) )
+
+	def testExpectedCaseB_matrixAlreadyPresent(self):
+		self.outDict["planarDists"] = [np.empty((6)), np.empty((6))]
+		self.outDict["uniquePlaneEquations"] = [planeEqnHelp.ThreeDimPlaneEquation(0,0,1,6), self.planeEqn]
+		self.outDict["planarDists"][0][:], self.outDict["planarDists"][1][:] = np.nan, np.nan
+		self.outDict["planarDists"][1][0] = 4
+
+		self._runTestFunct()
+
+		expMatrix = np.empty( (6) )
+		expMatrix[:] = np.nan
+		expMatrix[0] = 4
+		expMatrix[3] = 1
+
+		expUniquePlaneEqns = [planeEqnHelp.ThreeDimPlaneEquation(0,0,1,6), self.planeEqn]
+		actMatrix = self.outDict["planarDists"][1]
+		actUniquePlaneEqns = self.outDict["uniquePlaneEquations"]
+
+		self.assertEqual(expUniquePlaneEqns, actUniquePlaneEqns)
+		self.assertTrue( np.allclose(expMatrix, actMatrix, equal_nan=True) )
 
 
 
