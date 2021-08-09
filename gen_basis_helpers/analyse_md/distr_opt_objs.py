@@ -52,6 +52,32 @@ class _WaterOptsMixin():
 		return outOxyIndices, outHyIndices
 
 
+
+class WaterMinDistPlusMinDistFilterOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):
+	""" Options for calculating the minimum distance between water and the "toIndices" which have minDist between filterDists for the atoms defined in filterIndices. Original purpose was to look at min(H-Mg) distance distribution for Mg atoms which did NOT have a water molecule chemisorbed """
+
+	def __init__(self, binResObj, oxyIndices, hyIndices, toIndices, filterToIndices, filterDists, primaryIdxType="O", minDistType="all"):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			toIndices: (iter of ints) We calculate min-dist from water to these other indices
+			filterIndices: (iter of ints) Indices of atoms we calculate minDist(toIndices[idxA]) from
+			filterDists: (len-2 iter) [minDist, maxDist] for us to consider. Specifically we only consider values where min(filterDists) <= x < max(filterDists)
+ 
+		"""
+		self.binResObj = binResObj
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.toIndices = toIndices
+		self.filterToIndices = filterToIndices
+		self.filterDists = filterDists
+		self.primaryIdxType = primaryIdxType
+		self.minDistType = minDistType
+
+
 #TODO: Another one with an additional filter function based on minDists; that one will actually be used
 class WaterMinDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):
 

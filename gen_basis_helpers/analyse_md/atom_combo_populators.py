@@ -161,6 +161,41 @@ class _PlanarDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 		return True
 
 
+class _WaterMinDist_plusMinDistFilter_populator(atomComboCoreHelp._SparseMatrixPopulator):
+
+	def __init__(self, oxyIndices, hyIndices, toIndices, filterToIndices, minDistType):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			toIndices: (iter of ints) The indices of atoms we calculate the minimum distance TO
+			filterToIndices: (iter of ints) 
+			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)
+
+		"""
+		self.level = 0
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.toIndices = toIndices
+		self.filterToIndices = filterToIndices
+		self.minDistType = minDistType
+
+	@property
+	def maxLevel(self):
+		return self.level
+
+	def populateMatrices(self, inpGeom, outDict, level):
+		#1) Sort out the water-toIndices bit
+		populatorA = _WaterMinDistPopulator(self.oxyIndices, self.hyIndices, self.toIndices, self.minDistType)
+		populatorA.populateMatrices(inpGeom, outDict, level)
+
+		#2) Sort out getting all distances we need to filter to "toIndices" down
+		populatorB = _DistMatrixPopulator(self.toIndices, self.filterToIndices, level=self.level)
+		populatorB.populateMatrices(inpGeom, outDict, level)
+
+
+
 class _WaterMinDistPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
 	def __init__(self, oxyIndices, hyIndices, toIndices, minDistType):

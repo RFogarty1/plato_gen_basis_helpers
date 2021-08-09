@@ -115,6 +115,12 @@ def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.minDistType]
 	return atomComboPopulatorHelp._WaterMinDistPopulator(*currArgs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.WaterMinDistPlusMinDistFilterOptions)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.filterToIndices, inpObj.minDistType]
+	return atomComboPopulatorHelp._WaterMinDist_plusMinDistFilter_populator(*currArgs)
+
+
 #Registration of standard binners below
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcRdfOptions)
 @TYPE_TO_BINNER_REGISTER_DECO(calcDistrCoreHelp.CalcRdfOptions)
@@ -156,6 +162,12 @@ def _(inpObj):
 def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.minDistType]
 	return binValGettersHelp._WaterMinDistBinValGetter(*currArgs)
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.WaterMinDistPlusMinDistFilterOptions)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.filterToIndices, inpObj.filterDists, inpObj.minDistType]
+	return binValGettersHelp._WaterMinDist_plusMinDistFilter_binValGetter(*currArgs)
+
 
 #Utility functions
 def _getDefaultPlaneEquation():

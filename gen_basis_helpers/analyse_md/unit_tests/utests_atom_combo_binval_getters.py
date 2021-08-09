@@ -13,6 +13,7 @@ import gen_basis_helpers.analyse_md.atom_combo_populators as atomComboPopulators
 import gen_basis_helpers.analyse_md.binned_res as binResHelp
 import gen_basis_helpers.analyse_md.calc_distrib_core as calcDistribCoreHelp
 import gen_basis_helpers.analyse_md.calc_radial_distrib_impl as calcRadImpl
+import gen_basis_helpers.analyse_md.distr_opt_objs as distrOptObjHelp
 import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 
 import gen_basis_helpers.analyse_md.atom_combo_binval_getters as tCode
@@ -140,6 +141,128 @@ class TestMinDistsEquality(unittest.TestCase):
 		objB = 6
 		self.assertNotEqual(objA, objB)
 
+
+
+class TestWaterMinDistsPlusMinDistFilterBinValsGetter(unittest.TestCase):
+
+	def setUp(self):
+		#1) All geometric parameters for testing
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#pitch=90, OH len~1, HOH angle 104.5. Then just added translation vectors (also rounded coords)
+		#Then collapsed along x/y so only the z-values matter 
+		self.waterACoords = [ [0.0, 0.0, 0.0, 'O'], [0, 0, 0.59, 'H'], [0, 0, 0.63, 'H'] ]
+		self.waterBCoords = [ [0.0, 0.0, 5.0, 'O'], [0, 0, 5.59, 'H'], [0, 0, 5.63, 'H']]
+		self.toIdxCoords = [ [0,0,3,"X"], [0,0,4,"Y"], [0,0,5,"Z"] ]
+		self.coords = self.waterACoords + self.waterBCoords + self.toIdxCoords
+
+		#2) Defining the option object args
+		self.binResObj = None #Shouldnt matter for getting values to bin
+		self.oxyIndices = [0,3]
+		self.hyIndices = [ [1,2], [4,5] ]
+		self.toIndices = [6,7]
+		self.primaryIdxType = "O"
+
+		self.filterToIndices = [8]
+		self.filterDistWindow = [0,20] #Basically will encapsulate all of them here
+		self.minDistType = "all"
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geom
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Options object
+		currArgs = [self.binResObj, self.oxyIndices, self.hyIndices, self.toIndices, self.filterToIndices,
+		            self.filterDistWindow]
+		currKwargs = {"primaryIdxType":self.primaryIdxType, "minDistType":self.minDistType}
+		self.optsObj = distrOptObjHelp.WaterMinDistPlusMinDistFilterOptions(*currArgs, **currKwargs)
+
+		#Create sparse matrix calculator + populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test obj
+		self.testObj = atomComboObjsMapHelp.getOneDimBinValGetterFromOptsObj(self.optsObj)
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseCalculator)
+
+	def testExpectedCase_largeFilterDistWindow(self):
+		expVals = [2.37, 1.0]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expVals,actVals)]
+
+	def testExpectedCase_smallFilterWindow(self):
+		self.filterDistWindow = [0,1.5] #Should mean only "Y" is in play
+		self.createTestObjs()
+		expVals = [3.37, 1.0]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expVals, actVals)]
+
+	def testRaisesWhenToIndicesAllFilteredOut(self):
+		""" If toIndices() gets filtered to an empty list i want code to crash for now; this situation wont happen in current planned use case + I dont want to figure out how to best handle it yet"""
+		self.filterDistWindow = [0,0.1]
+		self.createTestObjs()
+		with self.assertRaises(NotImplementedError):
+			self._runTestFunct()
+
+#This is also sort of a test of the populator + opt objs getter; which i havnt bothered testing separately
+class TestWaterMinDistsGetter(unittest.TestCase):
+
+	def setUp(self):
+		#1) All geometric parameters for testing
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#pitch=90, OH len~1, HOH angle 104.5. Then just added translation vectors (also rounded coords)
+		#Then collapsed along x/y so only the z-values matter 
+		self.waterACoords = [ [0.0, 0.0, 0.0, 'O'], [0, 0, 0.59, 'H'], [0, 0, 0.63, 'H'] ]
+		self.waterBCoords = [ [0.0, 0.0, 5.0, 'O'], [0, 0, 5.59, 'H'], [0, 0, 5.63, 'H']]
+		self.toIdxCoords = [ [0,0,3,"X"], [0,0,4,"Y"] ]
+		self.coords = self.waterACoords + self.waterBCoords + self.toIdxCoords
+
+		#2) For the options object
+		self.binResObj = None #Shouldnt matter for getting values to bin
+		self.oxyIndices = [0,3]
+		self.hyIndices = [ [1,2], [4,5] ]
+		self.toIndices = [6]
+		self.minDistType = "all"
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geom
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create an options object
+		currArgs = [self.binResObj, self.oxyIndices, self.hyIndices, self.toIndices]
+		currKwargs = {"primaryIdxType":"O", "minDistType":self.minDistType}
+		self.optsObj = distrOptObjHelp.WaterMinDistOptions(*currArgs, **currKwargs)
+
+		#Sparse matrix calculator + populate it ()
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = atomComboObjsMapHelp.getOneDimBinValGetterFromOptsObj(self.optsObj)
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseCalculator)
+
+	def testExpected_all(self):
+		expVals = [2.37,2]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(exp,act,places=6) for exp,act in it.zip_longest(expVals, actVals)]
+
+	def testExpected_hydrogenOnly(self):
+		self.minDistType = "H"
+		self.createTestObjs()
+		expVals = [2.37,2.59]
+		actVals = self._runTestFunct()
+		[self.assertAlmostEqual(exp,act,places=6) for exp,act in it.zip_longest(expVals, actVals)]
 
 class TestWaterPlanarMinDistGetter(unittest.TestCase):
 

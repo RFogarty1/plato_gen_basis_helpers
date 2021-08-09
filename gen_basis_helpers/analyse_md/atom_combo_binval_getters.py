@@ -76,6 +76,46 @@ class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSpars
 		return True
 
 
+class _WaterMinDist_plusMinDistFilter_binValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, oxyIndices, hyIndices, toIndices, filterToIndices, filterDists, minDistType):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			toIndices: (iter of ints) The indices of atoms we calculate the minimum distance TO
+			filterIndices: (iter of ints) Indices of atoms we calculate minDist(toIndices[idxA]) from
+			filterDists: (len-2 iter) [minDist, maxDist] for us to consider 
+
+		"""
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.toIndices = toIndices
+		self.filterToIndices = filterToIndices
+		self.filterDists = filterDists
+		self.minDistType = minDistType
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		#1) Filter toIndices accordingly
+		toIndicesBinValGetter = _MinDistsGetOneDimValsToBin(self.toIndices, self.filterToIndices)
+		toIndicesMinDists = toIndicesBinValGetter.getValsToBin(sparseMatrixCalculator)
+
+		filteredIndices = list()
+		useFilterDists = sorted(self.filterDists)
+		for idx, minDist in it.zip_longest(self.toIndices, toIndicesMinDists):
+			if (minDist>=useFilterDists[0]) and (minDist<useFilterDists[1]):
+				filteredIndices.append( idx )
+
+		#1.5) Check we have SOME indices; else raise an error
+		if len(filteredIndices)==0:
+			raise NotImplementedError("Currently no sensible behaviour when indices are filtered down to an empty list")
+
+		#2) Simply use the non-filtering minDistBinValGetter with the filtered indices
+		outBinValGetter = _WaterMinDistBinValGetter(self.oxyIndices, self.hyIndices, filteredIndices, self.minDistType)
+		return outBinValGetter.getValsToBin(sparseMatrixCalculator)
+
+
 class _WaterMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
 	def __init__(self, oxyIndices, hyIndices, toIndices, minDistType):
