@@ -108,7 +108,7 @@ def _(inpObj):
 	planeEqn = _getDefaultPlaneEquation() if inpObj.planeEqn is None else inpObj.planeEqn
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, planeEqn]
 	currKwargs = {"primaryOnly":False, "primaryIdxType":inpObj.primaryIdxType} #PrimaryIdxType basically irrelevant here i think...
-	return atomComboPopulatorHelp._WaterPlanarDistPopulator
+	return atomComboPopulatorHelp._WaterPlanarDistPopulator(*currArgs, **currKwargs)
 
 
 #Registration of standard binners below
