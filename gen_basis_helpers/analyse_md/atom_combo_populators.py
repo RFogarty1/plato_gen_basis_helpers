@@ -161,6 +161,45 @@ class _PlanarDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 		return True
 
 
+class _WaterMinDistPopulator(atomComboCoreHelp._SparseMatrixPopulator):
+
+	def __init__(self, oxyIndices, hyIndices, toIndices, minDistType):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			toIndices: (iter of ints) The indices of atoms we calculate the minimum distance TO
+			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)
+
+		"""
+		self.level = 0
+		self.oxyIndices = oxyIndices 
+		self.hyIndices = hyIndices
+		self.toIndices = toIndices
+		self.minDistType = minDistType
+
+	@property
+	def maxLevel(self):
+		return self.level
+
+	def populateMatrices(self, inpGeom, outDict, level):
+		fromIndices = self._getFromIndices()
+		populator = _DistMatrixPopulator(fromIndices, self.toIndices, level=self.level)
+		populator.populateMatrices(inpGeom,outDict,level)
+
+	def _getFromIndices(self):
+		if self.minDistType.upper()=="ALL":
+			outIndices = self.oxyIndices + [x for x in it.chain(*self.hyIndices)]
+		elif self.minDistType.upper()=="O":
+			outIndices = self.oxyIndices
+		elif self.minDistType.upper()=="H":
+			outIndices = [x for x in it.chain(*self.hyIndices)]
+		else:
+			raise ValueError("{} is an invalid value for self.minDistType".format(self.minDistType))
+
+		return outIndices
+
 class _WaterPlanarDistPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
 

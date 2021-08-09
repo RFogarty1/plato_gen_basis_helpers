@@ -11,6 +11,43 @@ import gen_basis_helpers.analyse_md.distr_opt_objs as tCode
 
 #Testing alternative constructor mostly
 
+
+class TestWaterMinDistOpts(unittest.TestCase):
+
+	def setUp(self):
+		#Geom for testing the alternative initializer
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoords = [ [0,0,0,"O"], [1,1,1,"H"], [2,2,2,"H"],
+		                    [3,3,3,"O"], [4,4,4,"H"], [5,5,5,"H"],
+		                    [8,8,8,"X"], [9,9,9,"Y"] ]
+
+		#Options for the actual opts obj
+		self.oxyIndices = [0,3]
+		self.hyIndices = [[1,2],[4,5]]
+		self.toIndices = [6,7]
+		self.primaryIdxType = "O"
+		self.minDistType = "all"
+		self.binResObj = 5 #Int has functionally similar equality method to the binRes obj so...
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create test obj
+		currArgs = [self.binResObj, self.oxyIndices, self.hyIndices, self.toIndices]
+		currKwargs = {"primaryIdxType":self.primaryIdxType, "minDistType":self.minDistType}
+		self.testObj = tCode.WaterMinDistOptions(*currArgs, **currKwargs)
+
+	def testAltConstructorCaseA(self):
+		waterIndices = [ [0,1,2], [3,4,5] ]
+		expObj = self.testObj
+		currArgs = [self.binResObj, waterIndices, self.toIndices, self.cellA]
+		currKwargs = {"primaryIdxType":self.primaryIdxType, "minDistType":self.minDistType}
+		actObj = tCode.WaterMinDistOptions.fromWaterIndicesAndGeom(*currArgs, **currKwargs)
+		self.assertEqual(expObj, actObj)
+
 class TestWaterMinPlanarDistOpts(unittest.TestCase):
 
 	def setUp(self):

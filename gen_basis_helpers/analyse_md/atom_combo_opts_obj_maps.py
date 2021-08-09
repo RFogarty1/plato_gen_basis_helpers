@@ -110,6 +110,10 @@ def _(inpObj):
 	currKwargs = {"primaryOnly":False, "primaryIdxType":inpObj.primaryIdxType} #PrimaryIdxType basically irrelevant here i think...
 	return atomComboPopulatorHelp._WaterPlanarDistPopulator(*currArgs, **currKwargs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.WaterMinDistOptions)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.minDistType]
+	return atomComboPopulatorHelp._WaterMinDistPopulator(*currArgs)
 
 #Registration of standard binners below
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcRdfOptions)
@@ -147,6 +151,11 @@ def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, planeEqn]
 	currKwargs = {"minDistType":inpObj.minDistType}
 	return binValGettersHelp._WaterPlanarMinDistBinValGetter(*currArgs, **currKwargs)
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.WaterMinDistOptions)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.minDistType]
+	return binValGettersHelp._WaterMinDistBinValGetter(*currArgs)
 
 #Utility functions
 def _getDefaultPlaneEquation():

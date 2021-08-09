@@ -75,6 +75,66 @@ class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSpars
 				return False
 		return True
 
+
+class _WaterMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, oxyIndices, hyIndices, toIndices, minDistType):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			toIndices: (iter of ints) The indices of atoms we calculate the minimum distance TO
+			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)		
+ 
+		"""
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.toIndices = toIndices
+		self.minDistType = minDistType
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		#Min values on a PER WATER basis (so up to 3-minimum values per water)	
+		currBinners = self._getBinners()
+		outValsAll = [x.getValsToBin(sparseMatrixCalculator) for x in currBinners]
+
+		#Map to a single value per water; in the case of minDistAll this means min(  min(O-X), min(Ha-X), min(Hb-X) )
+		outVals = list()
+		for vals in it.zip_longest(*outValsAll):
+			outVals.append( min(vals) )
+
+		return outVals
+
+	def _getBinners(self):
+		outBinners = list()
+		relFromIndices = self._getFromIndices()
+
+		#Get min dist for each relevant atom in each water
+		for indices in relFromIndices:
+			currBinner = _MinDistsGetOneDimValsToBin(indices, self.toIndices)
+			outBinners.append(currBinner)
+
+		return outBinners
+
+
+	def _getFromIndices(self):
+		oxyIndices = self.oxyIndices
+		hyIndicesA = [x[0] for x in self.hyIndices]
+		hyIndicesB = [x[1] for x in self.hyIndices]
+
+		if self.minDistType.upper()=="ALL":
+			outIndices = [oxyIndices, hyIndicesA, hyIndicesB]
+		elif self.minDistType.upper()=="O":
+			outIndices = [oxyIndices]
+		elif self.minDistType.upper()=="H":
+			outIndices = [hyIndicesA, hyIndicesB]
+		else:
+			raise ValueError("{} is an invalid value for self.minDistType".format(self.minDistType))
+
+		return outIndices
+
+
+
 class _WaterPlanarDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
 	def __init__(self, oxyIndices, hyIndices, planeEqn, primaryIdxType="O"):

@@ -52,6 +52,56 @@ class _WaterOptsMixin():
 		return outOxyIndices, outHyIndices
 
 
+#TODO: Another one with an additional filter function based on minDists; that one will actually be used
+class WaterMinDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):
+
+	def __init__(self, binResObj, oxyIndices, hyIndices, toIndices, primaryIdxType="O", minDistType="all"):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			toIndices: (iter of ints) We calculate min-dist from water to these other indices
+			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
+			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)
+				 
+		"""
+		self.distribKey = "rdf"
+		self.binResObj = binResObj
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.toIndices = toIndices
+		self.primaryIdxType = primaryIdxType
+		self.minDistType = minDistType
+
+	@classmethod
+	def fromWaterIndicesAndGeom(cls, binResObj, waterIndices, toIndices, inpGeom, primaryIdxType="O", minDistType="all"):
+		""" Alternative initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			waterIndices: (iter of len-3 int iters) Each element contains the indices of a water molecule
+			toIndices: (iter of ints) We calculate min-dist from water to these other indices
+			inpGeom: (plato_pylib UnitCell object) Used to figure out which indices correspond to Oxygen/Hydrogen
+			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
+			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)
+ 
+		"""
+		oxyIndices, hyIndices = cls._getOxyAndHyIndicesFromWaterIndicesAndGeom(None,waterIndices, inpGeom)
+		currArgs = [binResObj, oxyIndices, hyIndices, toIndices]
+		currKwargs = {"primaryIdxType":primaryIdxType, "minDistType":minDistType}
+		return cls(*currArgs, **currKwargs)
+
+	def __eq__(self,other):
+		cmpAttrs = ["binResObj", "oxyIndices", "hyIndices", "toIndices", "primaryIdxType", "minDistType"]
+		for attr in cmpAttrs:
+			valA, valB = getattr(self,attr), getattr(other,attr)
+			if valA != valB:
+				return False
+
+		return True
+
 
 class WaterMinPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):
 
@@ -85,7 +135,7 @@ class WaterMinPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _Water
 			inpGeom: (plato_pylib UnitCell object) Used to figure out which indices correspond to Oxygen/Hydrogen
 			planeEqn: (None or ThreeDimPlaneEquation) The plane equation to calculate distrib function from
 			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
-			minDistType: (str)
+			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)
  
 		"""
 		oxyIndices, hyIndices = cls._getOxyAndHyIndicesFromWaterIndicesAndGeom(None,waterIndices, inpGeom)
