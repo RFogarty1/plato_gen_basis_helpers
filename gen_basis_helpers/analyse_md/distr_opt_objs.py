@@ -14,43 +14,18 @@ class CalcPlanarDistOptions(calcRadImpl.CalcPlanarRdfOptions):
 	pass
 
 
-class WaterPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
+class _WaterOptsMixin():
 
-	def __init__(self, binResObj, oxyIndices, hyIndices, planeEqn=None, primaryIdxType="O"):
-		""" Initializer
-		
-		Args:
-			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
-			oxyIndices: (iter of ints) The oxygen indices for each water molecule
-			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
-			planeEqn: (None or ThreeDimPlaneEquation) The plane equation to calculate distrib function from
-			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
-
-		"""
-		self.distribKey = "rdf"
-		self.binResObj = binResObj
-		self.oxyIndices = oxyIndices
-		self.hyIndices = hyIndices
-		self.planeEqn = planeEqn
-		self.primaryIdxType = primaryIdxType
-
-
-	@classmethod
-	def fromWaterIndicesAndGeom(cls, binResObj, waterIndices, inpGeom, planeEqn=None, primaryIdxType=None):
-		""" Alternative initializer
-		
-		Args:
-			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
-			waterIndices: (iter of len-3 int iters) Each element contains the indices of a water molecule
-			inpGeom: (plato_pylib UnitCell object) Used to figure out which indices correspond to Oxygen/Hydrogen
-			planeEqn: (None or ThreeDimPlaneEquation) The plane equation to calculate distrib function from
-			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
-				 
-		"""
-		oxyIndices, hyIndices = cls._getOxyAndHyIndicesFromWaterIndicesAndGeom(None,waterIndices, inpGeom)
-		currArgs = [binResObj, oxyIndices, hyIndices]
-		currKwargs = {"planeEqn":planeEqn, "primaryIdxType":primaryIdxType}
-		return cls(*currArgs, **currKwargs)
+	@property
+	def primaryIndices(self):
+		if self.primaryIdxType.upper() == "O":
+			return self.oxyIndices
+		elif self.primaryIdxType.upper() == "HA":
+			return [x[0] for x in self.hyIndices]
+		elif self.primaryIdxType.upper() == "HB":
+			return [x[1] for x in self.hyIndices]
+		else:
+			raise ValueError("primaryIdxType = {} is an invalid value".format(self.primaryIdxType))
 
 	def _getOxyAndHyIndicesFromWaterIndicesAndGeom(self, waterIndices, inpGeom):
 		cartCoords = inpGeom.cartCoords
@@ -77,17 +52,96 @@ class WaterPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 		return outOxyIndices, outHyIndices
 
 
-	#TODO: I should really make this a mixin; since it appears in multiple "water" atom classes
-	@property
-	def primaryIndices(self):
-		if self.primaryIdxType.upper() == "O":
-			return self.oxyIndices
-		elif self.primaryIdxType.upper() == "HA":
-			return [x[0] for x in self.hyIndices]
-		elif self.primaryIdxType.upper() == "HB":
-			return [x[1] for x in self.hyIndices]
-		else:
-			raise ValueError("primaryIdxType = {} is an invalid value".format(self.primaryIdxType))
+
+class WaterMinPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):
+
+	def __init__(self, binResObj, oxyIndices, hyIndices, planeEqn=None, primaryIdxType="O", minDistType="all"):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			planeEqn: (None or ThreeDimPlaneEquation) The plane equation to calculate distrib function from
+			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
+			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)
+				 
+		"""
+		self.distribKey = "rdf"
+		self.binResObj = binResObj
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.planeEqn = planeEqn
+		self.primaryIdxType = primaryIdxType
+		self.minDistType = minDistType
+
+	@classmethod
+	def fromWaterIndicesAndGeom(cls, binResObj, waterIndices, inpGeom, planeEqn=None, primaryIdxType="O", minDistType="all"):
+		""" Alternative initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			waterIndices: (iter of len-3 int iters) Each element contains the indices of a water molecule
+			inpGeom: (plato_pylib UnitCell object) Used to figure out which indices correspond to Oxygen/Hydrogen
+			planeEqn: (None or ThreeDimPlaneEquation) The plane equation to calculate distrib function from
+			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
+			minDistType: (str)
+ 
+		"""
+		oxyIndices, hyIndices = cls._getOxyAndHyIndicesFromWaterIndicesAndGeom(None,waterIndices, inpGeom)
+		currArgs = [binResObj, oxyIndices, hyIndices]
+		currKwargs = {"planeEqn":planeEqn, "primaryIdxType":primaryIdxType, "minDistType":minDistType}
+		return cls(*currArgs, **currKwargs)
+
+
+	def __eq__(self, other):
+		cmpAttrs = ["binResObj", "oxyIndices", "hyIndices", "planeEqn", "primaryIdxType", "minDistType"]
+		for attr in cmpAttrs:
+			valA, valB = getattr(self,attr), getattr(other,attr)
+			if valA != valB:
+				return False
+
+		return True
+
+
+
+class WaterPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):
+
+	def __init__(self, binResObj, oxyIndices, hyIndices, planeEqn=None, primaryIdxType="O"):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			planeEqn: (None or ThreeDimPlaneEquation) The plane equation to calculate distrib function from
+			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
+
+		"""
+		self.distribKey = "rdf"
+		self.binResObj = binResObj
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.planeEqn = planeEqn
+		self.primaryIdxType = primaryIdxType
+
+
+	@classmethod
+	def fromWaterIndicesAndGeom(cls, binResObj, waterIndices, inpGeom, planeEqn=None, primaryIdxType="O"):
+		""" Alternative initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			waterIndices: (iter of len-3 int iters) Each element contains the indices of a water molecule
+			inpGeom: (plato_pylib UnitCell object) Used to figure out which indices correspond to Oxygen/Hydrogen
+			planeEqn: (None or ThreeDimPlaneEquation) The plane equation to calculate distrib function from
+			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
+				 
+		"""
+		oxyIndices, hyIndices = cls._getOxyAndHyIndicesFromWaterIndicesAndGeom(None,waterIndices, inpGeom)
+		currArgs = [binResObj, oxyIndices, hyIndices]
+		currKwargs = {"planeEqn":planeEqn, "primaryIdxType":primaryIdxType}
+		return cls(*currArgs, **currKwargs)
 
 
 	def __eq__(self, other):
@@ -98,7 +152,6 @@ class WaterPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 				return False
 
 		return True
-
 
 
 

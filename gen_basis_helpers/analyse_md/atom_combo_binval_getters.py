@@ -1,4 +1,5 @@
 
+import itertools as it
 import numpy as np
 
 from . import atom_combo_core as atomComboCoreHelp
@@ -109,6 +110,50 @@ class _WaterPlanarDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSpar
 			return [x[1] for x in self.hyIndices]
 		else:
 			raise ValueError("")
+
+class _WaterPlanarMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, oxyIndices, hyIndices, planeEqn, minDistType="all"):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			planeEqn: (ThreeDimPlaneEquation) The plane equation to calculate distance distribution from
+			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)
+
+		"""
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.planeEqn = planeEqn
+		self.minDistType = minDistType
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		#Get sets of indices
+		oxyIndices = self.oxyIndices
+		hyIndicesA = [x[0] for x in self.hyIndices]
+		hyIndicesB = [x[1] for x in self.hyIndices]
+
+		#Merge into relevant ones
+		if self.minDistType.upper() == "ALL":
+			relIndices = [oxyIndices, hyIndicesA, hyIndicesB]
+		elif self.minDistType.upper() == "O":
+			relIndices = [oxyIndices]
+		elif self.minDistType.upper() == "H":
+			relIndices = [hyIndicesA, hyIndicesB]
+		else:
+			raise ValueError("{} is an invalid value for minDistType".format(self.minDistType))
+
+		#Get planar distances for each
+		planarBinValGetters = [_PlanarDistsGetOneDimValsToBin(self.planeEqn, indices) for indices in relIndices]
+		planarBinVals = [x.getValsToBin(sparseMatrixCalculator) for x in planarBinValGetters]
+
+		#Find the minimum values
+		outVals = list()
+		for vals in it.zip_longest(*planarBinVals):
+			outVals.append(min(vals))
+
+		return outVals
 
 
 class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
