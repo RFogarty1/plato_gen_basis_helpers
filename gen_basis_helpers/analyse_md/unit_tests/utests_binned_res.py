@@ -631,6 +631,32 @@ class TestAddProbabilitiesToBinObj(unittest.TestCase):
 		self.assertEqual(expBinObjA, actBinObjA)
 
 
+#Mostly covered by average vals function; since they use the same moments-calculating backend function
+class TestGetHigherMomentsForPdf(unittest.TestCase):
+
+	def setUp(self):
+		self.betweenVals = None
+		self.normaliseBySum = False
+
+		#Pdf vals come from a Gaussian with a mean of 4 and a variance of 0.8
+		#Since we sample it so sparsely the calculated mean/variance wont be so neat but.....
+		#Note: Mean comes out at about 4.02
+		self.binEdges = [0, 2, 3, 5, 8] #Centres are 1,2.5,4,6.5
+		self.pdfVals = [0.001608639066848, 0.109304604496336, 0.446031029038193, 0.008972268309668]
+
+
+	def testExpectedVariance(self):
+		expVal = 0.447706606977464 #Just calculated in excel
+		currKwargs = {"betweenVals":self.betweenVals, "normaliseBySum":self.normaliseBySum}
+		actVal = tCode.getVarianceForPdfValsSimple(self.binEdges, self.pdfVals, **currKwargs)
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testExpectedSkew_noRange(self):
+		expVal = -0.061496122223159 #Just calculated in excel, would be zero if sampling was better but...
+		currKwargs = {"betweenVals":self.betweenVals, "normaliseBySum":self.normaliseBySum}
+		actVal = tCode.getSkewForPdfValsSimple(self.binEdges, self.pdfVals, **currKwargs)
+		self.assertAlmostEqual(expVal, actVal)
+
 class TestGetAverageValsForPdf(unittest.TestCase):
 
 	def setUp(self):

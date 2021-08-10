@@ -590,13 +590,47 @@ def addProbabilityDensitiesToNDimBinsSimple(binObj, countKey="counts", outKey="p
 	binObj.binVals[outKey] = outMatrix
 
 
+def getSkewForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
+	""" Gets the skew of a property given by the probability density function, works by calcualting the CENTRAL 3rd moment with (bad) numerical integration over bin centres/vals
+	
+	Args:
+		binEdges: (iter of floats, must be in order) Edge for each bin
+		pdfData: values are the probability density function or something similar (g(r) should be fine?)
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
+		normaliseBySum: (Bool) If True we do sum(pdfData) and divide the output by it. This may let the function work for certain cases where y-values are only proportional to pdf. NOTE: We use the sum betweenVals if that is set
+			 
+	Returns
+		outVal: (float) The central-skew of the data
+
+	"""
+	meanVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1)
+	skewVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=3, shiftVal=meanVal)
+	return skewVal
+
+def getVarianceForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
+	""" Gets the variance of a property given the probability density function, works by calculating the CENTRAL 2nd moment with (bad) numerical integration over bin centres/vals
+	
+	Args:
+		binEdges: (iter of floats, must be in order) Edge for each bin
+		pdfData: values are the probability density function or something similar (g(r) should be fine?)
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
+		normaliseBySum: (Bool) If True we do sum(pdfData) and divide the output by it. This may let the function work for certain cases where y-values are only proportional to pdf. NOTE: We use the sum betweenVals if that is set
+			 
+	Returns
+		outVal: (float) The central-variance of the data
+ 
+	"""
+	meanVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1)
+	centralVariance = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=2, shiftVal=meanVal)
+	return centralVariance
+
 
 def getAverageForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
 	""" Gets the average value of a property given the probability density function. Works simply by summing (centralVal*probability*width) for each bin
 	
 	Args:
-		binEdges:
-		pdfData: ([x,y]) x values are bin CENTRES, y values are the probability density function or something similar (g(r) should be fine?)
+		binEdges: (iter of floats, must be in order) Edge for each bin
+		pdfData: values are the probability density function or something similar (g(r) should be fine?)
 		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
 		normaliseBySum: (Bool) If True we do sum(pdfData) and divide the output by it. This may let the function work for certain cases where y-values are only proportional to pdf. NOTE: We use the sum betweenVals if that is set
 			 
@@ -605,7 +639,7 @@ def getAverageForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseByS
  
 	"""
 
-	return _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, multByXVals=True)	
+	return _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1)	
 
 
 def getIntegralOverPdfSimple(binEdges, pdfVals, betweenVals=None, normByFullSum=False):
@@ -613,7 +647,7 @@ def getIntegralOverPdfSimple(binEdges, pdfVals, betweenVals=None, normByFullSum=
 	
 	Args:
 		binEdges: (iter of floats, must be in order) Edge for each bin
-		pdfData: ([x,y]) x values are bin CENTRES, y values are the probability density function or something similar (g(r) should be fine?)
+		pdfData: values are the probability density function or something similar (g(r) should be fine?)
 		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
 		normByFullSum: (Bool) If True then we divide by sum(width*pdf) for ALL input values; This may let us use quantities that are proportional to pdfVals as long as the full distribution is included in pdfVals
 
@@ -621,14 +655,18 @@ def getIntegralOverPdfSimple(binEdges, pdfVals, betweenVals=None, normByFullSum=
 		outVal: (float) Sum of probabilities over range given
  
 	"""
-	outVal = _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=False, multByXVals=False)	
+	outVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=False, nthMoment=0)	
 	if normByFullSum:
-		divFactor = _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, multByXVals=False)
+		divFactor = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, nthMoment=0)
 		outVal *= 1/divFactor
 	return outVal
 
 
-def _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, multByXVals=False):
+#zeroth moment = Total number
+#first moment = mean value
+#second moment = variance
+#shift val lets us calculate moments around the mean; this gives us a sensible definition for variance and skewness
+def _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, nthMoment=0, shiftVal=0):
 
 	#1) Check data is in order
 	floatTol = 1e-6
@@ -664,10 +702,7 @@ def _integrateOverPdfBackend(binEdges, pdfVals, betweenVals=None, normaliseBySum
 	outSum = 0
 	pdfSum = 0
 	for width, centre, val in it.zip_longest(binWidths, binCentres, usePdf):
-		if multByXVals:
-			outSum += centre*width*val
-		else:
-			outSum += width*val
+		outSum += ((centre-shiftVal)**nthMoment)*width*val
 		pdfSum += width*val
 
 	#5) Normalise if requested
