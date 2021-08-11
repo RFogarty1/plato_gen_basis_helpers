@@ -8,7 +8,9 @@ import numpy as np
 
 from . import atom_combo_core as atomComboCoreHelp
 from . import calc_dists as calcDistsHelp
+from . import water_rotations as waterRotHelp
 
+from ..shared import simple_vector_maths as vectHelp
 
 class _DistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 	""" Populator meant for calculating distances between sets of indices """
@@ -160,6 +162,128 @@ class _PlanarDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
 		return True
 
+
+#Populate roll/pitch/azimuthal matrices simultaneously
+#water_orientations_roll, water_orientations_pitch, water_orientations_azimuthal
+class _WaterOrientationPopulator(atomComboCoreHelp._SparseMatrixPopulator):
+
+
+	def __init__(self, oxyIndices, hyIndices):
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+
+	def populateMatrices(self, inpGeom, outDict, level):
+		if level == 0:
+			self._populateLevelZeroMatrices(inpGeom, outDict)
+		elif level == 1:
+			self._populateLevelOneMatrices(inpGeom, outDict)
+
+	def _populateLevelZeroMatrices(self, inpGeom, outDict):
+		try:
+			unused = outDict["pos_vector_matrix"]
+		except KeyError:
+			self._populateLevelZeroMatrices_nonePresent(inpGeom, outDict)
+		else:
+			self._populateLevelZeroMatrices_partiallyPresent(inpGeom, outDict)
+
+	def _populateLevelZeroMatrices_nonePresent(self, inpGeom, outDict):
+		idxPairs = self._getOxyAndHyIdxPairs()
+		posVectorMatrix = calcDistsHelp.getNearestImageVectorsForIdxPairs(inpGeom, idxPairs, sparseMatrix=True)
+		outDict["pos_vector_matrix"] = posVectorMatrix
+
+	def _populateLevelZeroMatrices_partiallyPresent(self, inpGeom, outDict):
+		outMatrix = outDict["pos_vector_matrix"]
+
+		#Filter out the pairs that have already been calculated
+		updateIdxPairs = list()
+		for idxPair in self._getOxyAndHyIdxPairs():
+			if np.isnan(outMatrix[tuple(idxPair)][0]):
+				updateIdxPairs.append(idxPair)
+
+		#Get the values for the updated and put in the matrix
+		if len(updateIdxPairs)==0:
+			return 0
+
+		newVals = calcDistsHelp.getNearestImageVectorsForIdxPairs(inpGeom, updateIdxPairs, sparseMatrix=False)
+		for idx,val in it.zip_longest(updateIdxPairs, newVals):
+			outMatrix[tuple(idx)] = val
+
+
+	def _getOxyAndHyIdxPairs(self):
+		idxPairs = [ [ [oxyIdx,hyIndices[0]], [oxyIdx,hyIndices[1]] ] for oxyIdx, hyIndices in it.zip_longest(self.oxyIndices,self.hyIndices) ]
+		idxPairs = [ idxPair for idxPair in it.chain(*idxPairs) ]
+		return sorted(idxPairs)
+
+	def _populateLevelOneMatrices(self, inpGeom, outDict):
+		try:
+			unused = outDict["water_rotations_roll_matrix"]
+		except:
+			self._populateLevelOneMatrices_nonePresent(inpGeom, outDict)
+		else:
+			self._populateLevelOneMatrices_partiallyPresent(inpGeom, outDict)
+
+	def _populateLevelOneMatrices_nonePresent(self, inpGeom, outDict):
+		rollMatrix, pitchMatrix, azimuthalMatrix = self._getOrientationMatricesFromOxyIndices(inpGeom, self.oxyIndices, outDict)
+		outDict["water_rotations_roll_matrix"] = rollMatrix
+		outDict["water_rotations_pitch_matrix"] = pitchMatrix
+		outDict["water_rotations_azimuthal_matrix"] = azimuthalMatrix
+
+	def _populateLevelOneMatrices_partiallyPresent(self, inpGeom, outDict):
+		#Get matrices
+		inpRollMatrix, inpPitchMatrix = outDict["water_rotations_roll_matrix"], outDict["water_rotations_pitch_matrix"]
+		inpAziMatrix = outDict["water_rotations_azimuthal_matrix"]
+
+		#Get OXYGEN indices of is nan
+		rollNan, pitchNan, aziNan = [ np.argwhere( np.isnan(matrix) ) for matrix in [inpRollMatrix,inpPitchMatrix,inpAziMatrix]]
+		allNan = np.union1d(rollNan, pitchNan)
+		allNan = np.union1d(allNan,aziNan)
+		neededIndices = np.intersect1d( np.array(self.oxyIndices), allNan )
+
+		if len(neededIndices)==0:
+			return 0
+
+		#Calculate relevant values then update all the previous matrices
+		updateRoll, updatePitch, updateAzi = self._getOrientationMatricesFromOxyIndices(inpGeom, neededIndices, outDict)
+
+		outRollMatrix = np.where( np.isnan(inpRollMatrix), updateRoll, inpRollMatrix )
+		outPitchMatrix = np.where( np.isnan(inpPitchMatrix), updatePitch, inpPitchMatrix )
+		outAziMatrix = np.where( np.isnan(inpAziMatrix), updateAzi, inpAziMatrix )
+
+		outDict["water_rotations_roll_matrix"] = outRollMatrix
+		outDict["water_rotations_pitch_matrix"] = outPitchMatrix
+		outDict["water_rotataions_azimuthal_matrix"] = outAziMatrix
+
+
+	def _getOrientationMatricesFromOxyIndices(self, inpGeom, oxyIndices, outDict):
+		#Initialize output matrices (really just vectors)
+		outDim = len(inpGeom.cartCoords)
+		rollMatrix, pitchMatrix, azimuthalMatrix = np.empty((outDim)), np.empty((outDim)), np.empty((outDim))
+		rollMatrix[:], pitchMatrix[:], azimuthalMatrix[:] = np.nan, np.nan, np.nan
+
+
+		#
+		posVectMatrix = outDict["pos_vector_matrix"]
+		outRotMatrices = list()
+		for oxyIdx in oxyIndices:
+			idxInList = self.oxyIndices.index(oxyIdx)
+			hyIndices = self.hyIndices[idxInList]
+			ohVectA, ohVectB = posVectMatrix[oxyIdx][hyIndices[0]], posVectMatrix[oxyIdx][hyIndices[1]]
+			ohVectA, ohVectB = [vectHelp.getUnitVectorFromInpVector(x) for x in [ohVectA,ohVectB]]
+			currRotMatrix = waterRotHelp._getStandardRotationMatrixFromTwoOHVectors(ohVectA,ohVectB)
+			outRotMatrices.append(currRotMatrix)
+
+		#Get the rotation angles in order of the oxygen indices
+		allRotAngles = waterRotHelp._getWaterStandardRotationCoordsFromMatrices(outRotMatrices)
+		for rotIdx,oxyIdx in enumerate(oxyIndices):
+			rollMatrix[oxyIdx] = allRotAngles[rotIdx][0]
+			pitchMatrix[oxyIdx] = allRotAngles[rotIdx][1]
+			azimuthalMatrix[oxyIdx] = allRotAngles[rotIdx][2] 
+
+		return rollMatrix, pitchMatrix, azimuthalMatrix
+
+	@property
+	def maxLevel(self):
+		return 1
 
 class _WaterMinDist_plusMinDistFilter_populator(atomComboCoreHelp._SparseMatrixPopulator):
 

@@ -120,6 +120,11 @@ def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.filterToIndices, inpObj.minDistType]
 	return atomComboPopulatorHelp._WaterMinDist_plusMinDistFilter_populator(*currArgs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.WaterOrientationOptions)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices]
+	return atomComboPopulatorHelp._WaterOrientationPopulator(*currArgs)
+
 
 #Registration of standard binners below
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcRdfOptions)
@@ -167,6 +172,11 @@ def _(inpObj):
 def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.filterToIndices, inpObj.filterDists, inpObj.minDistType]
 	return binValGettersHelp._WaterMinDist_plusMinDistFilter_binValGetter(*currArgs)
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.WaterOrientationOptions)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.angleType]
+	return binValGettersHelp._WaterOrientationBinValGetter(*currArgs)
 
 
 #Utility functions

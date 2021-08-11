@@ -1,8 +1,8 @@
 
 
+from . import binned_res as binResHelp
 from . import calc_distrib_core as calcDistrCoreHelp
 from . import calc_radial_distrib_impl as calcRadImpl
-
 
 
 
@@ -51,6 +51,71 @@ class _WaterOptsMixin():
 			outHyIndices.append(currHy)
 		return outOxyIndices, outHyIndices
 
+
+
+#Lots of parts stolen from water_rotations, which is now sorta redundant code
+class WaterOrientationOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):
+
+
+	def __init__(self, binResObj, oxyIndices, hyIndices, angleType="roll", checkEdges=True, primaryIdxType="O"):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			angleType: (str - roll, pitch or azimuth) The angle type we want to bin. roll/pitch/azimuth correspond to rotations around standard x,y,z axes respectively
+			checkEdges: (Bool) If True raise error if the edges of bins go beyond the domains of the angleType
+
+		Raises:
+			ValueError: If checkEdges=True and the bin edges go beyond angle domains
+				 
+		"""
+		self.distribKey = "adf" #Angular distribution function. Not overly important what its set as
+		self.domainTol = 1 #Allow bins to be up to 1 degrees outside the domain
+		self.binResObj = binResObj
+		self.checkEdges = checkEdges
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self._angleTypeToDomainMap = {"roll":[-90,90], "pitch":[-90,90], "azimuth":[-180,180]}
+		self.angleType = angleType #IMPORTANT to do this after setting checkEdges
+		self.primaryIdxType = "O"
+
+
+	@classmethod
+	def fromWaterIndicesAndGeom(cls, binResObj, waterIndices, inpGeom, primaryIdxType="O", checkEdges=True, angleType="roll"):
+		oxyIndices, hyIndices = cls._getOxyAndHyIndicesFromWaterIndicesAndGeom(None,waterIndices, inpGeom)
+		currArgs = [binResObj, oxyIndices, hyIndices]
+		currKwargs = {"angleType":angleType, "checkEdges":checkEdges, "primaryIdxType":primaryIdxType}
+		return cls(*currArgs, **currKwargs)
+
+
+	@property
+	def angleType(self):
+		return self._angleType
+
+	@angleType.setter
+	def angleType(self, val):
+		newDomain = self._angleTypeToDomainMap[val]
+		self._checkBinEdgesWithinDomain(newDomain)
+		self._angleType = val
+
+	@property
+	def domain(self):
+		return self._angleTypeToDomainMap[self.angleType]
+
+	def _checkBinEdgesWithinDomain(self, domain):
+		if self.checkEdges:
+			binResHelp._checkBinEdgesWithinDomain(self.binResObj, domain, self.domainTol)
+
+	def __eq__(self,other):
+		cmpAttrs = ["binResObj", "checkEdges","oxyIndices", "hyIndices", "angleType", "primaryIdxType"]
+		for attr in cmpAttrs:
+			valA, valB = getattr(self,attr), getattr(other,attr)
+			if valA != valB:
+				return False
+
+		return True
 
 
 class WaterMinDistPlusMinDistFilterOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):

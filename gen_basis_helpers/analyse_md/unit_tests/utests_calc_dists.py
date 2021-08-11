@@ -508,6 +508,53 @@ class TestCalcIterOfAnglesForInpIndices(unittest.TestCase):
 		actAngles = self._runTestFunct()
 		self.assertEqual(expAngles,actAngles)
 
+
+#Same geom as "TestCalcNearestImageVectorMatrix"; meaning easy to steal the expected reults from there
+class TestCalcNearestImageVectorsForIdxPairs(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoords = [ [1,1,7,"A"],
+		                    [1,1,9,"B"],
+		                    [1,3,1,"C"] ]
+
+		self.idxPairs = [  [1,2], [0,1], [0,2], [2,1], [1,1] ]
+		self.sparseMatrix = False
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+	def _runTestFunct(self):
+		return tCode.getNearestImageVectorsForIdxPairs(self.cellA, self.idxPairs, sparseMatrix=self.sparseMatrix)
+
+	def testExpectedCaseA_listReturned(self):
+		aToB, aToC, bToC = [0,0,2] , [0,2,4]  , [0,2,2]
+		bToA, cToA, cToB = [0,0,-2], [0,-2,-4], [0,-2,-2]
+
+		expVals = [ bToC, aToB, aToC, cToB, [0,0,0] ] 
+		actVals = self._runTestFunct()
+
+		for exp,act in it.zip_longest(expVals,actVals):
+			self.assertTrue( np.allclose( np.array(exp), np.array(act) ) )
+
+	def testExpectedCaseA_sparseMatrixReturned(self):
+		self.sparseMatrix=True
+
+		expMatrix = np.empty( (3,3,3) )
+		expMatrix[:] = np.nan
+		expMatrix[tuple([1,2])], expMatrix[tuple([2,1])] = [0,2,2], [0,-2,-2]
+		expMatrix[tuple([0,1])], expMatrix[tuple([1,0])] = [0,0,2], [0,0,-2]
+		expMatrix[tuple([0,2])], expMatrix[tuple([2,0])] = [0,2,4], [0,-2,-4]
+		expMatrix[tuple([1,1])] = [0,0,0]
+
+		actMatrix = self._runTestFunct()
+
+		self.assertTrue( np.allclose(expMatrix,actMatrix,equal_nan=True) )
+
+
 class TestCalcNearestImageVectorMatrix(unittest.TestCase):
 
 	def setUp(self):
@@ -518,6 +565,7 @@ class TestCalcNearestImageVectorMatrix(unittest.TestCase):
 
 		self.indicesA = None
 		self.indicesB = None
+		self.sparseMatrix = False
 
 		self.createTestObjs()
 
@@ -526,7 +574,7 @@ class TestCalcNearestImageVectorMatrix(unittest.TestCase):
 		self.cellA.cartCoords = self.cartCoords
 
 	def _runTestFunct(self):
-		kwargs = {"indicesA":self.indicesA, "indicesB":self.indicesB}
+		kwargs = {"indicesA":self.indicesA, "indicesB":self.indicesB, "sparseMatrix":self.sparseMatrix}
 		return tCode.getNearestImageVectorMatrixBasic(self.cellA, **kwargs)
 
 	def _loadStandardExpectedAllIndices(self):
@@ -551,6 +599,29 @@ class TestCalcNearestImageVectorMatrix(unittest.TestCase):
 		              [fullMatrix[1][2]] ] 
 		actMatrix = self._runTestFunct()
 		self.assertTrue( np.allclose(np.array(expMatrix), np.array(actMatrix)) )
+
+	def testExpected_indicesAB_sparseMatrix(self):
+		#Setup options
+		self.indicesA = [0,1]
+		self.indicesB = [2]
+		self.sparseMatrix = True
+
+		#Load expected
+		fullMatrix = self._loadStandardExpectedAllIndices()
+		expMatrix = np.empty( (3,3,3) )
+		expMatrix[:] = np.nan
+
+		expMatrix[ tuple([0,2]) ] = fullMatrix[0][2]
+		expMatrix[ tuple([1,2]) ] = fullMatrix[1][2]
+		expMatrix[ tuple([2,0]) ] = fullMatrix[2][0]
+		expMatrix[ tuple([2,1]) ] = fullMatrix[2][1]
+
+		#check exp vs actual
+		actMatrix = self._runTestFunct()
+
+		self.assertTrue( np.allclose(np.array(expMatrix), np.array(actMatrix), equal_nan=True) )
+
+
 
 
 

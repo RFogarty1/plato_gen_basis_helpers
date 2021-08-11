@@ -1,17 +1,79 @@
 
 import copy
+import itertools as it
 import unittest
 
 import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 
+import gen_basis_helpers.analyse_md.binned_res as binResHelp
 import gen_basis_helpers.analyse_md.distr_opt_objs as tCode
 
 
+
+class TestWaterOrientationOpts(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.cartCoords = [ [0,0,0,"O"], [1,1,1,"H"], [2,2,2,"H"],
+		                    [3,3,3,"O"], [4,4,4,"H"], [5,5,5,"H"],
+		                    [8,8,8,"X"], [9,9,9,"Y"] ]
+
+		#Options for the actual opts obj
+		self.checkEdges = True
+		self.binEdges = [-90,0,90]
+		self.oxyIndices = [0,3]
+		self.hyIndices = [ [1,2], [4,5] ]
+		self.angleType = "roll"
+		self.primaryIdxType = "O"
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the cell
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create other stuff
+		self.binObjA = binResHelp.BinnedResultsStandard.fromBinEdges(self.binEdges)
+		args = [self.binObjA, self.oxyIndices, self.hyIndices]
+		kwargs = {"angleType":self.angleType, "checkEdges":self.checkEdges}
+		self.testObjA = tCode.WaterOrientationOptions(*args,**kwargs)
+
+	def testExpectedDomainsUponChanging(self):
+		angleTypes = ["roll", "pitch", "azimuth"]
+		expDomains = [ [-90,90], [-90,90], [-180,180] ]
+		for aType,expDomain in it.zip_longest(angleTypes,expDomains):
+			self.testObjA.angleType = aType
+			actDomain = self.testObjA.domain
+			self.assertAlmostEqual(expDomain[0], actDomain[0])
+			self.assertAlmostEqual(expDomain[1], actDomain[1])
+
+	def testRaisesIfCheckEdgesAndWeSetToAngleTypeWithLowerDomain(self):
+		#Check error on initiation
+		self.binEdges = [0,50,92]
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
+
+		#Check error when changin from azimuth (large domain) to pitch (smaller domain)
+		self.angleType="azimuth"
+		self.createTestObjs()
+		with self.assertRaises(ValueError):
+			self.testObjA.angleType = "roll"
+
+	def testAltConstructor(self):
+		expObj = self.testObjA
+
+		waterIndices = [ [1,2,0],[4,5,3] ]
+		currArgs = [self.binObjA, waterIndices, self.cellA]
+		currKwargs = {"primaryIdxType":self.primaryIdxType, "checkEdges":self.checkEdges, "angleType":self.angleType}
+		actObj = tCode.WaterOrientationOptions.fromWaterIndicesAndGeom(*currArgs, **currKwargs)
+
+		self.assertEqual(expObj,actObj)
+
+
 #Testing alternative constructor mostly
-
-
 class TestWaterMinDistOpts(unittest.TestCase):
 
 	def setUp(self):

@@ -142,6 +142,90 @@ class TestMinDistsEquality(unittest.TestCase):
 		self.assertNotEqual(objA, objB)
 
 
+class TestWaterOrientationBinValsGetter(unittest.TestCase):
+
+	def setUp(self):
+		#1) Geometric parameters
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		water_azi90   = [ [0,0,0,"O"], [-1,1,0,"H"], [1, 1, 0,"H"] ]
+		water_azi120  = [ [0,0,0,"O"], [-1.37, 0.37, 0,"H"], [0.37,1.37,0,"H"] ] #Actually -60.11? So maybe 119.89 in MD land [119.88652694042403]
+		water_roll70  = [ [0,0,0,"O"], [1,0.34,0.94,"H"] , [1,-0.34,-0.94,"H"] ] #Actually 70.11483488614456
+		water_pitch_80_azi_20 = [ [0.0, 0.0, 0.0, 'O'], [-0.17, 0.78, 0.60, 'H'], [0.37, -0.71, 0.60, 'H'] ]#79.98644481907608,19.686775804346176
+
+
+		self.cartCoords = water_azi90 + water_azi120 + water_roll70 + water_pitch_80_azi_20
+
+		#Options object parameters
+		self.binResObj = None #Irrelevant
+		self.oxyIndices = [0,3,6,9]
+		self.hyIndices = [ [1,2], [4,5], [7,8], [10,11] ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Sort out geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Sort out options objects
+		currArgs = [self.binResObj, self.oxyIndices, self.hyIndices]
+		currKwargs = {"checkEdges":False}
+		self.optsObjRoll = distrOptObjHelp.WaterOrientationOptions(*currArgs, **currKwargs, angleType="roll")
+		self.optsObjPitch = distrOptObjHelp.WaterOrientationOptions(*currArgs, **currKwargs, angleType="pitch")
+		self.optsObjAzi = distrOptObjHelp.WaterOrientationOptions(*currArgs, **currKwargs, angleType="azimuth")
+
+		#Get the sparse matrix calculator and populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObjRoll, self.optsObjPitch, self.optsObjAzi])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Get the bin val getter object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjRoll, self.optsObjPitch, self.optsObjAzi])
+
+	def testExpectedCaseA(self):
+		#Roll, pitch, azimuth; Note that roll is maybe reversed in sign compared to the adsorbate code. Though sign is always going to be arbitrary
+		#Adsorbate code is a bit weird w.r.t oh-distances and roll i think...
+		expVals = [ [0                  , 0                ,90],
+		            [0                  , 0                ,119.88652694042403],
+		            [-70.11483488614456 , 0                ,0],
+		            [-0.23900590074245542, 79.98644481907608,19.686775804346176] ]
+		actVals = self.testObj.getValsToBin(self.sparseCalculator)
+
+		self.assertTrue( np.allclose(np.array(expVals), np.array(actVals)) )
+
+
+	def testExpected_diffIndicesEach(self):
+		""" This tests the populators a bit better; since they have to actually deal with partially-populated matrices"""
+		#Create options objects
+		rollOxyIndices, rollHyIndices = [0,3], [ [1,2], [4,5] ]
+		pitchOxyIndices, pitchHyIndices = [3,6,9], [ [4,5], [7,8], [10,11] ]
+
+		currArgs = [self.binResObj, rollOxyIndices, rollHyIndices]
+		currKwargs = {"checkEdges":False}
+		optsObjRoll = distrOptObjHelp.WaterOrientationOptions(*currArgs, **currKwargs, angleType="roll")
+
+		currArgs = [self.binResObj, pitchOxyIndices, pitchHyIndices]
+		optsObjPitch = distrOptObjHelp.WaterOrientationOptions(*currArgs, **currKwargs, angleType="pitch")
+
+		#Create sparse calculator + populate
+		sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([optsObjRoll, optsObjPitch])
+		sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create bin val getter
+		testObjRoll = atomComboObjsMapHelp.getOneDimBinValGetterFromOptsObj(optsObjRoll)
+		testObjPitch = atomComboObjsMapHelp.getOneDimBinValGetterFromOptsObj(optsObjPitch)
+
+		#Figure out expected values
+		expValsRoll = [ 0, 0]
+		expValsPitch = [ 0, 0, 79.98644481907608 ]
+
+		#run funct + compare expected and actual values
+		actValsRoll = testObjRoll.getValsToBin( sparseCalculator )
+		actValsPitch = testObjPitch.getValsToBin( sparseCalculator )
+
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expValsRoll, actValsRoll)]
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expValsPitch, actValsPitch)]
+
 
 class TestWaterMinDistsPlusMinDistFilterBinValsGetter(unittest.TestCase):
 

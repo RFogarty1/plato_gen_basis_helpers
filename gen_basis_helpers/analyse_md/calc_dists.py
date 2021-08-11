@@ -221,14 +221,77 @@ def getInterSurfPlaneSeparationTwoPositions(posA, posB, inpCell):
 
 
 
-def getNearestImageVectorMatrixBasic(inpCell, indicesA=None, indicesB=None):
+def getNearestImageVectorsForIdxPairs(inpCell, idxPairs, sparseMatrix=False):
+	""" Gets the vectors [coordB - coordA] (i.e. the position vector to go from A to B) for each idx pair [A,B] using the minimum image convention. This can be MUCH faster than using getNearestImageVectorMatrixBasic if you only want a subset of vectors calculated
+	
+	Args:
+		inpCell: (plato_pylib UnitCell object)
+		idxPairs: (iter of ints) The indices we want the position vectors for. If sparseMatrix output is used then the reverse vectors should automatically be calculated
+		sparseMatrix: (Bool) If True return a sparsely populated matrix of values (explained more below)
+ 
+	Returns
+		outVects: one vector per idxPair if sparseMatrix is False, else NxNx3 matrix containing np.nan for most entries but [coordB-coordA] for those corresponding to values in idxPairs. Here "N" refers to the number of atoms in inpCell
+ 
+	"""
+	#Step 1: Get the MINIMAL nearest image matrix by doing it row by row
+	useCell = uCellHelp.UnitCell(lattParams=inpCell.getLattParamsList(), lattAngles=inpCell.getLattAnglesList())
+	fractCoords = inpCell.fractCoords
+	fCoordsNoEles = np.array([x[:3] for x in fractCoords])
+	eleList = [x[-1] for x in fractCoords]
+
+	outDim = len(fractCoords)
+	sparseNearestNebMatrix = [ [list() for x in range(outDim)]  for unused in range(outDim) ]
+
+	sortedIdxPairs = sorted(idxPairs)
+
+	#Step 1.X: Loop over idx pairs, calculating the relevant row for sparseNearestNebMatrix
+	idx = 0
+	while idx < len(sortedIdxPairs):
+		#Get all relevant idxB values for this row
+		startIdx, rowIdx = idx, sortedIdxPairs[idx][0]
+		endIdx = startIdx + 1
+
+		while endIdx < len(sortedIdxPairs):
+			if sortedIdxPairs[endIdx][0] != rowIdx:
+				break
+			else:
+				endIdx += 1
+
+		indicesB = [x[1] for x in idxPairs[startIdx:endIdx]]
+
+		#Append to the sparse matrix and Update our idx value
+		currRowVals = _getSingleRowOfNearestImageNebCoordsMatrix(fCoordsNoEles, eleList, useCell, rowIdx, indicesB)
+		for idxB, currRowVal in it.zip_longest(indicesB, currRowVals):
+			sparseNearestNebMatrix[rowIdx][idxB] = currRowVal
+
+		idx = endIdx
+
+	#Step 2: Build sparse matrix with the vectors
+	outSparseMatrix = np.empty( (outDim,outDim,3) )
+	outSparseMatrix[:] = np.nan
+
+	for idxPair in idxPairs:
+		coordA, coordB = sparseNearestNebMatrix[idxPair[0]][idxPair[1]]
+		outSparseMatrix[ tuple(idxPair)] = np.array([b-a for b,a in it.zip_longest(coordB[:3],coordA[:3])])
+		outSparseMatrix[ tuple(reversed(idxPair)) ] = np.array([a-b for b,a in it.zip_longest(coordB[:3],coordA[:3])])
+
+	#Step 3: Also build a sparse output matrix as we go; and optionally return it
+	if sparseMatrix:
+		outVals = outSparseMatrix
+	else:
+		outVals =  [ outSparseMatrix[tuple(idxPair)] for idxPair in idxPairs ] 
+
+	return outVals
+
+
+def getNearestImageVectorMatrixBasic(inpCell, indicesA=None, indicesB=None, sparseMatrix=False):
 	""" Gets a matrix where each element contains [coordB-coordA] where A,B are row/column indices. coordA is that found in inpCell, coordB is the nearest neighbour image. Thus function gets the vectors between two atoms using minimum image convention
 	
 	Args:
 		inpCell: (plato_pylib UnitCell object)
 		indicesA: (Optional, iter of ints) Indices of the atoms to include for the first dimension; Default is to include ALL atoms
 		indicesB: (Optional, iter of ints) Indices of the atoms to include for the second dimension; Default is indicesA
-
+		sparseMatrix: (Optional, Bool) If True the the matrix returned will be NxN (N being number of atoms in inpCell) even when indicesA or indicesB set. In that case we just set the unwanted indices to np.nan
 			 
 	Returns
 		outMatrix: (NxM Matrix) outMatrix[n][m] = [coordM-coordN] where N and M are lengths of indicesA and indicesB
@@ -240,6 +303,12 @@ def getNearestImageVectorMatrixBasic(inpCell, indicesA=None, indicesB=None):
 		for cIdx in range(len(outMatrix[rIdx])):
 			coordA, coordB = outMatrix[rIdx][cIdx]
 			outMatrix[rIdx][cIdx] = [b-a for b,a in it.zip_longest(coordB[:3],coordA[:3])]
+#			outMatrix[cIdx][rIdx] = [a-b for b,a in it.zip_longest(coordB[:3],coordA[:3])]
+
+	if sparseMatrix:
+		cartCoords = inpCell.cartCoords
+		outDim = len(cartCoords)
+		outMatrix = _getTwoDimSparsePosVectorMatrix(np.array(outMatrix), outDim, indicesA, indicesB)
 
 	return outMatrix
 
@@ -295,7 +364,7 @@ def _getSingleRowOfNearestImageNebCoordsMatrix(startFractCoords, eleList, useCel
 	outRow = list()
 	for idxB,coord in enumerate(outCartCoords[1:]):
 		partA = [x for x in outCartCoords[0]] + [eleList[idxA]] #Can reach pretty significant runtime portion
-		partB = coord + [eleList[idxB]]
+		partB = coord + [eleList[indicesB[idxB]]]
 		outRow.append( [partA,partB] )
 
 	return outRow
@@ -376,6 +445,32 @@ def getInterAtomicAnglesForInpGeom(inpCell, angleIndices, degrees=True):
 	return outAngles
 
 
+
+def _getTwoDimSparsePosVectorMatrix(inpMatrix, outDim, indicesA, indicesB):
+	""" Gets a sparsely populated 2-D vector matrix from a given inpMatrix. This allows us to not worry about how atom indices map to indicesA and indicesB, while still not calculating more values than we need. This differs SLIGHTLY from getting a sparse 3-d matrix in that we assume here that the vectors are len-3 by default (may extend later)
+	
+	Args:
+		inpMatrix: (NxMx3 matrix) N and M are dimensions of indicesA and indicesB. inpMatrix[1][2] contains value between indicesA[1] and indicesB[2]
+		outDim: (int) The length of one side of the output (square) matrix
+		indicesA: (iter of ints) Indices used to build inpMatrix rows
+		indicesB: (iter of ints) Indices used to build inpMatrix columns
+ 
+	Returns
+		outMatrix: (NxNx3 matrix) Where N is outDim. outMatrix[idxA][idxB] gets the value between idxA and idxB; if the information wasnt in inpMatrix then all elements of the vector will be np.nan.
+ 
+	"""
+	outMatrix = np.empty( (outDim,outDim,3) )
+	outMatrix[:] = np.nan
+
+	#Should probably factor this out; almost identical to the normal 2-dim case
+	allInpIndices = ( tuple([idxA,idxB,idxC]) for idxA,idxB,idxC in it.product( range(len(indicesA)), range(len(indicesB)), range(3) ) )
+	allOutIndices = ( tuple([idxA,idxB,idxC]) for idxA,idxB,idxC in it.product( indicesA, indicesB, range(3) ) )
+
+	for inpIdx, outIdx in it.zip_longest(allInpIndices, allOutIndices):
+		outMatrix[ tuple(outIdx) ] = inpMatrix[ tuple(inpIdx) ]
+		outMatrix[ tuple( [x for x in reversed(outIdx[:2])] + [outIdx[2]]) ] = -1*inpMatrix[ tuple(inpIdx) ]
+
+	return outMatrix
 
 def _getTwoDimSparseMatrix(inpMatrix, outDim, indicesA, indicesB):
 	""" Gets a sparsely populated 2-D matrix from a given inpMatrix. This allows us to not worry about how atom indices map to indicesA and indicesB, while still not calculating more values than we need
