@@ -85,18 +85,20 @@ class TestNudgedBandOpts(unittest.TestCase):
 		self.alignFrames = False
 		self.rotateFrames = False
 		self.printInitConfigInfo = True
+		self.optEndPoints = True
 		self.createTestObjs()
 
 	def createTestObjs(self):
 		kwargDict = {"numbReplicas":self.numbReplicas, "procsPerReplicaEnv":self.procsPerReplicaEnv,
 		             "springConstant":self.springConstant, "nebType":self.nebType, "alignFrames":self.alignFrames,
-		             "rotateFrames":self.rotateFrames, "printInitConfigInfo":self.printInitConfigInfo}
+		             "rotateFrames":self.rotateFrames, "printInitConfigInfo":self.printInitConfigInfo, "optEndPoints":self.optEndPoints}
 		self.testObjA = tCode.NudgedBandOptsStd(**kwargDict)
 
 	def testExpectedOptDictA(self):
 		expOptDict = {"nudgedband_numbReplicas":self.numbReplicas, "nudgedband_procsPerReplicaEnv":self.procsPerReplicaEnv,
 		              "nudgedband_type":self.nebType, "nudgedband_alignFrames":self.alignFrames,
-		              "nudgedband_rotateFrames":self.rotateFrames, "nudgedband_printInitConfigInfo":self.printInitConfigInfo}
+		              "nudgedband_rotateFrames":self.rotateFrames, "nudgedband_printInitConfigInfo":self.printInitConfigInfo,
+		              "nudgedband_optEndPoints":self.optEndPoints}
 		actOptDict = self.testObjA.optDict
 
 		for key in expOptDict.keys():

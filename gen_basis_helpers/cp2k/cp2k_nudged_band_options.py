@@ -38,7 +38,7 @@ class NudgedBandReplicas():
 
 class NudgedBandOptsStd():
 
-	def __init__(self, numbReplicas=None, procsPerReplicaEnv=None, springConstant=None, nebType=None, alignFrames=True, rotateFrames=True, printInitConfigInfo=True):
+	def __init__(self, numbReplicas=None, procsPerReplicaEnv=None, springConstant=None, nebType=None, alignFrames=True, rotateFrames=True, printInitConfigInfo=True, optEndPoints=False):
 		""" Initializer
 		
 		Args (Leaving any as None should lead to CP2K defaults being used):
@@ -49,7 +49,7 @@ class NudgedBandOptsStd():
 			alignFrames: (Bool) Corresponds to the align_frames keyword. Probably usually safeist to set to False (it can mess with the final geometry)
 			rotateFrames: (Bool) Corresponds to the rotate_frames keyword. Probably usually safeist to set to False (it can mess with the final geometry)
 			printInitConfigInfo: (Bool) Whether to print a file with the initial configuration information (Program_run_info/INITIAL_CONFIGURATION_INFO keyword in CP2K)
-			
+			optEndPoints: (Bool) Whether to optimise the end points as part of the NEB calculation
  
 		"""
 		self.numbReplicas = numbReplicas
@@ -59,6 +59,7 @@ class NudgedBandOptsStd():
 		self.alignFrames = alignFrames
 		self.rotateFrames = rotateFrames
 		self.printInitConfigInfo = printInitConfigInfo
+		self.optEndPoints = optEndPoints
 
 	@property
 	def optDict(self):
@@ -68,7 +69,8 @@ class NudgedBandOptsStd():
 		                "nebType": "nudgedband_type",
 		                "alignFrames": "nudgedband_alignFrames",
 		                "rotateFrames":"nudgedband_rotateFrames",
-		                "printInitConfigInfo":"nudgedband_printInitConfigInfo"}
+		                "printInitConfigInfo":"nudgedband_printInitConfigInfo",
+		                "optEndPoints":"nudgedband_optEndPoints"}
 		outDict = dict()
 
 		for key in attrToKeyMap.keys():

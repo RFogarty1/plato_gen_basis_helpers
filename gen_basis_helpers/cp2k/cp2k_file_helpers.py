@@ -462,6 +462,11 @@ def _modCp2kObjBasedOnNudgedBandReplicasSection(cp2kObj, useDict):
 	if useDict.get("nudgedband_printInitConfigInfo".lower(), None) is not None:
 		nebSection.PROGRAM_RUN_INFO.Initial_configuration_info = useDict["nudgedband_printInitConfigInfo".lower()]
 
+	#NOTE: This may need altering if i ever add an option to mess with the optimise band method (DIIS vs MD)
+	if useDict.get("nudgedband_optEndPoints".lower(),None) is not None:
+		nebSection.OPTIMIZE_BAND_add()
+		nebSection.OPTIMIZE_BAND_list[0].Optimize_end_points = useDict["nudgedband_optEndPoints".lower()]
+
 
 def _modCp2kObjBasedOnHirshfeldOptions(cp2kObj, useDict):
 	hirshSection = cp2kObj.CP2K_INPUT.FORCE_EVAL_list[-1].DFT.PRINT.HIRSHFELD
