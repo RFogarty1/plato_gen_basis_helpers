@@ -240,7 +240,10 @@ def getNearestImageVectorsForIdxPairs(inpCell, idxPairs, sparseMatrix=False):
 	eleList = [x[-1] for x in fractCoords]
 
 	outDim = len(fractCoords)
-	sparseNearestNebMatrix = [ [list() for x in range(outDim)]  for unused in range(outDim) ]
+#	sparseNearestNebMatrix = [ [list() for x in range(outDim)]  for unused in range(outDim) ]
+
+	sparseNearestNebMatrix = np.empty( (outDim,outDim,2,3) )
+	sparseNearestNebMatrix[:] = np.nan
 
 	sortedIdxPairs = sorted(idxPairs)
 
@@ -262,7 +265,8 @@ def getNearestImageVectorsForIdxPairs(inpCell, idxPairs, sparseMatrix=False):
 		#Append to the sparse matrix and Update our idx value
 		currRowVals = _getSingleRowOfNearestImageNebCoordsMatrix(fCoordsNoEles, eleList, useCell, rowIdx, indicesB)
 		for idxB, currRowVal in it.zip_longest(indicesB, currRowVals):
-			sparseNearestNebMatrix[rowIdx][idxB] = currRowVal
+			sparseNearestNebMatrix[rowIdx][idxB][0] = currRowVal[0][:3] #Dont need the element type
+			sparseNearestNebMatrix[rowIdx][idxB][1] = currRowVal[1][:3]
 
 		idx = endIdx
 
