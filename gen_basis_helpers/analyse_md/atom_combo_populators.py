@@ -42,7 +42,7 @@ class _DistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 			useMatrix = outDict["distMatrix"]
 		except KeyError:
 			currKwargs = {"indicesA":self.fromIndices, "indicesB":self.toIndices, "sparseMatrix":True}
-			outDict["distMatrix"] = calcDistsHelp.calcDistanceMatrixForCell_minImageConv(inpGeom, **currKwargs)
+			outDict["distMatrix"] = calcDistsHelp._calcDistanceMatrixForCell_minImageConv_memoized(inpGeom, **currKwargs)
 		else:
 			self._populatePartiallyPopulatedMatrix(inpGeom, outDict)
 
@@ -57,7 +57,7 @@ class _DistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
 		#Calculate only for the relevant indices
 		currKwargs = {"indicesA":forwardFromIndices, "indicesB":forwardToIndices, "sparseMatrix":True}
-		newSparseMatrix = calcDistsHelp.calcDistanceMatrixForCell_minImageConv(inpGeom, **currKwargs)
+		newSparseMatrix = calcDistsHelp._calcDistanceMatrixForCell_minImageConv_memoized(inpGeom, **currKwargs)
 
 		#Populate the relevant parts of the original matrix 
 		outDict["distMatrix"] = np.where( np.isnan(useMatrix), newSparseMatrix, useMatrix)

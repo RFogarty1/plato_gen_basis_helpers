@@ -90,7 +90,6 @@ class TestSparseMatrixCalculatorA(unittest.TestCase):
 		actDict = self.testObj.outDict
 		self._testExpectedAndActualDictsEqual(expDict, actDict)
 
-
 	def testExpectedCase_matricesAlreadyPopulated(self):
 		""" This allows us to check that new matrices WILL overwrite the previous ones """
 		self._runTestFunct()
@@ -135,4 +134,5 @@ class TestSparseMatrixCalculatorEquality(unittest.TestCase):
 
 
 
-
+if __name__ == "__main__":
+    unittest.main()

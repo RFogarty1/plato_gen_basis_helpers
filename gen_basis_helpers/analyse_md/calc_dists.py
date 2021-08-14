@@ -1,5 +1,6 @@
 
 import copy
+import collections
 import itertools as it
 import math
 import numpy as np
@@ -34,6 +35,11 @@ def calcNearestDistanceBetweenTwoSetsOfIndices(inpCell, indicesA=None, indicesB=
 				distMatrix[rIdx][cIdx] = np.inf
 
 	return np.min(distMatrix)
+
+
+
+
+
 
 
 def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None, sparseMatrix=False):
@@ -75,6 +81,32 @@ def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None
 	return distMatrix
 
 
+#Only sensible for dist matrices function really
+#NOTE: Theres more copy call than i need...
+class _SpecialMemoizationFunct():
+
+	def __init__(self, funct, maxEntries=20):
+		self.argCache = collections.deque(list(), maxlen=maxEntries)
+		self.funct = funct
+
+	def __call__(self, *args, **kwargs):
+
+		#1) check if args already in cache. This is broken.... maybe because i used deque
+		currArgs = tuple([x for x in args])
+		sortedKwargs = sorted(kwargs.items())
+		for prevArgs,prevKwargs,output in self.argCache:
+			if (prevArgs==currArgs) and (prevKwargs==sortedKwargs):
+				return np.copy(output) #NEED TO RETURN A COPY, so theres no way to corrupt the memoized
+
+		#2)If not, run the function and add to the cache
+		output = self.funct(*args,**kwargs)
+		toAppend =  [tuple([x for x in args]),sorted(kwargs.items()),np.copy(output)]
+		self.argCache.appendleft( toAppend )
+
+		return np.copy(output)
+
+_calcDistanceMatrixForCell_minImageConv_memoized = _SpecialMemoizationFunct(calcDistanceMatrixForCell_minImageConv)
+ 
 
 #NOTE: I could probably extend this to a different plane; but suspect it would need to contain at least one cell vector
 #(and maybe even two)
