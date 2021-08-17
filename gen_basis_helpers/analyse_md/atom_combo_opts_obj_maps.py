@@ -1,4 +1,5 @@
 
+import copy
 
 from . import atom_combo_populators as atomComboPopulatorHelp
 from . import atom_combo_binval_getters as binValGettersHelp
@@ -6,7 +7,8 @@ from . import atom_combo_core as coreComboHelp
 from . import calc_distrib_core as calcDistrCoreHelp
 from . import calc_radial_distrib_impl as calcRadialDistrImplHelp
 from . import distr_opt_objs as distrOptsObjHelp
-
+from . import classification_distr_opt_objs as classDistrOptObjHelp
+from . import classification_binval_getters as classBinvalGetterHelp
 
 from ..shared import register_key_decorator as regKeyDecoHelp
 from ..shared import plane_equations as planeEqnHelp
@@ -59,7 +61,19 @@ def getMultiDimBinValGetterFromOptsObjs(optsObjIter):
  
 	"""
 	singleObjs = [getOneDimBinValGetterFromOptsObj(optObj) for optObj in optsObjIter]
-	return coreComboHelp._GetMultiDimValsToBinFromSparseMatrices(singleObjs)
+
+	#NOTE: Some options objects wll return iterators of bin-val getters; need to check and handle this
+	outObjs = list()
+	for obj in singleObjs:
+		try:
+			iter(obj)
+		except TypeError:
+			outObjs.append(obj)
+		else:
+			outObjs.extend(obj)
+
+
+	return coreComboHelp._GetMultiDimValsToBinFromSparseMatrices(outObjs)
 
 
 def getOneDimBinValGetterFromOptsObj(optsObj):
@@ -70,6 +84,9 @@ def getOneDimBinValGetterFromOptsObj(optsObj):
 			 
 	Returns
 		binValGetter: (_GetOneDimValsToBinFromSparseMatricesBase)
+
+	NOTES:
+		a) The output can instead be an iterator of binValGetter objects. This can be useful where an options object naturally maps to a multi-dimensional bin structure.
  
 	"""
 	return _TYPE_TO_BINNER_DICT[type(optsObj)](optsObj)
@@ -125,6 +142,15 @@ def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices]
 	return atomComboPopulatorHelp._WaterOrientationPopulator(*currArgs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
+def _(inpObj):
+	#Need a DiscHBondCounter (with ridic filter things?) and a distFilter counter i guess
+	#a) Create the DiscHBond counter populators
+	distFilterVals = [ [0,1000], [0,1000] ] #Populator shouldnt need to know about distFilterVals really; since we count H-bonds between EVERY water
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices, distFilterVals] 
+	currKwargs = {"maxOO":inpObj.maxOOHBond, "donor":True, "acceptor":True}
+	return atomComboPopulatorHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
+
 
 #Registration of standard binners below
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcRdfOptions)
@@ -178,6 +204,16 @@ def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.angleType]
 	return binValGettersHelp._WaterOrientationBinValGetter(*currArgs)
 
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
+def _(inpObj):
+	outObjs = list()
+	for idx,unused in enumerate(inpObj.distFilterRanges):
+		currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices, inpObj.distFilterRanges[idx],
+		            inpObj.nDonorFilterRanges[idx], inpObj.nAcceptorFilterRanges[idx], inpObj.nTotalFilterRanges[idx],
+		            inpObj.maxOOHBond, inpObj.maxAngleHBond]
+		currObj = classBinvalGetterHelp._WaterCountTypeBinvalGetter(*currArgs)
+		outObjs.append(currObj)
+	return outObjs
 
 #Utility functions
 def _getDefaultPlaneEquation():

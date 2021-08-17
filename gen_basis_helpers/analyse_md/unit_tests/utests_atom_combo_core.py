@@ -2,6 +2,7 @@
 import copy
 import itertools as it
 import unittest
+import unittest.mock as mock
 
 import numpy as np
 
@@ -131,6 +132,37 @@ class TestSparseMatrixCalculatorEquality(unittest.TestCase):
 		self.assertNotEqual(objA,objB)
 
 
+
+class TestSparseMatrixPopulatorComposite(unittest.TestCase):
+
+	def setUp(self):
+		self.populatorA = mock.Mock()
+		self.populatorB = mock.Mock()
+		self.inpGeom = mock.Mock() 
+		self.level = 4
+
+		self.maxLevelA = 3
+		self.maxLevelB = 6
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.populatorA.maxLevel = self.maxLevelA
+		self.populatorB.maxLevel = self.maxLevelB
+
+		self.testObjA = tCode._SparseMatrixPopulatorComposite([self.populatorA, self.populatorB])
+
+	def testMaxLevel(self):
+		expVal = 6
+		actVal = self.testObjA.maxLevel
+		self.assertEqual(expVal,actVal)
+
+	def testPopulatePassesExpectedCalls(self):
+		testDict = {"a":"b"}
+		self.testObjA.populateMatrices(self.inpGeom, testDict, self.level)
+
+		self.populatorA.populateMatrices.assert_called_with(self.inpGeom, testDict, self.level)
+		self.populatorB.populateMatrices.assert_called_with(self.inpGeom, testDict, self.level)
 
 
 

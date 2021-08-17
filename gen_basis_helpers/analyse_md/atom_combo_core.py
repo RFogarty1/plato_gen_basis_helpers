@@ -67,6 +67,31 @@ class _SparseMatrixPopulator():
 		raise NotImplementedError("")
 
 
+
+
+
+class _SparseMatrixPopulatorComposite(_SparseMatrixPopulator):
+
+
+	def __init__(self, populators):
+		""" Initializer
+		
+		Args:
+			populators: (iter of _SparseMatrixPopulator instances) Note that these should be able to include other _SparseMatrixPopulatorComposite objects (not explicitly tested though...)
+
+		"""
+		self.populators = populators
+
+	def populateMatrices(self, inpGeom, outDict, level):
+		for populator in self.populators:
+			populator.populateMatrices(inpGeom, outDict, level)
+
+	@property
+	def maxLevel(self):
+		return max([x.maxLevel for x in self.populators])
+
+
+
 class _GetMultiDimValsToBinFromSparseMatrices():
 	""" Purpose is in the function getValsToBin() and gets a bunch of values from matrices. One of these should be initialised per iter of calcOptions objects """
 

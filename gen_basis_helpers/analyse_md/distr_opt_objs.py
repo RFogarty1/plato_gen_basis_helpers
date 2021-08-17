@@ -28,6 +28,10 @@ class _WaterOptsMixin():
 			raise ValueError("primaryIdxType = {} is an invalid value".format(self.primaryIdxType))
 
 	def _getOxyAndHyIndicesFromWaterIndicesAndGeom(self, waterIndices, inpGeom):
+		return _getOxyAndHyIndicesFromWaterIndicesAndGeom(waterIndices, inpGeom)
+
+
+def _getOxyAndHyIndicesFromWaterIndicesAndGeom(waterIndices, inpGeom):
 		cartCoords = inpGeom.cartCoords
 		eleList = [x[-1] for x in cartCoords]
 		outOxyIndices = list()
