@@ -105,6 +105,30 @@ class TestBinnedResultsObj(unittest.TestCase):
 		self.assertEqual(expObj,actObj)
 
 
+class TestAddProbabilityDensitiesToSimpleBin(unittest.TestCase):
+
+	def setUp(self):
+		self.binEdges = [1,2,4]
+		self.counts = [4,6]
+		self.countKey = "counts"
+		self.probabilityKey = "pdf"
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.testObj = tCode.BinnedResultsStandard.fromBinEdges(self.binEdges)
+		self.testObj.binVals["counts"] = self.counts
+
+	def _runTestFunct(self):
+		currKwargs =  {"countKey":self.countKey, "probabilityKey":self.probabilityKey}
+		tCode.addProbabilityDensitiesToOneDimBinObj(self.testObj, **currKwargs)
+
+	def testExpectedCaseA(self):
+		expVals = [ 4/10, 3/10 ] #Dont need to add to 1 since their DENSITIES
+		self._runTestFunct()
+		actVals = self.testObj.binVals["pdf"]
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
+
+
 class TestBinCountResultsForOneDimData(unittest.TestCase):
 
 	def setUp(self):

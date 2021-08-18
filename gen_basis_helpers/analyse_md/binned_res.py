@@ -91,6 +91,16 @@ class BinnedResultsStandard():
 		return True
 
 
+def addProbabilityDensitiesToOneDimBinObj(binResObj, countKey="counts", probabilityKey="pdf"):
+	allCounts = binResObj.binVals[countKey]
+	totalCounts = sum(allCounts)
+	edgePairs = getBinEdgePairsFromBinResObj(binResObj)
+	widths = [ edgePair[1]-edgePair[0] for edgePair in edgePairs ]
+
+	outDensities = [ count/(totalCounts*width) for count,width in it.zip_longest(allCounts,widths) ]
+	binResObj.binVals[probabilityKey] = outDensities
+
+
 def binCountsFromOneDimDataSimple(inpData, binResObj, countKey="counts", raiseIfValsOutsideBins=False, initIfNeeded=True):
 	""" Updates bins counts for
 	
