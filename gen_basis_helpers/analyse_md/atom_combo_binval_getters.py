@@ -309,15 +309,18 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCo
 		currArgs = [distMatrix, self.oxyIndices, self.distFilterIndices, self.distFilterVals]
 		groupAOxyIndices, groupBOxyIndices = atomComboPopulatorHelp._groupOxyByDistMatrix(*currArgs)
 
+		#1.5) Figure out where EACH of the groupA/groupB indices are within the self.oxyIndices
+		groupBOxyListIndices = [self.oxyIndices.index(idx) for idx in groupBOxyIndices]
+
 		#2) Count the number of hydrogen bonds from groupA TO groupB + output in a 1-dim list
 		outVals = list()
 		for lIdx,oxyIdx in enumerate(self.oxyIndices):
-			currVal = self._getValForOneOxyIdx( lIdx, groupAOxyIndices, groupBOxyIndices, distMatrix, angleMatrix )
+			currVal = self._getValForOneOxyIdx( lIdx, groupAOxyIndices, groupBOxyIndices, distMatrix, angleMatrix, groupBOxyListIndices)
 			outVals.append(currVal)
 
 		return outVals
 
-	def _getValForOneOxyIdx(self, oxyListIdx, groupAIndices, groupBIndices, distMatrix, angleMatrix):
+	def _getValForOneOxyIdx(self, oxyListIdx, groupAIndices, groupBIndices, distMatrix, angleMatrix, groupBListIndices):
 		oxyIdx = self.oxyIndices[oxyListIdx]
 
 		#We only calc groupA -> groupB; thus the index has to be in groupA to be non-zero here
@@ -325,8 +328,7 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCo
 			return 0
 
 		outVal = 0
-		for oxyIdxB in groupBIndices:
-			listIdxB = self.oxyIndices.index(oxyIdxB)
+		for oxyIdxB, listIdxB in it.zip_longest(groupBIndices,groupBListIndices):
 			currDist = distMatrix[oxyIdx][oxyIdxB]
 			if currDist < self.maxOO and oxyIdxB!=oxyIdx:
 
