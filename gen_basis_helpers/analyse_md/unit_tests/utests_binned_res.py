@@ -460,6 +460,7 @@ class TestNDimensionalBinObj(unittest.TestCase):
 		self.testObj.addBinValuesToCounts( valsToBin )
 
 		actCountsMatrix = self.testObj.binVals["counts"]
+
 		self.assertTrue( np.allclose(expCountsMatrix,actCountsMatrix) )
 
 
@@ -599,6 +600,92 @@ class TestGetLowerDimObj_integrationMethod(unittest.TestCase):
 		self.assertEqual(expBinObj, actBinObj)
 
 
+#In reality I'll likely only actually do this on 1-dim objects but....
+class TestAddRdfToBinObj(unittest.TestCase):
+
+	def setUp(self):
+		self.edgesA = [0,1,2,4]
+		self.edgesB = [0,1,2]
+
+		self.edgesTot = [self.edgesA, self.edgesB]
+
+		self.volumeA = 40
+		self.volumeB = 50
+
+		self.numbFromA = 1
+		self.numbFromB = 4
+		self.numbToA = 20
+		self.numbToB = 30
+		self.volumes = [self.volumeA, self.volumeB]
+
+		self.normCounts = [  [4,8],
+		                     [3,6],
+		                     [5,3] ]
+
+		self.numbAtomsTo = [self.numbToA, self.numbToB]
+		self.numbAtomsFrom = [self.numbFromA, self.numbFromB]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.binObjA = tCode.NDimensionalBinnedResults(self.edgesTot, binVals={"normalised_counts":np.array(self.normCounts)})
+
+
+	def _runTestFunct(self):
+		tCode.addRdfValsToNDimBins(self.binObjA, self.numbAtomsFrom, self.numbAtomsTo, volumes=self.volumes)
+
+	def _loadExpObj_2d(self):
+		outObj = tCode.NDimensionalBinnedResults([self.edgesA,self.edgesB], binVals={"normalised_counts":self.normCounts})
+		outObj.binVals["rdf"] = np.array( [ [48.6341681483221, 7.6553783196433],
+		                                    [4.05284734569351, 0.637948193303608],
+		                                    [0.450316371743724, 0.07088313258929] ] )
+		outObj.binVals["rdf"] *= (1/(self.numbFromA*self.numbFromB))
+		return outObj
+
+	def testExpectedCase_1d(self):
+		#Create expected
+		expObj = tCode.NDimensionalBinnedResults([self.edgesA], binVals={"normalised_counts":np.array([ 12, 9,8 ]) })
+		expObj.binVals["rdf"] = [ 7.63943726841098, 0.636619772367581, 0.070735530263065 ]
+
+		#Create actual + run
+		self.normCounts = [ 12, 9,8 ]
+		self.volumes = self.volumeA
+		self.edgesTot = [self.edgesA]
+		self.numbAtomsTo = [self.numbToA]
+		self.numbAtomsFrom = [self.numbFromA]
+		self.createTestObjs()
+		self._runTestFunct()
+		actObj = self.binObjA
+
+		self.assertEqual(expObj,actObj)
+
+	def testExpectedCase_2d(self):
+		expObj = self._loadExpObj_2d()
+		self._runTestFunct()
+		actObj = self.binObjA
+		self.assertEqual(expObj, actObj)
+
+	def testExpectedCase_2d_defaultVolumes(self):
+		self.volumes = None
+		expObj = tCode.NDimensionalBinnedResults([self.edgesA,self.edgesB], binVals={"normalised_counts":self.normCounts})
+		expObj.binVals["rdf"] = np.array( [ [38.88, 6.12],
+		                                       [3.24, 0.51],
+		                                       [0.36, 0.056666666666667] ] )
+		expObj.binVals["rdf"] *= (1/(self.numbFromA*self.numbFromB))
+		self._runTestFunct()
+		actObj = self.binObjA
+		self.assertEqual(expObj, actObj)
+
+	def testExpectedCase_2d_singleVol(self):
+		self.volumes = 25
+		expObj = tCode.NDimensionalBinnedResults([self.edgesA,self.edgesB], binVals={"normalised_counts":self.normCounts})
+		expObj.binVals["rdf"] = np.array( [ [15.1981775463507, 2.39230572488853],
+		                                    [1.26651479552922, 0.199358810407378],
+		                                    [0.140723866169914, 0.022150978934153] ] )
+		expObj.binVals["rdf"] *= (1/(self.numbFromA*self.numbFromB))
+		self._runTestFunct()
+		actObj = self.binObjA
+		self.assertEqual(expObj, actObj)
 
 
 class TestAddProbabilitiesToBinObj(unittest.TestCase):

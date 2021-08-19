@@ -56,7 +56,7 @@ class CalcDistribOptionsBase():
 class CalcRdfOptions(CalcDistribOptionsBase):
 	""" Object containing options to calculate a specific rdf function """
 
-	def __init__(self, binResObj, indicesA, indicesB, volume=None, minDistAToB=False):
+	def __init__(self, binResObj, indicesA, indicesB, volume=None, minDistAToB=False, filterBasedOnBins=True):
 		""" Initializer
 		
 		Args:
@@ -65,6 +65,7 @@ class CalcRdfOptions(CalcDistribOptionsBase):
 			indicesB: (iter of ints) Contains the indices of atoms to get an rdf TO (e.g. for g_{AB} indicesB should contain all indices of atom type B)
 			volume: (float or None) The total cell volume to assume; Default is to use the unit cell volume from first step of an input traj. Using the whole cell may not be sensible when calculating for slab geometries.
 			minDistAToB: (Bool) If False we do a normal rdf. If True, for every atom in group A we only bin the SHORTEST distance to group B. Original use was to get fraction of oxygen atoms within a certain distance of Mg atoms.
+			filterBasedOnBins: (Bool) Optimisation flag for whether to filter out values based on min/max bin-values. Only real reason to turn off is to making testing easier
 
 		"""
 		self.distribKey = "pdf" if minDistAToB else "rdf"
@@ -73,6 +74,7 @@ class CalcRdfOptions(CalcDistribOptionsBase):
 		self.indicesB = indicesB
 		self.volume = volume
 		self.minDistAToB = minDistAToB
+		self.filterBasedOnBins = filterBasedOnBins
 
 #TODO: Probably introduce some command objects to determine the options for these; so i can individually specify the runs but get them all combined this way
 def _populateBinsWithRdfBetweenAtomGroups(inpTraj, binResObjs, indicesA, indicesB, volumes=None, minDistAToB=None):

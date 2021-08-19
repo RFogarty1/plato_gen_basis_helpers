@@ -90,13 +90,6 @@ class TestGetBinValGetters(unittest.TestCase):
 		expObj = self.expDistBinner
 		self.assertEqual(expObj, actObj)
 
-	def testRaises_minDistFlagNotSet(self):
-		""" For now we want to raise if doing an rdf-like thing but minDist flag is unset """
-		self.minDistAToB = False
-		self.createTestObjs()
-		with self.assertRaises(NotImplementedError):
-			tCode.getOneDimBinValGetterFromOptsObj(self.distOptsA)
-
 	def testExpected_planarDistGetterOnly(self):
 		actObj = tCode.getOneDimBinValGetterFromOptsObj(self.planarOptsA)
 		expObj = self.expPlanarBinner

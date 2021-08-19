@@ -1,5 +1,6 @@
 
 import copy
+import itertools as it
 
 from . import atom_combo_populators as atomComboPopulatorHelp
 from . import atom_combo_binval_getters as binValGettersHelp
@@ -158,8 +159,15 @@ def _(inpObj):
 def _(inpObj):
 	fromIndices, toIndices = inpObj.indicesA, inpObj.indicesB
 	if inpObj.minDistAToB is False:
-		raise NotImplementedError("")
-	return binValGettersHelp._MinDistsGetOneDimValsToBin(fromIndices, toIndices)
+		if inpObj.filterBasedOnBins is True:
+			minVal, maxVal = min(inpObj.binResObj.binEdges), max(inpObj.binResObj.binEdges)
+			outObj = binValGettersHelp._RadialDistsGetValsToBin(fromIndices, toIndices, minVal=minVal, maxVal=maxVal)
+		else:
+			outObj = binValGettersHelp._RadialDistsGetValsToBin(fromIndices, toIndices)
+	else:
+		outObj = binValGettersHelp._MinDistsGetOneDimValsToBin(fromIndices, toIndices)
+
+	return outObj
 
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcPlanarDistOptions)

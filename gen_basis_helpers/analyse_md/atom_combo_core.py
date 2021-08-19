@@ -107,15 +107,38 @@ class _GetMultiDimValsToBinFromSparseMatrices():
 				 
 		Returns
 			valsToBin: (iter of len-n iters) 
-	 
+	
+		NOTES:
+			a) Since implementing rdfs, valsToBin[idx] is allowed to contain iterables. The n-dimensional values will then be figured out by a higher level function
+ 
 		"""
 		oneDimBinVals = [ x.getValsToBin(sparseMatrixCalc) for x in self.oneDimObjs ]
-		multiBinVals = list()
 
+		#Get the output bins
+		multiBinVals = list()
 		for binVals in it.zip_longest(*oneDimBinVals):
-			multiBinVals.append( binVals )
+			#Note some of these may be iterables; in which case they need producting with the others
+			useVals = self._expandItersInOneDimBinVals(binVals)
+			multiBinVals.extend( useVals )
 
 		return multiBinVals 
+
+
+	def _expandItersInOneDimBinVals(self, inpBinVals):
+		useBins = list()
+
+		for valsFromOneBinner in inpBinVals:
+			try:
+				iter(valsFromOneBinner)
+			except TypeError:
+				useBins.append( [valsFromOneBinner] )
+			else:
+				useBins.append( valsFromOneBinner )
+
+		outBins = [val for val in it.product(*useBins)]
+
+		return outBins
+
 
 	def __eq__(self, other):
 		#Probably not ACTUALLY needed; due to the zip_longest below

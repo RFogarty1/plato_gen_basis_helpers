@@ -68,6 +68,73 @@ class TestGetMultiDimValsToBin(unittest.TestCase):
 
 
 
+class TestRadialDistribWithPlanarDists(unittest.TestCase):
+	""" Testing radial distrib binner alone misses too much, hence want a planar dist val too """ 
+
+	def setUp(self):
+		#Create geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.coords =  [ [0,0,7,"A"],
+		                 [0,0,8,"B"],
+		                 [0,0,9,"C"],
+		                 [0,0,1,"D"],
+		                 [0,0,2,"E"] ]
+
+		#Simple options
+		self.indicesA = [0,1]
+		self.indicesB = [2,3,4]
+		self.minDistAToB = False
+		self.dudBinResObj = None
+		self.rdfBinObj = binResHelp.BinnedResultsStandard.fromBinEdges([-0.1,10,20,30]) #Needed for filter functions
+		self.rdfFilterBasedOnBins = True
+
+		self.planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geom
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Options objects
+		currArgs = [self.rdfBinObj, self.indicesA, self.indicesB]
+		self.rdfOptObj = distrOptObjHelp.CalcRdfOptions(*currArgs, minDistAToB=self.minDistAToB, filterBasedOnBins=self.rdfFilterBasedOnBins)
+		self.planarOptObj = calcRadImpl.CalcPlanarRdfOptions(self.dudBinResObj, self.indicesA, planeEqn=self.planeEqn)
+
+		#Create sparse matrix populator and populate it
+		self.sparseMatrixObj = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.rdfOptObj, self.planarOptObj])
+		self.sparseMatrixObj.calcMatricesForGeom(self.cellA)
+
+		#Create the binner object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.rdfOptObj,self.planarOptObj])
+
+	def testExpectedCaseA(self):
+		distAC, distAD, distAE = 2, 4, 5
+		distBC, distBD, distBE = 1, 3, 4
+		planarDistA, planarDistB = 3, 2
+		expBinVals = [ [distAC,planarDistA], [distAD,planarDistA], [distAE,planarDistA],
+		               [distBC,planarDistB], [distBD,planarDistB], [distBE,planarDistB] ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixObj)
+
+		self.assertTrue(np.allclose(np.array(expBinVals), np.array(actBinVals)))
+
+	def testExpectedCaseB_rdfFilterApplied(self):
+		self.rdfBinObj = binResHelp.BinnedResultsStandard.fromBinEdges([-0.1,4.1])
+		self.createTestObjs()
+
+		distAC, distAD, distAE = 2, 4, 5 #distAE should be filtered out
+		distBC, distBD, distBE = 1, 3, 4
+		planarDistA, planarDistB = 3, 2
+
+		expBinVals = [ [distAC,planarDistA], [distAD,planarDistA],
+		               [distBC,planarDistB], [distBD,planarDistB], [distBE,planarDistB] ]
+
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixObj)
+
+		self.assertTrue(np.allclose(np.array(expBinVals), np.array(actBinVals)))
+
+
 #Create equality tests for a couple so we can later test functions to generate from opts objs (for a couple)
 
 class TestPlanarDistsEquality(unittest.TestCase):

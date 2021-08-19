@@ -42,6 +42,60 @@ class _PlanarDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSp
 		return True
 
 
+#TODO: We will have a version that filters indicesA and indicesB
+#Maybe need to combine with the classification methods...(though be careful of circular imports)
+class _RadialDistsGetValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, indicesA, indicesB, minVal=None, maxVal=None):
+		""" Initializer
+		
+		Args:
+			indicesA: (iter of ints) Indices to get rdf FROM
+			indicesB: (iter of ints) Indices to get rdf TO
+			minVal: (float) Minimum value allowed for binning (vals must be >= to)
+			maxVal: (float) Maximum value allowes for binning (vals must be < than)
+
+		"""
+		self.indicesA = indicesA
+		self.indicesB = indicesB
+		self.minVal = minVal
+		self.maxVal = maxVal
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		relevantMatrix = sparseMatrixCalculator.outDict["distMatrix"]
+
+		#Worried this may be a bit slow
+		outVals = np.empty( (len(self.indicesA), len(self.indicesB) ) )
+
+		for outRowIdx,inpRowIdx in enumerate(self.indicesA):
+			for outColIdx,inpColIdx in enumerate(self.indicesB):
+				outVals[outRowIdx][outColIdx] = relevantMatrix[inpRowIdx][inpColIdx]
+
+
+
+		if (self.minVal is None) and (self.maxVal is None):
+			return outVals
+
+		#Filter out any values that wont fit into bins anyway
+		#Its quickest to do here if we're likely to do a multi-dimensional rdf (number of terms is N instead of dims^{N})
+		#TODO: Need to explicitly test these.
+		else:
+			filteredOutVals = list()
+			for rIdx,row in enumerate(outVals):
+				if (self.minVal is not None) and (self.maxVal is not None):
+					currRow = row[ (row<self.maxVal) & (row>=self.minVal) ]
+				elif self.minVal is not None:
+					currRow = row[ (row>=self.minVal) ]
+				elif self.maxVal is not None:
+					currRow = row[ (row<self.maxVal) ]
+				else:
+					raise ValueError("Should be impossible to reach here")
+				filteredOutVals.append(currRow)
+
+
+		return filteredOutVals
+
+
 class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
 	def __init__(self, fromIndices, toIndices):

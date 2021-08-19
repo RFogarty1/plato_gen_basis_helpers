@@ -1,7 +1,9 @@
 
+import itertools as it
+import math
+
 import numpy as np
 
-import itertools as it
 
 class BinnedResultsStandard():
 	""" Simple class for storing results of binning
@@ -445,6 +447,7 @@ class NDimensionalBinnedResults():
 			Nothing; works in place
 	 
 		"""
+
 		#Get pairs of edges for each bin (e.g. [[4,3],[3,2]]) . We sort each edge-pair into ascending order to make checks easier (e.g. [[4,3],[3,2]] becomes [[3,4],[2,3]])
 		allEdgePairs = self._getBinEdgesList()
 		sortedEdgePairs = list()
@@ -452,18 +455,74 @@ class NDimensionalBinnedResults():
 			currPairs = [sorted(x) for x in edgePairs]
 			sortedEdgePairs.append(currPairs)
 
-		#Add each value
-		for currValToBin in valsToBin:
-			currIndices = [None for x in currValToBin]
-			#For 3-dim case (for example) this will loop over [2,3,6] and find the right bin for 2,3,6 for the 1-dim case
-			for idx,val in enumerate(currValToBin):
-				for binIdx, (minEdge,maxEdge) in enumerate(sortedEdgePairs[idx]):
-					if (minEdge <= val < maxEdge):
-						currIndices[idx] = binIdx
 
-			#Add a count in the relevant spot if a bin was found in EACH dimension
-			if all([x is not None for x in currIndices]):
-				self.binVals[countKey][tuple(currIndices)] += 1
+		#Filter out values that are in NO bins
+		#Note that each index in edge pairs corresponds to a dimension
+		minValsToBin, maxValsToBin = list(), list()
+		for edgeVals in sortedEdgePairs:
+			chainedVals = [x for x in it.chain(*edgeVals)]
+			minValsToBin.append( min(chainedVals) )
+			maxValsToBin.append( max(chainedVals) )
+
+
+		#NOTE: This is can be a LARGE bottleneck in some cases since most values might be thrown out
+		#Solution is generally filtering the values to bin BEFORE passing them to this function (it can be much easier at earlier stages)
+		useValsToBin = list()
+		for val in valsToBin:
+			useVal = True
+			for idx, (minEdge,maxEdge) in enumerate(it.zip_longest(minValsToBin,maxValsToBin)):
+				if (val[idx]<minEdge) or (val[idx]>=maxEdge):
+					useVal = False
+					break
+			if useVal:
+				useValsToBin.append(val)
+
+		useValsToBin = valsToBin
+
+
+#		#Doesnt quite work.... seems to give minor (20%) speed-boosts though + filter out a similar number
+#		useValsToBin = np.array(valsToBin)
+#		for idx, (minEdge,maxEdge) in enumerate(it.zip_longest(minValsToBin,maxValsToBin)):
+#			#Want to suppress warnings about nan compared to maxEdge/minEdge
+#			with np.errstate(invalid='ignore'):
+#				useValsToBin = np.where( useValsToBin<maxEdge, useValsToBin, np.nan )
+#				useValsToBin = np.where( useValsToBin>=minEdge, useValsToBin, np.nan )
+##
+#			useValsToBin = useValsToBin[~np.isnan(useValsToBin).any(axis=1)] #Remove any elements after each step
+
+
+#		useValsToBin = useValsToBin[~np.isnan(useValsToBin).any(axis=1)]
+
+
+		#Add each value
+		#We use the following algorithm to make this as fast as possible for N values to bin
+		#1) Sort the values in a given dimension
+		#2) Loop through these sorted values AND sorted bin edges for that dimension
+		#3) Ppopulate the relevant index in allBinIndices
+		#This stops us having to loop through the bin edges more than once
+		allBinIndices = np.zeros( (len(useValsToBin), len(minValsToBin)), dtype=np.int64 )
+		allBinIndices[:] = np.nan
+		for dimIdx,dimBinEdges in enumerate(sortedEdgePairs):
+
+			#Want to look at the toBin/bin indices in order; but dont want to mess with their ordering in either case
+			toBinSortIndices = np.argsort([x[dimIdx] for x in useValsToBin])
+			sortIndices = np.argsort([x[0] for x in dimBinEdges]) 
+
+			toBinIdx, binIdx = 0, 0
+			minEdge, maxEdge = dimBinEdges[ sortIndices[binIdx] ][0], dimBinEdges[ sortIndices[binIdx] ][1]
+			while toBinIdx < len(useValsToBin):
+				if (minEdge <= useValsToBin[ toBinSortIndices[toBinIdx] ] [dimIdx] < maxEdge):
+					allBinIndices[ toBinSortIndices[toBinIdx] ][dimIdx] = sortIndices[binIdx]
+					toBinIdx += 1
+				#Since everything SHOULD be sorted and ALL values should fit into bins; if this doesnt it must need the next bin
+				else:
+					binIdx += 1
+					minEdge, maxEdge = dimBinEdges[sortIndices[binIdx]][0], dimBinEdges[sortIndices[binIdx]][1]
+
+
+		#Now actually add the counts to the bins
+		for indices in allBinIndices:
+			self.binVals[countKey][tuple(indices)] += 1
 
 
 
@@ -598,6 +657,69 @@ def addProbabilityDensitiesToNDimBinsSimple(binObj, countKey="counts", outKey="p
 
 
 	binObj.binVals[outKey] = outMatrix
+
+
+def addRdfValsToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes=None):
+	""" Adds rdf values to NDimensionalBinnedResults using normalised_counts
+	
+	Args:
+		inpBinObj: (NDimensionalBinnedResults)
+		numbAtomsFrom: (iter of ints)
+		numbAtomsTo: (iter of ints)
+		volumes: (iter of floats) The volumes associated with each dimension (setting to None using the outer bin-volume for each; setting to a single value uses THAT for each)
+
+	Notes:
+		a) Only tested up to 2-dimensions at time of writing
+
+	Returns
+		Nothing; works in place
+ 
+	"""
+
+	#0) We'll need rdfs for EACH dimension; hence get bin objs for each of THOSE
+	nDims = len(inpBinObj.edges)
+	oneDimBins = [getLowerDimNDimBinObj_integrationMethod(inpBinObj, [keepDim]) for keepDim in range(nDims)]
+
+	#1) Sort volumes; theres 3 possible ways this can be handled(None, single value, list of values)
+	if volumes is None:
+		volumes = list()
+		for binObj in oneDimBins:
+			currEdges = binObj._getBinEdgesList()[0]
+			currCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in currEdges ]
+			useCentre = max(currCentres)
+			volumes.append( (4/3)*math.pi*(useCentre**3) )
+	else:
+		try:
+			iter(volumes)
+		except TypeError:
+			volumes = [volumes for x in range(nDims)]
+
+
+
+	#2) Get the g(x) for each individual one-dim bin
+	oneDimGr = list()
+	for binObj, nAtomFrom, nAtomTo,volume in it.zip_longest(oneDimBins,numbAtomsFrom, numbAtomsTo,volumes):
+		#Get relevant info from the bin
+		currEdges = binObj._getBinEdgesList()
+		assert len(currEdges) == 1
+		currEdges = currEdges[0]
+		currWidths = [ abs(b-a) for a,b in currEdges ] 
+		currCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in currEdges ]
+		currAreas = [4*math.pi*(r**2) for r in currCentres]
+		currCounts = binObj.binVals["normalised_counts"]
+		currGr = [count*volume / (nAtomTo*nAtomFrom*area*width) for count,area,width in it.zip_longest(currCounts, currAreas, currWidths)]
+		oneDimGr.append(currGr)
+
+	#3) Figure out the multi-dimensional values by taking products of the 1-d values
+	idxCombos = [idxCombo for idxCombo in it.product( *[range(len(x)) for x in oneDimGr] ) ] 
+	combos = [combination for combination in it.product(*oneDimGr)]
+	outMatrix = np.zeros( ([len(x) for x in oneDimGr]) )
+
+	for idxCombo,combo in it.zip_longest(idxCombos,combos):
+		outMatrix[idxCombo] = np.product(combo)
+
+	inpBinObj.binVals["rdf"] = outMatrix
+
 
 
 def getSkewForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
