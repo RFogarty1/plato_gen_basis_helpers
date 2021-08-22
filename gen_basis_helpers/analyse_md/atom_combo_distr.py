@@ -78,8 +78,21 @@ def _getPrimaryIndicesFromOptObj(optObj):
 
 	return outIndices
 
+
 def _getBinObjForOptsObjGroup(optsObjGroup):
-	binEdges = [x.binResObj.binEdges for x in optsObjGroup]
+	binEdges = list()
+
+	#We want to allow the bin-results from a single options object to be an iterable
+	#Original use case was for allowing this interface to work for filtered options objects
+	for optsObj in optsObjGroup:
+		try:
+			currBinObjs = iter(optsObj.binResObj)
+		except TypeError:
+			binEdges.append( optsObj.binResObj.binEdges )
+		else:
+			currEdges = [x.binEdges for x in optsObj.binResObj]
+			binEdges.extend( currEdges )
+
 	outBinObj = binResHelp.NDimensionalBinnedResults(binEdges)
 	outBinObj.initialiseCountsMatrix()
 	return outBinObj

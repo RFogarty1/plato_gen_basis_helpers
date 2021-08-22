@@ -151,7 +151,7 @@ class WaterMinDistAndHBondsFilterObj():
 		""" Initializer
 		
 		Args:
-			distFilterRange: (minDist,maxDist)
+			distFilterRange: (minDist,maxDist) Note that this refers only to the OXYGEN atom distance to the group
 			nDonorFilterRange: (minNumber, maxNumber)
 			nAcceptorFilterRange: (minNumber, maxNumber)
 			nTotalFilterRange: (minNumber, maxNumber)

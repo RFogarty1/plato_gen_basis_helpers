@@ -10,9 +10,15 @@ from . import calc_radial_distrib_impl as calcRadialDistrImplHelp
 from . import distr_opt_objs as distrOptsObjHelp
 from . import classification_distr_opt_objs as classDistrOptObjHelp
 from . import classification_binval_getters as classBinvalGetterHelp
+from . import filtered_atom_combo_opt_objs as filteredAtomComboOptHelp
+from . import filtered_atom_combo_binval_getters as filteredAtomBinvalGetterHelp
 
 from ..shared import register_key_decorator as regKeyDecoHelp
 from ..shared import plane_equations as planeEqnHelp
+
+#NOTE:Registration imports occur at the bottom of this file
+def _importRegistrationModules():
+	from . import filtered_atom_combo_obj_maps
 
 
 #Globals here + Decorators here
@@ -153,6 +159,7 @@ def _(inpObj):
 	return atomComboPopulatorHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
 
 
+
 #Registration of standard binners below
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcRdfOptions)
 @TYPE_TO_BINNER_REGISTER_DECO(calcDistrCoreHelp.CalcRdfOptions)
@@ -223,7 +230,14 @@ def _(inpObj):
 		outObjs.append(currObj)
 	return outObjs
 
+
+
 #Utility functions
 def _getDefaultPlaneEquation():
 	return planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)
 
+
+
+
+#Imports
+_importRegistrationModules()
