@@ -687,6 +687,53 @@ class TestAddRdfToBinObj(unittest.TestCase):
 		actObj = self.binObjA
 		self.assertEqual(expObj, actObj)
 
+class AddCircularRdfToBinObj(unittest.TestCase):
+
+	def setUp(self):
+		self.edgesA = [0,1,2,4]
+		self.edgesB = [0,1,2]
+
+		self.edgesTot = [self.edgesA, self.edgesB]
+
+		self.areaA = 40
+		self.areaB = 50
+
+		self.numbFromA = 1
+		self.numbFromB = 4
+		self.numbToA = 20
+		self.numbToB = 30
+		self.areas = [self.areaA, self.areaB]
+
+		self.normCounts = [  [4,8],
+		                     [3,6],
+		                     [5,3] ]
+
+		self.numbAtomsTo = [self.numbToA, self.numbToB]
+		self.numbAtomsFrom = [self.numbFromA, self.numbFromB]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.binObjA = tCode.NDimensionalBinnedResults(self.edgesTot, binVals={"normalised_counts":np.array(self.normCounts)})
+
+	def _runTestFunct(self):
+		tCode.addCircularRdfToNDimBins(self.binObjA, self.numbAtomsFrom, self.numbAtomsTo, areas=self.areas)
+
+	def _loadExpObj_2d(self):
+		outObj = tCode.NDimensionalBinnedResults([self.edgesA,self.edgesB], binVals={"normalised_counts":self.normCounts})
+		outObj.binVals["circular_rdf"] = np.array( [ [48.6341681483221, 22.9661349589299],
+		                                             [12.1585420370805, 5.74153373973247],
+		                                             [2.70189823046234, 1.27589638660722] ] )
+		outObj.binVals["circular_rdf"] *= (1/(self.numbFromA*self.numbFromB))
+		return outObj
+
+	def testExpectedCase_2d(self):
+		expObj = self._loadExpObj_2d()
+		self._runTestFunct()
+		actObj = self.binObjA
+		self.assertEqual(expObj, actObj)
+
+
 
 class TestAddProbabilitiesToBinObj(unittest.TestCase):
 

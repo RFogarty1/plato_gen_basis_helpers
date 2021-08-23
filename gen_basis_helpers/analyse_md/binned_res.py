@@ -659,6 +659,45 @@ def addProbabilityDensitiesToNDimBinsSimple(binObj, countKey="counts", outKey="p
 	binObj.binVals[outKey] = outMatrix
 
 
+
+def addCircularRdfToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, areas=None):
+	""" Adds "circular rdf" values to NDimensionalBinnedResults using normalised_counts. "Circular rdf" is the same as a normal rdf except its assumed that the other molecules all lie within a single plane; meaning we have circular shells rather than spherical shells. Hence each bin maps to an area-shell (centred around its central value) rather than a volume-shell
+	
+	Args:
+		inpBinObj: (NDimensionalBinnedResults)
+		numbAtomsFrom: (iter of ints)
+		numbAtomsTo: (iter of ints)
+		Areas: (iter of floats) The area associated with each dimension (setting to None using the outer bin-area for each; setting to a single value uses THAT for each)
+
+	Notes:
+		a) Only tested up to 2-dimensions at time of writing
+
+	Returns
+		Nothing; works in place. "circular_rdf" is the key it adds to the inpBinObj.binVals
+
+	"""
+	def _mapCentralValToCircumference(r):
+		return 2*math.pi*r
+
+	def _mapCentralValToArea(r):
+		return math.pi*(r**2)
+
+
+	#1) Sort out the input areas
+	nDims = len(inpBinObj.edges)
+	if areas is None:
+		areas = _getDefaultSpatialNormFactorsForNDimBinObj(inpBinObj, _mapCentralValToArea)
+	else:
+		try:
+			iter(areas)
+		except TypeError:
+			areas = [areas for x in range(nDims)]
+
+	#2) Calculate the rdf and append to the bin object
+	outMatrix = _getPseudoRdfMatrixFromNDimBinObj(inpBinObj, numbAtomsFrom, numbAtomsTo, areas, _mapCentralValToCircumference)
+	inpBinObj.binVals["circular_rdf"] = outMatrix
+
+
 def addRdfValsToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes=None):
 	""" Adds rdf values to NDimensionalBinnedResults using normalised_counts
 	
@@ -676,41 +715,62 @@ def addRdfValsToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes=None):
  
 	"""
 
-	#0) We'll need rdfs for EACH dimension; hence get bin objs for each of THOSE
-	nDims = len(inpBinObj.edges)
-	oneDimBins = [getLowerDimNDimBinObj_integrationMethod(inpBinObj, [keepDim]) for keepDim in range(nDims)]
+	def _mapCentralValToVolume(r):
+		return (4/3)*math.pi*(r**3)
+
+	def _mapCentralValToSurfArea(r):
+		return 4*math.pi*(r**2)
 
 	#1) Sort volumes; theres 3 possible ways this can be handled(None, single value, list of values)
+	nDims = len(inpBinObj.edges)
 	if volumes is None:
-		volumes = list()
-		for binObj in oneDimBins:
-			currEdges = binObj._getBinEdgesList()[0]
-			currCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in currEdges ]
-			useCentre = max(currCentres)
-			volumes.append( (4/3)*math.pi*(useCentre**3) )
+		volumes = _getDefaultSpatialNormFactorsForNDimBinObj(inpBinObj, _mapCentralValToVolume)
 	else:
 		try:
 			iter(volumes)
 		except TypeError:
 			volumes = [volumes for x in range(nDims)]
 
+	#2) Calculate the rdf and append to the bin object
+	outMatrix = _getPseudoRdfMatrixFromNDimBinObj(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes, _mapCentralValToSurfArea)
+	inpBinObj.binVals["rdf"] = outMatrix
 
 
-	#2) Get the g(x) for each individual one-dim bin
+def _getDefaultSpatialNormFactorsForNDimBinObj(inpBinObj, mapCentralVal):
+
+	#0) Need to look at each 1-d bin
+	nDims = len(inpBinObj.edges)
+	oneDimBins = [getLowerDimNDimBinObj_integrationMethod(inpBinObj, [keepDim]) for keepDim in range(nDims)]
+
+	#Figure out the default value
+	outVals = list()
+	for binObj in oneDimBins:
+		currEdges = binObj._getBinEdgesList()[0]
+		currCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in currEdges ]
+		useCentre = max(currCentres)
+		outVals.append( mapCentralVal(useCentre) )
+
+	return outVals
+
+#Backend function which can deal with different mappings of bin->volume (or area, or width)
+def _getPseudoRdfMatrixFromNDimBinObj(inpBinObj, numbAtomsFrom, numbAtomsTo, spatialNormFactors, mapWidth):
+
+	#0) Get all the 1-dimensional bins; so i can get their g(r) separately
+	nDims = len(inpBinObj.edges)
+	oneDimBins = [getLowerDimNDimBinObj_integrationMethod(inpBinObj, [keepDim]) for keepDim in range(nDims)]
+
+
+	#1) Get the g(x) for each individual one-dim bin
 	oneDimGr = list()
-	for binObj, nAtomFrom, nAtomTo,volume in it.zip_longest(oneDimBins,numbAtomsFrom, numbAtomsTo,volumes):
-		#Get relevant info from the bin
+	for binObj, nAtomFrom, nAtomTo, spatialNormFactor in it.zip_longest(oneDimBins,numbAtomsFrom, numbAtomsTo, spatialNormFactors):
 		currEdges = binObj._getBinEdgesList()
 		assert len(currEdges) == 1
 		currEdges = currEdges[0]
-		currWidths = [ abs(b-a) for a,b in currEdges ] 
-		currCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in currEdges ]
-		currAreas = [4*math.pi*(r**2) for r in currCentres]
 		currCounts = binObj.binVals["normalised_counts"]
-		currGr = [count*volume / (nAtomTo*nAtomFrom*area*width) for count,area,width in it.zip_longest(currCounts, currAreas, currWidths)]
+		currGr = _getGxForSetOfBins(currEdges, currCounts, nAtomFrom, nAtomTo, spatialNormFactor, mapWidth)
 		oneDimGr.append(currGr)
 
-	#3) Figure out the multi-dimensional values by taking products of the 1-d values
+	#2) Figure out the multi-dimensional values by taking products of the 1-d values
 	idxCombos = [idxCombo for idxCombo in it.product( *[range(len(x)) for x in oneDimGr] ) ] 
 	combos = [combination for combination in it.product(*oneDimGr)]
 	outMatrix = np.zeros( ([len(x) for x in oneDimGr]) )
@@ -718,8 +778,15 @@ def addRdfValsToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes=None):
 	for idxCombo,combo in it.zip_longest(idxCombos,combos):
 		outMatrix[idxCombo] = np.product(combo)
 
-	inpBinObj.binVals["rdf"] = outMatrix
+	return outMatrix
 
+
+def _getGxForSetOfBins(binEdges, binCounts, numbAtomsFrom, numbAtomsTo, totalWidthNormFactor, mapCentralVal):
+	widths = [ abs(b-a) for a,b in binEdges ] 
+	centres = [ min([b,a]) + (abs(b-a)/2) for a,b in binEdges ]
+	mappedCentralVals = [mapCentralVal(r) for r in centres]
+	outGr = [ (count*totalWidthNormFactor) / (numbAtomsFrom*numbAtomsTo*mappedCentral*width) for count,mappedCentral,width in it.zip_longest(binCounts, mappedCentralVals, widths) ]
+	return outGr
 
 
 def getSkewForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
