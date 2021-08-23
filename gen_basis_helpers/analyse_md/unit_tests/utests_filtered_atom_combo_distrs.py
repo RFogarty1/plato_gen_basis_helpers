@@ -44,6 +44,7 @@ class TestGetBinValsWaterMinDists(unittest.TestCase):
 		#Min dist options (Note we only need a binResObj for this one)
 		self.binResObjA = binResHelp.BinnedResultsStandard.fromBinEdges([0,5,10]) #I COULD probably use a dud but...
 		self.minDistType = "O"
+		self.minDistVal = 0.1
 
 		#Options for the filtered atom combo opts object
 		self.toIdxType = ["O"]
@@ -64,7 +65,7 @@ class TestGetBinValsWaterMinDists(unittest.TestCase):
 		#Create the min-dist distribution opts object [Note that we NEED all indices as toIndices to handle certain types of populators]
 
 		currArgs = [self.binResObjA, self.oxyIndices, self.hyIndices, self.oxyIndices]
-		currKwargs = {"primaryIdxType":"O", "minDistType":self.minDistType}
+		currKwargs = {"primaryIdxType":"O", "minDistType":self.minDistType, "minVal":self.minDistVal}
 #		self.minDistOptsObj = distrOptObjHelp.WaterMinDistOptions( *currArgs, **currKwargs )
 
 		self.minDistOptsObjs = [ distrOptObjHelp.WaterMinDistOptions( *currArgs, **currKwargs ) for x in self.useGroups ]
@@ -91,8 +92,29 @@ class TestGetBinValsWaterMinDists(unittest.TestCase):
 		for expIter, actIter in it.zip_longest(expVals,actVals):
 			[self.assertAlmostEqual(exp,act,places=6) for exp,act in it.zip_longest(expIter,actIter)]
 
-	#Problem: The toIdx type isnt really passed onto the populators. The populator mapping needs to know about toIdxType to handle this really; which means a map to EACH type of distr object
-	#suggests a lower level mapper is needed for modding populator for waterWaterFilterOpts; Maybe also suggests populators should go in a special module outside normal opt objs
+	def testExpected_selfDistrib_withMinDist(self):
+		""" Test we get expected values for distribution between the same groups; want to avoid getting zero for all """
+		self.minDistVal = 0.1
+		self.useGroups = [ [0,0] ]
+		self.createTestObjs()
+		expVals = [ (1,), (1,) ]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+		for expIter, actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act,places=6) for exp,act in it.zip_longest(expIter, actIter)]
+
+
+	def testExpected_selfDistrib_withNegativeMinDist(self):
+		self.minDistVal = -0.1
+		self.useGroups = [ [0,0] ]
+		self.createTestObjs()
+		expVals = [ (0,), (0,) ]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act,places=6) for exp,act in it.zip_longest(expIter, actIter)]
+
+
 	def testExpected_toAll(self):
 		self.useGroups = [ [1,0] ] #Means O-H is the closest contact between groups
 		self.toIdxType = ["all"]

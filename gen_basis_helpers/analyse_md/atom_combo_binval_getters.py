@@ -98,23 +98,27 @@ class _RadialDistsGetValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMa
 
 class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
-	def __init__(self, fromIndices, toIndices):
+	def __init__(self, fromIndices, toIndices, minVal=-0.01):
 		""" Initializer
 		
 		Args:
 			fromIndices: (iter of ints) The indices of atoms we calculate distances from. Our output bin values will be len(fromIndices)
 			toIndices: (iter of ints) The indices of atoms we calculate distances to
+			minVal: (float) The minimum value to take into account; this is to stop getting 0 when comparing two sets of overlapping groups
  
 		"""
 		self.fromIndices = fromIndices
 		self.toIndices = toIndices
+		self.minVal = minVal
 
 	def getValsToBin(self, sparseMatrixCalculator):
 		relevantMatrix = sparseMatrixCalculator.outDict["distMatrix"]
 		outVals = list()
 		for idx in self.fromIndices:
 			currDists = relevantMatrix[idx][:]
-			outVals.append( np.nanmin(currDists[self.toIndices]) )
+			relRow = currDists[self.toIndices]
+			moddedRelRow = np.where(relRow>self.minVal, relRow, np.nan)
+			outVals.append( np.nanmin(moddedRelRow) )
 
 		return outVals
 
@@ -189,7 +193,7 @@ class _WaterMinDist_plusMinDistFilter_binValGetter(atomComboCoreHelp._GetOneDimV
 
 class _WaterMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
-	def __init__(self, oxyIndices, hyIndices, toIndices, minDistType):
+	def __init__(self, oxyIndices, hyIndices, toIndices, minDistType, minVal=-0.01):
 		""" Initializer
 		
 		Args:
@@ -197,12 +201,14 @@ class _WaterMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseM
 			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
 			toIndices: (iter of ints) The indices of atoms we calculate the minimum distance TO
 			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)		
+			minVal: (float) The minimum value to take into account; this is to stop getting 0 when comparing two sets of overlapping groups
  
 		"""
 		self.oxyIndices = oxyIndices
 		self.hyIndices = hyIndices
 		self.toIndices = toIndices
 		self.minDistType = minDistType
+		self.minVal = minVal
 
 	def getValsToBin(self, sparseMatrixCalculator):
 		#Min values on a PER WATER basis (so up to 3-minimum values per water)	
@@ -222,7 +228,7 @@ class _WaterMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseM
 
 		#Get min dist for each relevant atom in each water
 		for indices in relFromIndices:
-			currBinner = _MinDistsGetOneDimValsToBin(indices, self.toIndices)
+			currBinner = _MinDistsGetOneDimValsToBin(indices, self.toIndices, minVal=self.minVal)
 			outBinners.append(currBinner)
 
 		return outBinners

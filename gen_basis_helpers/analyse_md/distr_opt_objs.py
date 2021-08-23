@@ -150,7 +150,7 @@ class WaterMinDistPlusMinDistFilterOptions(calcDistrCoreHelp.CalcDistribOptionsB
 #TODO: Another one with an additional filter function based on minDists; that one will actually be used
 class WaterMinDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMixin):
 
-	def __init__(self, binResObj, oxyIndices, hyIndices, toIndices, primaryIdxType="O", minDistType="all"):
+	def __init__(self, binResObj, oxyIndices, hyIndices, toIndices, primaryIdxType="O", minDistType="all", minVal=0.01):
 		""" Initializer
 		
 		Args:
@@ -160,6 +160,7 @@ class WaterMinDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMi
 			toIndices: (iter of ints) We calculate min-dist from water to these other indices
 			primaryIdxType: (str) The element of the primary index. "O", "Ha" and "Hb" are the standard options
 			minDistType: (str) Controls which atoms to get the minimum distance from. Current options are "all","o", and "h" (case insensitive)
+			minVal: (float) The minimum value to take into account; this is to stop getting 0 when comparing two sets of overlapping groups
 				 
 		"""
 		self.distribKey = "rdf"
@@ -169,6 +170,7 @@ class WaterMinDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOptsMi
 		self.toIndices = toIndices
 		self.primaryIdxType = primaryIdxType
 		self.minDistType = minDistType
+		self.minVal = minVal
 
 	@classmethod
 	def fromWaterIndicesAndGeom(cls, binResObj, waterIndices, toIndices, inpGeom, primaryIdxType="O", minDistType="all"):

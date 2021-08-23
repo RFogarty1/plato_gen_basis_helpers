@@ -477,8 +477,6 @@ class NDimensionalBinnedResults():
 			if useVal:
 				useValsToBin.append(val)
 
-		useValsToBin = valsToBin
-
 
 #		#Doesnt quite work.... seems to give minor (20%) speed-boosts though + filter out a similar number
 #		useValsToBin = np.array(valsToBin)

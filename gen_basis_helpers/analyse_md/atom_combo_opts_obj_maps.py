@@ -207,7 +207,8 @@ def _(inpObj):
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.WaterMinDistOptions)
 def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.toIndices, inpObj.minDistType]
-	return binValGettersHelp._WaterMinDistBinValGetter(*currArgs)
+	currKwargs = {"minVal":inpObj.minVal}
+	return binValGettersHelp._WaterMinDistBinValGetter(*currArgs, **currKwargs)
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.WaterMinDistPlusMinDistFilterOptions)
 def _(inpObj):
