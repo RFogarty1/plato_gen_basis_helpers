@@ -311,6 +311,7 @@ def getBinEdgePairsFromBinResObj(binResObj):
 	return [ [binResObj.binEdges[idx], binResObj.binEdges[idx+1]] for idx in range(len(binResObj.binCentres))]
 
 
+
 #Backend checker for some distrib option classes
 def _checkBinEdgesWithinDomain(binResObj, domain, domainTol):
 	binEdges = binResObj.binEdges
@@ -838,6 +839,65 @@ def getAverageForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseByS
 
 	return _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1)	
 
+
+def getWeightedIntegralOverRdf(binEdges, rdfVals, betweenVals=None, prefactor=1):
+	""" Gets the weighted integral over g_{rdf}(r) such that the volume of each sphere is taken into account.
+
+	For prefactor=1 this leads to the probability distribution describing (I THINK) the probability of finding an atom at a random distance r
+	For prefactor = N_{tot}/V_{tot} (normal use case) this will give the number of atoms (e.g. used to estimate a co-ordination number)
+
+	Args:
+		binEdges: (iter of floats, must be in order) Edge for each bin
+		rdfVals: (iter of floats) g(r)
+		betweenVals: (len-2 iter)
+		prefactor: (float)
+			 
+	Returns
+		outVal: (float) prefactor * \int (4*pi*r**2)*g(r) dr; Note we are weighting g(r) by surface areas
+ 
+	"""
+	def _surfAreaWeightFunction(r):
+		return 4*math.pi*(r**2)
+
+	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _surfAreaWeightFunction, betweenVals=betweenVals, prefactor=prefactor)
+
+
+def getWeightedIntegralOverCircularRdf(binEdges, rdfVals, betweenVals=None, prefactor=1):
+	""" Gets the weighted integral over g_{rdf}(r) such that the Area of each circular segment is taken into account. This is the equivalent of "getWeightedIntegralOverRdf" for cases where our "volume slices" are actually planar; and hence corresond to circles rather than spheres
+
+	Args:
+		binEdges: (iter of floats, must be in order) Edge for each bin
+		rdfVals: (iter of floats) g(r)
+		betweenVals: (len-2 iter)
+		prefactor: (float)
+			 
+	Returns
+		outVal: (float) prefactor * \int (2*pi*r)*g(r) dr;  note we are weighting g(r) by circle circumferences
+ 
+	"""
+	def _circumferenceWeightFunction(r):
+		return 2*math.pi*r
+
+	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _circumferenceWeightFunction, betweenVals=betweenVals, prefactor=prefactor)
+
+
+
+def _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, centreWeightFunction, betweenVals=None, prefactor=1):
+	#Get the weighted rdf values
+	binEdgePairs = _getBinEdgePairsFromBinEdges(binEdges)
+	binCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in binEdgePairs ]
+	weightedRdf = [rdf*centreWeightFunction(r) for rdf,r in it.zip_longest(rdfVals, binCentres)]
+
+	#Use the zeroth-moment pdf integrator to do the rest of the work; then multiply by prefactor
+	integral = _getNthMomentFromPdf(binEdges, weightedRdf, betweenVals=betweenVals, nthMoment=0)
+	return integral*prefactor
+
+def _getBinEdgePairsFromBinEdges(binEdges):
+	outVals = list()
+	for idx in range(len(binEdges)-1):
+		currPair = [ binEdges[idx], binEdges[idx+1] ]
+		outVals.append(currPair)
+	return outVals
 
 def getIntegralOverPdfSimple(binEdges, pdfVals, betweenVals=None, normByFullSum=False):
 	""" Gets the sum of probabilities between range given the probability density function. Works simply by summing (probability*width) for each bin

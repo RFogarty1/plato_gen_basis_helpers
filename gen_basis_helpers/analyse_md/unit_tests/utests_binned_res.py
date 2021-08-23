@@ -687,7 +687,7 @@ class TestAddRdfToBinObj(unittest.TestCase):
 		actObj = self.binObjA
 		self.assertEqual(expObj, actObj)
 
-class AddCircularRdfToBinObj(unittest.TestCase):
+class TestAddCircularRdfToBinObj(unittest.TestCase):
 
 	def setUp(self):
 		self.edgesA = [0,1,2,4]
@@ -911,4 +911,57 @@ class TestIntegrateOverPdfSimple(unittest.TestCase):
 		expVal = 0.8/3.4
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
+
+
+class TestIntegrateOverRdf(unittest.TestCase):
+
+	def setUp(self):
+		self.betweenVals = None
+		self.prefactor = 5 #N_tot / V_tot generally gonna be the formula
+		self.binEdges =   [0, 2, 3, 5, 8]
+		self.rdfVals = [0.4, 0.2, 0.3, 0.6] #Dont care how physical these are
+
+		#NOTE: Expected Surface areas are:
+#		12.5663706143592, 78.5398163397448, 201.061929829747, 530.929158456675
+
+	def _runTestFunct(self):
+		currArgs = [self.binEdges, self.rdfVals]
+		currKwargs = {"betweenVals":self.betweenVals, "prefactor":self.prefactor}
+		return tCode.getWeightedIntegralOverRdf(*currArgs, **currKwargs)
+
+	def testExpectedCaseA(self):
+		expVal = 5510.3535143965
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+	def testExpected_betweenVals(self):
+		self.betweenVals = [-1,6]
+		expVal = 731.991088286422
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+class TestIntegralOverCircularRdf(unittest.TestCase):
+
+	def setUp(self):
+		self.betweenVals = None
+		self.prefactor = 5 #N_tot / V_tot generally gonna be the formula
+		self.binEdges =   [0, 2, 3, 5, 8]
+		self.rdfVals = [0.4, 0.2, 0.3, 0.6] #Dont care how physical these are
+
+		#NOTE: Expected circumferences are:
+		#6.28318530717959, 15.707963267949, 25.1327412287183,40.8407044966673
+
+	def _runTestFunct(self):
+		currArgs = [self.binEdges, self.rdfVals]
+		currKwargs = {"betweenVals":self.betweenVals, "prefactor":self.prefactor}
+		return tCode.getWeightedIntegralOverCircularRdf(*currArgs, **currKwargs)
+
+	def testExpectedCaseA(self):
+		expVal = 483.805268652828
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal, actVal)
+
+
+
+
 
