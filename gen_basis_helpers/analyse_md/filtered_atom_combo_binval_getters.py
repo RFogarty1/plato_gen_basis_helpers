@@ -86,8 +86,26 @@ def _(binValGetter, groupIndices, useGroups, toIdxType=None):
 		raise ValueError("{} is an invalid value for self.toIdxType".format(self.toIdxType))
 
 
+#Only differes from the _RadialDistsGetValsToBin since the attrs are named differently
+@BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._MinHozDistsGetValsToBin)
+@BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._HozDistsGetValsToBin)
+def _(binValGetter, groupIndices, useGroups, toIdxType=None):
+	if toIdxType is None:
+		raise ValueError("")
 
+	fromOxyIndices = groupIndices[useGroups[0]][0]
+	toOxyIndices, toHyIndices = groupIndices[useGroups[1]][0], [idx for idx in it.chain(*groupIndices[useGroups[1]][1])]
 
+	binValGetter.fromIndices = fromOxyIndices
+
+	if toIdxType.upper() == "O":
+		binValGetter.toIndices = toOxyIndices
+	elif toIdxType.upper() == "H":
+		binValGetter.toIndices = toHyIndices
+	elif toIdxType.upper() == "ALL":
+		binValGetter.toIndices = toOxyIndices + toHyIndices
+	else:
+		raise ValueError("{} is an invalid value for self.toIdxType".format(self.toIdxType))
 
 
 

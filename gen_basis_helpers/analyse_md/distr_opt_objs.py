@@ -14,6 +14,25 @@ class CalcPlanarDistOptions(calcRadImpl.CalcPlanarRdfOptions):
 	pass
 
 
+class CalcHozDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
+
+	def __init__(self, binResObj, indicesFrom, indicesTo, minDistAToB=False, minDistVal=0.01):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			indicesFrom: (iter of ints) Contains the indices of atoms to get an rdf FROM (e.g. for g_{AB} indicesA should contain all indices of atom type A)
+			indicesTo: (iter of ints) Contains the indices of atoms to get an rdf TO (e.g. for g_{AB} indicesB should contain all indices of atom type B)
+			minDistAToB: (Bool) If False we do a normal rdf. If True, for every atom in group indicesFrom we only bin the SHORTEST distance to group indicesTo. Original use was to get fraction of oxygen atoms within a certain distance of Mg atoms.
+			minDistVal: (float) The smallest distance value to use; setting > 0 allows us to use overlapping from/to indices without just finding the minimum distance is from atom X to itself
+
+		"""
+		self.binResObj = binResObj
+		self.indicesFrom = indicesFrom
+		self.indicesTo = indicesTo
+		self.minDistAToB = minDistAToB
+		self.minDistVal = minDistVal
+
 class _WaterOptsMixin():
 
 	@property

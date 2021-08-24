@@ -91,7 +91,7 @@ class _SpecialMemoizationFunct():
 
 	def __call__(self, *args, **kwargs):
 
-		#1) check if args already in cache. This is broken.... maybe because i used deque
+		#1) check if args already in cache. 
 		currArgs = tuple([x for x in args])
 		sortedKwargs = sorted(kwargs.items())
 		for prevArgs,prevKwargs,output in self.argCache:
@@ -110,7 +110,7 @@ _calcDistanceMatrixForCell_minImageConv_memoized = _SpecialMemoizationFunct(calc
 
 #NOTE: I could probably extend this to a different plane; but suspect it would need to contain at least one cell vector
 #(and maybe even two)
-def calcHozDistMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None, minTotInterPlaneDist=1e-5):
+def calcHozDistMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None, minTotInterPlaneDist=1e-5, sparseMatrix=False):
 	""" Calculates matrix of horizontal distances (i.e. distance along surface plane) for inpCell
 	
 	Args:
@@ -118,6 +118,7 @@ def calcHozDistMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None,
 		indicesA: (Optional, iter of ints) Indices of the atoms to include for the first dimension; Default is to include ALL atoms
 		indicesB: (Optional, iter of ints) Indices of the atoms to include for the second dimension; Default is indicesA
 		minTotInterPlaneDist: (float) We calculate hoz-distance by using totalDist-interPlaneDist. If these values are the same (e.g. hozDist=0 then float errors may make totalDist-interPlaneDist negative which leads to a domain error when square-rooting. minTotInterPlaneDist means to set hozDist to zero in this case
+		sparseMatrix: (Optional, Bool) If True the the matrix returned will be NxN (N being number of atoms in inpCell) even when indicesA or indicesB set. In that case we just set the unwanted indices to np.nan
  
 	Returns
 		hozDistMatrix:  (NxM numpy array) distMatrix[n][m] gives the distance between atom n and m
@@ -149,6 +150,11 @@ def calcHozDistMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None,
 				outMatrix[dMatrixIdxA][dMatrixIdxB] = 0
 			else:
 				outMatrix[dMatrixIdxA][dMatrixIdxB] = math.sqrt(currTotalDist**2 - currInterPlaneDist**2)
+
+	#Return sparse matrix if requested
+	if sparseMatrix:
+		outDim = len(cartCoords)
+		outMatrix = _getTwoDimSparseMatrix(outMatrix, outDim, indicesA, indicesB)
 
 	return outMatrix
 

@@ -149,6 +149,11 @@ def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices]
 	return atomComboPopulatorHelp._WaterOrientationPopulator(*currArgs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CalcHozDistOptions)
+def _(inpObj):
+	currArgs = [inpObj.indicesFrom, inpObj.indicesTo]
+	return atomComboPopulatorHelp._HozDistMatrixPopulator(*currArgs)
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
 def _(inpObj):
 	#Need a DiscHBondCounter (with ridic filter things?) and a distFilter counter i guess
@@ -176,6 +181,15 @@ def _(inpObj):
 
 	return outObj
 
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcHozDistOptions)
+def _(inpObj):
+	fromIndices, toIndices = inpObj.indicesFrom, inpObj.indicesTo
+	if inpObj.minDistAToB is False:
+		outObj = binValGettersHelp._HozDistsGetValsToBin(fromIndices, toIndices)
+	else:
+		outObj = binValGettersHelp._MinHozDistsGetValsToBin(fromIndices, toIndices, minVal=inpObj.minDistVal)
+
+	return outObj
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcPlanarDistOptions)
 @TYPE_TO_BINNER_REGISTER_DECO(calcRadialDistrImplHelp.CalcPlanarRdfOptions)

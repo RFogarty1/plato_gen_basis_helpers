@@ -282,6 +282,137 @@ class TestGetBinvalsWaterWaterFilteredRdf(unittest.TestCase):
 		for expIter, actIter in it.zip_longest(expVals, actVals):
 			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
 
+class TestGetBinValsWaterWaterHozRdf(unittest.TestCase):
+
+	#Basically stolen from above
+	def setUp(self):
+		#Define the geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#roll 90,pitch=45, OH len~1, HOH angle 104.5. Then just added translation vectors
+		self.waterACoords = [ [1,0,1,"O"], [-1.13,0,0.99,"H"], [1.99,0,-0.13,"H"] ]
+		#translation = [2,0,0]; no rotations
+		self.waterBCoords = [ [2,0,1,"O"], [2.61, 0.79, 0, "H"], [2.61,-0.79,0,"H"] ]
+		#translation = [2+(2*0.61), 2*0.79, 0]
+		self.waterCCoords = [ [3.22, 1.58, 0, "O"],  [3.83, 2.37, 0, "H"], [3.83, 0.79, 0, "H"] ]
+		#translation = [2+(2*0.61), -2*0.79,0]
+		self.waterDCoords = [ [3.22, -1.58, 0, "O"], [3.83, -0.79, 0, "H"], [3.83, -2.37, 0, "H"] ]
+
+		self.xCoord = [[0,0,0,"X"]]
+		self.coords = self.xCoord + self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords 
+
+		#General options
+		self.oxyIndices = [1,4,7,10] 
+		self.hyIndices = [ [2,3], [5,6], [8,9], [11,12] ]
+
+		#Filter/classification options
+		self.distFilterIndices = [0]
+		self.filterObjA = clsDistrOptObjs.WaterMinDistAndHBondsFilterObj(distFilterRange=[0,3.1])
+		self.filterObjB = clsDistrOptObjs.WaterMinDistAndHBondsFilterObj(distFilterRange=[3.1,10])
+		self.filterObjC = clsDistrOptObjs.WaterMinDistAndHBondsFilterObj(distFilterRange=[3.1,10])
+		self.filterObjs  = [self.filterObjA, self.filterObjB, self.filterObjC]
+
+		#Min dist options (Note we only need a binResObj for this one)
+		self.binResObjA = binResHelp.BinnedResultsStandard.fromBinEdges([0.1,5,10]) #Needs to be sensible for default, since we filter vals to bin by whether dists are in these bins
+		self.minDistCase = False
+		#Options for the filtered atom combo opts object
+		self.toIdxType = ["O"]
+		self.useGroups = [ [0,1] ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create the classifier options obj
+		currArgs = [ [self.binResObjA], self.oxyIndices, self.hyIndices, self.distFilterIndices, self.filterObjs] #The binResObjs should be irrelevant really
+		self.classifierOptsObj = clsDistrOptObjs.WaterCountTypesMinDistAndHBondSimpleOpts.fromFilterObjs(*currArgs)
+
+		#Create the distribution opts object; indices are just placeholders
+		currArgs = [self.binResObjA, self.oxyIndices, self.oxyIndices]
+		self.hozDistRdfOptsObjs = [distrOptObjHelp.CalcHozDistOptions(*currArgs, minDistAToB=self.minDistCase) for x in self.useGroups]
+
+		#Create the main options object
+		currArgs = [self.oxyIndices, self.hyIndices, self.toIdxType, self.classifierOptsObj, self.hozDistRdfOptsObjs, self.useGroups] 
+		self.optsObjFilteredCombo = filteredComboOptObjHelp.WaterToWaterFilteredAtomComboOptsObjGeneric(*currArgs)
+
+		#create the sparse matrix calculator + populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObjFilteredCombo])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjFilteredCombo])
+
+	def _runTestFunct(self):
+		return self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+
+	def testExpectedA(self):
+		#For oxy only
+		distAC, distAD = 2.7248486196484385, 2.7248486196484385
+		distBC, distBD = 1.9961963831246665, 1.9961963831246665
+
+		expVals =  [ (distAC,), (distAD,), (distBC,), (distBD,) ]
+		actVals = self._runTestFunct()
+
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testMinDist(self):
+		self.waterDCoords[0][0] -= 0.1 #So the two arent equidistant
+		self.minDistCase = True
+		self.createTestObjs()
+
+		minDistA = 2.6440121028467325
+		minDistB = 1.9366982212001953
+
+		expVals = [ (minDistA,), (minDistB,) ]
+		actVals = self._runTestFunct()
+
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testMinDists_overlappingGroups(self):
+		self.useGroups = [ [0,0] ]
+		self.minDistCase = True
+		self.createTestObjs()
+
+		minDistAB = 1
+		expVals = [ (minDistAB,), (minDistAB,) ]
+		actVals = self._runTestFunct()
+
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testTwoDimVersionA(self):
+		self.toIdxType = ["O","H"]
+		self.useGroups = [ [0,1], [0,1] ]
+		self.createTestObjs()
+
+		#Distances from oxygen to oxygen
+		distAC_Oxy, distAD_Oxy = 2.7248486196484385, 2.7248486196484385
+		distBC_Oxy, distBD_Oxy = 1.9961963831246665, 1.9961963831246665
+
+
+		#Distances from oxygen to hydrogen
+		distAC1, distAC2 = 3.6913141291415448 , 2.938196725884773 
+		distAD1, distAD2 = 2.938196725884773, 3.6913141291415448 
+		distBC1, distBC2 = 2.9942945746869998, 1.9932385707686877
+		distBD1, distBD2 = 1.9932385707686877, 2.9942945746869998 
+
+		expVals = [ (distAC_Oxy, distAC1), (distAC_Oxy, distAC2), (distAC_Oxy, distAD1), (distAC_Oxy, distAD2),
+		            (distAD_Oxy, distAC1), (distAD_Oxy, distAC2), (distAD_Oxy, distAD1), (distAD_Oxy, distAD2),
+		            (distBC_Oxy, distBC1), (distBC_Oxy, distBC2), (distBC_Oxy, distBD1), (distBC_Oxy, distBD2),
+		            (distBD_Oxy, distBC1), (distBD_Oxy, distBC2), (distBD_Oxy, distBD1), (distBD_Oxy, distBD2) ]
+
+		actVals = self._runTestFunct()
+
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+
 
 
 

@@ -89,7 +89,8 @@ def _(populator, optsObj, toIdxType):
 	populator.toIndices = toIndices
 
 
-@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator,filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator   , filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
 def _(populator, optsObj, toIdxType):
 	oxyIndices, hyIndices = optsObj.oxyIndices, optsObj.hyIndices
 	fromIndices = oxyIndices

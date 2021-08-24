@@ -317,6 +317,7 @@ class TestCalcHozDistMatrix(unittest.TestCase):
 		self.indicesA = None
 		self.indicesB = None
 		self.minTotInterPlaneDist = 1e-7
+		self.sparseMatrix = False
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -326,7 +327,7 @@ class TestCalcHozDistMatrix(unittest.TestCase):
 	def _runTestFunct(self):
 		args = [self.cellA]
 		kwargs = {"indicesA":self.indicesA, "indicesB":self.indicesB,
-		          "minTotInterPlaneDist": self.minTotInterPlaneDist}
+		          "minTotInterPlaneDist": self.minTotInterPlaneDist, "sparseMatrix":self.sparseMatrix}
 		return tCode.calcHozDistMatrixForCell_minImageConv(*args,**kwargs)
 
 	def _loadExpXyXzYzDists(self):
@@ -378,6 +379,17 @@ class TestCalcHozDistMatrix(unittest.TestCase):
 		              [xzDist, 0     ] ]
 		actMatrix = self._runTestFunct()
 		self.assertTrue( np.allclose( np.array(expMatrix), np.array(actMatrix) ) )
+
+	def testExpVals_onlyIndicesA_sparseMatrix(self):
+		self.indicesA, self.indicesB = [2,0], [0,1,2]
+		self.sparseMatrix = True
+
+		xyDist, xzDist, yzDist = self._loadExpXyXzYzDists()
+		expMatrix = [ [0     , xyDist, xzDist],
+		              [xyDist, np.nan, yzDist],
+		              [xzDist, yzDist, 0     ] ]
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expMatrix), np.array(actMatrix), equal_nan=True ) )
 
 	@mock.patch("gen_basis_helpers.analyse_md.calc_dists.calcDistanceMatrixForCell_minImageConv")
 	@mock.patch("gen_basis_helpers.analyse_md.calc_dists.getInterSurfPlaneSeparationTwoPositions")

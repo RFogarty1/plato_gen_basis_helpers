@@ -76,6 +76,50 @@ class _DistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 		return True
 
 
+class _HozDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
+	""" Populator meant for calculating in-surface-plane distances between groups of atoms; like a lower dimensional (2-d vs 3-d) rdf """
+
+	def __init__(self, fromIndices, toIndices):
+		""" Initializer
+		
+		Args: (to/from is probably an arbitrary distinction here)
+			fromIndices: (iter of ints) Indices of atoms to calculate distances from
+			toIndices: (iter of ints) Indices of atoms to calculate distances to
+				 
+		"""
+		self.fromIndices= fromIndices
+		self.toIndices = toIndices
+		self.level = 0
+
+	@property
+	def maxLevel(self):
+		return self.level
+
+	def populateMatrices(self, inpGeom, outDict, level):
+		if level!=self.level:
+			pass
+		else:
+			self._populateMatrices(inpGeom, outDict)
+
+	def _populateMatrices(self, inpGeom, outDict):
+		try:
+			outDict["hozDistMatrix"]
+		except KeyError:
+			currKwargs = {"indicesA":self.fromIndices, "indicesB":self.toIndices, "sparseMatrix":True}
+			outDict["hozDistMatrix"] = calcDistsHelp.calcHozDistMatrixForCell_minImageConv(inpGeom, **currKwargs)
+		else:
+			self._populatePartiallyPopulatedMatrix(inpGeom, outDict)
+
+	def _populatePartiallyPopulatedMatrix(self, inpGeom, outDict):
+		useMatrix = outDict["hozDistMatrix"]
+
+		#Calculate for all indices; too slow to filter down to those needed
+		currKwargs = {"indicesA":self.fromIndices, "indicesB":self.toIndices, "sparseMatrix":True}
+		newSparseMatrix = calcDistsHelp.calcHozDistMatrixForCell_minImageConv(inpGeom, **currKwargs)
+
+		outDict["hozDistMatrix"] = np.where( np.isnan(useMatrix), newSparseMatrix, useMatrix )
+
+
 class _PlanarDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 	""" Populator meant for calculating distances between a plane and a set of indices """
 

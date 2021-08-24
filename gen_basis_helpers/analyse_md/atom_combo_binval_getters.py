@@ -63,37 +63,55 @@ class _RadialDistsGetValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMa
 
 	def getValsToBin(self, sparseMatrixCalculator):
 		relevantMatrix = sparseMatrixCalculator.outDict["distMatrix"]
-
-		#Worried this may be a bit slow
-		outVals = np.empty( (len(self.indicesA), len(self.indicesB) ) )
-
-		for outRowIdx,inpRowIdx in enumerate(self.indicesA):
-			for outColIdx,inpColIdx in enumerate(self.indicesB):
-				outVals[outRowIdx][outColIdx] = relevantMatrix[inpRowIdx][inpColIdx]
+		return _getRdfValsToBinFromMatrix(relevantMatrix, self.indicesA, self.indicesB, minVal=self.minVal, maxVal=self.maxVal)
 
 
+class _HozDistsGetValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
-		if (self.minVal is None) and (self.maxVal is None):
-			return outVals
+	def __init__(self, fromIndices, toIndices):
+		""" Initializer
+		
+		Args:
+			fromIndices: (iter of ints) Indices to get hoz-dists FROM
+			toIndices: (iter of ints) Indices to get hoz-dists TO
 
-		#Filter out any values that wont fit into bins anyway
-		#Its quickest to do here if we're likely to do a multi-dimensional rdf (number of terms is N instead of dims^{N})
-		#TODO: Need to explicitly test these.
-		else:
-			filteredOutVals = list()
-			for rIdx,row in enumerate(outVals):
-				if (self.minVal is not None) and (self.maxVal is not None):
-					currRow = row[ (row<self.maxVal) & (row>=self.minVal) ]
-				elif self.minVal is not None:
-					currRow = row[ (row>=self.minVal) ]
-				elif self.maxVal is not None:
-					currRow = row[ (row<self.maxVal) ]
-				else:
-					raise ValueError("Should be impossible to reach here")
-				filteredOutVals.append(currRow)
+		"""
+		self.fromIndices = fromIndices
+		self.toIndices = toIndices
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		relevantMatrix = sparseMatrixCalculator.outDict["hozDistMatrix"]
+		return _getRdfValsToBinFromMatrix(relevantMatrix, self.fromIndices, self.toIndices)
 
 
-		return filteredOutVals
+def _getRdfValsToBinFromMatrix(relevantMatrix, indicesA, indicesB, minVal=None, maxVal=None):
+	#Worried this may be a bit slow
+	outVals = np.empty( (len(indicesA), len(indicesB) ) )
+
+	for outRowIdx,inpRowIdx in enumerate(indicesA):
+		for outColIdx,inpColIdx in enumerate(indicesB):
+			outVals[outRowIdx][outColIdx] = relevantMatrix[inpRowIdx][inpColIdx]
+
+	if (minVal is None) and (maxVal is None):
+		return outVals
+
+	#Filter out any values that wont fit into bins anyway
+	#Its quickest to do here if we're likely to do a multi-dimensional rdf (number of terms is N instead of dims^{N})
+	#TODO: Need to explicitly test these.
+	else:
+		filteredOutVals = list()
+		for rIdx,row in enumerate(outVals):
+			if (minVal is not None) and (maxVal is not None):
+				currRow = row[ (row<maxVal) & (row>=minVal) ]
+			elif minVal is not None:
+				currRow = row[ (row>=minVal) ]
+			elif maxVal is not None:
+				currRow = row[ (row<maxVal) ]
+			else:
+				raise ValueError("Should be impossible to reach here")
+			filteredOutVals.append(currRow)
+
+	return filteredOutVals
 
 
 class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
@@ -113,14 +131,7 @@ class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSpars
 
 	def getValsToBin(self, sparseMatrixCalculator):
 		relevantMatrix = sparseMatrixCalculator.outDict["distMatrix"]
-		outVals = list()
-		for idx in self.fromIndices:
-			currDists = relevantMatrix[idx][:]
-			relRow = currDists[self.toIndices]
-			moddedRelRow = np.where(relRow>self.minVal, relRow, np.nan)
-			outVals.append( np.nanmin(moddedRelRow) )
-
-		return outVals
+		return _getMinDistsToBinFromRelevantMatrix(relevantMatrix, self.fromIndices, self.toIndices, self.minVal)
 
 	def __eq__(self, other):
 		if type(other) is not type(self):
@@ -132,6 +143,37 @@ class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSpars
 			if valA != valB:
 				return False
 		return True
+
+class _MinHozDistsGetValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, fromIndices, toIndices, minVal=-0.01):
+		""" Description of function
+		
+		Args:
+			fromIndices: (iter of ints) The indices of atoms we calculate distances from. Our output bin values will be len(fromIndices)
+			toIndices: (iter of ints) The indices of atoms we calculate distances to
+			minVal: (float) The minimum value to take into account; this is to stop getting 0 when comparing two sets of overlapping groups
+				 
+		"""
+		self.fromIndices = fromIndices
+		self.toIndices = toIndices
+		self.minVal = minVal
+
+	def getValsToBin(self, sparseMatrixCalculator):
+#		raise NotImplementedError("")
+		relevantMatrix = sparseMatrixCalculator.outDict["hozDistMatrix"]
+		return _getMinDistsToBinFromRelevantMatrix(relevantMatrix, self.fromIndices, self.toIndices, self.minVal)
+
+
+def _getMinDistsToBinFromRelevantMatrix(relevantMatrix, fromIndices, toIndices, minVal):
+	outVals = list()
+	for idx in fromIndices:
+		currDists = relevantMatrix[idx][:]
+		relRow = currDists[toIndices]
+		moddedRelRow = np.where(relRow>minVal, relRow, np.nan)
+		outVals.append( np.nanmin(moddedRelRow) )
+
+	return outVals
 
 
 class _WaterOrientationBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
