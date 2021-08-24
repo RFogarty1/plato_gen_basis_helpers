@@ -33,6 +33,10 @@ class CalcHozDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 		self.minDistAToB = minDistAToB
 		self.minDistVal = minDistVal
 
+	@property
+	def primaryIndices(self):
+		return self.indicesFrom
+
 class _WaterOptsMixin():
 
 	@property
