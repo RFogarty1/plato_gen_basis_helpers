@@ -106,7 +106,7 @@ class _HozDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 			outDict["hozDistMatrix"]
 		except KeyError:
 			currKwargs = {"indicesA":self.fromIndices, "indicesB":self.toIndices, "sparseMatrix":True}
-			outDict["hozDistMatrix"] = calcDistsHelp.calcHozDistMatrixForCell_minImageConv(inpGeom, **currKwargs)
+			outDict["hozDistMatrix"] = calcDistsHelp._calcHozDistMatrixForCell_minImageConv_memoized_debuggable(inpGeom, **currKwargs)
 		else:
 			self._populatePartiallyPopulatedMatrix(inpGeom, outDict)
 
@@ -115,7 +115,7 @@ class _HozDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
 		#Calculate for all indices; too slow to filter down to those needed
 		currKwargs = {"indicesA":self.fromIndices, "indicesB":self.toIndices, "sparseMatrix":True}
-		newSparseMatrix = calcDistsHelp.calcHozDistMatrixForCell_minImageConv(inpGeom, **currKwargs)
+		newSparseMatrix = calcDistsHelp._calcHozDistMatrixForCell_minImageConv_memoized_debuggable(inpGeom, **currKwargs)
 
 		outDict["hozDistMatrix"] = np.where( np.isnan(useMatrix), newSparseMatrix, useMatrix )
 

@@ -81,31 +81,6 @@ def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None
 	return distMatrix
 
 
-#Only sensible for dist matrices function really
-#NOTE: Theres more copy call than i need...
-class _SpecialMemoizationFunct():
-
-	def __init__(self, funct, maxEntries=20):
-		self.argCache = collections.deque(list(), maxlen=maxEntries)
-		self.funct = funct
-
-	def __call__(self, *args, **kwargs):
-
-		#1) check if args already in cache. 
-		currArgs = tuple([x for x in args])
-		sortedKwargs = sorted(kwargs.items())
-		for prevArgs,prevKwargs,output in self.argCache:
-			if (prevArgs==currArgs) and (prevKwargs==sortedKwargs):
-				return np.copy(output) #NEED TO RETURN A COPY, so theres no way to corrupt the memoized
-
-		#2)If not, run the function and add to the cache
-		output = self.funct(*args,**kwargs)
-		toAppend =  [tuple([x for x in args]),sorted(kwargs.items()),np.copy(output)]
-		self.argCache.appendleft( toAppend )
-
-		return np.copy(output)
-
-_calcDistanceMatrixForCell_minImageConv_memoized = _SpecialMemoizationFunct(calcDistanceMatrixForCell_minImageConv)
  
 
 #NOTE: I could probably extend this to a different plane; but suspect it would need to contain at least one cell vector
@@ -157,6 +132,39 @@ def calcHozDistMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None,
 		outMatrix = _getTwoDimSparseMatrix(outMatrix, outDim, indicesA, indicesB)
 
 	return outMatrix
+
+
+#Only sensible for dist matrices function really
+#NOTE: Theres more copy call than i need...
+class _SpecialMemoizationFunct():
+
+	def __init__(self, funct, maxEntries=20):
+		self.argCache = collections.deque(list(), maxlen=maxEntries)
+		self.funct = funct
+
+	def __call__(self, *args, **kwargs):
+
+		#1) check if args already in cache. 
+		currArgs = tuple([x for x in args])
+		sortedKwargs = sorted(kwargs.items())
+		for prevArgs,prevKwargs,output in self.argCache:
+			if (prevArgs==currArgs) and (prevKwargs==sortedKwargs):
+				return np.copy(output) #NEED TO RETURN A COPY, so theres no way to corrupt the memoized
+
+		#2)If not, run the function and add to the cache
+		output = self.funct(*args,**kwargs)
+		toAppend =  [tuple([x for x in args]),sorted(kwargs.items()),np.copy(output)]
+		self.argCache.appendleft( toAppend )
+
+		return np.copy(output)
+
+_calcDistanceMatrixForCell_minImageConv_memoized = _SpecialMemoizationFunct(calcDistanceMatrixForCell_minImageConv)
+_calcHozDistMatrixForCell_minImageConv_memoized = _SpecialMemoizationFunct(calcHozDistMatrixForCell_minImageConv)
+
+#This lets me insert a pdb at each call; which lets me track the cache more easily
+def _calcHozDistMatrixForCell_minImageConv_memoized_debuggable(*args, **kwargs):
+	return _calcHozDistMatrixForCell_minImageConv_memoized(*args, **kwargs)
+
 
 def calcSingleDistBetweenCoords_minImageConv(inpCell, coordA, coordB):
 	""" Gets the distance between two co-ordinates in inpCell using the minimum image convention; thus, this will return the smallest distance possible with the PBCs
