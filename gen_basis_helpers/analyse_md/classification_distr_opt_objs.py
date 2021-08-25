@@ -5,6 +5,27 @@ from . import binned_res as binResHelp
 from . import calc_distrib_core as calcDistrCoreHelp
 from . import distr_opt_objs as distrOptObjHelp
 
+
+class AtomClassifyBasedOnDistsFromIndicesSimpleOpts():
+	""" Simple classification options for individual atoms based on their minimum distance from another group of atoms """
+
+	def __init__(self, binResObjs, atomIndices, distFilterIndices, distFilterRanges, minDistVal=-0.01):
+		""" Initializer
+		
+		Args:
+			binResObjs: (iter of BinnedResultsStandard objects) One bin for each type of species you want to count (determined by the "Ranges" parameters)
+			atomIndices: (iter of ints) The atom indices we want distributions FROM
+			distFilterIndices: (iter of ints) The atom indices we want to calculate distances to in order to filter out some "atomIndices"
+			distFilterRanges: (iter of len-2 float iters) The ranges used to classify the water types
+			minDistVal: (float) If set to a +ve number we ignore distances smaller than it when figuring out minimum. Useful to avoid getting zeros when atomIndices and distFilterIndices overlap
+ 
+		"""
+		self.binResObjs = binResObjs
+		self.atomIndices = atomIndices
+		self.distFilterIndices = distFilterIndices
+		self.distFilterRanges = distFilterRanges
+		self.minDistVal = minDistVal
+
 #Note: binResObj....different for each? I guess thats the least stupid way, though will make it a not-real options object
 class WaterCountTypesMinDistAndHBondSimpleOpts():
 

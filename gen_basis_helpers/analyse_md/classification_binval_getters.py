@@ -3,6 +3,68 @@
 from . import atom_combo_core as atomComboCoreHelp
 from . import atom_combo_binval_getters as atomComboBinvalGetterHelp
 
+
+
+class _AtomsWithMinDistRangeCountBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, atomIndices, distFilterIndices, distFilterRange, minDistVal=-0.01):
+		""" Initializer
+		
+		Args:
+			atomIndices: (iter of ints)
+			distFilterIndices: (iter of ints) Each represents an atom index. We group atomIndices by min-distance from these indices
+			distFilterRange: (len-2 float iter) [minDist,maxDist] from indices in distFilterIndices for an atom to be included in the counts
+			minDistVal: (float) If set to a +ve number we ignore distances smaller than it when figuring out minimum. Useful to avoid getting zeros when atomIndices and distFilterIndices overlap
+		"""
+		self.atomIndices = atomIndices
+		self.distFilterIndices = distFilterIndices
+		self.distFilterRange = distFilterRange
+		self.minDistVal = minDistVal
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		#1) Get a classifier to do the main work
+		currArgs = [self.atomIndices, self.distFilterIndices, self.distFilterRange]
+		classifier = _AtomsWithinMinDistRangeClassifier(*currArgs, minDistVal=self.minDistVal)
+		relIndices = classifier.classify(sparseMatrixCalculator)
+
+		#2) Just look how many indices are in the list
+		return [len(relIndices)]
+
+class _AtomsWithinMinDistRangeClassifier():
+
+	def __init__(self, atomIndices, distFilterIndices, distFilterRange, minDistVal=-0.01):
+		""" Initializer
+		
+		Args:
+			atomIndices: (iter of ints)
+			distFilterIndices: (iter of ints) Each represents an atom index. We group atomIndices by min-distance from these indices
+			distFilterRange: (len-2 float iter) [minDist,maxDist] from indices in distFilterIndices for an atom to be included in the counts
+			minDistVal: (float) If set to a +ve number we ignore distances smaller than it when figuring out minimum. Useful to avoid getting zeros when atomIndices and distFilterIndices overlap
+		"""
+		self.atomIndices = atomIndices
+		self.distFilterIndices = distFilterIndices
+		self.distFilterRange = distFilterRange
+		self.minDistVal = minDistVal
+
+	def classify(self, sparseMatrixCalculator):
+		#1) Create binner for minimum distances
+		currArgs = [self.atomIndices, self.distFilterIndices]
+		minDistBinner = atomComboBinvalGetterHelp._MinDistsGetOneDimValsToBin(*currArgs,minVal=self.minDistVal)
+
+		#2) Get the relevant values for all distances
+		minDists = minDistBinner.getValsToBin(sparseMatrixCalculator)
+
+		#3) Get the indices which fall between distFilterRange limits
+		outIndices = list()
+		useFilterRange = sorted(self.distFilterRange)
+		for idx, minDist in enumerate(minDists):
+			if (minDist>=useFilterRange[0]) and (minDist<useFilterRange[1]):
+				outIndices.append( self.atomIndices[idx] )
+
+		return outIndices
+
+
+#Some water options below
 class _WaterCountTypeBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 	
 	def __init__(self, oxyIndices, hyIndices, distFilterIndices, distFilterRange, nDonorFilterRange,

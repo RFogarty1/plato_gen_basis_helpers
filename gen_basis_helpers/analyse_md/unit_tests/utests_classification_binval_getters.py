@@ -6,8 +6,53 @@ import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.analyse_md.atom_combo_opts_obj_maps as optObjMaps
 import gen_basis_helpers.analyse_md.classification_distr_opt_objs as classDistrOptObjHelp
+import gen_basis_helpers.analyse_md.binned_res as binResHelp
 
 
+
+class TestCountAtomClassify(unittest.TestCase):
+
+	def setUp(self):
+		# Geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.coords = [  [0,0,1,"X"],
+		                 [0,0,2,"Y"],
+		                 [0,0,3,"Y"],
+		                 [0,0,4,"Y"],
+		                 [0,0,5,"Y"] ]
+
+		# Options
+		binEdges = [0,1,2,3,4,5,6]
+		self.binResObjs = [ binResHelp.BinnedResultsStandard.fromBinEdges(binEdges) for x in range(2) ]
+		self.atomIndices = [1,2,3,4]
+		self.distFilterIndices = [0]
+		self.distFilterRanges = [ [0,3.5], [3.5,10] ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Options
+		currArgs = [self.binResObjs, self.atomIndices, self.distFilterIndices, self.distFilterRanges]
+		self.classifierOpts = classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts(*currArgs)
+
+		#Matrix populator
+		self.sparseMatrixCalculator = optObjMaps.getSparseMatrixCalculatorFromOptsObjIter([self.classifierOpts])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binner object
+		self.testObj = optObjMaps.getMultiDimBinValGetterFromOptsObjs([self.classifierOpts])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseMatrixCalculator)
+
+	def testExpectedA(self):
+		expVals = [ (3,1) ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
 
 class TestWaterCountTypesMinDistAndHBond(unittest.TestCase):
 

@@ -163,6 +163,10 @@ def _(inpObj):
 	currKwargs = {"maxOO":inpObj.maxOOHBond, "donor":True, "acceptor":True}
 	return atomComboPopulatorHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts)
+def _(inpObj):
+	fromIndices, toIndices = inpObj.atomIndices, inpObj.distFilterIndices
+	return atomComboPopulatorHelp._DistMatrixPopulator(fromIndices, toIndices)
 
 
 #Registration of standard binners below
@@ -233,6 +237,16 @@ def _(inpObj):
 def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.angleType]
 	return binValGettersHelp._WaterOrientationBinValGetter(*currArgs)
+
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts)
+def _(inpObj):
+	outObjs = list()
+	for idx,unused in enumerate(inpObj.distFilterRanges):
+		currArgs = [inpObj.atomIndices, inpObj.distFilterIndices, inpObj.distFilterRanges[idx]]
+		currKwargs = {"minDistVal":inpObj.minDistVal}
+		currObj = classBinvalGetterHelp._AtomsWithMinDistRangeCountBinvalGetter(*currArgs, **currKwargs)
+		outObjs.append(currObj)
+	return outObjs
 
 @TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
 def _(inpObj):

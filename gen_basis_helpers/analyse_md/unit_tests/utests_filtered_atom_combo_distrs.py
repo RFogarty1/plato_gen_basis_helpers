@@ -11,6 +11,137 @@ import gen_basis_helpers.analyse_md.filtered_atom_combo_opt_objs as filteredComb
 import gen_basis_helpers.analyse_md.atom_combo_opts_obj_maps as optsObjMapHelp
 
 
+
+class TestGetBinValsAtomFilteredRdfAndHozDists(unittest.TestCase):
+
+	def setUp(self):
+		#Geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.coords = [  [0,0,1,"X"],
+		                 [0,0,2,"A"],
+		                 [0,0,3,"B"],
+		                 [0,0,4,"C"],
+		                 [0,0,5,"D"] ]
+
+		#General options
+		self.classBinResObj = binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(-0.1,20,1,extremesAtCentre=False)
+		self.fromIndices = [1,2,3,4]
+
+		#Overall options object specific
+		self.useGroups = [ [0,1] ]
+
+		#Classification Options object specific
+		self.distFilterIndices = [0]
+		self.distFilterRanges = [ [-0.1,3.5], [3.5,5.5] ]
+
+		#Distribution opts obj specific
+		self.distrBinResObj = binResHelp.BinnedResultsStandard.fromBinEdges([-0.1,20])
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create the template distribution options
+		currArgs = [self.distrBinResObj, self.fromIndices, self.fromIndices]
+		self.distrOpts = [distrOptObjHelp.CalcRdfOptions(*currArgs) for x in self.useGroups]
+
+		#Create the classification options
+		currBins = [self.classBinResObj for x in self.distFilterRanges]
+		currArgs = [currBins, self.fromIndices, self.distFilterIndices, self.distFilterRanges]
+		self.classifierOpts = clsDistrOptObjs.AtomClassifyBasedOnDistsFromIndicesSimpleOpts(*currArgs)
+
+		#
+		currArgs = [self.fromIndices, self.classifierOpts, self.distrOpts, self.useGroups]
+		self.filterOptObj = filteredComboOptObjHelp.FilteredAtomComboOptsObjGeneric(*currArgs)
+
+		#create the sparse matrix calculator + populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.filterOptObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.filterOptObj])
+
+	def testExpectedA(self):
+		expVals = [ (3,), (2,), (1,) ]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+		for expIter,actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testExpected_selfDistr(self):
+		self.useGroups = [ [0,0] ]
+		self.createTestObjs()
+
+		distAA, distBB, distCC = 0,0,0
+		distAB, distAC, distBC = 1,2,1
+		distBA, distCA, distCB = distAB, distAC, distBC
+		expVals = [ (distAA,), (distAB,), (distAC,), (distBA,), (distBB,), (distBC,),
+		            (distCA,), (distCB,), (distCC,) ]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+ 
+	def testExpectedHozDistSelfDistr(self):
+		self.useGroups = [ [0,0] ]
+		self.coords = [  [0,1,1,"X"],
+		                 [0,2.2,2,"A"],
+		                 [0,3,3,"B"],
+		                 [0,4,4,"C"],
+		                 [0,6,5,"D"] ]
+		self.distFilterRanges = [ [-0.1,5.7], [5.7,9] ] #First bin goes to just >sqrt(32)' meaning ABC encompassed
+		self.createTestObjs()
+
+		#Recreate the sparse matrix calculator/binval getter to use horizontal distances
+		currArgs = [self.distrBinResObj, self.fromIndices, self.fromIndices]
+		self.distrOpts = [distrOptObjHelp.CalcHozDistOptions(*currArgs, minDistVal=0.01) for x in self.useGroups]
+		self.filterOptObj.distrOpts = self.distrOpts
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.filterOptObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.filterOptObj])
+
+		#Create the expected values
+		distAA, distBB, distCC = 0, 0,0 
+		distAB, distAC, distBC = 0.8, 1.8, 1
+		distBA, distCA, distCB = distAB, distAC, distBC
+
+		expVals = [ (distAA,), (distAB,), (distAC,), (distBA,), (distBB,), (distBC,),
+		            (distCA,), (distCB,), (distCC,) ]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+
+	def testExpectedMinHozDistSelfDistr(self):
+		self.useGroups = [ [0,0] ]
+		self.coords = [  [0,1,1,"X"],
+		                 [0,2.2,2,"A"],
+		                 [0,3,3,"B"],
+		                 [0,4,4,"C"],
+		                 [0,6,5,"D"] ]
+		self.distFilterRanges = [ [-0.1,5.7], [5.7,9] ] #First bin goes to just >sqrt(32)' meaning ABC encompassed
+		self.createTestObjs()
+
+		#Recreate the sparse matrix calculator/binval getter to use horizontal distances
+		currArgs = [self.distrBinResObj, self.fromIndices, self.fromIndices]
+		self.distrOpts = [distrOptObjHelp.CalcHozDistOptions(*currArgs, minDistVal=0.01, minDistAToB=True) for x in self.useGroups]
+		self.filterOptObj.distrOpts = self.distrOpts
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.filterOptObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.filterOptObj])
+
+		#Create the expected values
+		expVals = [ (0.8,), (0.8,), (1,) ]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+
 class TestGetBinValsWaterMinDists(unittest.TestCase):
 
 

@@ -16,6 +16,23 @@ _MOD_POPULATOR_BASED_ON_TYPE_DICT = dict()
 MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_MOD_POPULATOR_BASED_ON_TYPE_DICT)
 
 
+@atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric)
+def _(inpObj):
+	distrOptsPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(optObj) for optObj in inpObj.distrOpts]
+	classifierPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(inpObj.classificationOpts)] 
+	assert inpObj.classificationOpts.atomIndices == inpObj.atomIndices
+
+	#Problem: These populators totally ignore the atomIndices on the overall index object.
+	#To be on the safe side I modify them here to get everything needed
+	for populator in distrOptsPopulators:
+		_MOD_POPULATOR_BASED_ON_TYPE_DICT[type(populator), type(inpObj)] (populator, inpObj)
+
+	#Combine individual populators into a composite
+	outPopulator = coreComboHelp._SparseMatrixPopulatorComposite( distrOptsPopulators + classifierPopulators )
+
+	return outPopulator
+
+
 @atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric)
 def _(inpObj):
 	distrOptsPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(optObj) for optObj in inpObj.distrOpts]
@@ -44,10 +61,7 @@ def _(inpObj):
 	if type(inpObj.classificationOpts) is not classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts:
 		raise NotImplementedError("")
 
-	#0) Check group indices are consistent
-	firstGroupIndices = [x[0] for x in inpObj.useGroups]
-	if not all([x==firstGroupIndices[0] for x in firstGroupIndices]):
-		raise ValueError("firstGroupIndices (in inpObj.useGroups) need to all be the same; but are {}".format(firstGroupIndices))
+	_checkGroupIndicesConsistent(inpObj)
 
 	#1) Get water classifier objects
 	classifiers = list()
@@ -71,6 +85,37 @@ def _(inpObj):
 	return outObjs
 
 
+@atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric)
+def _(inpObj):
+	if type(inpObj.classificationOpts) is not classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts:
+		raise NotImplementedError("")
+
+	_checkGroupIndicesConsistent(inpObj)
+
+	#1) Get individual classifier objects[TODO: This is something another registration-dictionary COULD handle in future]
+	classifiers = list()
+	currOptObj = inpObj.classificationOpts
+	for idx,unused in enumerate(currOptObj.distFilterRanges):
+		currArgs = [currOptObj.atomIndices, currOptObj.distFilterIndices, currOptObj.distFilterRanges[idx]]
+		currObj = classBinvalGetterHelp._AtomsWithinMinDistRangeClassifier(*currArgs, minDistVal=currOptObj.minDistVal)
+		classifiers.append( currObj )
+
+	#2) Get the binval getters with default arguments
+	binValGetters = [atomComboOptObjMaps.getOneDimBinValGetterFromOptsObj(optObj) for optObj in inpObj.distrOpts]
+
+	#3) Create the actual objects (need 1 binval getter per property)
+	outObjs = list()
+	for binValGetter, useGroup in it.zip_longest(binValGetters, inpObj.useGroups):
+		currArgs = [ classifiers, binValGetter, useGroup ]
+		outObjs.append( filteredAtomBinvalGetterHelp.FilteredAtomComboBinvalGetterGeneric(*currArgs) )
+
+	return outObjs
+
+
+def _checkGroupIndicesConsistent(inpObj):
+	firstGroupIndices = [x[0] for x in inpObj.useGroups]
+	if not all([x==firstGroupIndices[0] for x in firstGroupIndices]):
+		raise ValueError("firstGroupIndices (in inpObj.useGroups) need to all be the same; but are {}".format(firstGroupIndices))
 
 
 #Functions for modifying populators; this needs doing at creation time (since we populate matrices BEFORE we filter atoms into groups for a given geometry)
@@ -106,4 +151,10 @@ def _(populator, optsObj, toIdxType):
 	populator.fromIndices = fromIndices
 	populator.toIndices = toIndices
 
+
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
+def _(populator, optsObj):
+	populator.fromIndices = optsObj.atomIndices
+	populator.toIndices = optsObj.atomIndices
 
