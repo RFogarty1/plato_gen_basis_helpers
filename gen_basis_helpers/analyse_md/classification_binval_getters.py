@@ -1,4 +1,5 @@
 
+import numpy as np
 
 from . import atom_combo_core as atomComboCoreHelp
 from . import atom_combo_binval_getters as atomComboBinvalGetterHelp
@@ -65,6 +66,9 @@ class _AtomsWithinMinDistRangeClassifier():
 
 
 #Some water options below
+
+
+
 class _WaterCountTypeBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 	
 	def __init__(self, oxyIndices, hyIndices, distFilterIndices, distFilterRange, nDonorFilterRange,
@@ -183,4 +187,106 @@ class _WaterClassifierMinDistAndNumberHBonds(_WaterClassifierBase):
 		outBinner = atomComboCoreHelp._GetMultiDimValsToBinFromSparseMatrices([minDistBinner, nDonorBinner, nAcceptorBinner, nTotalBinner])
 
 		return outBinner
+
+
+
+
+class _WaterClassifierMinDistHBondsAndAdsSiteHozDists(_WaterClassifierBase):
+
+	def __init__(self, oxyIndices, hyIndices, distFilterIndices, distFilterRange, nDonorFilterRange,
+	             nAcceptorFilterRange, nTotalFilterRange, maxOOHBond, maxAngleHBond, adsSiteMinHozToOtherAdsSiteRange):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			distFilterIndices: (iter of ints) Each represents an atom index. We group water by distance of oxygen atoms from these indices
+			distFilterRange: (len-2 float iter) [minDist,maxDist] from indices in distFilterIndices for a water to be included in this count
+			nDonorFilterRange: (len-2 float iter) [minNDonor, maxNDonor] for a water.
+			nAcceptorFilterRange: (len-2 float iter) [minNTotal,maxNTotal] for a water
+			nTotalFilterRange: (len-2 float iter) [minNTotal,maxNTotal] for a water
+			maxOOHBond: The maximum O-O distance between two hydrogen-bonded water.
+			maxAngleHBond:  The maximum OA-OD-HD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen
+			adsSiteMinHozToOtherAdsSiteDistRanges: ( len-2 float iter) [minDist,maxDist] for the closest ads-site to ads-site contact using horizontal distances 
+	 
+		"""
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.distFilterIndices = distFilterIndices
+		self.distFilterRange = distFilterRange
+		self.nDonorFilterRange = nDonorFilterRange
+		self.nAcceptorFilterRange = nAcceptorFilterRange
+		self.nTotalFilterRange = nTotalFilterRange
+		self.maxOOHBond = maxOOHBond
+		self.maxAngleHBond = maxAngleHBond
+		self.adsSiteMinHozToOtherAdsSiteRange = adsSiteMinHozToOtherAdsSiteRange
+
+	def classify(self, sparseMatrixCalculator):
+		#1)Use another classifier to filter indices based on min-dists to adsorbates/number of h-bonds etc
+		currArgs = [self.oxyIndices, self.hyIndices, self.distFilterIndices, self.distFilterRange, self.nDonorFilterRange,
+		            self.nAcceptorFilterRange, self.nTotalFilterRange, self.maxOOHBond, self.maxAngleHBond]
+		otherClassifier = _WaterClassifierMinDistAndNumberHBonds(*currArgs)
+		oxyIndices, hyIndices = otherClassifier.classify(sparseMatrixCalculator)
+
+
+		#2) Figure out the indices are adsorbed to sites with min(hozDist) in the relevant range
+		adsSiteIndices = list()
+		for oxyIdx in oxyIndices:
+			relRow = sparseMatrixCalculator.outDict["distMatrix"][oxyIdx]
+			minIdx = np.argmin(relRow[self.distFilterIndices]) #Shouldnt need the nan version here; 
+			adsSiteIndices.append( self.distFilterIndices[minIdx] ) 
+
+		#3) Get the min hoz distance for each
+		minHozDistBinValGetter = atomComboBinvalGetterHelp._MinHozDistsGetValsToBin(adsSiteIndices, adsSiteIndices, minVal=0.01)
+		outHozDists = minHozDistBinValGetter.getValsToBin(sparseMatrixCalculator)
+
+		#TODO: If two are at the same site we need to count as zero min hoz-dist
+		#TODO: Make sure one of the unit tests involves water filtered at THIS point
+		#4) Return the relevant oxyIndices and hyIndices
+		indicesInList = list()
+		for idx,outHozDist in enumerate(outHozDists):
+			if  (self.adsSiteMinHozToOtherAdsSiteRange[0]<=outHozDist) and (outHozDist<self.adsSiteMinHozToOtherAdsSiteRange[1]):
+				indicesInList.append(idx)
+
+		outOxyIndices = [oxyIndices[idx] for idx in indicesInList]
+		outHyIndices  = [hyIndices[idx]  for idx in indicesInList]
+
+		return outOxyIndices, outHyIndices
+
+
+#Inheriting from classifier since it needs all the same info + the classify step is where the actual work is
+class _AdsorbedWaterCountTypeWithAdsSiteHozDistsBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase, _WaterClassifierMinDistHBondsAndAdsSiteHozDists):
+
+	#This is the SAME as the classifier..... I could probably just combine the objects or similar (inherit from classifier and add binval getter here
+	def __init__(self, oxyIndices, hyIndices, distFilterIndices, distFilterRange, nDonorFilterRange,
+	             nAcceptorFilterRange, nTotalFilterRange, maxOOHBond, maxAngleHBond, adsSiteMinHozToOtherAdsSiteRange):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints) The oxygen indices for each water molecule
+			hyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			distFilterIndices: (iter of ints) Each represents an atom index. We group water by distance of oxygen atoms from these indices
+			distFilterRange: (len-2 float iter) [minDist,maxDist] from indices in distFilterIndices for a water to be included in this count
+			nDonorFilterRange: (len-2 float iter) [minNDonor, maxNDonor] for a water.
+			nAcceptorFilterRange: (len-2 float iter) [minNTotal,maxNTotal] for a water
+			nTotalFilterRange: (len-2 float iter) [minNTotal,maxNTotal] for a water
+			maxOOHBond: The maximum O-O distance between two hydrogen-bonded water.
+			maxAngleHBond:  The maximum OA-OD-HD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen
+			adsSiteMinHozToOtherAdsSiteDistRanges: ( len-2 float iter) [minDist,maxDist] for the closest ads-site to ads-site contact using horizontal distances 
+	 
+		"""
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.distFilterIndices = distFilterIndices
+		self.distFilterRange = distFilterRange
+		self.nDonorFilterRange = nDonorFilterRange
+		self.nAcceptorFilterRange = nAcceptorFilterRange
+		self.nTotalFilterRange = nTotalFilterRange
+		self.maxOOHBond = maxOOHBond
+		self.maxAngleHBond = maxAngleHBond
+		self.adsSiteMinHozToOtherAdsSiteRange = adsSiteMinHozToOtherAdsSiteRange
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		oxyIndices,hyIndices = self.classify(sparseMatrixCalculator)
+		return [len(oxyIndices)]
 

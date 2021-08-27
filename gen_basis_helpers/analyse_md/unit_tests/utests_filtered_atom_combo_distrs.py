@@ -142,6 +142,95 @@ class TestGetBinValsAtomFilteredRdfAndHozDists(unittest.TestCase):
 			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
 
 
+class TestGetBinValsWaterWaterHozDistsWithAdsHozDistFilter(unittest.TestCase):
+
+	def setUp(self):
+		#1) All geometric parameters for testing
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#roll 90,pitch=45, OH len~1, HOH angle 104.5. Then just added translation vectors
+		self.waterACoords = [ [0,0,0,"O"], [-0.13,0,0.99,"H"], [0.99,0,-0.13,"H"] ]
+		#translation = [2,0,0]; no rotations
+		self.waterBCoords = [ [2,0,0,"O"], [2.61, 0.79, 0, "H"], [2.61,-0.79,0,"H"] ]
+		#
+		self.waterCCoords = [ [3.0, 1.58, 0, "O"],  [3.83, 2.37, 0, "H"], [3.83, 0.79, 0, "H"] ]
+		#
+		self.waterDCoords = [ [3.0, -1.58, 0, "O"], [3.83, -0.79, 0, "H"], [3.83, -2.37, 0, "H"] ]
+
+		self.adsCoords = [ [0.1,0,0.1,"X"], [2.1,1,0.1,"X"], [ 3,1,0.1,"X" ] ]
+		self.coords = self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords + self.adsCoords
+
+		#General options
+		self.oxyIndices = [0,3,6,9]
+		self.hyIndices = [ [1,2], [4,5], [7,8], [10,11] ]
+		self.minDist = True
+
+		#Classification options
+		self.distFilterIndices = [12,13,14]
+		self.distFilterVals =   [ [0,1.5]    , [0,1.5] ] 
+		self.adsHozDistRanges = [ [0,2.5], [4,10] ] 
+		self.binResObjs = [None,None] #Irrelevent to these tests so....
+
+		#filtered distr opts
+		self.useGroups = [ [0,0] ]
+		self.toIdxType = ["O"]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Sort the geometry out
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create a classification options object
+		currArgs = [ self.binResObjs, self.oxyIndices, self.hyIndices, self.distFilterIndices, self.distFilterVals ]
+		currKwargs = {"adsSiteMinHozToOtherAdsSiteRanges": self.adsHozDistRanges}
+		self.classificationOpts = clsDistrOptObjs.WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj(*currArgs, **currKwargs)
+
+		#Get the distribution option objects
+		currArgs = [self.binResObjs, self.oxyIndices, self.oxyIndices]
+		self.minHozDistOpts = [ distrOptObjHelp.CalcHozDistOptions(*currArgs, minDistAToB=self.minDist) for x in self.useGroups ]
+		
+		#Create the main options object
+		currArgs = [self.oxyIndices, self.hyIndices, self.toIdxType, self.classificationOpts, self.minHozDistOpts, self.useGroups]
+		self.optsObjFilteredCombo = filteredComboOptObjHelp.WaterToWaterFilteredAtomComboOptsObjGeneric(*currArgs)
+
+		#create the sparse matrix calculator + populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObjFilteredCombo])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjFilteredCombo])
+
+
+	def testExpectedA(self):
+		minDistA, minDistB, minDistC = 2, 1.8698663053812163, 1.8698663053812163
+		expVals = [(minDistA,), (minDistB,), (minDistC,)]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+		for expIter, actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act,places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+
+	def testExpectedHozRdfBinning(self):
+		#Create the opts objs 
+		self.minDist = False
+		self.createTestObjs()
+
+		#Figure out expected
+		distAA, distBB, distCC = 0, 0, 0
+		distAB, distAC, distBC = 2, 3.3906341589738047, 1.8698663053812163
+		distBA, distCA, distCB = distAB, distAC, distBC
+
+		expVals = [ (distAA,), (distAB,), (distAC,), (distBA,), (distBB,), (distBC,),
+		            (distCA,), (distCB,), (distCC,) ]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+		#Run + compare
+		for expIter, actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+
 class TestGetBinValsWaterMinDists(unittest.TestCase):
 
 

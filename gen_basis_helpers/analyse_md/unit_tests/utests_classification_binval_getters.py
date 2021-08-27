@@ -54,6 +54,79 @@ class TestCountAtomClassify(unittest.TestCase):
 		actVals = self._runTestFunct()
 		self.assertEqual(expVals, actVals)
 
+
+class TestWaterCountBasedOnAdsSiteHozDists(unittest.TestCase):
+
+	def setUp(self):
+		#1) All geometric parameters for testing
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#roll 90,pitch=45, OH len~1, HOH angle 104.5. Then just added translation vectors
+		self.waterACoords = [ [0,0,0,"O"], [-0.13,0,0.99,"H"], [0.99,0,-0.13,"H"] ]
+		#translation = [2,0,0]; no rotations
+		self.waterBCoords = [ [2,0,0,"O"], [2.61, 0.79, 0, "H"], [2.61,-0.79,0,"H"] ]
+		#translation = [2+(2*0.61), 2*0.79, 0]
+		self.waterCCoords = [ [3.22, 1.58, 0, "O"],  [3.83, 2.37, 0, "H"], [3.83, 0.79, 0, "H"] ]
+		#translation = [2+(2*0.61), -2*0.79,0]
+		self.waterDCoords = [ [3.22, -1.58, 0, "O"], [3.83, -0.79, 0, "H"], [3.83, -2.37, 0, "H"] ]
+
+		self.adsCoords = [ [0.1,0,0.1,"X"], [2.1,0,0.1,"X"], [ 3,0,0.1,"X" ] ]
+		self.coords = self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords + self.adsCoords
+
+
+		#Options
+		self.oxyIndices = [0,3,6,9]
+		self.hyIndices = [ [1,2], [4,5], [7,8], [10,11] ]
+		self.distFilterIndices = [12,13,14]
+		self.distFilterVals =   [ [0,1]    , [0,1] ] #These dist filter ranges mean we ignore the case of a shared adsorption site
+		self.adsHozDistRanges = [ [0,2.5], [4,10] ] 
+		self.binResObjs = [None,None] #Irrelevent to these tests so....
+
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Sort the geometry out
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create an options object
+		currArgs = [ self.binResObjs, self.oxyIndices, self.hyIndices, self.distFilterIndices, self.distFilterVals ]
+		currKwargs = {"adsSiteMinHozToOtherAdsSiteRanges": self.adsHozDistRanges}
+		self.optObj = classDistrOptObjHelp.WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj(*currArgs, **currKwargs)
+
+		#Get sparse matrix populator + populate it
+		self.sparseMatrixCalculator = optObjMaps.getSparseMatrixCalculatorFromOptsObjIter([self.optObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Get the binner object
+		self.testObj = optObjMaps.getMultiDimBinValGetterFromOptsObjs([self.optObj])
+
+	def testExpectedA(self):
+		expBinVals = [ (2,0) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+
+	#Need a special check for shared adsorption sites;
+	def testExpected_sharedAdsSiteImportant(self):
+		""" Shouldnt automatically be zero distance """
+		self.distFilterVals = [ [0,3], [0,3] ]
+		self.adsHozDistRanges = [ [0,1], [1,2.5] ]
+		self.createTestObjs()
+		expBinVals = [ (3,1) ] #1st ads site is 2 away from nearest; others are each 0.9 away
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testExpected_hozDistRequriedToFilterOut(self):
+		self.distFilterVals = [ [0,3] ]
+		self.adsHozDistRanges = [ [1,2.5] ]
+		self.createTestObjs()
+		expBinVals = [(1,)]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+
 class TestWaterCountTypesMinDistAndHBond(unittest.TestCase):
 
 	#Taken from TestDiscHBondCounterBetweenGroupsOxyDistFilter mostly

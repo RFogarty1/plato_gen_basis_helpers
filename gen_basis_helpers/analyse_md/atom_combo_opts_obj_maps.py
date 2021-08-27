@@ -163,10 +163,29 @@ def _(inpObj):
 	currKwargs = {"maxOO":inpObj.maxOOHBond, "donor":True, "acceptor":True}
 	return atomComboPopulatorHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
 
+
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj)
+def _(inpObj):
+	#1) Get the populator relevant to the hydrogen-bonding stuff (and min dist to adsorbate sites)
+	distFilterVals = [ [0,1000], [0,1000] ] #Populator shouldnt need to know about distFilterVals really; since we count H-bonds between EVERY water
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices, distFilterVals] 
+	currKwargs = {"maxOO":inpObj.maxOOHBond, "donor":True, "acceptor":True}
+	hBondPopulator = atomComboPopulatorHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
+
+	#2) Get the populator relevant to finding horizontal distances between adsorption sites
+	indicesFrom, indicesTo = inpObj.distFilterIndices, inpObj.distFilterIndices
+	hozDistPopulator = atomComboPopulatorHelp._HozDistMatrixPopulator(indicesFrom, indicesTo)
+
+	compositePopulator = coreComboHelp._SparseMatrixPopulatorComposite([hBondPopulator, hozDistPopulator])
+
+	return compositePopulator
+
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts)
 def _(inpObj):
 	fromIndices, toIndices = inpObj.atomIndices, inpObj.distFilterIndices
 	return atomComboPopulatorHelp._DistMatrixPopulator(fromIndices, toIndices)
+
 
 
 #Registration of standard binners below
@@ -259,7 +278,16 @@ def _(inpObj):
 		outObjs.append(currObj)
 	return outObjs
 
-
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj)
+def _(inpObj):
+	outObjs = list()
+	for idx,unused in enumerate(inpObj.distFilterRanges):
+		currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices, inpObj.distFilterRanges[idx],
+		            inpObj.nDonorFilterRanges[idx], inpObj.nAcceptorFilterRanges[idx], inpObj.nTotalFilterRanges[idx],
+		            inpObj.maxOOHBond, inpObj.maxAngleHBond, inpObj.adsSiteMinHozToOtherAdsSiteRanges[idx]]
+		currObj = classBinvalGetterHelp._AdsorbedWaterCountTypeWithAdsSiteHozDistsBinvalGetter(*currArgs)
+		outObjs.append(currObj)
+	return outObjs
 
 #Utility functions
 def _getDefaultPlaneEquation():

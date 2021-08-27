@@ -16,6 +16,39 @@ _MOD_POPULATOR_BASED_ON_TYPE_DICT = dict()
 MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_MOD_POPULATOR_BASED_ON_TYPE_DICT)
 
 
+#
+_CLASSIFIER_FROM_OPTS_OBJ_FROM_TYPE_DICT = dict()
+TYPE_TO_CLASSIFIER_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_CLASSIFIER_FROM_OPTS_OBJ_FROM_TYPE_DICT)
+
+def getClassifiersFromOptsObj(inpOptsObj):
+	return _CLASSIFIER_FROM_OPTS_OBJ_FROM_TYPE_DICT[type(inpOptsObj)](inpOptsObj)
+
+
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
+def _(inpObj):
+	classifiers = list()
+	for idx,unused in enumerate(inpObj.distFilterRanges):
+		currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices,
+		            inpObj.distFilterRanges[idx], inpObj.nDonorFilterRanges[idx],
+		            inpObj.nAcceptorFilterRanges[idx], inpObj.nTotalFilterRanges[idx],
+		            inpObj.maxOOHBond, inpObj.maxAngleHBond]
+		currObj = classBinvalGetterHelp._WaterClassifierMinDistAndNumberHBonds(*currArgs)
+		classifiers.append(currObj)
+	return classifiers
+
+
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj)
+def _(inpObj):
+	classifiers = list()
+	for idx,unused in enumerate(inpObj.distFilterRanges):
+		currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices, inpObj.distFilterRanges[idx],
+		            inpObj.nDonorFilterRanges[idx], inpObj.nAcceptorFilterRanges[idx], inpObj.nTotalFilterRanges[idx],
+		            inpObj.maxOOHBond, inpObj.maxAngleHBond, inpObj.adsSiteMinHozToOtherAdsSiteRanges[idx]]
+		currObj = classBinvalGetterHelp._WaterClassifierMinDistHBondsAndAdsSiteHozDists(*currArgs)
+		classifiers.append(currObj)
+	return classifiers
+
+
 @atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric)
 def _(inpObj):
 	distrOptsPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(optObj) for optObj in inpObj.distrOpts]
@@ -58,21 +91,11 @@ def _(inpObj):
 #should probably cover everything
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric)
 def _(inpObj):
-	if type(inpObj.classificationOpts) is not classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts:
-		raise NotImplementedError("")
 
 	_checkGroupIndicesConsistent(inpObj)
 
 	#1) Get water classifier objects
-	classifiers = list()
-	currOptObj = inpObj.classificationOpts
-	for idx,unused in enumerate(currOptObj.distFilterRanges):
-		currArgs = [currOptObj.oxyIndices, currOptObj.hyIndices, currOptObj.distFilterIndices,
-		            currOptObj.distFilterRanges[idx], currOptObj.nDonorFilterRanges[idx],
-		            currOptObj.nAcceptorFilterRanges[idx], currOptObj.nTotalFilterRanges[idx],
-		            currOptObj.maxOOHBond, currOptObj.maxAngleHBond]
-		currObj = classBinvalGetterHelp._WaterClassifierMinDistAndNumberHBonds(*currArgs)
-		classifiers.append(currObj)
+	classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
 
 	#2) Get the binval getters with default arguments (i.e. unfiltered indices or maybe even dud indices)
 	binValGetters = [atomComboOptObjMaps.getOneDimBinValGetterFromOptsObj(optObj) for optObj in inpObj.distrOpts]
