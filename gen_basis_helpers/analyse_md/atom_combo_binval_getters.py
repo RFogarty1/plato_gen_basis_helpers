@@ -160,10 +160,15 @@ class _MinHozDistsGetValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMa
 		self.minVal = minVal
 
 	def getValsToBin(self, sparseMatrixCalculator):
-#		raise NotImplementedError("")
-		relevantMatrix = sparseMatrixCalculator.outDict["hozDistMatrix"]
-		return _getMinDistsToBinFromRelevantMatrix(relevantMatrix, self.fromIndices, self.toIndices, self.minVal)
+		#Edge case: We want to return 0, regardless of self.minVal, if we only have the same index for to/from
+		if len(self.fromIndices)==1 and len(self.toIndices)==1:
+			if self.toIndices == self.toIndices:
+				return [0]
 
+
+		relevantMatrix = sparseMatrixCalculator.outDict["hozDistMatrix"]
+		outVals = _getMinDistsToBinFromRelevantMatrix(relevantMatrix, self.fromIndices, self.toIndices, self.minVal)
+		return outVals
 
 def _getMinDistsToBinFromRelevantMatrix(relevantMatrix, fromIndices, toIndices, minVal):
 	outVals = list()

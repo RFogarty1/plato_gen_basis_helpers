@@ -67,6 +67,62 @@ class TestGetMultiDimValsToBin(unittest.TestCase):
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
 
+class TestHozMinDistsGetter(unittest.TestCase):
+
+	def setUp(self):
+		#Geometry options
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.coords = [ [2,0,2,"A"],
+		                [4,0,3,"B"],
+		                [5,0,3,"C"],
+		                [6,0,4,"D"] ]
+
+		#Distribution options
+		self.binResObj = binResHelp.BinnedResultsStandard.fromBinEdges([-0.1,10,20,30]) #Should be unneeded but...
+		self.indicesFrom = [0,2]
+		self.indicesTo = [1,3]
+		self.minDistAToB = True
+		self.minDistVal = 0.01
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geom
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create opts object
+		currArgs = [self.binResObj, self.indicesFrom, self.indicesTo]
+		self.optsObj = distrOptObjHelp.CalcHozDistOptions(*currArgs, minDistAToB=self.minDistAToB, minDistVal=self.minDistVal)
+
+		#Get matrix calculator + populate
+		self.sparseMatrixObj = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseMatrixObj.calcMatricesForGeom(self.cellA)
+
+		#get binval getter
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObj])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseMatrixObj)
+
+	def testExpectedCaseA(self):
+		expVals = [ (2,), (1,) ] #2,1
+		actVals = self._runTestFunct()
+
+		for expIter, actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testExpectedNoMinDistBelowThreshold(self):
+		""" Common case where our group is exactly atom and we want a min-dist without including self. That needs to return zero (which can be binned if needed) instead of np.nan (which will rightfully throw an error)"""
+		self.indicesFrom = [0]
+		self.indicesTo = [0]
+		self.createTestObjs()
+		expVals = [(0,)]
+		actVals = self._runTestFunct()
+
+		for expIter, actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
 
 class TestRadialDistribWithPlanarDists(unittest.TestCase):
 	""" Testing radial distrib binner alone misses too much, hence want a planar dist val too """ 
