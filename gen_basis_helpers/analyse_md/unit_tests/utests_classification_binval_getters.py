@@ -107,6 +107,10 @@ class TestWaterCountBasedOnAdsSiteHozDists(unittest.TestCase):
 		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
 		self.assertEqual(expBinVals, actBinVals)
 
+		#Calling it twice; second time it should be using various cached values
+		#(So it COULD theoretically fail second time for certain types of cache-error)
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
 
 	#Need a special check for shared adsorption sites;
 	def testExpected_sharedAdsSiteImportant(self):

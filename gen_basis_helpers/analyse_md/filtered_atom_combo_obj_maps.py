@@ -7,6 +7,7 @@ from . import atom_combo_populators as atomComboPopulatorHelp
 from . import filtered_atom_combo_opt_objs as filteredAtomComboOptHelp
 from . import classification_distr_opt_objs as classDistrOptObjHelp
 from . import classification_binval_getters as classBinvalGetterHelp
+from . import classifier_objs as classifierObjHelp
 from . import filtered_atom_combo_binval_getters as filteredAtomBinvalGetterHelp
 
 from ..shared import register_key_decorator as regKeyDecoHelp
@@ -14,7 +15,6 @@ from ..shared import register_key_decorator as regKeyDecoHelp
 #May only even be neccesary for water-water case specifically???
 _MOD_POPULATOR_BASED_ON_TYPE_DICT = dict()
 MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_MOD_POPULATOR_BASED_ON_TYPE_DICT)
-
 
 #
 _CLASSIFIER_FROM_OPTS_OBJ_FROM_TYPE_DICT = dict()
@@ -32,7 +32,7 @@ def _(inpObj):
 		            inpObj.distFilterRanges[idx], inpObj.nDonorFilterRanges[idx],
 		            inpObj.nAcceptorFilterRanges[idx], inpObj.nTotalFilterRanges[idx],
 		            inpObj.maxOOHBond, inpObj.maxAngleHBond]
-		currObj = classBinvalGetterHelp._WaterClassifierMinDistAndNumberHBonds(*currArgs)
+		currObj = classifierObjHelp._WaterClassifierMinDistAndNumberHBonds(*currArgs)
 		classifiers.append(currObj)
 	return classifiers
 
@@ -44,8 +44,18 @@ def _(inpObj):
 		currArgs = [inpObj.oxyIndices, inpObj.hyIndices, inpObj.distFilterIndices, inpObj.distFilterRanges[idx],
 		            inpObj.nDonorFilterRanges[idx], inpObj.nAcceptorFilterRanges[idx], inpObj.nTotalFilterRanges[idx],
 		            inpObj.maxOOHBond, inpObj.maxAngleHBond, inpObj.adsSiteMinHozToOtherAdsSiteRanges[idx]]
-		currObj = classBinvalGetterHelp._WaterClassifierMinDistHBondsAndAdsSiteHozDists(*currArgs)
+		currObj = classifierObjHelp._WaterClassifierMinDistHBondsAndAdsSiteHozDists(*currArgs)
 		classifiers.append(currObj)
+	return classifiers
+
+
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts)
+def _(inpObj):
+	classifiers = list()
+	for idx,unused in enumerate(inpObj.distFilterRanges):
+		currArgs = [inpObj.atomIndices, inpObj.distFilterIndices, inpObj.distFilterRanges[idx]]
+		currObj = classifierObjHelp._AtomsWithinMinDistRangeClassifier(*currArgs, minDistVal=inpObj.minDistVal)
+		classifiers.append( currObj )
 	return classifiers
 
 
@@ -95,7 +105,12 @@ def _(inpObj):
 	_checkGroupIndicesConsistent(inpObj)
 
 	#1) Get water classifier objects
-	classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
+	if inpObj.classificationObjs is not None:
+		classifiers = inpObj.classificationObjs
+	else:
+		classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
+
+#	classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
 
 	#2) Get the binval getters with default arguments (i.e. unfiltered indices or maybe even dud indices)
 	binValGetters = [atomComboOptObjMaps.getOneDimBinValGetterFromOptsObj(optObj) for optObj in inpObj.distrOpts]
@@ -110,18 +125,14 @@ def _(inpObj):
 
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric)
 def _(inpObj):
-	if type(inpObj.classificationOpts) is not classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts:
-		raise NotImplementedError("")
 
 	_checkGroupIndicesConsistent(inpObj)
 
-	#1) Get individual classifier objects[TODO: This is something another registration-dictionary COULD handle in future]
-	classifiers = list()
-	currOptObj = inpObj.classificationOpts
-	for idx,unused in enumerate(currOptObj.distFilterRanges):
-		currArgs = [currOptObj.atomIndices, currOptObj.distFilterIndices, currOptObj.distFilterRanges[idx]]
-		currObj = classBinvalGetterHelp._AtomsWithinMinDistRangeClassifier(*currArgs, minDistVal=currOptObj.minDistVal)
-		classifiers.append( currObj )
+	#1) Get individual classifier objects
+	if inpObj.classificationObjs is not None:
+		classifiers = inpObj.classificationObjs
+	else:
+		classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
 
 	#2) Get the binval getters with default arguments
 	binValGetters = [atomComboOptObjMaps.getOneDimBinValGetterFromOptsObj(optObj) for optObj in inpObj.distrOpts]

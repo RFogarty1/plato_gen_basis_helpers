@@ -8,8 +8,9 @@ import gen_basis_helpers.analyse_md.binned_res as binResHelp
 import gen_basis_helpers.analyse_md.classification_distr_opt_objs as clsDistrOptObjs
 import gen_basis_helpers.analyse_md.distr_opt_objs as distrOptObjHelp
 import gen_basis_helpers.analyse_md.filtered_atom_combo_opt_objs as filteredComboOptObjHelp
+import gen_basis_helpers.analyse_md.filtered_atom_combo_obj_maps as filteredAtomComboObjMaps
 import gen_basis_helpers.analyse_md.atom_combo_opts_obj_maps as optsObjMapHelp
-
+import gen_basis_helpers.analyse_md.classifier_objs as classifierObjsHelp
 
 
 class TestGetBinValsAtomFilteredRdfAndHozDists(unittest.TestCase):
@@ -84,7 +85,46 @@ class TestGetBinValsAtomFilteredRdfAndHozDists(unittest.TestCase):
 
 		for expIter, actIter in it.zip_longest(expVals, actVals):
 			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
- 
+
+
+	def testExpected_a_and_self_distr_byRef_classifiers(self):
+		""" Test we get the expected distribution when using "byReference" classifiers """
+		#Get first filter opts obj + set the classifier objects specifically
+		filterObjA = self.filterOptObj #First set
+		classifiersA = filteredAtomComboObjMaps.getClassifiersFromOptsObj(self.classifierOpts)
+		filterObjA.classificationObjs = classifiersA
+
+		#Get second filter opts obj; use byReference classifiers
+		self.useGroups = [ [0,0] ]
+		self.createTestObjs()
+		filterObjB = self.filterOptObj
+		filterObjB.classificationOpts = None #Force to use the objects
+		classifiersB = classifierObjsHelp.getByReferenceClassifiers(classifiersA)
+		filterObjB.classificationObjs = classifiersB
+
+		#Run the functions - binValGetterA must always be run first
+		binValGetterA = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([filterObjA])
+		binValGetterB = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([filterObjB])
+
+		actValsA = binValGetterA.getValsToBin(self.sparseMatrixCalculator)
+		actValsB = binValGetterB.getValsToBin(self.sparseMatrixCalculator)
+
+		#Compare actual and expected
+		distAA, distBB, distCC = 0,0,0
+		distAB, distAC, distBC = 1,2,1
+		distBA, distCA, distCB = distAB, distAC, distBC
+
+		expValsA = [ (3,), (2,), (1,) ]
+		expValsB = [ (distAA,), (distAB,), (distAC,), (distBA,), (distBB,), (distBC,),
+		            (distCA,), (distCB,), (distCC,) ]
+
+		for expIter,actIter in it.zip_longest(expValsA, actValsA):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+		for expIter,actIter in it.zip_longest(expValsB, actValsB):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+
 	def testExpectedHozDistSelfDistr(self):
 		self.useGroups = [ [0,0] ]
 		self.coords = [  [0,1,1,"X"],
@@ -210,6 +250,35 @@ class TestGetBinValsWaterWaterHozDistsWithAdsHozDistFilter(unittest.TestCase):
 
 		for expIter, actIter in it.zip_longest(expVals,actVals):
 			[self.assertAlmostEqual(exp,act,places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testExpectedA_runTwice_using_refClassiferObjs(self):
+		#Make the first object
+		filterOptsA = self.optsObjFilteredCombo 
+		classifierObjsA = filteredAtomComboObjMaps.getClassifiersFromOptsObj(self.classificationOpts)
+		filterOptsA.classificationOpts = None
+		filterOptsA.classificationObjs = classifierObjsA
+
+		#Second object using reference classifiers
+		self.createTestObjs()
+		filterOptsB = self.optsObjFilteredCombo
+		classifierObjsB = classifierObjsHelp.getByReferenceClassifiers(classifierObjsA)
+		filterOptsB.classificationOpts = None
+		filterOptsB.classificationObjs = classifierObjsB
+
+		#Load expected values for each
+		minDistA, minDistB, minDistC = 2, 1.8698663053812163, 1.8698663053812163
+		expVals = [(minDistA,), (minDistB,), (minDistC,)]
+
+		#Run each binval getter in turn
+		binValGetterA = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([filterOptsA])
+		binValGetterB = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([filterOptsB])
+
+		actValsA = binValGetterA.getValsToBin(self.sparseMatrixCalculator)
+		actValsB = binValGetterB.getValsToBin(self.sparseMatrixCalculator)
+
+		for expIter,actIterA, actIterB in it.zip_longest(expVals, actValsA, actValsB):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIterA)]
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIterB)]
 
 
 	def testExpectedHozRdfBinning(self):

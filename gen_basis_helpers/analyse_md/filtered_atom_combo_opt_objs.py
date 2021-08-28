@@ -13,7 +13,7 @@ class _FilteredAtomComboOptsObjBase():
 class FilteredAtomComboOptsObjGeneric():
 	""" Generic options object used to get distributions between atoms based on how they are classified by the provided "classifier" """
 
-	def __init__(self, atomIndices, classificationOpts, distrOpts, useGroups):
+	def __init__(self, atomIndices, classificationOpts, distrOpts, useGroups, classificationObjs=None):
 		""" Initializer
 		
 		Args:
@@ -21,12 +21,17 @@ class FilteredAtomComboOptsObjGeneric():
 			classificationOpts: (Options object for classification) This contains options for how we classify the indices into N-groups 
 			distrOpts: (iter of CalcDistribOptionsBase) Each defines a distribution we want calculated using filtered lists of atomIndices
 			useGroups: (iter of int-iters) Groups to calculate between. The group indices are determined by "classificationOpts". E.g. [ [0,1], [0] ] Would indicate to calculate distribution between groups [0,1] for distrOpts[0] and for group 0 for distrOpts[1]
- 
+			classificationObjs: (iter of ClassifierBase objects) If present these take priority over classificationOpts. Original purpose was to allow "byReference" classifiers to be used to speed up code when multiple of the same classifiers were used
+
+		Notes:
+			a) Even if classificationObjs are passed,  classificationOpts is still needed for figuring out which parts of various matrices to populate (e.g. which part of the distance matrix)
+
 		"""
 		self.atomIndices = atomIndices
 		self.classificationOpts = classificationOpts
 		self.distrOpts = distrOpts
 		self.useGroups = useGroups
+		self.classificationObjs = classificationObjs
 
 	@property
 	def primaryIndices(self):
@@ -41,7 +46,7 @@ class FilteredAtomComboOptsObjGeneric():
 class WaterToWaterFilteredAtomComboOptsObjGeneric():
 	""" Class used to specify options for how to calculate distributions between dynamically assigned (e.g. based on n-hbonds at one step) groups of water molecules """
 
-	def __init__(self, oxyIndices, hyIndices, toIdxTypes, classificationOpts, distrOpts, useGroups):
+	def __init__(self, oxyIndices, hyIndices, toIdxTypes, classificationOpts, distrOpts, useGroups, classificationObjs=None):
 		""" Initializer 
 		
 		Args:
@@ -51,10 +56,12 @@ class WaterToWaterFilteredAtomComboOptsObjGeneric():
 			classificationOpts: (Options object for classification) This contains options for how we classify the indices into N-groups 
 			distrOpts: (iter of CalcDistribOptionsBase) Each defines a distribution we want calculated using filtered list of oxyIndices
 			useGroups: (iter of int-iters) Groups to calculate between. The group indices are determined by "classificationOpts". E.g. [ [0,1], [0] ] Would indicate to calculate distribution between groups [0,1] for distrOpts[0] and for group 0 for distrOpts[1]
+			classificationObjs: (iter of ClassifierBase objects) If present these take priority over classificationOpts. Original purpose was to allow "byReference" classifiers to be used to speed up code when multiple of the same classifiers were used
 
 		NOTES:
-			useGroups: The first index needs to be the same for all of them
- 
+			a) useGroups: The first index needs to be the same for all of them
+			b) Even if classificationObjs are passed,  classificationOpts is still needed for figuring out which parts of various matrices to populate (e.g. which part of the distance matrix)
+
 		"""
 		self.oxyIndices = oxyIndices
 		self.hyIndices = hyIndices
@@ -62,7 +69,7 @@ class WaterToWaterFilteredAtomComboOptsObjGeneric():
 		self.classificationOpts = classificationOpts
 		self.distrOpts = distrOpts
 		self.useGroups = useGroups
-
+		self.classificationObjs = classificationObjs
 
 	@property
 	def primaryIndices(self):
