@@ -46,6 +46,20 @@ class TestByReferenceClassifier(unittest.TestCase):
 
 		self.assertEqual(expIndices, actIndices)
 
+	def testExpectedMultiCycles_chainOfRefObjs(self):
+		""" Want to make sure ref<-byRef<-byRef works """
+		expIndices = self.expIndices
+		self.testObjB = tCode.getByReferenceClassifiers([self.testObj],startExecCount=self.byRefExecCount)[0]
+		nCycles = 4
+
+		for cycleIdx in range(nCycles):
+			self.refClassifier.classify(self.dudSparseMatrixCalculator)
+			self.testObj.classify(self.dudSparseMatrixCalculator)
+			actIndices = self.testObjB.classify(self.dudSparseMatrixCalculator)
+
+		self.assertEqual(expIndices, actIndices)
+
+
 
 class _StubClassifier():
 

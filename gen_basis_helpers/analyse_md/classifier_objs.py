@@ -55,6 +55,7 @@ class _ByReferenceClassifier(ClassifierBase):
 			raise ValueError("Reference exec count = {}, but current object has count = {}; ref count should be 1 higher".format(*currArgs))
 
 		outVals = self.refClassifier.storedClassifyResult
+		self.storedClassifyResult = outVals
 		self.execCount += 1
 
 		return outVals
@@ -116,7 +117,7 @@ class _AtomsWithinMinDistRangeClassifier():
 class _WaterClassifierMinDistAndNumberHBonds(_WaterClassifierBase):
 
 	def __init__(self, oxyIndices, hyIndices, distFilterIndices, distFilterRange, nDonorFilterRange,
-	             nAcceptorFilterRange, nTotalFilterRange, maxOOHBond, maxAngleHBond):
+	             nAcceptorFilterRange, nTotalFilterRange, maxOOHBond, maxAngleHBond, execCount=0):
 		""" Initializer
 		
 		Args:
@@ -140,6 +141,7 @@ class _WaterClassifierMinDistAndNumberHBonds(_WaterClassifierBase):
 		self.nTotalFilterRange = nTotalFilterRange
 		self.maxOOHBond = maxOOHBond
 		self.maxAngleHBond = maxAngleHBond
+		self.execCount = execCount
 
 	def classify(self, sparseMatrixCalculator):
 		#Step 0) Create a bunch of other binner objects to get values we need
@@ -159,6 +161,9 @@ class _WaterClassifierMinDistAndNumberHBonds(_WaterClassifierBase):
 						if (self.nTotalFilterRange[0]<=nTotal) and (nTotal<self.nTotalFilterRange[1]):
 							outOxyIndices.append( self.oxyIndices[oxyIdx] )
 							outHyIndices.append( self.hyIndices[oxyIdx] )
+
+		self.execCount += 1
+		self.storedClassifyResult = (outOxyIndices, outHyIndices)
 
 		return outOxyIndices, outHyIndices
 

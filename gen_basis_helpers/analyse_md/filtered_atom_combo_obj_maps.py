@@ -94,7 +94,6 @@ def _(inpObj):
 
 	return outPopulator
 
-
 #Note 1: The binval getters are only really partially created at this stage; they are modified each step to take into account which
 #group each atom belongs to
 #Note 2: In future we may need a proper interface to map to the classifier; but for now this implementation
@@ -116,9 +115,11 @@ def _(inpObj):
 	binValGetters = [atomComboOptObjMaps.getOneDimBinValGetterFromOptsObj(optObj) for optObj in inpObj.distrOpts]
 
 	#Create the actual objects (need 1 binval getter per property)
+	#Note: We only use the actual classifiers for the first case and refernce for the others; since there all the same
 	outObjs = list()
-	for binValGetter, useGroup, toIdxType in it.zip_longest(binValGetters, inpObj.useGroups, inpObj.toIdxTypes):
-		currArgs = [ classifiers, binValGetter, useGroup, toIdxType ]
+	useClassifiers = [classifiers] + [classifierObjHelp.getByReferenceClassifiers(classifiers) for x in range(1,len(binValGetters))]
+	for binValGetter, useGroup, toIdxType, currClassifiers in it.zip_longest(binValGetters, inpObj.useGroups, inpObj.toIdxTypes, useClassifiers):
+		currArgs = [ currClassifiers, binValGetter, useGroup, toIdxType ]
 		outObjs.append( filteredAtomBinvalGetterHelp.WaterToWaterFilteredAtomComboBinvalGetterGeneric(*currArgs) )
 	return outObjs
 
@@ -138,9 +139,12 @@ def _(inpObj):
 	binValGetters = [atomComboOptObjMaps.getOneDimBinValGetterFromOptsObj(optObj) for optObj in inpObj.distrOpts]
 
 	#3) Create the actual objects (need 1 binval getter per property)
+	#Note: We only use the actual classifiers for the first case and refernce for the others; since there all the same
 	outObjs = list()
-	for binValGetter, useGroup in it.zip_longest(binValGetters, inpObj.useGroups):
-		currArgs = [ classifiers, binValGetter, useGroup ]
+	useClassifiers = [classifiers] + [classifierObjHelp.getByReferenceClassifiers(classifiers) for x in range(1,len(binValGetters))]
+
+	for binValGetter, useGroup, currClassifiers in it.zip_longest(binValGetters, inpObj.useGroups, useClassifiers):
+		currArgs = [ currClassifiers, binValGetter, useGroup ]
 		outObjs.append( filteredAtomBinvalGetterHelp.FilteredAtomComboBinvalGetterGeneric(*currArgs) )
 
 	return outObjs
