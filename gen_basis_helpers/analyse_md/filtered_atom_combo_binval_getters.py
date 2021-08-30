@@ -160,6 +160,18 @@ def _(binValGetter, groupIndices, useGroups, toIdxType=None):
 	else:
 		raise ValueError("{} is an invalid value for self.toIdxType".format(self.toIdxType))
 
+@BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._CountHBondsBetweenWaterGroupsBinValGetter)
+def _(binValGetter, groupIndices, useGroups, toIdxType=None):
+	fromIndices, toIndices = groupIndices[useGroups[0]], groupIndices[useGroups[1]]
+	binValGetter.fromOxyIndices = fromIndices[0]
+	binValGetter.fromHyIndices = fromIndices[1]
+	binValGetter.toOxyIndices = toIndices[0]
+	binValGetter.toHyIndices = toIndices[1]
 
+
+@BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._WaterOrientationBinValGetter)
+def _(binValGetter, groupIndices, useGroups, toIdxType=None):
+	oxyIndices = groupIndices[ useGroups[0] ][0] #Should be only one so....
+	binValGetter.oxyIndices = oxyIndices
 
 

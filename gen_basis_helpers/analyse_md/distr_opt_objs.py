@@ -324,6 +324,39 @@ class WaterPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOpt
 		return True
 
 
+class CountHBondsBetweenWaterGroupsOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
+	""" Options for counting number of hydrogen bonds between groups of water """
+
+	def __init__(self, binResObj, fromOxyIndices, fromHyIndices, toOxyIndices, toHyIndices, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			fromOxyIndices: (iter of ints) The oxygen indices for each water molecule
+			fromHyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			toOxyIndices: (iter of ints) The oxygen indices for each water molecule
+			toHyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			acceptor: (Bool) If True we calculate dists/angles required to count number of groupA acceptors from groupB. Note changing the order of distFilterValues will give the reverse info (groupB acceptors from groupA)
+			donor: (Bool) If True we calculate dists/angles required to count number of groupA donors to groupB. Note changing the order of distFilterValues will give the reverse info (groupB donors to groupA)
+			maxOO: (float) The maximum O-O distance between two hydrogen-bonded water. Angles are only calculated when this criterion is fulfilled
+			maxAngle: (float) The maximum OA-OD-HD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen
+
+		"""
+		self.distribKey = "nHbonds"
+		self.binResObj = binResObj
+		self.fromOxyIndices = fromOxyIndices
+		self.fromHyIndices = fromHyIndices
+		self.toOxyIndices = toOxyIndices
+		self.toHyIndices = toHyIndices
+		self.donor = donor
+		self.acceptor = acceptor
+		self.maxOO = maxOO
+		self.maxAngle = maxAngle
+
+	@property
+	def primaryIndices(self):
+		return self.oxyIndices
+
 
 class DiscHBondCounterWithOxyDistFilterOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 	""" Object contains options for counting discrete number of hydrogen bonds from one group to another """

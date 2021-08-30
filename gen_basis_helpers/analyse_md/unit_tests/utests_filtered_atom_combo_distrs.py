@@ -705,4 +705,116 @@ class TestGetBinValsWaterWaterHozRdf(unittest.TestCase):
 
 
 
+class TestGetBinvalsWaterWaterFilteredVariousDistribs(unittest.TestCase):
+
+	#Basically stolen from above
+	def setUp(self):
+		#Define the geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#roll 90,pitch=45, OH len~1, HOH angle 104.5. Then just added translation vectors
+		self.waterACoords = [ [1,0,0,"O"], [-1.13,0,0.99,"H"], [1.99,0,-0.13,"H"] ]
+		#translation = [2,0,0]; no rotations
+		self.waterBCoords = [ [2,0,0,"O"], [2.61, 0.79, 0, "H"], [2.61,-0.79,0,"H"] ]
+		#translation = [2+(2*0.61), 2*0.79, 0]
+		self.waterCCoords = [ [3.22, 1.58, 0, "O"],  [3.83, 2.37, 0, "H"], [3.83, 0.79, 0, "H"] ]
+		#translation = [2+(2*0.61), -2*0.79,0]
+		self.waterDCoords = [ [3.22, -1.58, 0, "O"], [3.83, -0.79, 0, "H"], [3.83, -2.37, 0, "H"] ]
+
+		self.xCoord = [[0,0,0,"X"]]
+		self.coords = self.xCoord + self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords 
+
+		#General options
+		self.oxyIndices = [1,4,7,10] 
+		self.hyIndices = [ [2,3], [5,6], [8,9], [11,12] ]
+
+		#Filter/classification options
+		self.distFilterIndices = [0]
+		self.filterObjA = clsDistrOptObjs.WaterMinDistAndHBondsFilterObj(distFilterRange=[0,2.1])
+		self.filterObjB = clsDistrOptObjs.WaterMinDistAndHBondsFilterObj(distFilterRange=[2.1,10])
+		self.filterObjC = clsDistrOptObjs.WaterMinDistAndHBondsFilterObj(distFilterRange=[2.1,10])
+		self.filterObjs  = [self.filterObjA, self.filterObjB, self.filterObjC]
+
+		#Min dist options (Note we only need a binResObj for this one)
+		self.binResObjA = binResHelp.BinnedResultsStandard.fromBinEdges([0.1,5,10]) #Needs to be sensible for default, since we filter vals to bin by whether dists are in these bins
+		self.minDistType = "O"
+
+		#Options for the filtered atom combo opts object
+		self.toIdxType = ["O"]
+		self.useGroups = [ [0,1] ]
+
+		#Create the distribution opts object
+		#Note that the actual indices we pass here are really just placeholders; the actual used indices are determined by the opts-object values
+		#(Though oxyIndices may need to be correct.....)
+		currArgs = [self.binResObjA, self.oxyIndices, self.oxyIndices]
+		currKwargs = {"minDistAToB":False}
+		self.distrOptObjs = [ distrOptObjHelp.CalcRdfOptions( *currArgs, **currKwargs ) for x in self.useGroups ] #Multiple lets us get rdfs between various groups
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create the classifier options obj
+		currArgs = [ [self.binResObjA], self.oxyIndices, self.hyIndices, self.distFilterIndices, self.filterObjs] #The binResObjs should be irrelevant really
+		self.classifierOptsObj = clsDistrOptObjs.WaterCountTypesMinDistAndHBondSimpleOpts.fromFilterObjs(*currArgs)
+
+
+		#Create the main options object
+		currArgs = [self.oxyIndices, self.hyIndices, self.toIdxType, self.classifierOptsObj, self.distrOptObjs, self.useGroups] 
+		self.optsObjFilteredCombo = filteredComboOptObjHelp.WaterToWaterFilteredAtomComboOptsObjGeneric(*currArgs)
+
+		#create the sparse matrix calculator + populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObjFilteredCombo])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjFilteredCombo])
+
+	def _runTestFunct(self):
+		return self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+	def testExpectedOrientations(self):
+		#Alter water orientations a bit
+		self.waterACoords = [ [1,0,0,"O"], [1.4329029902719427, 0.7906895737438433, 0.4329029902719426,"H"],
+		                      [1.4329029902719427, -0.7906895737438433, 0.4329029902719426, 'H'] ] #Pitch is 45
+		self.waterBCoords = [ [2,0,0,"O"], [2.01, 0.79, 0.61, "H"], [2.01,-0.79,0.61,"H"] ] #Pitch is 89 ish
+		self.coords = self.xCoord + self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords 
+
+		#Create the distribution object
+		self.useGroups = [ [0] ]
+		currArgs = [self.binResObjA, self.oxyIndices, self.hyIndices]
+		self.distrOptObjs = [ distrOptObjHelp.WaterOrientationOptions(*currArgs, angleType="pitch") for x in self.useGroups ]
+		self.createTestObjs()
+
+		#Figure out expected values
+		expVals = [(45,), (89.0608090542646,)]
+		actVals = self._runTestFunct()
+
+		#Run and check expected/actual are equal
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+
+	def testExpected_totalNumberHBonds(self):
+		#Create the distribution object
+		self.useGroups = [ [0,1] ]
+		currArgs = [self.binResObjA, self.oxyIndices, self.hyIndices, self.oxyIndices, self.hyIndices]
+		currKwargs = {"acceptor":True, "donor":True}
+		self.distrOptObjs = [distrOptObjHelp.CountHBondsBetweenWaterGroupsOptions(*currArgs, **currKwargs) for x in self.useGroups]
+		self.createTestObjs()
+
+		#Figure out what values we expect
+		expVals = [ (0,), (2,) ]
+		actVals = self._runTestFunct()
+
+		#Run + check expected/actual are equal
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
+
+
+
+
 

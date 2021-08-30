@@ -583,6 +583,106 @@ class TestWaterPlanarDistBinValGetter(unittest.TestCase):
 		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals, actVals)]
 
 
+
+class TestCountHBondsBetweenSpecifiedWaterGroups(unittest.TestCase):
+
+	#Take from the TestDiscHBondCounterBetweenGroupsOxyDistFilter unit tests
+	def setUp(self):
+		#1) All geometric parameters for testing
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#roll 90,pitch=45, OH len~1, HOH angle 104.5. Then just added translation vectors
+		self.waterACoords = [ [0,0,0,"O"], [-0.13,0,0.99,"H"], [0.99,0,-0.13,"H"] ]
+		#translation = [2,0,0]; no rotations
+		self.waterBCoords = [ [2,0,0,"O"], [2.61, 0.79, 0, "H"], [2.61,-0.79,0,"H"] ]
+		#translation = [2+(2*0.61), 2*0.79, 0]
+		self.waterCCoords = [ [3.22, 1.58, 0, "O"],  [3.83, 2.37, 0, "H"], [3.83, 0.79, 0, "H"] ]
+		#translation = [2+(2*0.61), -2*0.79,0]
+		self.waterDCoords = [ [3.22, -1.58, 0, "O"], [3.83, -0.79, 0, "H"], [3.83, -2.37, 0, "H"] ]
+
+		self.xCoord = [[0,0,0,"X"]]
+		self.coords = self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords + self.xCoord
+
+		#
+		self.fromOxyIndices = [0,3]
+		self.fromHyIndices = [ [1,2], [4,5] ]
+
+		self.toOxyIndices = [6,9]
+		self.toHyIndices  = [ [7,8], [10,11] ]
+
+		self.maxOO = 3 #AC h-bond would be possible iff this was set high enough i suspect
+		self.maxAngle = 35
+		self.acceptor = True
+		self.donor = True
+		self.binResObj = None
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Options object
+		currArgs = [self.binResObj, self.fromOxyIndices, self.fromHyIndices, self.toOxyIndices, self.toHyIndices]
+		currKwargs = {"acceptor":self.acceptor,"donor":self.donor, "maxOO":self.maxOO, "maxAngle":35}
+		self.optsObj = distrOptObjHelp.CountHBondsBetweenWaterGroupsOptions(*currArgs, **currKwargs)
+
+		#Get a sparse matrix populator + populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObj])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseCalculator)
+
+	def testExpectedTotalHBonds(self):
+		expVals = [ (0,), (2,)]
+		actVals = self._runTestFunct()
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testExpectedWithDonorAndAcceptorCounter(self):
+		#Remake the objects
+		currArgs = [self.binResObj, self.fromOxyIndices, self.fromHyIndices, self.toOxyIndices, self.toHyIndices]
+		currKwargs = {"acceptor":False, "donor":True, "maxOO":self.maxOO, "maxAngle":35}
+		self.donorOptsObj = distrOptObjHelp.CountHBondsBetweenWaterGroupsOptions(*currArgs, **currKwargs)
+
+		currKwargs = {"acceptor":True, "donor":False, "maxOO":self.maxOO, "maxAngle":35}
+		self.acceptorOptsObj = distrOptObjHelp.CountHBondsBetweenWaterGroupsOptions(*currArgs, **currKwargs)
+
+		optsObjs = [self.acceptorOptsObj,self.donorOptsObj]
+
+		#Get a sparse matrix populator + populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter(optsObjs)
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs(optsObjs)
+
+		#Figure out expected + test		
+		expVals = [ (0,0), (0,2) ]
+		actVals = self._runTestFunct()
+
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testExpectedWithinGroup(self):
+		self.toOxyIndices = [0,3]
+		self.toHyIndices = [ [1,2], [4,5] ]
+		self.acceptor = False
+		self.createTestObjs()
+
+		#Figure out expected + test		
+		expVals = [ (1,), (0,) ]
+		actVals = self._runTestFunct()
+
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+	
+
 class TestDiscHBondCounterBetweenGroupsOxyDistFilter(unittest.TestCase):
 
 	#NOTE: Taken from the populators mostly

@@ -379,6 +379,47 @@ class _WaterPlanarMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromS
 
 		return outVals
 
+#Lots stolen from "_DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter" inevitably
+class _CountHBondsBetweenWaterGroupsBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, fromOxyIndices, fromHyIndices, toOxyIndices, toHyIndices, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
+		""" Initializer
+		
+		Args:
+			fromOxyIndices: (iter of ints) The oxygen indices for each water molecule
+			fromHyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			toOxyIndices: (iter of ints) The oxygen indices for each water molecule
+			toHyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
+			acceptor: (Bool) If True we calculate dists/angles required to count number of groupA acceptors from groupB. Note changing the order of distFilterValues will give the reverse info (groupB acceptors from groupA)
+			donor: (Bool) If True we calculate dists/angles required to count number of groupA donors to groupB. Note changing the order of distFilterValues will give the reverse info (groupB donors to groupA)
+			maxOO: (float) The maximum O-O distance between two hydrogen-bonded water. Angles are only calculated when this criterion is fulfilled
+			maxAngle: (float) The maximum OA-OD-HD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen
+
+		"""
+		self.fromOxyIndices = fromOxyIndices
+		self.fromHyIndices = fromHyIndices
+		self.toOxyIndices = toOxyIndices
+		self.toHyIndices = toHyIndices
+		self.acceptor = acceptor
+		self.donor = donor
+		self.maxOO = maxOO
+		self.maxAngle = maxAngle
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		distMatrix = sparseMatrixCalculator.outDict["distMatrix"]
+		angleMatrix = sparseMatrixCalculator.outDict["angleMatrix"]
+
+		outVals = list()
+		sharedKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO, "maxAngle":self.maxAngle}
+		for oxyIdx,hyIdxPair in it.zip_longest(self.fromOxyIndices, self.fromHyIndices):
+			currArgs = [oxyIdx, hyIdxPair, self.toOxyIndices, self.toHyIndices, distMatrix, angleMatrix]
+			currVal = _getNumberHBondsForOneOxyIdx(*currArgs, **sharedKwargs)		
+			outVals.append( currVal )
+
+		return outVals
+
+#def _getNumberHBondsForOneOxyIdx(fromOxyIdx, fromHyIdxPair, toOxyIndices, toHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
+
 
 class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
@@ -418,43 +459,52 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCo
 
 		#1.5) Figure out where EACH of the groupA/groupB indices are within the self.oxyIndices
 		groupBOxyListIndices = [self.oxyIndices.index(idx) for idx in groupBOxyIndices]
+		groupBHyIndices = [self.hyIndices[idx] for idx in groupBOxyListIndices]
 
 		#2) Count the number of hydrogen bonds from groupA TO groupB + output in a 1-dim list
 		outVals = list()
 		for lIdx,oxyIdx in enumerate(self.oxyIndices):
-			currVal = self._getValForOneOxyIdx( lIdx, groupAOxyIndices, groupBOxyIndices, distMatrix, angleMatrix, groupBOxyListIndices)
+			oxyIdx = self.oxyIndices[lIdx]
+			hyIndices = self.hyIndices[lIdx]
+			if oxyIdx in groupAOxyIndices:
+				currVal = self._getValForOneOxyIdx( oxyIdx, hyIndices, groupBOxyIndices, groupBHyIndices, distMatrix, angleMatrix)
+			else:
+				currVal = 0 #We only calc groupA -> groupB; thus the index has to be in groupA to be non-zero here
 			outVals.append(currVal)
 
 		return outVals
 
-	def _getValForOneOxyIdx(self, oxyListIdx, groupAIndices, groupBIndices, distMatrix, angleMatrix, groupBListIndices):
-		oxyIdx = self.oxyIndices[oxyListIdx]
+	def _getValForOneOxyIdx(self, oxyIdx, hyIndices, toOxyIndices, toHyIndices, distMatrix, angleMatrix):
+		currArgs = [oxyIdx, hyIndices, toOxyIndices, toHyIndices, distMatrix, angleMatrix]
+		currKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO, "maxAngle":self.maxAngle}
+		return _getNumberHBondsForOneOxyIdx(*currArgs, **currKwargs)
 
-		#We only calc groupA -> groupB; thus the index has to be in groupA to be non-zero here
-		if oxyIdx not in groupAIndices:
-			return 0
 
-		outVal = 0
-		for oxyIdxB, listIdxB in it.zip_longest(groupBIndices,groupBListIndices):
-			currDist = distMatrix[oxyIdx][oxyIdxB]
-			if currDist < self.maxOO and oxyIdxB!=oxyIdx:
+def _getNumberHBondsForOneOxyIdx(fromOxyIdx, fromHyIdxPair, toOxyIndices, toHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
+	
+	outVal = 0
+	for toOxyIdx, toHyIdxPair in it.zip_longest(toOxyIndices, toHyIndices):
+		currDist = distMatrix[fromOxyIdx][toOxyIdx]
+		if currDist<maxOO and toOxyIdx!=fromOxyIdx:
+			#Note we want angle [O_A, O_D, H_D]
+			if acceptor:
+				hyIdxA, hyIdxB = toHyIdxPair
+				angleA, angleB = angleMatrix[fromOxyIdx][toOxyIdx][hyIdxA], angleMatrix[fromOxyIdx][toOxyIdx][hyIdxB]
+				if angleA < maxAngle:
+					outVal += 1
+				if angleB < maxAngle:
+					outVal += 1
 
-				if self.acceptor:
-					hyIdxA, hyIdxB = self.hyIndices[listIdxB]
-					angleA, angleB = angleMatrix[oxyIdx][oxyIdxB][hyIdxA], angleMatrix[oxyIdx][oxyIdxB][hyIdxB]
-					if angleA < self.maxAngle:
-						outVal += 1
-					if angleB < self.maxAngle:
-						outVal += 1
+			if donor:
+				hyIdxA, hyIdxB = fromHyIdxPair
+				angleA, angleB = angleMatrix[toOxyIdx][fromOxyIdx][hyIdxA], angleMatrix[toOxyIdx][fromOxyIdx][hyIdxB]
+				if angleA < maxAngle:
+					outVal += 1
+				if angleB < maxAngle:
+					outVal += 1
 
-				if self.donor:
-					hyIdxA, hyIdxB = self.hyIndices[oxyListIdx]
-					angleA, angleB = angleMatrix[oxyIdxB][oxyIdx][hyIdxA], angleMatrix[oxyIdxB][oxyIdx][hyIdxB]
-					if angleA < self.maxAngle:
-						outVal += 1
-					if angleB < self.maxAngle:
-						outVal += 1
+	return outVal
 
-		return outVal
+
 
 

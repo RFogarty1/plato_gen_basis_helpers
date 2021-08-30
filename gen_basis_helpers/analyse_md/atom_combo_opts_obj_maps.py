@@ -120,6 +120,14 @@ def _(inpObj):
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
 	return atomComboPopulatorHelp._DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(*currArgs, **currKwargs)
 
+
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenWaterGroupsOptions)
+def _(inpObj):
+	currArgs = [inpObj.fromOxyIndices, inpObj.fromHyIndices, inpObj.toOxyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
+	return atomComboPopulatorHelp._CountHBondsBetweenGroupsPopulator(*currArgs, **currKwargs)
+
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.WaterPlanarDistOptions)
 def _(inpObj):
 	planeEqn =  _getDefaultPlaneEquation() if inpObj.planeEqn is None else inpObj.planeEqn
@@ -219,6 +227,14 @@ def _(inpObj):
 def _(inpObj):
 	planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0) if inpObj.planeEqn is None else inpObj.planeEqn
 	return binValGettersHelp._PlanarDistsGetOneDimValsToBin(planeEqn, inpObj.indices)
+
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenWaterGroupsOptions)
+def _(inpObj):
+	currArgs = [inpObj.fromOxyIndices, inpObj.fromHyIndices, inpObj.toOxyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
+	return binValGettersHelp._CountHBondsBetweenWaterGroupsBinValGetter(*currArgs,**currKwargs)
+
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.DiscHBondCounterWithOxyDistFilterOptions)
 def _(inpObj):

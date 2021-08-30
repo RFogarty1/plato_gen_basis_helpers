@@ -190,6 +190,18 @@ def _(populator, optsObj, toIdxType):
 	populator.toIndices = toIndices
 
 
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._WaterOrientationPopulator, filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
+def _(populator, optsObj, toIdxType):
+	populator.oxyIndices = optsObj.oxyIndices
+	populator.hyIndices = optsObj.hyIndices
+
+
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._CountHBondsBetweenGroupsPopulator, filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
+def _(populator, optsObj, toIdxType):
+	populator.fromOxyIndices, populator.FromHyIndices = optsObj.oxyIndices, optsObj.hyIndices
+	populator.toOxyIndices, populator.toHyIndices = optsObj.oxyIndices, optsObj.hyIndices
+
+
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
 def _(populator, optsObj):
