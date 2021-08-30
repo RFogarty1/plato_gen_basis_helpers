@@ -500,7 +500,7 @@ class NDimensionalBinnedResults():
 		#3) Ppopulate the relevant index in allBinIndices
 		#This stops us having to loop through the bin edges more than once
 		allBinIndices = np.zeros( (len(useValsToBin), len(minValsToBin)), dtype=np.int64 )
-		allBinIndices[:] = np.nan
+#		allBinIndices[:] = np.nan #No reason to do this really? and makes no sense for dtype=np.int64. This will throw ValueError if array is 1x1
 		for dimIdx,dimBinEdges in enumerate(sortedEdgePairs):
 
 			#Want to look at the toBin/bin indices in order; but dont want to mess with their ordering in either case
