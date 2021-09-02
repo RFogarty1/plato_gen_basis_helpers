@@ -49,10 +49,10 @@ def modifyCreatorObjFromTemplateStrings(inpStrs, inpObj):
  
 	"""
 	if isinstance(inpStrs,str):
-		_CREATOR_MOD_OBJ_DICT[inpStrs.lower()](outObj)
+		_CREATOR_MOD_OBJ_DICT[inpStrs.lower()](inpObj)
 	else:
 		for currStr in inpStrs:
-			_CREATOR_MOD_OBJ_DICT[currStr.lower()](outObj)
+			_CREATOR_MOD_OBJ_DICT[currStr.lower()](inpObj)
 
 
 #-------------------->Standard mod functions below<-------------------------
