@@ -32,14 +32,27 @@ def getTemplateCreatorFromString(inpStr):
  
 	"""
 	outObj = cp2kCreatorHelp.CP2KCalcObjFactoryStandard()
+	modifyCreatorObjFromTemplateStrings(inpStr, outObj)
+
+	return outObj
+
+
+def modifyCreatorObjFromTemplateStrings(inpStrs, inpObj):
+	""" Modify CP2KCalcObjFactoryStandard object with various options preset from a string
+	
+	Args:
+		inpStr: (Str or iter of str, case-insensitive) See getRegisteredTemplateCreatorObjStrings for options. If an iter of strings, then templates will be applied in order to a blank CP2KCalcObjFactoryStandard object (later can override earlier)
+		inpObj: (CP2KCalcObjFactoryStandard object) 
+			 
+	Returns
+		Nothing; works in place
+ 
+	"""
 	if isinstance(inpStr,str):
 		_CREATOR_MOD_OBJ_DICT[inpStr.lower()](outObj)
 	else:
 		for currStr in inpStr:
 			_CREATOR_MOD_OBJ_DICT[currStr.lower()](outObj)
-	return outObj
-
-
 
 
 #-------------------->Standard mod functions below<-------------------------
