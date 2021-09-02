@@ -48,10 +48,10 @@ def modifyCreatorObjFromTemplateStrings(inpStrs, inpObj):
 		Nothing; works in place
  
 	"""
-	if isinstance(inpStr,str):
-		_CREATOR_MOD_OBJ_DICT[inpStr.lower()](outObj)
+	if isinstance(inpStrs,str):
+		_CREATOR_MOD_OBJ_DICT[inpStrs.lower()](outObj)
 	else:
-		for currStr in inpStr:
+		for currStr in inpStrs:
 			_CREATOR_MOD_OBJ_DICT[currStr.lower()](outObj)
 
 
