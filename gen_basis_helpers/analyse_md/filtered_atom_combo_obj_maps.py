@@ -209,3 +209,7 @@ def _(populator, optsObj):
 	populator.fromIndices = optsObj.atomIndices
 	populator.toIndices = optsObj.atomIndices
 
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._PlanarDistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
+def _(populator, optsObj):
+	populator.indices = optsObj.atomIndices
+

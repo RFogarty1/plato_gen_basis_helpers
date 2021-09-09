@@ -100,6 +100,11 @@ def _(binValGetter, groupIndices, useGroups):
 
 	binValGetter.fromIndices, binValGetter.toIndices = fromIndices, toIndices
 
+@BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._PlanarDistsGetOneDimValsToBin)
+def _(binValGetter, groupIndices, useGroups):
+	indices = groupIndices[useGroups[0]]
+	binValGetter.planeDistIndices = indices
+
 
 #Modification functions for water-water case
 @BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._WaterMinDistBinValGetter)

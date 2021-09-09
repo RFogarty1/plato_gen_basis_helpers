@@ -13,6 +13,71 @@ import gen_basis_helpers.analyse_md.atom_combo_opts_obj_maps as optsObjMapHelp
 import gen_basis_helpers.analyse_md.classifier_objs as classifierObjsHelp
 
 
+class TestGetBinValsAtomFilteredVariousDistribs(unittest.TestCase):
+
+	def setUp(self):
+		#Geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.coords = [  [0,0,1,"X"],
+		                 [0,0,2,"A"],
+		                 [0,0,3,"B"],
+		                 [0,0,4,"C"],
+		                 [0,0,5,"D"] ]
+
+		#General options
+		self.classBinResObj = binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(-0.1,20,1,extremesAtCentre=False)
+		self.fromIndices = [1,2,3,4]
+
+		#Overall options object specific
+		self.useGroups = [ [0] ]
+
+		#Classification Options object specific
+		self.distFilterIndices = [0]
+		self.distFilterRanges = [ [-0.1,3.5], [3.5,5.5] ] #Gets [1,2,3], [4] by default
+
+		#Distribution opts obj specific
+		self.distrBinResObj = binResHelp.BinnedResultsStandard.fromBinEdges([-0.1,20])
+
+		#Create the standard distr opts here
+		dudIndices = [20] #Pick a stupid value; since it should NOT be used anyway
+		self.distrOpts = [ distrOptObjHelp.CalcPlanarDistOptions(self.distrBinResObj, dudIndices) ]
+
+		self.createTestObjs()
+
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create the classification options
+		currBins = [self.classBinResObj for x in self.distFilterRanges]
+		currArgs = [currBins, self.fromIndices, self.distFilterIndices, self.distFilterRanges]
+		self.classifierOpts = clsDistrOptObjs.AtomClassifyBasedOnDistsFromIndicesSimpleOpts(*currArgs)
+
+		#
+		currArgs = [self.fromIndices, self.classifierOpts, self.distrOpts, self.useGroups]
+		self.filterOptObj = filteredComboOptObjHelp.FilteredAtomComboOptsObjGeneric(*currArgs)
+
+		#create the sparse matrix calculator + populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.filterOptObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.filterOptObj])
+
+	def _runTestFunct(self):
+		return self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+	def testPlanarDistrA(self):
+		expVals = [ (2,), (3,), (4,) ]
+		actVals = self._runTestFunct()
+		for expIter,actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+
+
+#TODO: Move thiss into the TestGetBinValsAtomFilteredVariousDistribs
 class TestGetBinValsAtomFilteredRdfAndHozDists(unittest.TestCase):
 
 	def setUp(self):
