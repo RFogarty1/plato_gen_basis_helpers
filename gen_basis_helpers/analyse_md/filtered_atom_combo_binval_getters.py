@@ -128,15 +128,7 @@ def _(binValGetter, groupIndices, useGroups, toIdxType=None):
 	toOxyIndices, toHyIndices = groupIndices[useGroups[1]][0], [idx for idx in it.chain(*groupIndices[useGroups[1]][1])]
 
 	binValGetter.indicesA = fromOxyIndices
-
-	if toIdxType.upper() == "O":
-		binValGetter.indicesB = toOxyIndices
-	elif toIdxType.upper() == "H":
-		binValGetter.indicesB = toHyIndices
-	elif toIdxType.upper() == "ALL":
-		binValGetter.indicesB = toOxyIndices + toHyIndices
-	else:
-		raise ValueError("{} is an invalid value for self.toIdxType".format(self.toIdxType))
+	binValGetter.indicesB = _getToIndicesForWaterWater(toOxyIndices, toHyIndices, toIdxType)
 
 
 #Only differes from the _RadialDistsGetValsToBin since the attrs are named differently
@@ -150,15 +142,8 @@ def _(binValGetter, groupIndices, useGroups, toIdxType=None):
 	toOxyIndices, toHyIndices = groupIndices[useGroups[1]][0], [idx for idx in it.chain(*groupIndices[useGroups[1]][1])]
 
 	binValGetter.fromIndices = fromOxyIndices
+	binValGetter.toIndices = _getToIndicesForWaterWater(toOxyIndices, toHyIndices, toIdxType)
 
-	if toIdxType.upper() == "O":
-		binValGetter.toIndices = toOxyIndices
-	elif toIdxType.upper() == "H":
-		binValGetter.toIndices = toHyIndices
-	elif toIdxType.upper() == "ALL":
-		binValGetter.toIndices = toOxyIndices + toHyIndices
-	else:
-		raise ValueError("{} is an invalid value for self.toIdxType".format(self.toIdxType))
 
 @BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._CountHBondsBetweenWaterGroupsBinValGetter)
 def _(binValGetter, groupIndices, useGroups, toIdxType=None):
@@ -173,5 +158,29 @@ def _(binValGetter, groupIndices, useGroups, toIdxType=None):
 def _(binValGetter, groupIndices, useGroups, toIdxType=None):
 	oxyIndices = groupIndices[ useGroups[0] ][0] #Should be only one so....
 	binValGetter.oxyIndices = oxyIndices
+
+
+@BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._PlanarDistsGetOneDimValsToBin)
+def _(binValGetter, groupIndices, useGroups, toIdxType=None):
+	if toIdxType is None:
+		raise ValueError("")
+
+	toOxyIndices, toHyIndices = groupIndices[useGroups[0]][0],  [idx for idx in it.chain(*groupIndices[useGroups[0]][1])]
+
+	toIndices = _getToIndicesForWaterWater(toOxyIndices, toHyIndices, toIdxType)
+	binValGetter.planeDistIndices = toIndices
+
+
+def _getToIndicesForWaterWater(toOxyIndices, toHyIndices, toIdxType):
+	if toIdxType.upper() == "O":
+		outIndices = toOxyIndices
+	elif toIdxType.upper() == "H":
+		outIndices = toHyIndices
+	elif toIdxType.upper() == "ALL":
+		outIndices = toOxyIndices + toHyIndices
+	else:
+		raise ValueError("{} is an invalid value for self.toIdxType".format(self.toIdxType))
+
+	return outIndices
 
 

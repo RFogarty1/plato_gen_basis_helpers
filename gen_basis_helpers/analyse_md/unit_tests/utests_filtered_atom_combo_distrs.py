@@ -815,6 +815,48 @@ class TestGetBinvalsWaterWaterFilteredVariousDistribs(unittest.TestCase):
 			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter,actIter)]
 
 
+	def testExpectedPlanarDists_toOxyI(self):
+		#Mod coords; A/B should stay within 2.1 (just the oxy)
+		self.waterACoords = [ [0,0,1.1,"O"], [-1.13,0,0.99,"H"], [1.99,0,-0.13,"H"] ]
+		#translation = [2,0,0]; no rotations
+		self.waterBCoords = [ [1,0,1.5,"O"], [2.61, 0.79, 0, "H"], [2.61,-0.79,0,"H"] ]
+		self.coords = self.xCoord + self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords 
 
+		#Mod distr
+		self.useGroups = [ [0] ]
+		currArgs = [ self.binResObjA, self.oxyIndices ]
+		self.distrOptObjs = [distrOptObjHelp.CalcPlanarDistOptions(*currArgs)]
+		self.createTestObjs()
+
+		#Figure out what values we expect
+		expVals = [ (1.1,), (1.5,) ]
+		actVals = self._runTestFunct()
+
+		#Run + check expected/actual are equal
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter, actIter)]
+
+
+	def testPlanarDists_hyIdxType(self):
+		#Mod coords; A/B should stay within 2.1 (just the oxy)
+		self.waterACoords = [ [0,0,1.1,"O"], [-1.13,0,0.99,"H"], [1.99,0,-0.13,"H"] ]
+		#translation = [2,0,0]; no rotations
+		self.waterBCoords = [ [1,0,1.5,"O"], [2.61, 0.79, 0, "H"], [2.61,-0.79,0,"H"] ]
+		self.coords = self.xCoord + self.waterACoords + self.waterBCoords + self.waterCCoords + self.waterDCoords 
+
+		#Mod distr
+		self.useGroups = [ [0] ]
+		self.toIdxType = ["H"]
+		currArgs = [ self.binResObjA, self.oxyIndices ]
+		self.distrOptObjs = [distrOptObjHelp.CalcPlanarDistOptions(*currArgs)]
+		self.createTestObjs()
+
+		#Figure out what values we expect
+		expVals = [ (0.99,), (0.13,), (0,), (0,) ]
+		actVals = self._runTestFunct()
+
+		#Run + check expected/actual are equal
+		for expIter, actIter in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter, actIter)]
 
 

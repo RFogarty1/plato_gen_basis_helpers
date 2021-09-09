@@ -159,24 +159,26 @@ def _checkGroupIndicesConsistent(inpObj):
 #Functions for modifying populators; this needs doing at creation time (since we populate matrices BEFORE we filter atoms into groups for a given geometry)
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._WaterMinDistPopulator,filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
 def _(populator, optsObj, toIdxType):
-	oxyIndices, hyIndices = optsObj.oxyIndices, optsObj.hyIndices
-	if toIdxType.upper() == "O":
-		toIndices = oxyIndices
-	elif toIdxType.upper() == "H":
-		toIndices = [idx for idx in it.chain(*hyIndices)]
-	elif toIdxType.upper() == "ALL":
-		toIndices = oxyIndices + [idx for idx in it.chain(*hyIndices)]
-	else:
-		raise ValueError("{} is an invalid value to toIdxType".format(toIdxType))
-
-	populator.toIndices = toIndices
+	populator.toIndices = _getToIndicesFromWaterToWaterOptsObjAndToIdxType(optsObj, toIdxType)
 
 
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator   , filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
 def _(populator, optsObj, toIdxType):
+	toIndices = _getToIndicesFromWaterToWaterOptsObjAndToIdxType(optsObj, toIdxType)
 	oxyIndices, hyIndices = optsObj.oxyIndices, optsObj.hyIndices
 	fromIndices = oxyIndices
+
+	populator.fromIndices = fromIndices
+	populator.toIndices = toIndices
+
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._PlanarDistMatrixPopulator, filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
+def _(populator, optsObj, toIdxType):
+	populator.indices = _getToIndicesFromWaterToWaterOptsObjAndToIdxType(optsObj, toIdxType)
+
+
+def _getToIndicesFromWaterToWaterOptsObjAndToIdxType(optsObj, toIdxType):
+	oxyIndices, hyIndices = optsObj.oxyIndices, optsObj.hyIndices
 	if toIdxType.upper() == "O":
 		toIndices = oxyIndices
 	elif toIdxType.upper() == "H":
@@ -185,9 +187,8 @@ def _(populator, optsObj, toIdxType):
 		toIndices = oxyIndices + [idx for idx in it.chain(*hyIndices)]
 	else:
 		raise ValueError("{} is an invalid value to toIdxType".format(toIdxType))
-
-	populator.fromIndices = fromIndices
-	populator.toIndices = toIndices
+	
+	return toIndices
 
 
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._WaterOrientationPopulator, filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
