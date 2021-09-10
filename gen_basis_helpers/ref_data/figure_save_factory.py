@@ -22,3 +22,7 @@ def createFigureSaver_cp2kBasisPaper2020():
 	baseFolder = configVars.CP2K_BASIS_PAPER_2020_FIG_SAVE_FOLDER
 	return baseObjs.StandardFigureSaver.fromDefaultPlusKwargs(baseFolder=baseFolder)
 
+def createFigureSaver_mgWaterMdPaper2021():
+	baseFolder = configVars.MG_WATER_MD_PAPER_2021_FIG_SAVE_FOLDER
+	return baseObjs.StandardFigureSaver.fromDefaultPlusKwargs(baseFolder=baseFolder)
+
