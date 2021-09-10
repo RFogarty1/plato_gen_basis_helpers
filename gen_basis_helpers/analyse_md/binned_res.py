@@ -1,9 +1,11 @@
 
 import itertools as it
 import math
+import unittest.mock as mock
 
 import numpy as np
 
+from ..misc import shared_io as sharedIoHelp
 
 class BinnedResultsStandard():
 	""" Simple class for storing results of binning
@@ -322,6 +324,43 @@ def _checkBinEdgesWithinDomain(binResObj, domain, domainTol):
 		raise ValueError("Bin with an edge of {} is outside domain of {}".format(maxEdge, domain))
 
 
+def dumpIterOfNDimBinnedResultsToJson(nDimBinnedResults, outFilePath):
+	""" Writes an iter of NDimensionalBinnedResults to a *.json file. Can be read by readIterNDimensionalBinnedResFromJson
+	
+	Args:
+		nDimBinnedResults: (iter of NDimensionalBinnedResults)
+		outFilePath: (str) Path to write the file
+
+	Returns:
+		Nothing (writes a file)
+ 
+	Note:
+		The format is such that readIterNDimensionalBinnedResFromJson can read it; basically no promises beyond that
+
+	"""
+	mockObj = mock.Mock() #Force it into the interface for dumping easily
+	outDict = {idx:val.toDict() for idx,val in enumerate(nDimBinnedResults)}
+	mockObj.toDict = lambda *args,**kwargs: outDict
+	sharedIoHelp.dumpObjWithToDictToJson(mockObj, outFilePath)
+
+def readIterNDimensionalBinnedResFromJson(inpFile):
+	""" Reads iter of nDimBinnedResults from given file, which should have been generated with "dumpIterOfNDimBinnedResultsToJson"
+	
+	Args:
+		inpFile: (str) Path to the relevant file
+			 
+	Returns
+		nDimBinnedResults: (iter of NDimensionalBinnedResults)
+ 
+	"""
+	inpDict = sharedIoHelp.readDictFromJson(inpFile)
+	outIter = [None for x in inpDict.keys()]
+	for idx in inpDict.keys():
+		currObj = NDimensionalBinnedResults.fromDict( inpDict[idx] )
+		outIter[int(idx)] = currObj
+
+	return outIter
+
 
 class NDimensionalBinnedResults():
 	""" Class for storing results of binning procedures
@@ -341,6 +380,23 @@ class NDimensionalBinnedResults():
 		self.edges = edges
 		self.binVals = binVals if binVals is not None else dict() #TODO: initialise? just need to make it an empty dict tbh
 
+
+	#We use tolist() to make numpy arrays json serializable; if binvals ever contain a non-numpy array we could add a try/except
+	def toDict(self):
+		outDict = {"edges": self.edges, "binVals":dict()}
+		for key in self.binVals:
+			outDict["binVals"][key] = self.binVals[key].tolist()
+
+		return outDict
+
+	@classmethod
+	def fromDict(cls, inpDict):
+		edges = inpDict["edges"]
+		binVals = dict()
+		for key in inpDict["binVals"].keys():
+			binVals[key] = np.array( inpDict["binVals"][key] )
+
+		return cls(edges, binVals=binVals)
 
 	#TODO: add some tolerance attrs
 	def __eq__(self, other):

@@ -1,5 +1,5 @@
 
-
+import os
 import copy
 import itertools as it
 import unittest
@@ -462,6 +462,48 @@ class TestNDimensionalBinObj(unittest.TestCase):
 		actCountsMatrix = self.testObj.binVals["counts"]
 
 		self.assertTrue( np.allclose(expCountsMatrix,actCountsMatrix) )
+
+	def testToAndFromDictConsistent(self):
+		self.testObj.binVals["counts"][0][0] += 2
+		outDict = self.testObj.toDict()
+		expObj = self.testObj
+		actObj = tCode.NDimensionalBinnedResults.fromDict(outDict)
+		self.assertEqual(expObj, actObj)
+
+class TestDumpAndReadNDimBinnedResultsJson(unittest.TestCase):
+
+	def setUp(self):
+		self.edgesA = [1,2,3] 
+		self.edgesB = [6,5,4,3]
+		self.tempFileName = "_tempDumpBinResFile.json"
+		self.createTestObjs()
+
+	def tearDown(self):
+		os.remove(self.tempFileName)
+
+	def createTestObjs(self):
+		edges = [ self.edgesA, self.edgesB ]
+		self.testObj = tCode.NDimensionalBinnedResults(edges)
+		self.testObj.initialiseCountsMatrix()
+		self.outIter = [self.testObj]
+
+	def _dumpFile(self):
+		tCode.dumpIterOfNDimBinnedResultsToJson(self.outIter, self.tempFileName)
+
+	def _readFromFile(self):
+		return tCode.readIterNDimensionalBinnedResFromJson(self.tempFileName)
+
+	def testConsistentA(self):
+		objA = copy.deepcopy(self.testObj)
+		self.testObj.binVals["counts"][0][1] += 2
+		objB = self.testObj
+
+		expIter = [objA, objB]
+		self.outIter = [objA, objB]
+
+		self._dumpFile()
+		actIter = self._readFromFile()
+		self.assertEqual(expIter, actIter)
 
 
 class TestGetLowerDimBinObj(unittest.TestCase):
