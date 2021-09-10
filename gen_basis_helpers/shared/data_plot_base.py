@@ -2,10 +2,14 @@
 import contextlib
 import copy
 import itertools as it
+import json
 import types
+import unittest.mock as mock
+
 
 import numpy as np
 import matplotlib.pyplot as plt
+from ..misc import shared_io as sharedIoHelp
 from ..shared import misc_utils as misc
 
 
@@ -196,6 +200,77 @@ class DataPlotterBase():
 	def _modifyAxisPlot(self):
 		""" Hook - provides a function to overwrite to modify the plot after basic things have been done. The current axis will be set correctly, so you can just use plt.something without specifying the axis to work on """
 		pass
+
+
+
+def dumpStandardDataPlottersToJson(dataPlotters, outFilePath):
+	""" Dumps a json representation of dataPlotters to file.
+	
+	Args:
+		dataPlotters: (iter of DataPlotterStandard)
+		outFilePath: (str) Path to file to dump to 
+ 
+	Notes:
+		a) This wont dump anything not json-serializable (e.g. the axHandle) except data (if its a numpy array)
+		b) The resultant file should ONLY EVER be read with readStandardDataPlottersFromJson
+
+	"""
+	outDict = dict()
+
+	for idx, plotter in enumerate(dataPlotters):
+		currDict = _getSerializableJsonDictFromStandardDataPlotter(plotter)
+		outDict[idx] = currDict
+		
+	#Dump to output
+	outObj = mock.Mock()
+	outObj.toDict = lambda *args, **kwargs: outDict
+	sharedIoHelp.dumpObjWithToDictToJson(outObj, outFilePath)
+	
+#
+def _getSerializableJsonDictFromStandardDataPlotter(inpPlotter):
+	#Deal with data, which could be a numpy array
+	outDict = dict()
+	outData = [np.array(data).tolist() for data in inpPlotter.data]
+	outDict["data"] = outData
+
+	#Deal with remaining kwargs
+	for regKwarg in inpPlotter.registeredKwargs:
+		if regKwarg != "data":
+			currVal = getattr(inpPlotter, regKwarg)
+			if _isJsonSerializable(currVal):
+				outDict[regKwarg] = currVal
+
+	return outDict
+
+def readStandardDataPlottersFromJson(inpFilePath):
+	""" Reads file containing serialized .json data plotters
+	
+	Args:
+		inpFilePath: (str) File path
+			 
+	Returns
+		dataPlotters: (iter of DataPlotterStandard)
+ 
+	"""
+	#Read from the json
+	parsedDict = sharedIoHelp.readDictFromJson(inpFilePath)
+
+	#Generate standard plotters for the dicts we get (make sure to order them)
+	outPlotters = [None for x in parsedDict.keys()]
+	for key in parsedDict.keys():
+		currPlotter = DataPlotterStandard(**parsedDict[key])
+		outPlotters[int(key)] = currPlotter
+
+	return outPlotters
+
+
+def _isJsonSerializable(inpObj):
+	try:
+		json.dumps(inpObj)
+	except TypeError:
+		return False
+	else:
+		return True
 
 
 #Recommended class to use. Less flexible than Base but has a couple of painful to code features inbuilt 
