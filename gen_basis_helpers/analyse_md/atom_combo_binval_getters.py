@@ -189,13 +189,17 @@ class _WaterOrientationBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSpa
 
 	def getValsToBin(self, sparseMatrixCalculator):
 		#Get relevant matrix (...vector really)
-		angleTypeToKey = {"roll":"water_rotations_roll_matrix", "pitch":"water_rotations_pitch_matrix",
+		angleTypeToKey = {"abs_roll":"water_rotations_roll_matrix", "roll":"water_rotations_roll_matrix", "pitch":"water_rotations_pitch_matrix",
 		                  "azimuth":"water_rotations_azimuthal_matrix"}
 		relAngleKey = angleTypeToKey[self.angleType]
 		relAngles = sparseMatrixCalculator.outDict[relAngleKey]
 
 		#Get bin-values from this matrix
 		outVals = [relAngles[idx] for idx in self.oxyIndices]
+
+		if self.angleType=="abs_roll":
+			outVals = [abs(x) for x in outVals]
+
 		return outVals
 
 class _WaterMinDist_plusMinDistFilter_binValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):

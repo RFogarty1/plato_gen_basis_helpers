@@ -316,6 +316,19 @@ class TestWaterOrientationBinValsGetter(unittest.TestCase):
 
 		self.assertTrue( np.allclose(np.array(expVals), np.array(actVals)) )
 
+	def testExpectedCase_absRoll(self):
+		#Swap from roll to the abs roll
+		self.optsObjRoll.angleType = "abs_roll"
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjRoll, self.optsObjPitch, self.optsObjAzi])
+
+		#
+		expVals = [ [0                  , 0                ,90],
+		            [0                  , 0                ,119.88652694042403],
+		            [ 70.11483488614456 , 0                ,0],
+		            [ 0.23900590074245542, 79.98644481907608,19.686775804346176] ]
+		actVals = self.testObj.getValsToBin(self.sparseCalculator)
+
+		self.assertTrue( np.allclose(np.array(expVals), np.array(actVals)) )
 
 	def testExpected_diffIndicesEach(self):
 		""" This tests the populators a bit better; since they have to actually deal with partially-populated matrices"""

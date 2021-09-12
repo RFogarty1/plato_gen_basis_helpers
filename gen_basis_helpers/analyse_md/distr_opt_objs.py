@@ -104,7 +104,7 @@ class WaterOrientationOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOp
 		self.checkEdges = checkEdges
 		self.oxyIndices = oxyIndices
 		self.hyIndices = hyIndices
-		self._angleTypeToDomainMap = {"roll":[-90,90], "pitch":[-90,90], "azimuth":[-180,180]}
+		self._angleTypeToDomainMap = {"abs_roll":[0,90],"roll":[-90,90], "pitch":[-90,90], "azimuth":[-180,180]}
 		self.angleType = angleType #IMPORTANT to do this after setting checkEdges
 		self.primaryIdxType = "O"
 
