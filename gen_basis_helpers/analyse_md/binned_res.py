@@ -1,4 +1,5 @@
 
+import copy
 import itertools as it
 import math
 import unittest.mock as mock
@@ -360,6 +361,73 @@ def readIterNDimensionalBinnedResFromJson(inpFile):
 		outIter[int(idx)] = currObj
 
 	return outIter
+
+
+def getSummedNDimensionalBinnedResSimple(inpBinResObjs, countKey="counts", normCountKey="normalised_counts"):
+	""" Gets an NDimensionalBinnedResults object with the combined counts/normalised counts of those in inpBinResObjs
+	
+	Args:
+		inpBinResObjs: (iter of NDimensionalBinnedResults) They need to have the same edges
+		countKey: (str) The key in binVals containing counts
+		normCountKey: (str) The key in binVals containing normalised_counts
+	 
+	Returns
+		outBin: (NDimensionalBinnedResults) Contains the combined counts/normalised counts of input bins
+
+	Raises:
+		ValueError: If .binEdges varies between inpBinResObjs
+		KeyError: if countKey is missing in any of the binVals
+
+	Notes:
+		a) The new bins .binVals will only have counts and normalised counts present regardless of whats in the originals
+ 
+	"""
+	#Check edges equivalence
+	allBinVals = [x.binVals for x in inpBinResObjs]
+	for x in inpBinResObjs:
+		x.binVals = dict() #Will return after error check
+
+	if all([x==inpBinResObjs[0] for x in inpBinResObjs]):
+		edgesConsistent = True
+	else:
+		edgesConsistent = False
+
+	for binResObj, binVals in it.zip_longest(inpBinResObjs,allBinVals):
+		binResObj.binVals = binVals
+
+	if edgesConsistent is False:
+		raise ValueError("All edges must be the same when trying to sum bin res objs")
+
+	#Get the counts for the new bin
+	inpCounts = [x.binVals[countKey] for x in inpBinResObjs]
+	outCounts = np.zeros( inpCounts[0].shape )
+	for currCounts in inpCounts:
+		outCounts += currCounts
+
+	#Get the normalised counts for the new bin
+	try:
+		inpNormCounts = [x.binVals[normCountKey] for x in inpBinResObjs]
+
+	except KeyError:
+		outNormCounts = None
+	else:
+		nStepsEach = [ np.sum(x.binVals[countKey]) / np.sum(x.binVals[normCountKey]) for x in  inpBinResObjs ] 
+		normCountWeights = [ x/sum(nStepsEach) for x in nStepsEach ] 
+
+		outNormCounts = np.zeros( inpNormCounts[0].shape )
+		for weight, counts in it.zip_longest(normCountWeights, inpNormCounts):
+			outNormCounts += weight*counts
+
+	#Create the new bins obj
+	if outNormCounts is not None:
+		outBinVals = {countKey:outCounts, normCountKey:outNormCounts}
+	else:
+		outBinVals = {countKey:outCounts}
+
+	outBinObj = NDimensionalBinnedResults(copy.deepcopy( inpBinResObjs[0].edges ), binVals=outBinVals)
+
+	return outBinObj
+
 
 
 class NDimensionalBinnedResults():

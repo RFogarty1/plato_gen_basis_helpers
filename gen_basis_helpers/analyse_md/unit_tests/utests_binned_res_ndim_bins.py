@@ -525,4 +525,125 @@ class TestAddProbabilitiesToBinObj(unittest.TestCase):
 		self.assertEqual(expBinObjA, actBinObjA)
 
 
+class TestGetNDimbinsSummedSimple(unittest.TestCase):
+
+	def setUp(self):
+		self.edgesA = [0,1,2]
+		self.edgesB = [3,4,5,6]
+		self.edgesC = [7,8,9,10] #Will be useful for checking errors raises properly
+
+		#Run options
+		self.countKey = "counts"
+		self.normCountKey = "normalised_counts"
+
+		#Setup counts arrays and add a few
+		self.countsA = np.zeros( (2,3) )
+		self.countsB = np.zeros( (2,3) )
+	
+		self.countsA[0][1] = 4 
+		self.countsA[1][2] = 6
+		self.countsA[1][1] = 2
+
+		self.countsB[0][0] = 12
+		self.countsB[1][1] = 14
+	
+		#Define nSteps for each bin so we can get normalised counts in a sensible way
+		self.nStepsA, self.nStepsB = 1,2
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.binValsA = {self.countKey:self.countsA, self.normCountKey: self.countsA/self.nStepsA}
+		self.binValsB = {self.countKey:self.countsB, self.normCountKey: self.countsB/self.nStepsB}
+
+		self.binObjA = tCode.NDimensionalBinnedResults([self.edgesA,self.edgesB], binVals=self.binValsA)
+		self.binObjB = tCode.NDimensionalBinnedResults([self.edgesA,self.edgesB], binVals=self.binValsB)
+
+		self.binObjsToAdd = [self.binObjA, self.binObjB]
+
+	def _runTestFunct(self):
+		currKwargs = {"countKey":self.countKey,"normCountKey":self.normCountKey}
+		return tCode.getSummedNDimensionalBinnedResSimple(self.binObjsToAdd, **currKwargs)
+
+	def _loadExpCountsA(self):
+		return np.array(  [ [12,4,0], [0,16,6] ] )
+
+	def _loadExpNormCountsA(self):
+		totalSteps = self.nStepsA + self.nStepsB
+		expNormCounts = np.array( [ [12/totalSteps, 4/totalSteps, 0],
+		                             [ 0, (14+2)/totalSteps, 6/totalSteps ] ] )
+		return expNormCounts
+
+	def testExpectedCaseA(self):
+		#Manually get the exp counts and norm-counts matrices
+		expCounts = self._loadExpCountsA()
+		expNormCounts = self._loadExpNormCountsA()
+		expBinVals = {self.countKey: expCounts, self.normCountKey: expNormCounts}
+
+		#Get the expected bin obj
+		expBinObj = tCode.NDimensionalBinnedResults( [self.edgesA,self.edgesB], binVals=expBinVals)
+		actBinObj = self._runTestFunct()
+
+		self.assertEqual(expBinObj,actBinObj)
+
+	def testExpected_normCountsMissing(self):
+		self.binObjA.binVals.pop(self.normCountKey)
+		self.binObjB.binVals.pop(self.normCountKey)
+
+		#Load expected bin values
+		expCounts = self._loadExpCountsA()
+		expBinVals = {self.countKey:expCounts}
+
+		#
+		expBinObj = tCode.NDimensionalBinnedResults( [self.edgesA,self.edgesB],binVals=expBinVals )
+		actBinObj = self._runTestFunct()
+
+		self.assertEqual(expBinObj,actBinObj)
+
+	def testExpectedCountsMissing(self):
+		self.binObjA.binVals.pop(self.countKey)
+		self.binObjB.binVals.pop(self.countKey)
+
+		with self.assertRaises(KeyError):
+			self._runTestFunct()
+
+	def testRaisesWhenEdgesDontMatch(self):
+		self.binObjB = tCode.NDimensionalBinnedResults([self.edgesA,self.edgesC], binVals=self.binValsB)
+		self.binObjsToAdd = [self.binObjA, self.binObjB]
+
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
+	def testExpected_diffCountKey(self):
+		self.countKey = "new_count_key"
+		self.createTestObjs()
+
+		#Manually get the exp counts and norm-counts matrices
+		expCounts = self._loadExpCountsA()
+		expNormCounts = self._loadExpNormCountsA()
+		expBinVals = {self.countKey: expCounts, self.normCountKey: expNormCounts}
+
+		#Get the expected bin obj
+		expBinObj = tCode.NDimensionalBinnedResults( [self.edgesA,self.edgesB], binVals=expBinVals)
+		actBinObj = self._runTestFunct()
+
+		self.assertTrue( "new_count_key" in expBinObj.binVals.keys() )
+		self.assertEqual(expBinObj,actBinObj)
+
+	def testExpected_threeBinsAdded(self):
+		self.binObjsToAdd = [self.binObjA, self.binObjB, self.binObjA]
+
+		#Generate expected
+		expCounts = np.array(  [ [12,8,0],[0,18,12] ] )
+		totalSteps = (2*self.nStepsA) + self.nStepsB
+		expNormCounts = np.array( [ [12/totalSteps, 8/totalSteps,0],
+		                            [0, 18/totalSteps, 12/totalSteps] ] )
+		expBinVals = {self.countKey: expCounts, self.normCountKey: expNormCounts}
+
+		#Get the expected bin object
+		expBinObj = tCode.NDimensionalBinnedResults( [self.edgesA,self.edgesB], binVals=expBinVals)
+		actBinObj = self._runTestFunct()
+
+		self.assertEqual(expBinObj,actBinObj)
+
 
