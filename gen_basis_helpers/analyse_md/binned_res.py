@@ -912,59 +912,62 @@ def _getGxForSetOfBins(binEdges, binCounts, numbAtomsFrom, numbAtomsTo, totalWid
 	return outGr
 
 
-def getSkewForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
+def getSkewForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, useCentreForBetweenVals=True):
 	""" Gets the skew of a property given by the probability density function, works by calcualting the CENTRAL 3rd moment with (bad) numerical integration over bin centres/vals
 	
 	Args:
 		binEdges: (iter of floats, must be in order) Edge for each bin
 		pdfData: values are the probability density function or something similar (g(r) should be fine?)
-		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values (Meaning changes for useCentreForBetweenVals=True)
 		normaliseBySum: (Bool) If True we do sum(pdfData) and divide the output by it. This may let the function work for certain cases where y-values are only proportional to pdf. NOTE: We use the sum betweenVals if that is set
+		useCentreForBetweenVals: (Bool) If True we use the centre of each bin to devide whether it lies between vals. Its betwen values if min(betweenVals) <= centre < max(betweenVals)
 			 
 	Returns
 		outVal: (float) The central-skew of the data
 
 	"""
-	meanVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1)
-	skewVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=3, shiftVal=meanVal)
+	meanVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1, useCentreForBetweenVals=useCentreForBetweenVals)
+	skewVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=3, shiftVal=meanVal, useCentreForBetweenVals=useCentreForBetweenVals)
 	return skewVal
 
-def getVarianceForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
+def getVarianceForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, useCentreForBetweenVals=True):
 	""" Gets the variance of a property given the probability density function, works by calculating the CENTRAL 2nd moment with (bad) numerical integration over bin centres/vals
 	
 	Args:
-		binEdges: (iter of floats, must be in order) Edge for each bin
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values (Meaning changes for useCentreForBetweenVals=True)
 		pdfData: values are the probability density function or something similar (g(r) should be fine?)
 		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
 		normaliseBySum: (Bool) If True we do sum(pdfData) and divide the output by it. This may let the function work for certain cases where y-values are only proportional to pdf. NOTE: We use the sum betweenVals if that is set
+		useCentreForBetweenVals: (Bool) If True we use the centre of each bin to devide whether it lies between vals. Its betwen values if min(betweenVals) <= centre < max(betweenVals)
 			 
 	Returns
 		outVal: (float) The central-variance of the data
  
 	"""
-	meanVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1)
-	centralVariance = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=2, shiftVal=meanVal)
+	meanVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1, useCentreForBetweenVals=useCentreForBetweenVals)
+	centralVariance = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=2, shiftVal=meanVal, useCentreForBetweenVals=useCentreForBetweenVals)
 	return centralVariance
 
 
-def getAverageForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False):
+def getAverageForPdfValsSimple(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, useCentreForBetweenVals=True):
 	""" Gets the average value of a property given the probability density function. Works simply by summing (centralVal*probability*width) for each bin
 	
 	Args:
 		binEdges: (iter of floats, must be in order) Edge for each bin
 		pdfData: values are the probability density function or something similar (g(r) should be fine?)
-		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values (Meaning changes for useCentreForBetweenVals=True)
 		normaliseBySum: (Bool) If True we do sum(pdfData) and divide the output by it. This may let the function work for certain cases where y-values are only proportional to pdf. NOTE: We use the sum betweenVals if that is set
-			 
+		useCentreForBetweenVals: (Bool) If True we use the centre of each bin to devide whether it lies between vals. Its betwen values if min(betweenVals) <= centre < max(betweenVals)
+
 	Returns
 		outVal: (float) The average x-value based on probability densities
  
 	"""
 
-	return _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1)	
+	return _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=normaliseBySum, nthMoment=1, useCentreForBetweenVals=useCentreForBetweenVals)	
 
 
-def getWeightedIntegralOverRdf(binEdges, rdfVals, betweenVals=None, prefactor=1):
+def getWeightedIntegralOverRdf(binEdges, rdfVals, betweenVals=None, prefactor=1, useCentreForBetweenVals=True):
 	""" Gets the weighted integral over g_{rdf}(r) such that the volume of each sphere is taken into account.
 
 	For prefactor=1 this leads to the probability distribution describing (I THINK) the probability of finding an atom at a random distance r
@@ -973,9 +976,10 @@ def getWeightedIntegralOverRdf(binEdges, rdfVals, betweenVals=None, prefactor=1)
 	Args:
 		binEdges: (iter of floats, must be in order) Edge for each bin
 		rdfVals: (iter of floats) g(r)
-		betweenVals: (len-2 iter)
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values (Meaning changes for useCentreForBetweenVals=True)
 		prefactor: (float)
-			 
+		useCentreForBetweenVals: (Bool) If True we use the centre of each bin to devide whether it lies between vals. Its betwen values if min(betweenVals) <= centre < max(betweenVals)
+
 	Returns
 		outVal: (float) prefactor * \int (4*pi*r**2)*g(r) dr; Note we are weighting g(r) by surface areas
  
@@ -983,17 +987,18 @@ def getWeightedIntegralOverRdf(binEdges, rdfVals, betweenVals=None, prefactor=1)
 	def _surfAreaWeightFunction(r):
 		return 4*math.pi*(r**2)
 
-	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _surfAreaWeightFunction, betweenVals=betweenVals, prefactor=prefactor)
+	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _surfAreaWeightFunction, betweenVals=betweenVals, prefactor=prefactor,useCentreForBetweenVals=useCentreForBetweenVals)
 
 
-def getWeightedIntegralOverCircularRdf(binEdges, rdfVals, betweenVals=None, prefactor=1):
+def getWeightedIntegralOverCircularRdf(binEdges, rdfVals, betweenVals=None, prefactor=1, useCentreForBetweenVals=True):
 	""" Gets the weighted integral over g_{rdf}(r) such that the Area of each circular segment is taken into account. This is the equivalent of "getWeightedIntegralOverRdf" for cases where our "volume slices" are actually planar; and hence corresond to circles rather than spheres
 
 	Args:
 		binEdges: (iter of floats, must be in order) Edge for each bin
 		rdfVals: (iter of floats) g(r)
-		betweenVals: (len-2 iter)
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values (Meaning changes for useCentreForBetweenVals=True)
 		prefactor: (float)
+		useCentreForBetweenVals: (Bool) If True we use the centre of each bin to devide whether it lies between vals. Its betwen values if min(betweenVals) <= centre < max(betweenVals)
 			 
 	Returns
 		outVal: (float) prefactor * \int (2*pi*r)*g(r) dr;  note we are weighting g(r) by circle circumferences
@@ -1002,18 +1007,18 @@ def getWeightedIntegralOverCircularRdf(binEdges, rdfVals, betweenVals=None, pref
 	def _circumferenceWeightFunction(r):
 		return 2*math.pi*r
 
-	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _circumferenceWeightFunction, betweenVals=betweenVals, prefactor=prefactor)
+	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _circumferenceWeightFunction, betweenVals=betweenVals, prefactor=prefactor,useCentreForBetweenVals=useCentreForBetweenVals)
 
 
 
-def _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, centreWeightFunction, betweenVals=None, prefactor=1):
+def _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, centreWeightFunction, betweenVals=None, prefactor=1,useCentreForBetweenVals=True):
 	#Get the weighted rdf values
 	binEdgePairs = _getBinEdgePairsFromBinEdges(binEdges)
 	binCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in binEdgePairs ]
 	weightedRdf = [rdf*centreWeightFunction(r) for rdf,r in it.zip_longest(rdfVals, binCentres)]
 
 	#Use the zeroth-moment pdf integrator to do the rest of the work; then multiply by prefactor
-	integral = _getNthMomentFromPdf(binEdges, weightedRdf, betweenVals=betweenVals, nthMoment=0)
+	integral = _getNthMomentFromPdf(binEdges, weightedRdf, betweenVals=betweenVals, nthMoment=0,useCentreForBetweenVals=useCentreForBetweenVals)
 	return integral*prefactor
 
 def _getBinEdgePairsFromBinEdges(binEdges):
@@ -1023,20 +1028,21 @@ def _getBinEdgePairsFromBinEdges(binEdges):
 		outVals.append(currPair)
 	return outVals
 
-def getIntegralOverPdfSimple(binEdges, pdfVals, betweenVals=None, normByFullSum=False):
+def getIntegralOverPdfSimple(binEdges, pdfVals, betweenVals=None, normByFullSum=False, useCentreForBetweenVals=True):
 	""" Gets the sum of probabilities between range given the probability density function. Works simply by summing (probability*width) for each bin
 	
 	Args:
 		binEdges: (iter of floats, must be in order) Edge for each bin
 		pdfData: values are the probability density function or something similar (g(r) should be fine?)
-		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values
+		betweenVals: (len-2 iter) Only calculate for bins whose EDGES fall between these values (Meaning changes for useCentreForBetweenVals=True)
 		normByFullSum: (Bool) If True then we divide by sum(width*pdf) for ALL input values; This may let us use quantities that are proportional to pdfVals as long as the full distribution is included in pdfVals
+		useCentreForBetweenVals: (Bool) If True we use the centre of each bin to devide whether it lies between vals. Its betwen values if min(betweenVals) <= centre < max(betweenVals)
 
 	Returns:
 		outVal: (float) Sum of probabilities over range given
  
 	"""
-	outVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=False, nthMoment=0)	
+	outVal = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=betweenVals, normaliseBySum=False, nthMoment=0, useCentreForBetweenVals=useCentreForBetweenVals)	
 	if normByFullSum:
 		divFactor = _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, nthMoment=0)
 		outVal *= 1/divFactor
@@ -1047,7 +1053,7 @@ def getIntegralOverPdfSimple(binEdges, pdfVals, betweenVals=None, normByFullSum=
 #first moment = mean value
 #second moment = variance
 #shift val lets us calculate moments around the mean; this gives us a sensible definition for variance and skewness
-def _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, nthMoment=0, shiftVal=0):
+def _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=None, normaliseBySum=False, nthMoment=0, shiftVal=0, useCentreForBetweenVals=False):
 
 	#1) Check data is in order
 	floatTol = 1e-6
@@ -1067,9 +1073,15 @@ def _getNthMomentFromPdf(binEdges, pdfVals, betweenVals=None, normaliseBySum=Fal
 			usePdf.append(pdfVals[pIdx])
 
 		else:
-			if min(edgePair)>min(betweenVals) and max(edgePair)<max(betweenVals):
-				useEdgePairs.append(edgePair)
-				usePdf.append(pdfVals[pIdx])
+			if useCentreForBetweenVals:
+				centre = sum(edgePair)/2
+				if (min(betweenVals)<=centre) and (centre<max(betweenVals)):
+					useEdgePairs.append(edgePair)
+					usePdf.append(pdfVals[pIdx])
+			else:
+				if min(edgePair)>=min(betweenVals) and max(edgePair)<max(betweenVals):
+					useEdgePairs.append(edgePair)
+					usePdf.append(pdfVals[pIdx])
 
 	#3) Get bin widths and centres
 	binWidths, binCentres = list(),list()

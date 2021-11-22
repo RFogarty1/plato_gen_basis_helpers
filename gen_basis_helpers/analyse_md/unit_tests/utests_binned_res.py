@@ -345,6 +345,7 @@ class TestGetAverageValsForPdf(unittest.TestCase):
 	def setUp(self):
 		self.betweenVals = None
 		self.normaliseSum = False
+		self.centreInBetweenVals = False
 
 		#Edges are [0,2,3,5,8]
 		self.binEdges =   [0, 2, 3, 5, 8]
@@ -353,7 +354,7 @@ class TestGetAverageValsForPdf(unittest.TestCase):
 
 	def _runTestFunct(self):
 		args = [self.binEdges, self.pdfVals]
-		currKwargs = {"betweenVals":self.betweenVals,"normaliseBySum":self.normaliseSum}
+		currKwargs = {"betweenVals":self.betweenVals,"normaliseBySum":self.normaliseSum, "useCentreForBetweenVals":self.centreInBetweenVals}
 		return tCode.getAverageForPdfValsSimple(*args, **currKwargs)
 
 	def testExpectedNoRange(self):
@@ -372,6 +373,20 @@ class TestGetAverageValsForPdf(unittest.TestCase):
 		expVal = 2.9
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
+
+	def testExpectedAddToTotal_binCentresAndEdgesStraddle(self):
+		""" Test that we get the total sum from segments of betweenVals when using bin-centres to decide if bin is between vals """
+		self.centreInBetweenVals = True
+		self.betweenValsA, self.betweenValsB = [0,2.5], [2.5,10]
+		expVals = [0.4*2, (2.5*0.2) + (4*0.3*2) + (6.5*0.6*3)] #This is what we'd get for no betweenVals limits
+	
+		#Run funct	
+		actVals = []
+		for betweenVals in [self.betweenValsA, self.betweenValsB]:
+			self.betweenVals = betweenVals
+			actVals.append( self._runTestFunct() )
+
+		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals,actVals)]
 
 	def testExpectedNormaliseWithBetweenValsSet(self):
 		""" Make sure normalise factor uses only relevant pdf when betweenVals is set """
@@ -426,14 +441,14 @@ class TestIntegrateOverPdfSimple(unittest.TestCase):
 
 	def testExpectedCaseB_betweenVals(self):
 		self.betweenVals = [0.5,5.5]
-		expVal = 0.8
+		expVal = 1.6
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal,actVal)
 
 	def testExpected_betweenVals_normByTotal(self):
 		self.normByFullSum = True
 		self.betweenVals = [0.5,5.5]
-		expVal = 0.8/3.4
+		expVal = 1.6/3.4
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
 
