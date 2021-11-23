@@ -1,8 +1,9 @@
 
+import os
 import itertools as it
 import json
 import numpy as np
-
+import pathlib
 
 from . import shared_misc as miscHelp
 
@@ -110,6 +111,9 @@ def dumpStandardThermoDataToFile(thermoDataObj, outFile):
 		outFile: (str) Path to the output file
 			 
 	"""
+	outDir = os.path.split(outFile)[0]
+	pathlib.Path(outDir).mkdir(parents=True, exist_ok=True)
+
 	outDict = thermoDataObj.toDict()
 	with open(outFile,"w") as f:
 		json.dump(outDict, f)
