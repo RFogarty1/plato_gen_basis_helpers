@@ -346,6 +346,7 @@ class TestGetAverageValsForPdf(unittest.TestCase):
 		self.betweenVals = None
 		self.normaliseSum = False
 		self.centreInBetweenVals = False
+		self.linInterp = False
 
 		#Edges are [0,2,3,5,8]
 		self.binEdges =   [0, 2, 3, 5, 8]
@@ -354,7 +355,8 @@ class TestGetAverageValsForPdf(unittest.TestCase):
 
 	def _runTestFunct(self):
 		args = [self.binEdges, self.pdfVals]
-		currKwargs = {"betweenVals":self.betweenVals,"normaliseBySum":self.normaliseSum, "useCentreForBetweenVals":self.centreInBetweenVals}
+		currKwargs = {"betweenVals":self.betweenVals,"normaliseBySum":self.normaliseSum,
+		              "useCentreForBetweenVals":self.centreInBetweenVals, "linInterp":self.linInterp}
 		return tCode.getAverageForPdfValsSimple(*args, **currKwargs)
 
 	def testExpectedNoRange(self):
@@ -428,10 +430,12 @@ class TestIntegrateOverPdfSimple(unittest.TestCase):
 		self.normByFullSum  = False
 		self.binEdges =   [0, 2, 3, 5, 8]
 		self.pdfVals = [0.4, 0.2, 0.3, 0.6] #Dont care how physical these are
+		self.linInterp = False
 
 	def _runTestFunct(self):
 		args = [self.binEdges, self.pdfVals]
-		currKwargs = {"betweenVals":self.betweenVals, "normByFullSum":self.normByFullSum}
+		currKwargs = {"betweenVals":self.betweenVals, "normByFullSum":self.normByFullSum,
+		              "linInterp":self.linInterp}
 		return tCode.getIntegralOverPdfSimple(*args, **currKwargs)
 
 	def testExpectedCaseA(self):
@@ -452,6 +456,34 @@ class TestIntegrateOverPdfSimple(unittest.TestCase):
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
 
+	def testExpected_betweenVals_linInterp_overlapsHigher(self):
+		self.linInterp = True
+		self.betweenVals = [0,3.1]
+		expVal = (2*0.4) + (1*0.2) + (2*0.3*(1/20) ) #We partially enter the last bin; but only with weight=(1/30)
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal,actVal)
+
+	def testExpected_betweenVals_linInterp_overlapsLower(self):
+		self.linInterp = True
+		self.betweenVals = [4.9,10]
+		expVal = (2*0.3*(1/20)) + (3*0.6)
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal,actVal)
+
+	def testExpected_betweenVals_linInterp_onBinEdge(self):
+		self.linInterp = True
+		self.betweenVals = [2,3]
+		expVal = 0.2
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal,actVal)
+
+	def testExpected_betweenVals_linInterp_withinBin(self):
+		self.linInterp = True
+		self.betweenVals = [2.4,2.9]
+		expVal = 0.2*0.5
+		actVal = self._runTestFunct()
+		self.assertAlmostEqual(expVal,actVal)
+
 
 class TestIntegrateOverRdf(unittest.TestCase):
 
@@ -460,13 +492,14 @@ class TestIntegrateOverRdf(unittest.TestCase):
 		self.prefactor = 5 #N_tot / V_tot generally gonna be the formula
 		self.binEdges =   [0, 2, 3, 5, 8]
 		self.rdfVals = [0.4, 0.2, 0.3, 0.6] #Dont care how physical these are
+		self.linInterp = False
 
 		#NOTE: Expected Surface areas are:
 #		12.5663706143592, 78.5398163397448, 201.061929829747, 530.929158456675
 
 	def _runTestFunct(self):
 		currArgs = [self.binEdges, self.rdfVals]
-		currKwargs = {"betweenVals":self.betweenVals, "prefactor":self.prefactor}
+		currKwargs = {"betweenVals":self.betweenVals, "prefactor":self.prefactor, "linInterp":self.linInterp}
 		return tCode.getWeightedIntegralOverRdf(*currArgs, **currKwargs)
 
 	def testExpectedCaseA(self):
