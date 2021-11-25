@@ -817,7 +817,8 @@ def addCircularRdfToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, areas=None):
 			areas = [areas for x in range(nDims)]
 
 	#2) Calculate the rdf and append to the bin object
-	outMatrix = _getPseudoRdfMatrixFromNDimBinObj(inpBinObj, numbAtomsFrom, numbAtomsTo, areas, _mapCentralValToCircumference)
+	outMatrix = _getPseudoRdfMatrixFromNDimBinObj(inpBinObj, numbAtomsFrom, numbAtomsTo, areas, _mapCentralValToArea)
+
 	inpBinObj.binVals["circular_rdf"] = outMatrix
 
 
@@ -846,6 +847,10 @@ def addRdfValsToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes=None):
 
 	#1) Sort volumes; theres 3 possible ways this can be handled(None, single value, list of values)
 	nDims = len(inpBinObj.edges)
+
+	if nDims > 1:
+		raise NotImplementedError("Probably would work; but i havent redone the unit tests since fixing a bug in the backend")
+
 	if volumes is None:
 		volumes = _getDefaultSpatialNormFactorsForNDimBinObj(inpBinObj, _mapCentralValToVolume)
 	else:
@@ -855,7 +860,7 @@ def addRdfValsToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes=None):
 			volumes = [volumes for x in range(nDims)]
 
 	#2) Calculate the rdf and append to the bin object
-	outMatrix = _getPseudoRdfMatrixFromNDimBinObj(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes, _mapCentralValToSurfArea)
+	outMatrix = _getPseudoRdfMatrixFromNDimBinObj(inpBinObj, numbAtomsFrom, numbAtomsTo, volumes, _mapCentralValToVolume)
 	inpBinObj.binVals["rdf"] = outMatrix
 
 
@@ -905,10 +910,8 @@ def _getPseudoRdfMatrixFromNDimBinObj(inpBinObj, numbAtomsFrom, numbAtomsTo, spa
 
 
 def _getGxForSetOfBins(binEdges, binCounts, numbAtomsFrom, numbAtomsTo, totalWidthNormFactor, mapCentralVal):
-	widths = [ abs(b-a) for a,b in binEdges ] 
-	centres = [ min([b,a]) + (abs(b-a)/2) for a,b in binEdges ]
-	mappedCentralVals = [mapCentralVal(r) for r in centres]
-	outGr = [ (count*totalWidthNormFactor) / (numbAtomsFrom*numbAtomsTo*mappedCentral*width) for count,mappedCentral,width in it.zip_longest(binCounts, mappedCentralVals, widths) ]
+	pseudoVolumes = [ abs( mapCentralVal(b) - mapCentralVal(a) ) for a,b in binEdges ] #Volume = V_{outer} - V_{inner}; or the equivalent for lower dimensionalities
+	outGr = [ (count*totalWidthNormFactor) / (numbAtomsFrom*numbAtomsTo*pseudoVolume) for count,pseudoVolume in it.zip_longest(binCounts, pseudoVolumes) ]
 	return outGr
 
 

@@ -46,8 +46,8 @@ class TestPopulateBinsWithRdfBetweenAtomGroups(unittest.TestCase):
 		return tCode._populateBinsWithRdfBetweenAtomGroups(*currArgs, **currKwargs)
 
 	def _loadExpectedValsA(self):
-		expVols = [49.0873852123405, 441.786466911065]
-		expRdfVals = [0,2.26353696841807] #Figured out in excel
+		expVols = [65.4498469497874, 458.148928648512]
+		expRdfVals = [0,2.18269636240314] #Figured out in excel
 
 		expBinObj = copy.deepcopy(self.binResObjA)
 		expBinObj.binVals["counts"] = [0,2]
@@ -112,8 +112,12 @@ class TestAddRdfToBinVals(unittest.TestCase):
 
 	def testExpectedValsA(self):
 		#Calculated in excel; Note the ridic. wide bins make these values sorta silly
-		expVolumes = [25.1327412287183, 226.194671058465]
-		expRdfVals =[19.8943678864869, 5.52621330180192]
+#		expVolumes = [25.1327412287183, 226.194671058465] #Previously calculated assuming <A(r)> = central A(r) [which is pretty wrong for these wide bins]
+#		expRdfVals =[19.8943678864869, 5.52621330180192]
+
+		expVolumes = [33.5103216382911,234.572251468038]
+		expRdfVals = [14.9207759148652, 5.32884854102328]
+
 		expBinVals = copy.deepcopy(self.binRes)
 		expBinVals.binVals["rdf"] = expRdfVals
 		expBinVals.binVals["volume"] = expVolumes

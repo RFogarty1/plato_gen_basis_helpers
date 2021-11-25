@@ -155,6 +155,7 @@ def _addRdfToBinValsForBinsWithCounts(binRes, volTotal, nA, nB, nSteps, countKey
 
 	"""
 
+
 	allBinEdges = binResHelp.getBinEdgePairsFromBinResObj(binRes)
 
 	outVols, outRdf = list(), list()
@@ -164,7 +165,8 @@ def _addRdfToBinValsForBinsWithCounts(binRes, volTotal, nA, nB, nSteps, countKey
 		avCounts = currCounts / nSteps
 		currWidth = currEdges[1]-currEdges[0]
 		currCentre = currEdges[0] + (0.5*currWidth)
-		currVol = 4*math.pi*(currCentre**2)*currWidth
+#		currVol = 4*math.pi*(currCentre**2)*currWidth
+		currVol = abs(  (4/3)*math.pi*( (currEdges[0]**3)-(currEdges[1]**3) ) )
 		currRdf = avCounts*prefactor/currVol
 
 		outVols.append(currVol), outRdf.append(currRdf)
