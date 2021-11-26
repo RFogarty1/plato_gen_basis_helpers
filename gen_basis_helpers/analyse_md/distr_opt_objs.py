@@ -358,13 +358,13 @@ class CountHBondsBetweenGenericGroupsOptions(calcDistrCoreHelp.CalcDistribOption
 		self.maxAngle = maxAngle
 		self._primaryIndices = primaryIndices
 
-		#NOTE: NOT TESTED
-		@property
-		def primaryIndices(self):
-			if self._primaryIndices is None:
-				return [x[0] for x in self.fromNonHyIndices]
-			else:
-				return self._primaryIndices
+	#NOTE: NOT TESTED
+	@property
+	def primaryIndices(self):
+		if self._primaryIndices is None:
+			return [x[0] for x in self.fromNonHyIndices]
+		else:
+			return self._primaryIndices
 
 class CountHBondsBetweenWaterGroupsOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 	""" Options for counting number of hydrogen bonds between groups of water """
