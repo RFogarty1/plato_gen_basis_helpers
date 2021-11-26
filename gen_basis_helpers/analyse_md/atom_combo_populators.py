@@ -448,38 +448,38 @@ class _WaterPlanarDistPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
 		populator.populateMatrices(inpGeom, outDict, 0)
 
+class _CountHBondsBetweenGenericGroupsPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
-
-#Tons of duplication with "_DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator" unfortunately
-class _CountHBondsBetweenGroupsPopulator(atomComboCoreHelp._SparseMatrixPopulator):
-
-	def __init__(self, fromOxyIndices, fromHyIndices, toOxyIndices, toHyIndices, acceptor=True, donor=True, maxOO=3.5):
+	def __init__(self, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, acceptor=True, donor=True, maxOO=3.5):
 		""" Initializer
 		
 		Args:
-			fromOxyIndices: (iter of ints) The oxygen indices for each water molecule
-			fromHyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
-			toOxyIndices: (iter of ints) The oxygen indices for each water molecule
-			toHyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
-			acceptor: (Bool) If True we calculate dists/angles required to count number of groupA acceptors from groupB. Note changing the order of distFilterValues will give the reverse info (groupB acceptors from groupA)
-			donor: (Bool) If True we calculate dists/angles required to count number of groupA donors to groupB. Note changing the order of distFilterValues will give the reverse info (groupB donors to groupA)
-			maxOO: (float) The maximum O-O distance between two hydrogen-bonded water. Angles are only calculated when this criterion is fulfilled
+			fromNonHyIndices: (iter of iter of ints) Each entry corresponds to an iter of indices for non-hydrogen atoms (h-bond acceptor atoms) on each molecule
+			fromHyIndices: (iter of iter of ints) Each entry corresponds to an iter of indices for hydrogen atoms on each molecule
+			toNonHyIndices: (iter of iter of ints) Same as fromNonHyIndices, except for molecules of the second group
+			toHyIndices: (iter of iter of ints) Same as fromHyIndices, except for molecules of the second group
+			acceptor: (Bool) If True we calculate dists/angles required to count number of groupA acceptors from groupB
+			donor: (Bool) If True we calculate dists/angles required to count number of groupA donors to groupB
+			maxOO: (float) The maximum X-X distance between two hydrogen-bonded water. For water X are the oxygen atoms; hence the variable name. Angles are only calculated when this criterion is fulfilled
+			maxAngle: (float) The maximum XA-XD-XD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen
+	 
+		NOTE:
+			Don't have multiple NonHyIndices in one entry unless there are no hyIndices. For example, it would be fine to use both oxygen in CO2, but not for (HO)2-CO since theres no way to know which hydrogen is connected to each oxygen
 
 		"""
-		self.fromOxyIndices = fromOxyIndices
+		self.fromNonHyIndices = fromNonHyIndices
 		self.fromHyIndices = fromHyIndices
-		self.toOxyIndices = toOxyIndices
+		self.toNonHyIndices = toNonHyIndices
 		self.toHyIndices = toHyIndices
 		self.acceptor = acceptor
 		self.donor = donor
 		self.maxOO = maxOO
-
 		self.nanMatrix = False
 
 	@property
 	def maxLevel(self):
 		return 1 #level 0 for dist matrices, level 1 for angle matrix
-	
+
 	def populateMatrices(self, inpGeom, outDict, level):
 		if level==0:
 			self._populateDistMatrices(inpGeom, outDict)
@@ -489,35 +489,33 @@ class _CountHBondsBetweenGroupsPopulator(atomComboCoreHelp._SparseMatrixPopulato
 			pass
 
 	def _populateDistMatrices(self, inpGeom, outDict):
-		level = 0 
-		distPopulator = _DistMatrixPopulator(self.fromOxyIndices, self.toOxyIndices)
+		level = 0
+		populatorFromIndices = [x for x in it.chain(*self.fromNonHyIndices)]
+		populatorToIndices = [x for x in it.chain(*self.toNonHyIndices)]
+ 
+		distPopulator = _DistMatrixPopulator(populatorFromIndices, populatorToIndices)
 		distPopulator.populateMatrices(inpGeom, outDict, level)
 
 	def _populateAngleMatrices(self, inpGeom, outDict):
 		try:
 			unused = outDict["angleMatrix"]
-		except:
+		except KeyError:
 			self._populateAngleMatrixWhenNonePresent(inpGeom, outDict)
 		else:
 			self._populateAngleMatrixWhenSomePresent(inpGeom, outDict)
 
-
 	def _populateAngleMatrixWhenSomePresent(self, inpGeom, outDict):
-
 		useMatrix = outDict["angleMatrix"]
-
-
 		outAngleIndices = self._getFullOutAngleIndicesRequired(inpGeom, outDict)
 
-		#populate the output matrix
+		#Populate output matrix
 		allNewAngles = calcDistsHelp.getInterAtomicAnglesForInpGeom(inpGeom, outAngleIndices)
 
-		for currIdx, currAngle in it.zip_longest(outAngleIndices, allNewAngles):
+		for currIdx,currAngle in it.zip_longest(outAngleIndices, allNewAngles):
 			useMatrix[tuple(currIdx)] = currAngle
 
-
 	def _populateAngleMatrixWhenNonePresent(self, inpGeom, outDict):
-		#Iniitialise the matrix
+		#Initialise the matrix
 		cartCoords = inpGeom.cartCoords
 		outMatrix = np.empty( (len(cartCoords), len(cartCoords), len(cartCoords)) )
 		if self.nanMatrix:
@@ -541,9 +539,11 @@ class _CountHBondsBetweenGroupsPopulator(atomComboCoreHelp._SparseMatrixPopulato
 		distMatrix = outDict["distMatrix"]
 
 		#Get all possible angle indices
-		currArgs = [inpGeom, self.fromOxyIndices, self.toOxyIndices, self.fromHyIndices, self.toHyIndices, self.maxOO, self.acceptor, self.donor, distMatrix]
-		outAngleIndices = _getFullOutAngleIndicesRequired(*currArgs)
+		currArgs = [self.fromNonHyIndices, self.toNonHyIndices, self.fromHyIndices, self.toHyIndices, self.maxOO, self.acceptor, self.donor, distMatrix]
+		outAngleIndices = _getFullOutAngleIndicesRequired_GENERIC(*currArgs)
 		return outAngleIndices
+
+
 
 
 
@@ -670,42 +670,62 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(atomComboCoreHelp
 			currIdx = self.oxyIndices.index(idxB)
 			groupBHyIndices.append( self.hyIndices[currIdx] )
 
-		currArgs = [inpGeom, groupAOxyIndices, groupBOxyIndices, groupAHyIndices, groupBHyIndices, self.maxOO, self.acceptor, self.donor, distMatrix]
-		outAngleIndices = _getFullOutAngleIndicesRequired(*currArgs)
+		currArgs = [ [[x] for x in groupAOxyIndices], [[x] for x in groupBOxyIndices], groupAHyIndices, groupBHyIndices, self.maxOO, self.acceptor, self.donor, distMatrix]
+		outAngleIndices = _getFullOutAngleIndicesRequired_GENERIC(*currArgs)
 
 		return outAngleIndices
 
 
-def _getFullOutAngleIndicesRequired(inpGeom, groupAOxyIndices, groupBOxyIndices, hyIndicesA, hyIndicesB, maxOO, countAcceptor, countDonor, distMatrix):
-	#Filter which oxygens to calculate angles between (based on their separation)
-	outOxyPairs, outHyPairs = list(),list()
-	for listIdxA, idxA in enumerate(groupAOxyIndices):
-		for listIdxB, idxB in enumerate(groupBOxyIndices):
-			if distMatrix[idxA][idxB] < maxOO:
-				outOxyPairs.append( [idxA,idxB] )
-				outHyPairs.append( [ hyIndicesA[listIdxA], hyIndicesB[listIdxB] ] )
+#The GENERIC in caps was originally to differentiate it from a version that worked only for water.
+#Though i removed that so i should probably change name of this one at some point
+def _getFullOutAngleIndicesRequired_GENERIC(groupANonHyIndices, groupBNonHyIndices, hyIndicesA, hyIndicesB, maxOO, countAcceptor, countDonor, distMatrix):
 
-	#Figure out the angles based on donor/acceptors
-	#Note the order of angles is [O_acceptor, O_donor, H_donor]
-	outAngleIndices = list()
-	for hyPair,oxyPair in it.zip_longest(outHyPairs, outOxyPairs):
-			
-		#groupA (the left side one) is the acceptor
-		if countAcceptor:
-			oxyIdxD, oxyIdxA = oxyPair[1], oxyPair[0]
-			hA,hB = hyPair[1]
-			angleA, angleB = [oxyIdxA, oxyIdxD, hA], [oxyIdxA, oxyIdxD, hB]
-			outAngleIndices.append(angleA)
-			outAngleIndices.append(angleB)
 
+	def _getAngleIndicesForSingleGroupABPair(groupANonHy, groupBNonHy, groupAHy, groupBHy):
+		outAngleIndices = list()
+		#1) Do the error checks
+		_checkGenericNonHyAndHyIndicesHaveValidValues(groupANonHy, groupAHy)
+		_checkGenericNonHyAndHyIndicesHaveValidValues(groupBNonHy, groupBHy)
+
+		#2) Figure out what angles we need
 		if countDonor:
-			oxyIdxD, oxyIdxA = oxyPair[0], oxyPair[1]
-			hA, hB = hyPair[0]
-			angleA, angleB = [oxyIdxA, oxyIdxD, hA], [oxyIdxA, oxyIdxD, hB]
-			outAngleIndices.append(angleA)
-			outAngleIndices.append(angleB)
+			donorNonHy, donorHy = groupANonHy, groupAHy
+			donorPairs = [ [nonHy,hy] for nonHy,hy in it.product(donorNonHy,donorHy) ]
+			acceptorNonHy = groupBNonHy
+			for donorPair, acceptor in it.product(donorPairs, acceptorNonHy):
+				currDist = distMatrix[donorPair[0]][acceptor]
+				if currDist < maxOO:
+					outAngleIndices.append( [acceptor] + donorPair ) 
+
+		#Basically same code as directly above...
+		if countAcceptor:
+			donorNonHy, donorHy = groupBNonHy, groupBHy
+			donorPairs = [ [nonHy,hy] for nonHy,hy in it.product(donorNonHy,donorHy) ]
+			acceptorNonHy = groupANonHy
+			for donorPair,acceptor in it.product(donorPairs, acceptorNonHy):
+				currDist = distMatrix[donorPair[0]][acceptor]
+				if currDist < maxOO:
+					outAngleIndices.append( [acceptor] + donorPair )
+
+		return outAngleIndices
+
+
+	#Filter which non-hy to calculate angles between based on their separation
+	outAngleIndices = list()
+	for listIdxA, nonHyIndicesA in enumerate(groupANonHyIndices):
+		for listIdxB, nonHyIndicesB in enumerate(groupBNonHyIndices):
+			currArgs = [nonHyIndicesA, nonHyIndicesB, hyIndicesA[listIdxA], hyIndicesB[listIdxB] ]
+			currAngleIndices = _getAngleIndicesForSingleGroupABPair(*currArgs)
+			outAngleIndices.extend(currAngleIndices)
 
 	return outAngleIndices
+
+
+def _checkGenericNonHyAndHyIndicesHaveValidValues(nonHyIndices, hyIndices):
+	""" Make sure we dont have hyIndices when we have multiple nonHyIndices """
+	lenGroupNonHy, lenGroupHy = len(nonHyIndices), len(hyIndices)
+	if lenGroupNonHy>1 and lenGroupHy>0:
+		raise ValueError("nonHyIndices = {}, hyIndices = {}; cant have ANY hyIndices for >1 nonHyIndices".format(nonHyIndices,hyIndices))
 
 
 def _groupOxyByDistMatrix(distMatrix, oxyIndices, distFilterIndices, distFilterVals):

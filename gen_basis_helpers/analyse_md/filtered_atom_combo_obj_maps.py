@@ -197,10 +197,10 @@ def _(populator, optsObj, toIdxType):
 	populator.hyIndices = optsObj.hyIndices
 
 
-@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._CountHBondsBetweenGroupsPopulator, filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator, filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
 def _(populator, optsObj, toIdxType):
-	populator.fromOxyIndices, populator.FromHyIndices = optsObj.oxyIndices, optsObj.hyIndices
-	populator.toOxyIndices, populator.toHyIndices = optsObj.oxyIndices, optsObj.hyIndices
+	populator.fromNonHyIndices, populator.FromHyIndices = [[x] for x in optsObj.oxyIndices], optsObj.hyIndices
+	populator.toNonHyIndices, populator.toHyIndices = [[x] for x in optsObj.oxyIndices], optsObj.hyIndices
 
 
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )

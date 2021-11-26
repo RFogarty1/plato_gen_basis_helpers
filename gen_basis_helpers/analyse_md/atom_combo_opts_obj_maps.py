@@ -123,9 +123,15 @@ def _(inpObj):
 
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenWaterGroupsOptions)
 def _(inpObj):
-	currArgs = [inpObj.fromOxyIndices, inpObj.fromHyIndices, inpObj.toOxyIndices, inpObj.toHyIndices]
+	currArgs = [ [[x] for x in inpObj.fromOxyIndices ], inpObj.fromHyIndices, [[x] for x in inpObj.toOxyIndices], inpObj.toHyIndices]
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
-	return atomComboPopulatorHelp._CountHBondsBetweenGroupsPopulator(*currArgs, **currKwargs)
+	return atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
+
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenGenericGroupsOptions)
+def _(inpObj):
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
+	return atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
 
 
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.WaterPlanarDistOptions)
@@ -229,11 +235,18 @@ def _(inpObj):
 	return binValGettersHelp._PlanarDistsGetOneDimValsToBin(planeEqn, inpObj.indices)
 
 
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenGenericGroupsOptions)
+def _(inpObj):
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
+	return binValGettersHelp._CountHBondsBetweenGenericGroupsBinValGetter(*currArgs, **currKwargs)
+
+
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenWaterGroupsOptions)
 def _(inpObj):
-	currArgs = [inpObj.fromOxyIndices, inpObj.fromHyIndices, inpObj.toOxyIndices, inpObj.toHyIndices]
+	currArgs = [ [[x] for x in inpObj.fromOxyIndices], inpObj.fromHyIndices, [[x] for x in inpObj.toOxyIndices], inpObj.toHyIndices]
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
-	return binValGettersHelp._CountHBondsBetweenWaterGroupsBinValGetter(*currArgs,**currKwargs)
+	return binValGettersHelp._CountHBondsBetweenGenericGroupsBinValGetter(*currArgs, **currKwargs)
 
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.DiscHBondCounterWithOxyDistFilterOptions)

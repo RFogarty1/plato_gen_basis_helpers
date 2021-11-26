@@ -597,6 +597,101 @@ class TestWaterPlanarDistBinValGetter(unittest.TestCase):
 
 
 
+class TestCountHBondsBetweenGenericGroups(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#Coords: Do CO_2, water and HF combined geometry
+		co2Coords = [  [0,0,0,"O"], [1,0,0,"C"], [2,0,0,"O"] ]
+		waterCoords = [ [3,1,0,"H"],[4,2,0,"O"],[5,1,0,"H"] ] #H-O-H probably 90 degrees here
+		hfCoords = [ [6,0,0,"F"], [7,0,0,"H"] ]
+
+		self.cartCoords = co2Coords + waterCoords + hfCoords
+
+		#From water; to co2 AND hf
+		self.fromNonHyIndices = [ [4] ]
+		self.fromHyIndices = [ [3,5] ]
+		self.toNonHyIndices = [ [0,1,2], [6] ] #CO2 indices, then HF indices
+		self.toHyIndices = [ [] ,[7] ]
+
+		#Options for defining a h-bond; setting to slightly unphysical values to make the test simpler
+		self.maxOO = 3 #O is actually sqrt(8)~2.8 away from the CO2 oxygen and HF Fluorine
+		self.maxAngle = 50
+		self.acceptor, self.donor = True, True
+
+		#Misc
+		self.binResObj = None
+		self.primaryIndices = None
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams,lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Options object
+		currArgs = [self.binResObj, self.fromNonHyIndices, self.fromHyIndices, self.toNonHyIndices, self.toHyIndices]
+		currKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO, "maxAngle":self.maxAngle, "primaryIndices":self.primaryIndices}
+		self.optsObj = distrOptObjHelp.CountHBondsBetweenGenericGroupsOptions(*currArgs, **currKwargs)
+
+#		#Get a sparse matrix populator + populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObj])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseCalculator)
+
+	def testExpectedTotalHBonds_fromWater(self):
+		expVals = [(2,)]
+		actVals = self._runTestFunct()
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testExpectedDonorHBonds_fromWater(self):
+		self.acceptor = False
+		self.createTestObjs()
+
+		expVals = [(2,)]
+		actVals = self._runTestFunct()
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testExpectedAcceptorHBonds_fromWater(self):
+		self.donor = False
+		self.createTestObjs()
+
+		expVals = [(0,)]
+		actVals = self._runTestFunct()
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+
+	def testExpectedTotalHBonds_fromHF(self):
+		#0) Setup
+		self.fromNonHyIndices = [ [6] ]
+		self.fromHyIndices = [ [7] ]
+		self.toNonHyIndices = [ [0,1,2], [4] ] #CO2/water
+		self.toHyIndices = [ [], [3,5] ]
+		self.createTestObjs()
+
+		#1) Run + compare
+		expVals = [(1,)] #It only accepts one h-bond
+		actVals = self._runTestFunct()
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testRaises_twoNonHyPlusHyGroups(self):
+		""" Not suitable for this case, since code doesnt know which H is attached to which nonHyIdx """
+		self.toHyIndices[0] = [4]
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
+
+
 class TestCountHBondsBetweenSpecifiedWaterGroups(unittest.TestCase):
 
 	#Take from the TestDiscHBondCounterBetweenGroupsOxyDistFilter unit tests

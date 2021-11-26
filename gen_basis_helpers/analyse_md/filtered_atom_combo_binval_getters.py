@@ -150,12 +150,12 @@ def _(binValGetter, groupIndices, useGroups, toIdxType=None):
 	binValGetter.toIndices = _getToIndicesForWaterWater(toOxyIndices, toHyIndices, toIdxType)
 
 
-@BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._CountHBondsBetweenWaterGroupsBinValGetter)
+@BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._CountHBondsBetweenGenericGroupsBinValGetter)
 def _(binValGetter, groupIndices, useGroups, toIdxType=None):
 	fromIndices, toIndices = groupIndices[useGroups[0]], groupIndices[useGroups[1]]
-	binValGetter.fromOxyIndices = fromIndices[0]
+	binValGetter.fromNonHyIndices = [[x] for x in fromIndices[0]]
 	binValGetter.fromHyIndices = fromIndices[1]
-	binValGetter.toOxyIndices = toIndices[0]
+	binValGetter.toNonHyIndices = [[x] for x in toIndices[0]]
 	binValGetter.toHyIndices = toIndices[1]
 
 

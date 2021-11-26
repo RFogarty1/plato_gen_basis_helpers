@@ -383,26 +383,27 @@ class _WaterPlanarMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromS
 
 		return outVals
 
-#Lots stolen from "_DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter" inevitably
-class _CountHBondsBetweenWaterGroupsBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
-	def __init__(self, fromOxyIndices, fromHyIndices, toOxyIndices, toHyIndices, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
+
+class _CountHBondsBetweenGenericGroupsBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
 		""" Initializer
 		
 		Args:
-			fromOxyIndices: (iter of ints) The oxygen indices for each water molecule
-			fromHyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
-			toOxyIndices: (iter of ints) The oxygen indices for each water molecule
-			toHyIndices: (iter of len-2 ints) Same length as oxyIndices, but each contains the indices of two hydrogen indices bonded to the relevant oxygen
-			acceptor: (Bool) If True we calculate dists/angles required to count number of groupA acceptors from groupB. Note changing the order of distFilterValues will give the reverse info (groupB acceptors from groupA)
-			donor: (Bool) If True we calculate dists/angles required to count number of groupA donors to groupB. Note changing the order of distFilterValues will give the reverse info (groupB donors to groupA)
-			maxOO: (float) The maximum O-O distance between two hydrogen-bonded water. Angles are only calculated when this criterion is fulfilled
-			maxAngle: (float) The maximum OA-OD-HD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen
+			fromNonHyIndices: (iter of iter of ints) Each entry corresponds to an iter of indices for non-hydrogen atoms (h-bond acceptor atoms) on each molecule
+			fromHyIndices: (iter of iter of ints) Each entry corresponds to an iter of indices for hydrogen atoms on each molecule
+			toNonHyIndices: (iter of iter of ints) Same as fromNonHyIndices, except for molecules of the second group
+			toHyIndices: (iter of iter of ints) Same as fromHyIndices, except for molecules of the second group
+			acceptor: (Bool) If True we calculate dists/angles required to count number of groupA acceptors from groupB
+			donor: (Bool) If True we calculate dists/angles required to count number of groupA donors to groupB
+			maxOO: (float) The maximum X-X distance between two hydrogen-bonded water. For water X are the oxygen atoms; hence the variable name. Angles are only calculated when this criterion is fulfilled
+			maxAngle: (float) The maximum XA-XD-XD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen
 
 		"""
-		self.fromOxyIndices = fromOxyIndices
+		self.fromNonHyIndices = fromNonHyIndices
 		self.fromHyIndices = fromHyIndices
-		self.toOxyIndices = toOxyIndices
+		self.toNonHyIndices = toNonHyIndices
 		self.toHyIndices = toHyIndices
 		self.acceptor = acceptor
 		self.donor = donor
@@ -415,14 +416,13 @@ class _CountHBondsBetweenWaterGroupsBinValGetter(atomComboCoreHelp._GetOneDimVal
 
 		outVals = list()
 		sharedKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO, "maxAngle":self.maxAngle}
-		for oxyIdx,hyIdxPair in it.zip_longest(self.fromOxyIndices, self.fromHyIndices):
-			currArgs = [oxyIdx, hyIdxPair, self.toOxyIndices, self.toHyIndices, distMatrix, angleMatrix]
-			currVal = _getNumberHBondsForOneOxyIdx(*currArgs, **sharedKwargs)		
+		for fromNonHy,fromHy in it.zip_longest(self.fromNonHyIndices, self.fromHyIndices):
+			currArgs = [fromNonHy, fromHy, self.toNonHyIndices, self.toHyIndices, distMatrix, angleMatrix]
+			currVal = _getNumberHBondsForOneGenericFromGroup(*currArgs, **sharedKwargs)
 			outVals.append( currVal )
 
 		return outVals
 
-#def _getNumberHBondsForOneOxyIdx(fromOxyIdx, fromHyIdxPair, toOxyIndices, toHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
 
 
 class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
@@ -483,6 +483,36 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCo
 		currKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO, "maxAngle":self.maxAngle}
 		return _getNumberHBondsForOneOxyIdx(*currArgs, **currKwargs)
 
+
+#Tons of overlap with _getFullOutAngleIndicesRequired_GENERIC in the populators file
+def _getNumberHBondsForOneGenericFromGroup(fromNonHyIndices, fromHyIndices, allToNonHyIndices, allToHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
+	outVal = 0
+
+
+	atomComboPopulatorHelp._checkGenericNonHyAndHyIndicesHaveValidValues(fromNonHyIndices, fromHyIndices)
+	for toNonHyIndices, toHyIndices in it.zip_longest(allToNonHyIndices, allToHyIndices):
+		atomComboPopulatorHelp._checkGenericNonHyAndHyIndicesHaveValidValues(toNonHyIndices, toHyIndices)
+
+		if sorted(fromNonHyIndices) != sorted(toNonHyIndices):
+			if donor:
+				donorPairs = [ [nonHy,hy] for nonHy, hy in it.product(fromNonHyIndices, fromHyIndices) ]
+				for donorPair, acceptor in it.product(donorPairs, toNonHyIndices):
+					currDist = distMatrix[donorPair[0]][acceptor]
+					if currDist < maxOO:
+						currAngle = angleMatrix[acceptor][donorPair[0]][donorPair[1]]
+						if currAngle < maxAngle:
+							outVal += 1
+		
+			if acceptor:
+				donorPairs = [ [nonHy,hy] for nonHy, hy in it.product(toNonHyIndices, toHyIndices) ]
+				for donorPair, acceptor in it.product(donorPairs, fromNonHyIndices):
+					currDist = distMatrix[donorPair[0]][acceptor]
+					if currDist < maxOO:
+						currAngle = angleMatrix[acceptor][donorPair[0]][donorPair[1]]
+						if currAngle < maxAngle:
+							outVal += 1
+
+	return outVal
 
 def _getNumberHBondsForOneOxyIdx(fromOxyIdx, fromHyIdxPair, toOxyIndices, toHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
 	

@@ -324,6 +324,48 @@ class WaterPlanarDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase, _WaterOpt
 		return True
 
 
+class CountHBondsBetweenGenericGroupsOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
+	""" Options to count the number of hydrogen bonds between groups """
+
+	def __init__(self, binResObj, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, acceptor=True, donor=True, maxOO=3.5, maxAngle=35, primaryIndices=None):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			fromNonHyIndices: (iter of iter of ints) Each entry corresponds to an iter of indices for non-hydrogen atoms (h-bond acceptor atoms) on each molecule
+			fromHyIndices: (iter of iter of ints) Each entry corresponds to an iter of indices for hydrogen atoms on each molecule
+			toNonHyIndices: (iter of iter of ints) Same as fromNonHyIndices, except for molecules of the second group
+			toHyIndices: (iter of iter of ints) Same as fromHyIndices, except for molecules of the second group
+			acceptor: (Bool) If True we calculate dists/angles required to count number of groupA acceptors from groupB
+			donor: (Bool) If True we calculate dists/angles required to count number of groupA donors to groupB
+			maxOO: (float) The maximum X-X distance between two hydrogen-bonded water. For water X are the oxygen atoms; hence the variable name. Angles are only calculated when this criterion is fulfilled. NOTE: Should probably be changed almost always for non-water/hydroxyl cases
+			maxAngle: (float) The maximum XA-XD-HD angle for a hydrogen bond; XA = acceptor non-hy, XD=Donor non-hy, HD=donor hydrogen
+			primaryIndices: (iter of ints) Indices of atoms to associate these numbers with. Needed to slot into certain combined distributions. Default is to take [x[0] for x in self.fromNonHyIndices] (for water, this would be equivalent to taking the oxygen atom indices)
+
+		NOTE:
+			Don't have multiple NonHyIndices in one entry unless there are no hyIndices. For example, it would be fine to use both oxygen in CO2, but not for (HO)2-CO since theres no way to know which hydrogen is connected to each oxygen
+	 
+		"""
+		self.distribKey = "nHbonds"
+		self.binResObj = binResObj
+		self.fromNonHyIndices = fromNonHyIndices
+		self.fromHyIndices = fromHyIndices
+		self.toNonHyIndices = toNonHyIndices
+		self.toHyIndices = toHyIndices
+		self.acceptor = acceptor
+		self.donor = donor
+		self.maxOO = maxOO
+		self.maxAngle = maxAngle
+		self._primaryIndices = primaryIndices
+
+		#NOTE: NOT TESTED
+		@property
+		def primaryIndices(self):
+			if self._primaryIndices is None:
+				return [x[0] for x in self.fromNonHyIndices]
+			else:
+				return self._primaryIndices
+
 class CountHBondsBetweenWaterGroupsOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 	""" Options for counting number of hydrogen bonds between groups of water """
 
