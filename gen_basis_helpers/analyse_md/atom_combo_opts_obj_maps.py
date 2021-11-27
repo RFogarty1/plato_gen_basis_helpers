@@ -200,6 +200,12 @@ def _(inpObj):
 	fromIndices, toIndices = inpObj.atomIndices, inpObj.distFilterIndices
 	return atomComboPopulatorHelp._DistMatrixPopulator(fromIndices, toIndices)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple)
+def _(inpObj):
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":True, "donor":True, "maxOO":inpObj.maxOOHBond}
+	return atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
+
 
 
 #Registration of standard binners below
@@ -317,6 +323,21 @@ def _(inpObj):
 		currObj = classBinvalGetterHelp._AdsorbedWaterCountTypeWithAdsSiteHozDistsBinvalGetter(*currArgs)
 		outObjs.append(currObj)
 	return outObjs
+
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple)
+def _(inpObj):
+	outObjs = list()
+	for idx,unused in enumerate(inpObj.nDonorFilterRanges):
+		currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices,
+		            inpObj.nDonorFilterRanges[idx], inpObj.nAcceptorFilterRanges[idx], 
+		            inpObj.nTotalFilterRanges[idx], inpObj.maxOOHBond, inpObj.maxAngleHBond]
+		currObj = classBinvalGetterHelp._GenericCountTypesBasedOnNumberHBondsToGroup(*currArgs)
+		outObjs.append(currObj)
+
+	return outObjs
+
+
+
 
 #Utility functions
 def _getDefaultPlaneEquation():

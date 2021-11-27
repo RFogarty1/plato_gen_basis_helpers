@@ -171,6 +171,7 @@ class WaterCountTypesMinDistAndHBondSimpleOpts():
 
 
 
+
 class WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj(WaterCountTypesMinDistAndHBondSimpleOpts):
 	""" This is an options object specifically for finding certain types of adsorbed water; based on the horizontal distances betwee the atoms which they are adsorbed on. Its actually mostly inherited from WaterCountTypesMinDistAndHBondSimpleOpts though """
 
@@ -245,6 +246,90 @@ class WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj(Wate
 		              "maxOOHBond": maxOOHBond, "maxAngleHBond": maxAngleHBond, "checkInputConsistent": checkInputConsistent}
 
 		return cls(*currArgs, **currKwargs)
+
+
+
+
+class ClassifyBasedOnHBondingToGroup_simple():
+	""" Class designed to classify moleculeses (e.g. water/hydroxyl) based on the number of hydrogen bonds they have to a static group. 
+
+	Original purpose was to classify water based on number of h-bonds to hydroxyl and vice-versa
+	"""
+
+	def __init__(self, binResObjs, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, nDonorFilterRanges=None, nAcceptorFilterRanges=None, nTotalFilterRanges=None,
+	             maxOOHBond=3.5, maxAngleHBond=35, checkInputConsistent=True):
+		""" Initializer
+		
+		Args:
+			binResObjs: (iter of BinnedResultsStandard objects) One bin for each type of water you want to count (determined by the "Ranges" parameters)
+			fromNonHyIndices: (iter of iter of ints) The non-hydrogen indices of each molecule we're filtering
+			fromHyIndices: (iter of iter of ints) Same length as nonHyFromIndices, but contain the relevant hydrogen indices
+			toNonHyIndices: (iter of iter of ints) The non-hydrogen indices for all molecules we're counting hydrogen bonds TO (e.g could be hydroxyl molecules if we're filtering for water molecules with h-bonds TO hydroxyls)
+			toHyIndices: (iter of iter of ints) The hydrogen indices for all molecules we're counting hydrogen bonds TO
+			nDonorFilterRanges: (iter of len-2 float iters) Each contains [minNDonor, maxNDonor] for a molecule.
+			nAcceptorFilterRanges: (iter of len-2 float iters) Each contains [minNAcceptor, maxNAcceptor] for a molecule. Setting them to floats just below/above thresholds is sensible (e.g. [-0.1,2.1] for between 0 and two acceptors)
+			nTotalFilterRanges: (iter of len-2 float iters) Each contains [minNTotal,maxNTotal] for a molecule
+			maxOOHBond: (float) The maximum O-O distance between two hydrogen-bonded water. Angles are only calculated when this criterion is fulfilled
+			maxAngleHBond: (float) The maximum OA-OD-HD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen [NOTE: Just replace OA and OD with relevant other atoms for non-water)
+			checkInputConsistent: (Bool) If True, run some checks at initialization to check n-dimensions consistent between the "Ranges" attributes
+
+		Notes:
+			a) For [minX,maxX] ranges we define as minX<=x<maxX
+			b) nDonor/nAcceptor/nTotal filter ranges default to [-1,100] which should ALWAYS include every molecule.
+
+		Raises:
+			ValueError:
+
+		"""
+
+		self.binResObjs = binResObjs
+		self.fromNonHyIndices = fromNonHyIndices
+		self.fromHyIndices = fromHyIndices
+		self.toNonHyIndices = toNonHyIndices
+		self.toHyIndices = toHyIndices
+		self.nDonorFilterRanges = nDonorFilterRanges
+		self.nAcceptorFilterRanges = nAcceptorFilterRanges
+		self.nTotalFilterRanges = nTotalFilterRanges
+		self.maxOOHBond = maxOOHBond
+		self.maxAngleHBond = maxAngleHBond
+
+
+		#Hidden parts for setting defaults/figuring out lengths
+		#Note: Convert these into lists in the function as needed; tuples are safer here (to two dist-ranges dont share the same mem-address)
+		self._defRangeVals = {"nDonorFilterRanges":(-1,1000), "nAcceptorFilterRanges":(-1,1000), "nTotalFilterRanges":(-1,1000)}
+		self._rangeAttrs = ["nDonorFilterRanges", "nAcceptorFilterRanges", "nTotalFilterRanges"] #Need to check all same length so....
+
+		#Various cleanup:
+		self._populateDefaultRanges()
+		if checkInputConsistent:
+			self._checkInputConsistent()
+
+
+	def _populateDefaultRanges(self):
+		#Figure out number of dimensions
+		rangeVals = [getattr(self,attr) for attr in self._rangeAttrs]
+		if all([x is None for x in rangeVals]):
+			raise ValueError("Must set at least one of the filter ranges")
+		else:
+			rangeVals = [x for x in rangeVals if x is not None]
+			assert all([len(x)==len(rangeVals[0]) for x in rangeVals])
+			nDims = rangeVals[0]
+
+		#Set values
+		for attr in self._defRangeVals.keys():
+			if getattr(self, attr) is None:
+				currVal = self._defRangeVals[attr]
+				setattr(self, attr, [ list(currVal) for x in range(nDims)] )
+
+	def _checkInputConsistent(self):
+		relLengths = [len(getattr(self,attr)) for attr in self._rangeAttrs]
+		if any([x>relLengths[0] for x in relLengths]):
+			raise ValueError("Inconsistent lengths in relLengths")
+
+
+
+
+
 
 
 

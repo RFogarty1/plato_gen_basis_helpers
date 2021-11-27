@@ -263,10 +263,79 @@ class _WaterClassifierMinDistHBondsAndAdsSiteHozDists(_WaterClassifierBase):
 		return outOxyIndices, outHyIndices
 
 
+class _GenericNonHyAndHyClassiferUsingHBondsToGroup_simple(ClassifierBase):
+
+	def __init__(self, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, nDonorFilterRange,
+	             nAcceptorFilterRange, nTotalFilterRange, maxOOHBond, maxAngleHBond, execCount=0):
+		""" Initializer
+
+			fromNonHyIndices: (iter of iter of ints) The non-hydrogen indices of each molecule we're filtering
+			fromHyIndices: (iter of iter of ints) Same length as nonHyFromIndices, but contain the relevant hydrogen indices
+			toNonHyIndices: (iter of iter of ints) The non-hydrogen indices for all molecules we're counting hydrogen bonds TO (e.g could be hydroxyl molecules if we're filtering for water molecules with h-bonds TO hydroxyls)
+			toHyIndices: (iter of iter of ints) The hydrogen indices for all molecules we're counting hydrogen bonds TO
+			nDonorFilterRanges: (iter of len-2 float iters) Each contains [minNDonor, maxNDonor] for a molecule.
+			nAcceptorFilterRanges: (iter of len-2 float iters) Each contains [minNAcceptor, maxNAcceptor] for a molecule. Setting them to floats just below/above thresholds is sensible (e.g. [-0.1,2.1] for between 0 and two acceptors)
+			nTotalFilterRanges: (iter of len-2 float iters) Each contains [minNTotal,maxNTotal] for a molecule
+			maxOOHBond: (float) The maximum O-O distance between two hydrogen-bonded water. Angles are only calculated when this criterion is fulfilled
+			maxAngleHBond: (float) The maximum OA-OD-HD angle for a hydrogen bond; OA = acceptor oxygen, OD=Donor oxygen, HD=donor hydrogen [NOTE: Just replace OA and OD with relevant other atoms for non-water)
+			execCount: (int) Used to track how many times .classify is called; used as a safety check when using "byReference" classifiers
+
+		"""
+		self.fromNonHyIndices = fromNonHyIndices
+		self.fromHyIndices = fromHyIndices
+		self.toNonHyIndices = toNonHyIndices
+		self.toHyIndices = toHyIndices
+		self.nDonorFilterRange = nDonorFilterRange
+		self.nAcceptorFilterRange = nAcceptorFilterRange
+		self.nTotalFilterRange = nTotalFilterRange
+		self.maxOOHBond = maxOOHBond
+		self.maxAngleHBond = maxAngleHBond
+		self.execCount = execCount
 
 
+	#Stolen largely from _WaterClassifierMinDistAndNumberHBonds
+	def classify(self, sparseMatrixCalculator):
+		#Step 0) Create binner objects to get the values we need for classification
+		multiDimBinner = self._getRelevantMultiDimBinner()
+
+		#Step 1): Get all the actual values of everything we filter by
+		relValsAll = multiDimBinner.getValsToBin(sparseMatrixCalculator)
+
+		#Step 2) Get the indices of each that are in one group
+		outNonHyIndices = list()
+		outHyIndices = list()
+
+		for groupIdx, (nDonor, nAcceptor, nTotal) in enumerate(relValsAll):
+			if (self.nDonorFilterRange[0]<=nDonor) and (nDonor<self.nDonorFilterRange[1]):
+				if (self.nAcceptorFilterRange[0]<=nAcceptor) and (nAcceptor<self.nAcceptorFilterRange[1]):
+					if (self.nTotalFilterRange[0]<=nTotal) and (nTotal<self.nTotalFilterRange[1]):
+						outNonHyIndices.append( self.fromNonHyIndices[groupIdx] )
+						outHyIndices.append( self.fromHyIndices[groupIdx] )
+
+		#Step 3- Random admin/cleanup
+		self.execCount += 1
+		self.storedClassifyResult = (outNonHyIndices,outHyIndices)
+
+		return outNonHyIndices, outHyIndices
 
 
+	#Stolen mostly from _WaterClassifierMinDistAndNumberHBonds
+	def _getRelevantMultiDimBinner(self):
+		sharedArgs = [self.fromNonHyIndices, self.fromHyIndices, self.toNonHyIndices, self.toHyIndices]
 
+		#1) N-donor binner
+		currKwargs = {"acceptor":False, "donor":True, "maxOO":self.maxOOHBond, "maxAngle":self.maxAngleHBond}
+		nDonorBinner = atomComboBinvalGetterHelp._CountHBondsBetweenGenericGroupsBinValGetter(*sharedArgs, **currKwargs)
 
+		#2) N-acceptor binner
+		currKwargs = {"acceptor":True, "donor":False, "maxOO":self.maxOOHBond, "maxAngle":self.maxAngleHBond}
+		nAcceptorBinner = atomComboBinvalGetterHelp._CountHBondsBetweenGenericGroupsBinValGetter(*sharedArgs, **currKwargs)
+
+		#3) N-Total binner
+		currKwargs = {"acceptor":True, "donor":True, "maxOO":self.maxOOHBond, "maxAngle":self.maxAngleHBond}
+		nTotalBinner = atomComboBinvalGetterHelp._CountHBondsBetweenGenericGroupsBinValGetter(*sharedArgs, **currKwargs)
+
+		outBinner = atomComboCoreHelp._GetMultiDimValsToBinFromSparseMatrices([nDonorBinner, nAcceptorBinner, nTotalBinner])
+
+		return outBinner
 

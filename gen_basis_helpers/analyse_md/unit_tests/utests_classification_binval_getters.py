@@ -203,4 +203,72 @@ class TestWaterCountTypesMinDistAndHBond(unittest.TestCase):
 		self.assertEqual(expBinVals,actBinVals)
 
 
+class TestClassifyByHBondsToGenericGroup(unittest.TestCase):
+
+	def setUp(self):
+		#The geometry(left OH donates 1-hbond to water; right OH accepts 1)
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		self.hydroxylA = [ [0,0,0,"O"], [1,0,0,"H"] ]
+		self.waterA = [ [2,1,0,"O"], [3,0,0,"H"], [3,2,0,"H"] ]
+		self.hydroxylB = [ [4,0,0,"O"], [5,0,0,"H"] ]
+		self.cartCoords = self.hydroxylA + self.waterA + self.hydroxylB
+
+		#Options for classifier
+		self.binResObjs = [None,None] #Irrelevent to these tests so....
+		self.nonHyFromIndices = [ [2] ] #Water
+		self.hyFromIndices = [ [3,4] ]
+		self.nonHyToIndices = [ [0], [5] ]
+		self.hyToIndices = [ [1], [6] ]
+		self.maxOOHBond = 4 #Mainly the angle thats important in this geometry
+		self.maxAngleHBond = 45
+
+		#Filter options for classifier
+		self.nDonorFilterRanges = [ [0.5,1.5], [-0.5,0.5] ]
+		self.nAcceptorFilterRanges = [ [0.5,1.5], [-0.5,2.5] ]
+		self.nTotalFilterRanges = [ [0.5,4.5], [0.5,4.5] ] #Basically unused
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create an options object
+		currArgs = [self.binResObjs, self.nonHyFromIndices, self.hyFromIndices, self.nonHyToIndices, self.hyToIndices]
+		currKwargs = {"nDonorFilterRanges":self.nDonorFilterRanges, "nAcceptorFilterRanges":self.nAcceptorFilterRanges,
+		              "nTotalFilterRanges":self.nTotalFilterRanges, "maxOOHBond":self.maxOOHBond, "maxAngleHBond":self.maxAngleHBond}
+
+		self.optObj = classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+		#Get sparse matrix populator + populate it
+		self.sparseMatrixCalculator = optObjMaps.getSparseMatrixCalculatorFromOptsObjIter([self.optObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binner object
+		self.testObj = optObjMaps.getMultiDimBinValGetterFromOptsObjs([self.optObj])
+
+	def testExpectedCaseA_filterWater(self):
+		expBinVals = [ (1,0) ] #The water molecule goes into the first bin since it donates/accepts 1 hbond from our group
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals,actBinVals)
+
+	def testExpectedCaseB_filterHydroxylA(self):
+		#Sort options
+		self.nonHyFromIndices = [ [0], [5] ]
+		self.hyFromIndices = [ [1], [6] ]
+		self.nonHyToIndices = [ [2] ]
+		self.hyToIndices = [ [3,4] ]
+
+		#
+		self.nDonorFilterRanges = [ [0.5,1.5], [-0.5,0.5] ] #[1 donor, 0 donor] 
+		self.nAcceptorFilterRanges = [ [-0.5,0.5], [-0.5,2.5] ] # [0 acceptor, 0/1/2 acceptor] 
+		self.nTotalFilterRanges = [ [-0.5,4.5], [-0.5,4.5] ] #Basically unused
+		self.createTestObjs()
+
+		#Run + test
+		expBinVals = [ (1,1) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
 

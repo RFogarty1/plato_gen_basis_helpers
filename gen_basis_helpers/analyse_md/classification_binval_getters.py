@@ -117,3 +117,15 @@ class _AdsorbedWaterCountTypeWithAdsSiteHozDistsBinvalGetter(atomComboCoreHelp._
 		oxyIndices,hyIndices = self.classify(sparseMatrixCalculator)
 		return [len(oxyIndices)]
 
+
+#Inherit interface from "_GetOneDimValsToBinFromSparseMatricesBase" and behaviour from "_GenericNonHyAndHyClassiferUsingHBondsToGroup_simple"
+class _GenericCountTypesBasedOnNumberHBondsToGroup(classifierObjHelp._GenericNonHyAndHyClassiferUsingHBondsToGroup_simple, atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+	pass
+
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		nonHyIndices,hyIndices = self.classify(sparseMatrixCalculator)
+
+		return [len(nonHyIndices)]
+
+
