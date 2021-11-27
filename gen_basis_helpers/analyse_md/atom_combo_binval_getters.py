@@ -488,7 +488,6 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCo
 def _getNumberHBondsForOneGenericFromGroup(fromNonHyIndices, fromHyIndices, allToNonHyIndices, allToHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
 	outVal = 0
 
-
 	atomComboPopulatorHelp._checkGenericNonHyAndHyIndicesHaveValidValues(fromNonHyIndices, fromHyIndices)
 	for toNonHyIndices, toHyIndices in it.zip_longest(allToNonHyIndices, allToHyIndices):
 		atomComboPopulatorHelp._checkGenericNonHyAndHyIndicesHaveValidValues(toNonHyIndices, toHyIndices)
@@ -496,19 +495,19 @@ def _getNumberHBondsForOneGenericFromGroup(fromNonHyIndices, fromHyIndices, allT
 		if sorted(fromNonHyIndices) != sorted(toNonHyIndices):
 			if donor:
 				donorPairs = [ [nonHy,hy] for nonHy, hy in it.product(fromNonHyIndices, fromHyIndices) ]
-				for donorPair, acceptor in it.product(donorPairs, toNonHyIndices):
-					currDist = distMatrix[donorPair[0]][acceptor]
+				for donorPair, acceptorIdx in it.product(donorPairs, toNonHyIndices):
+					currDist = distMatrix[donorPair[0]][acceptorIdx]
 					if currDist < maxOO:
-						currAngle = angleMatrix[acceptor][donorPair[0]][donorPair[1]]
+						currAngle = angleMatrix[acceptorIdx][donorPair[0]][donorPair[1]]
 						if currAngle < maxAngle:
 							outVal += 1
 		
 			if acceptor:
 				donorPairs = [ [nonHy,hy] for nonHy, hy in it.product(toNonHyIndices, toHyIndices) ]
-				for donorPair, acceptor in it.product(donorPairs, fromNonHyIndices):
-					currDist = distMatrix[donorPair[0]][acceptor]
+				for donorPair, acceptorIdx in it.product(donorPairs, fromNonHyIndices):
+					currDist = distMatrix[donorPair[0]][acceptorIdx]
 					if currDist < maxOO:
-						currAngle = angleMatrix[acceptor][donorPair[0]][donorPair[1]]
+						currAngle = angleMatrix[acceptorIdx][donorPair[0]][donorPair[1]]
 						if currAngle < maxAngle:
 							outVal += 1
 
