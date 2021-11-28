@@ -313,7 +313,7 @@ class ClassifyBasedOnHBondingToGroup_simple():
 		else:
 			rangeVals = [x for x in rangeVals if x is not None]
 			assert all([len(x)==len(rangeVals[0]) for x in rangeVals])
-			nDims = rangeVals[0]
+			nDims = len(rangeVals[0])
 
 		#Set values
 		for attr in self._defRangeVals.keys():
