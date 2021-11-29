@@ -79,3 +79,47 @@ class WaterToWaterFilteredAtomComboOptsObjGeneric():
 	def binResObj(self):
 		return [x.binResObj for x in self.distrOpts]
 
+#TODO: useGroups = [ [0] ] for something like rdf should probably calculate it to a set of fixed indices, whereas useGroups = [ [0,1] ] should calcualte between classified groups
+#TODO: Probably want a separate class for dealing with dynamic "to" indices? Or maybe i 
+#TODO: Should likely merge the "WaterToWaterFilteredAtomComboOptsObjGeneric" with this in future; at least make use the same backends
+class GenericNonHyAndHyFilteredOptsObj_simple():
+	""" Class used to specify optiosn for how to calculate distributions between dynamically assigned groups of molecules, where classsification returns non-hydrogen/hydrogen atom indices separately (generally the case when counting h-bonds or similar)
+
+	"""
+
+	def __init__(self, fromNonHyIndices, fromHyIndices, classificationOpts, distrOpts, useGroups, useNonHyIdx=True, useIdxEach=0):
+		""" Initializer
+		
+		Args:
+			fromNonHyIndices: (iter of int-iters) Each is the non-hydrogen indices from one group (e.g. may be [ [0] ] for a single water)
+			fromHyIndices: (iter of int-iters) Each is hydrogen indices for one group (e.g. may be [ [1,2] ] for a single water)
+			classificationOpts: (Options object for classification) This contains options for how we classify the indices into N-groups. Should lead to something that 
+			distrOpts: (iter of CalcDistribOptionsBase) Each defines a distribution we want calculated using filtered list of oxyIndices
+			useGroups: (iter of int-iters) Groups to calculate between. The group indices are determined by "classificationOpts". E.g. [ [0,1], [0] ] Would indicate to calculate distribution between groups [0,1] for distrOpts[0] and for group 0 for distrOpts[1]
+			useNonHyIdx: (Bool) If True we represent our group with one of the non-hydrogen indices (if false we use a hydrogen index)
+			useIdxEach: (Int) The index to use in the list of hy/nonHyIndices.
+
+		"""
+		self.fromNonHyIndices = fromNonHyIndices
+		self.fromHyIndices = fromHyIndices
+		self.classificationOpts = classificationOpts
+		self.distrOpts = distrOpts
+		self.useGroups = useGroups
+		self.useNonHyIdx = useNonHyIdx
+		self.useIdxEach = useIdxEach
+
+
+	@property
+	def primaryIndices(self):
+		if self.useNonHyIdx:
+			outVals = [x[self.useIdxEach]  for x in self.fromNonHyIndices]
+		else:
+			outVals = [x[self.useIdxEach] for x in self.fromHyIndices]
+
+		return outVals
+
+	#Used to match the interface of FilteredAtomComboOptsObjGeneric as close as possible (lets me resue some other functions)
+	@property
+	def atomIndices(self):
+		return self.primaryIndices
+

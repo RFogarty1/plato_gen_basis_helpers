@@ -59,6 +59,18 @@ def _(inpObj):
 	return classifiers
 
 
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple)
+def _(inpObj):
+	classifiers = list()
+	for idx, unused in enumerate(inpObj.nDonorFilterRanges):
+		currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices,
+		            inpObj.nDonorFilterRanges[idx], inpObj.nAcceptorFilterRanges[idx],
+		            inpObj.nTotalFilterRanges[idx], inpObj.maxOOHBond, inpObj.maxAngleHBond]
+		currObj = classifierObjHelp._GenericNonHyAndHyClassiferUsingHBondsToGroup_simple(*currArgs)
+		classifiers.append( currObj )
+	return classifiers
+
+
 @atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric)
 def _(inpObj):
 	distrOptsPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(optObj) for optObj in inpObj.distrOpts]
@@ -94,6 +106,23 @@ def _(inpObj):
 
 	return outPopulator
 
+#NOTE: Same as for "FilteredAtomComboOptsObjGeneric" initially; put separately still though
+@atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple)
+def _(inpObj):
+	distrOptsPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(optObj) for optObj in inpObj.distrOpts]
+	classifierPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(inpObj.classificationOpts)]
+
+	#Want to ensure the indices on populators match that of the primaryIndices for what we're filtering
+	#Probably a similar problem for the classifier populators too actually but....
+	for populator in distrOptsPopulators: 
+		_MOD_POPULATOR_BASED_ON_TYPE_DICT[type(populator), type(inpObj)](populator,inpObj)
+
+	#Combine individual into a composite
+	outPopulator = coreComboHelp._SparseMatrixPopulatorComposite( distrOptsPopulators + classifierPopulators )
+
+	return outPopulator
+
+
 #Note 1: The binval getters are only really partially created at this stage; they are modified each step to take into account which
 #group each atom belongs to
 #Note 2: In future we may need a proper interface to map to the classifier; but for now this implementation
@@ -124,16 +153,55 @@ def _(inpObj):
 	return outObjs
 
 
+
+#Only the "GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple" line differs from the atomic case
+@atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple)
+def _(inpObj):
+
+	_checkGroupIndicesConsistent(inpObj)
+
+	#1) Get individual classifier objects
+	try:
+		classificationObjs = inpObj.classificationObjs
+	except AttributeError:
+		classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
+	else:
+		if inpObj.classificationObjs is not None:
+			classifiers = inpObj.classificationObjs
+		else:
+			classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
+
+	#2) Get the binval getters with default arguments
+	binValGetters = [atomComboOptObjMaps.getOneDimBinValGetterFromOptsObj(optObj) for optObj in inpObj.distrOpts]
+
+	#3) Create the actual objects (need 1 binval getter per property)
+	#Note: We only use the actual classifiers for the first case and refernce for the others; since there all the same
+	outObjs = list()
+	useClassifiers = [classifiers] + [classifierObjHelp.getByReferenceClassifiers(classifiers) for x in range(1,len(binValGetters))]
+
+	for binValGetter, useGroup, currClassifiers in it.zip_longest(binValGetters, inpObj.useGroups, useClassifiers):
+		currArgs = [ currClassifiers, binValGetter, useGroup ]
+		currKwargs = {"useNonHyIdx":inpObj.useNonHyIdx, "useIdxEach":inpObj.useIdxEach}
+		outObjs.append( filteredAtomBinvalGetterHelp.GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple(*currArgs,**currKwargs) )
+
+	return outObjs
+
+
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric)
 def _(inpObj):
 
 	_checkGroupIndicesConsistent(inpObj)
 
 	#1) Get individual classifier objects
-	if inpObj.classificationObjs is not None:
-		classifiers = inpObj.classificationObjs
-	else:
+	try:
+		classificationObjs = inpObj.classificationObjs
+	except AttributeError:
 		classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
+	else:
+		if inpObj.classificationObjs is not None:
+			classifiers = inpObj.classificationObjs
+		else:
+			classifiers = getClassifiersFromOptsObj(inpObj.classificationOpts)
 
 	#2) Get the binval getters with default arguments
 	binValGetters = [atomComboOptObjMaps.getOneDimBinValGetterFromOptsObj(optObj) for optObj in inpObj.distrOpts]
@@ -209,6 +277,7 @@ def _(populator, optsObj):
 	populator.fromIndices = optsObj.atomIndices
 	populator.toIndices = optsObj.atomIndices
 
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._PlanarDistMatrixPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._PlanarDistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
 def _(populator, optsObj):
 	populator.indices = optsObj.atomIndices

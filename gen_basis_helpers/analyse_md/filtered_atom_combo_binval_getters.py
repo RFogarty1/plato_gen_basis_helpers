@@ -9,9 +9,11 @@ from ..shared import register_key_decorator as regKeyDecoHelp
 
 _BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_DICT = dict()
 _BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_DICT = dict()
+_BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_DICT = dict()
 
 BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_DICT)
 BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_DICT)
+BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_DICT)
 
 
 def _modBinvalGetterWithFilterIndicesAtomAtomDict(binValGetter, groupIndices, useGroups,**kwargs):
@@ -22,7 +24,8 @@ def _modBinvalGetterWithFilterIndicesAtomAtomDict(binValGetter, groupIndices, us
 def _modBinvalGetterWithFilterIndicesWaterWaterDict(binValGetter, groupIndices, useGroups, **kwargs):
 	_BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_DICT[type(binValGetter)](binValGetter, groupIndices, useGroups, **kwargs)
 	
-
+def _modBinvalGetterWithFilterIndicesNonHyAndHyGenericDict(binvalGetter, groupIndices, useGroups, **kwargs):
+	_BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_DICT[type(binvalGetter)](binvalGetter, groupIndices, useGroups, **kwargs)
 
 
 class FilteredAtomComboBinvalGetterGeneric(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
@@ -82,6 +85,41 @@ class WaterToWaterFilteredAtomComboBinvalGetterGeneric(atomComboCoreHelp._GetOne
 
 		return outVals
 
+#TODO: I should probably make the water-water use the same code in the backend really 
+class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, nonHyAndHyClassifiers, binValGetter, useGroups, useNonHyIdx=True, useIdxEach=0):
+		""" Initializer
+		
+		Args:
+			nonHyAndHyClassifiers: (iter of ClassifierBase objects) The classify method should return two lists of indices for each group; with the first containing non-hydrogen indices (usually only one) and the second containing hydrogen indices. Likely will only ever use "_GenericNonHyAndHyClassiferUsingHBondsToGroup_simple"
+			binValGetter: (_GetOneDimValsToBinFromSparseMatricesBase object)
+			useGroups: (len-x iter) Each element represents a group to use. Generally expecing len-1 or len-2 at most
+			useNonHyIdx: (Bool) If True we represent our group with one of the non-hydrogen indices (if false we use a hydrogen index)
+			useIdxEach: (int) The index to use in the list of hy/nonHyIndices
+ 
+		"""
+		self.nonHyAndHyClassifiers = nonHyAndHyClassifiers
+		self.binValGetter = binValGetter
+		self.useGroups = useGroups
+		self.useNonHyIdx = useNonHyIdx
+		self.useIdxEach = useIdxEach
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		#1) Get groups
+		groupIndices = [x.classify(sparseMatrixCalculator) for x in self.nonHyAndHyClassifiers]
+
+		#2) Modify the binval getter with the relevant group indices
+		currKwargs = {"useNonHyIdx":self.useNonHyIdx, "useIdxEach":self.useIdxEach}
+		_modBinvalGetterWithFilterIndicesNonHyAndHyGenericDict(self.binValGetter, groupIndices, self.useGroups, useNonHyIdx=self.useNonHyIdx, useIdxEach=self.useIdxEach)
+
+		#3) Get values using the modified getter
+		outVals = self.binValGetter.getValsToBin(sparseMatrixCalculator)
+
+#		import pdb
+#		pdb.set_trace()
+
+		return outVals
 
 #Modification for atom-atom case
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._RadialDistsGetValsToBin)
@@ -104,6 +142,20 @@ def _(binValGetter, groupIndices, useGroups):
 def _(binValGetter, groupIndices, useGroups):
 	indices = groupIndices[useGroups[0]]
 	binValGetter.planeDistIndices = indices
+
+
+#Modification function for the generic nonhy-hy case
+#TODO: Need to use len(groupIndices) to decide whether to modify the "toIndices" for things like an rdf
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._PlanarDistsGetOneDimValsToBin)
+def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
+	indices = groupIndices[useGroups[0]]
+	useIndices = _getAtomicIndicesForNonHyToHyGeneric(indices, useNonHyIdx, useIdxEach)
+	binvalGetter.planeDistIndices = useIndices
+
+def _getAtomicIndicesForNonHyToHyGeneric(inpIndices, useNonHyIdx, useIdxEach):
+	typeIdx = 0 if useNonHyIdx else 1
+	outIndices = [ inpVals[useIdxEach] for inpVals in inpIndices[typeIdx] ]
+	return outIndices
 
 
 #Modification functions for water-water case

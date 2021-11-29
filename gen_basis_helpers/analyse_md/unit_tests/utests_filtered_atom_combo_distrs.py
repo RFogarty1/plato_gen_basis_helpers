@@ -12,6 +12,8 @@ import gen_basis_helpers.analyse_md.filtered_atom_combo_obj_maps as filteredAtom
 import gen_basis_helpers.analyse_md.atom_combo_opts_obj_maps as optsObjMapHelp
 import gen_basis_helpers.analyse_md.classifier_objs as classifierObjsHelp
 
+import gen_basis_helpers.shared.plane_equations as planeEqnHelp
+
 
 class TestGetBinValsAtomFilteredVariousDistribs(unittest.TestCase):
 
@@ -923,5 +925,85 @@ class TestGetBinvalsWaterWaterFilteredVariousDistribs(unittest.TestCase):
 		#Run + check expected/actual are equal
 		for expIter, actIter in it.zip_longest(expVals, actVals):
 			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter, actIter)]
+
+
+class TestGenericNonHyAndHyFilteredAtomComboDistribs(unittest.TestCase):
+
+	def setUp(self):
+		#Define the geometry; 2 "free" water/hydroxyl and 2 hydrogen bonded to each other
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		self.hydroxylA = [ [0,0,0,"O"], [0,1,0.2,"H"] ]
+		self.hydroxylB = [ [5,0,0.1,"O"], [5,1,0.3,"H"] ]
+		self.waterA = [ [1,2,0,"O"], [0.5,3,0,"H"], [1.5,3,0,"H"] ]
+		self.waterB = [ [6,6,0,"O"], [5.5,7,0,"H"], [6.5,7,0,"H"] ]
+
+		self.cartCoords = self.hydroxylA + self.hydroxylB + self.waterA + self.waterB
+
+		#Options for the classifier
+		self.binResObjA = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5,0.5,1.5,2.5,3.5,4.5])
+		self.fromNonHy = [ [0], [2] ]
+		self.fromHy    = [ [1], [3] ]
+		self.toNonHy = [ [4], [7] ]
+		self.toHy    = [ [5,6],[8,9] ]
+
+		self.nTotalFilterRanges = [ [0.5,100], [-0.5,0.5] ] #>0 h-bonds and 0 hbonds are the criteria
+		self.maxOOHBond = 3
+		self.maxAngleHBond = 50
+
+		#Create the distribution object; which will change in each test but...
+		currArgs = [ self.binResObjA, [x[0] for x in self.toNonHy] ] #Neither arg should actually matter; hence I've set the wrong value for the 2nd arg on purpose
+		self.distrOptObjs = [distrOptObjHelp.CalcPlanarDistOptions(*currArgs, planeEqn=planeEqnHelp.ThreeDimPlaneEquation(0,0,1,4))]
+		self.useGroups = [ [0] ]
+		self.useNonHyIdx, self.useIdxEach = True, 0
+
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create the classifier options object
+		currArgs = [ [self.binResObjA, self.binResObjA], self.fromNonHy, self.fromHy, self.toNonHy, self.toHy ]
+		currKwargs = {"nTotalFilterRanges":self.nTotalFilterRanges, "maxOOHBond":self.maxOOHBond, "maxAngleHBond":self.maxAngleHBond}
+		self.classifierOptsObj = clsDistrOptObjs.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+		#Create the main options object
+		currArgs = [self.fromNonHy, self.fromHy, self.classifierOptsObj, self.distrOptObjs, self.useGroups]
+		currKwargs = {"useNonHyIdx":self.useNonHyIdx, "useIdxEach":self.useIdxEach}
+		self.optsObjFilteredCombo = filteredComboOptObjHelp.GenericNonHyAndHyFilteredOptsObj_simple(*currArgs, **currKwargs)
+
+		#Create the sparse matrix calculator and populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObjFilteredCombo])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjFilteredCombo])
+
+	def _runTestFunct(self):
+		return self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+	def testExpectedPlanarDistribs_toHydroxylOxygen(self):
+		expVals = [ (4,) ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testExpectedPlanarDistribs_toBothHydroxylHydrogen(self):
+		#Change options
+		self.useNonHyIdx = False
+		self.nTotalFilterRanges = [ [-0.5,100], [-0.5,0.5] ]
+		self.createTestObjs()
+
+		expVals = [ (3.8,), (3.7,) ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+
+
+
+
+
 
 
