@@ -123,3 +123,7 @@ class GenericNonHyAndHyFilteredOptsObj_simple():
 	def atomIndices(self):
 		return self.primaryIndices
 
+	@property
+	def binResObj(self):
+		return [x.binResObj for x in self.distrOpts]
+
