@@ -1,6 +1,9 @@
 
+import math
 import itertools as it
 import unittest
+
+import numpy as np
 
 import plato_pylib.shared.ucell_class as uCellHelp
 
@@ -957,7 +960,6 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs(unittest.TestCase):
 		self.useGroups = [ [0] ]
 		self.useNonHyIdx, self.useIdxEach = True, 0
 
-
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -1029,7 +1031,55 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs(unittest.TestCase):
 		with self.assertRaises(AssertionError):
 			self.createTestObjs()
 
+	def testMinHozDistFixedGroup(self):
 
+		#Create the distribution object; only the toIndices should matter
+		currBinResObj = binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(0,10,1) #Shouldnt REALLY matter much
+		dudIndicesFrom, indicesTo = [0], [4,5,6,7,8,9]
+		self.useGroups = [ [1] ] #This has a slight non-zero z-value so...
+
+		currArgs = [currBinResObj, dudIndicesFrom, indicesTo]
+		self.distrOptObjs = [distrOptObjHelp.CalcHozDistOptions(*currArgs,minDistAToB=True)]
+		self.createTestObjs()
+
+		#Run + check
+		expVals = [ (math.sqrt( (3**2) + (0.5**2) ),) ]
+		actVals = self._runTestFunct()
+
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
+	def testHozDistFixedGroup(self):
+		#Create the distribution object; only the toIndices should matter
+		currBinResObj = binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(0,10,1) #Shouldnt REALLY matter much
+		dudIndicesFrom, indicesTo = [0], [4,5,6]
+		self.useGroups = [ [1] ] #This has a slight non-zero z-value so...
+
+		currArgs = [currBinResObj, dudIndicesFrom, indicesTo]
+		self.distrOptObjs = [distrOptObjHelp.CalcHozDistOptions(*currArgs)]
+		self.createTestObjs()
+
+		#Run + check
+		expVals = [ (4.47213595499958,), (5.408326913195984,), (4.6097722286464435,) ]
+		actVals = self._runTestFunct()
+
+
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
+	def testMinHozDistInterGroup(self):
+		#Create the distribution object; only the toIndices should matter
+		currBinResObj = binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(0,10,1) #Shouldnt REALLY matter much
+		dudIndicesFrom, indicesTo = [0], list()
+		self.useGroups = [ [1,0] ] #This has a slight non-zero z-value so...
+
+		currArgs = [currBinResObj, dudIndicesFrom, indicesTo]
+		self.distrOptObjs = [distrOptObjHelp.CalcHozDistOptions(*currArgs)]
+		self.createTestObjs()
+
+		#Run + check
+		expVals = [ (5,) ]
+		actVals = self._runTestFunct()
+
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
 
 
