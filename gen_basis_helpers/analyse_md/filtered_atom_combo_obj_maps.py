@@ -282,3 +282,22 @@ def _(populator, optsObj):
 def _(populator, optsObj):
 	populator.indices = optsObj.atomIndices
 
+
+#
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._WaterOrientationPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
+def _(populator, optsObj):
+	outOxyIndices, outHyIndices = list(), list()
+
+	#Get oxygen indices
+	for currIndices in optsObj.fromNonHyIndices:
+		assert len(currIndices)==1, "{} non-hydrogen indices detected; This needs to be 1 to get water orientations".format( len(currIndices) )
+		outOxyIndices.append( currIndices[0] )
+
+	#Get hydrogen indices
+	for currIndices in  optsObj.fromHyIndices:
+		assert len(currIndices)==2, "{} hydrogen indices detected; This needs to be 2 to get water orientations".format( len(currIndices) )
+		outHyIndices.append( currIndices )
+
+	populator.oxyIndices = outOxyIndices
+	populator.hyIndices = outHyIndices
+

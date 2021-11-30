@@ -1000,8 +1000,34 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs(unittest.TestCase):
 		actVals = self._runTestFunct()
 		self.assertEqual(expVals, actVals)
 
+	def testExpectedWaterOrientation_singleWater(self):
+		#Create the distribution
+		self.fromNonHy, self.toNonHy = self.toNonHy, self.fromNonHy
+		self.fromHy, self.toHy = self.toHy, self.fromHy
 
+		currBinResObj = binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(-90,90,10,extremesAtCentre=False)
+		fakeOxyIndices, fakeHyIndices = [ [1], [2,3] ] #Settings wrong indices here SHOULDNT matter
+		currArgs = [currBinResObj, fakeOxyIndices, fakeHyIndices]
+		currKwargs = {"angleType":"pitch"}
+		self.distrOptObjs = [ distrOptObjHelp.WaterOrientationOptions(*currArgs,**currKwargs) ]
+		self.createTestObjs()
 
+		#
+		expVals = [ (0,) ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals, actVals)
+
+	def testWaterOrientation_raisesForHydroxylGroups(self):
+		""" Want to raise an Assertion error if we try to get water orientation data for hydroxyl groups """
+
+		currBinResObj = binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(-90,90,10,extremesAtCentre=False)
+		fakeOxyIndices, fakeHyIndices = [ [1], [2,3] ] #Settings wrong indices here SHOULDNT matter
+		currArgs = [currBinResObj, fakeOxyIndices, fakeHyIndices]
+		currKwargs = {"angleType":"pitch"}
+		self.distrOptObjs = [ distrOptObjHelp.WaterOrientationOptions(*currArgs,**currKwargs) ]
+
+		with self.assertRaises(AssertionError):
+			self.createTestObjs()
 
 
 

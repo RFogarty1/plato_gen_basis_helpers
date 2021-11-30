@@ -116,8 +116,6 @@ class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple(atomComboCoreHelp._G
 		#3) Get values using the modified getter
 		outVals = self.binValGetter.getValsToBin(sparseMatrixCalculator)
 
-#		import pdb
-#		pdb.set_trace()
 
 		return outVals
 
@@ -151,6 +149,15 @@ def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
 	indices = groupIndices[useGroups[0]]
 	useIndices = _getAtomicIndicesForNonHyToHyGeneric(indices, useNonHyIdx, useIdxEach)
 	binvalGetter.planeDistIndices = useIndices
+
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._WaterOrientationBinValGetter)
+def _(binvalGetter, groupIndices, useGroups, **kwargs):
+	allIndices = groupIndices[useGroups[0]]
+	assert all([len(x)==1 for x in allIndices[0]])
+	oxyIndices = [x[0] for x in allIndices[0]]
+	binvalGetter.oxyIndices = oxyIndices
+
+
 
 def _getAtomicIndicesForNonHyToHyGeneric(inpIndices, useNonHyIdx, useIdxEach):
 	typeIdx = 0 if useNonHyIdx else 1
