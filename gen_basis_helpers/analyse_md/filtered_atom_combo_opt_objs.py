@@ -87,7 +87,7 @@ class GenericNonHyAndHyFilteredOptsObj_simple():
 
 	"""
 
-	def __init__(self, fromNonHyIndices, fromHyIndices, classificationOpts, distrOpts, useGroups, useNonHyIdx=True, useIdxEach=0):
+	def __init__(self, fromNonHyIndices, fromHyIndices, classificationOpts, distrOpts, useGroups, useNonHyIdx=True, useIdxEach=0, classificationObjs=None):
 		""" Initializer
 		
 		Args:
@@ -98,6 +98,7 @@ class GenericNonHyAndHyFilteredOptsObj_simple():
 			useGroups: (iter of int-iters) Groups to calculate between. The group indices are determined by "classificationOpts". E.g. [ [0,1], [0] ] Would indicate to calculate distribution between groups [0,1] for distrOpts[0] and for group 0 for distrOpts[1]
 			useNonHyIdx: (Bool) If True we represent our group with one of the non-hydrogen indices (if false we use a hydrogen index)
 			useIdxEach: (Int) The index to use in the list of hy/nonHyIndices.
+			classificationObjs: (iter of ClassifierBase objects) If present these take priority over classificationOpts. Original purpose was to allow "byReference" classifiers to be used to speed up code when multiple of the same classifiers were used
 
 		"""
 		self.fromNonHyIndices = fromNonHyIndices
@@ -107,7 +108,7 @@ class GenericNonHyAndHyFilteredOptsObj_simple():
 		self.useGroups = useGroups
 		self.useNonHyIdx = useNonHyIdx
 		self.useIdxEach = useIdxEach
-
+		self.classificationObjs = classificationObjs
 
 	@property
 	def primaryIndices(self):
