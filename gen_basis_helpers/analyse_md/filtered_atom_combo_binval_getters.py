@@ -142,7 +142,6 @@ def _(binValGetter, groupIndices, useGroups):
 
 
 #Modification function for the generic nonhy-hy case
-#TODO: Need to use len(groupIndices) to decide whether to modify the "toIndices" for things like an rdf
 @BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._PlanarDistsGetOneDimValsToBin)
 def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
 	indices = groupIndices[useGroups[0]]
@@ -170,7 +169,17 @@ def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
 		useToIndices = _getAtomicIndicesForNonHyToHyGeneric(allToIndices, useNonHyIdx, useIdxEach)
 		binvalGetter.toIndices = useToIndices
 
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._CountHBondsBetweenGenericGroupsBinValGetter)
+def _(binvalGetter, groupIndices, useGroups, **unused):
+	fromNonHyIndices, fromHyIndices = groupIndices[useGroups[0]][0], groupIndices[useGroups[0]][1]
+	binvalGetter.fromNonHyIndices, binvalGetter.fromHyIndices = fromNonHyIndices, fromHyIndices
 
+	if len(useGroups)==1:
+		pass
+	else:
+		toNonHyIndices, toHyIndices = groupIndices[useGroups[1]][0], groupIndices[useGroups[1]][1]
+		binvalGetter.toNonHyIndices = toNonHyIndices
+		binvalGetter.toHyIndices = toHyIndices
 
 def _getAtomicIndicesForNonHyToHyGeneric(inpIndices, useNonHyIdx, useIdxEach):
 	typeIdx = 0 if useNonHyIdx else 1

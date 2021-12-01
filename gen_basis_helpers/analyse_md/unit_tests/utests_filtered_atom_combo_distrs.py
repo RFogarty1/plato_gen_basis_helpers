@@ -1082,4 +1082,33 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs(unittest.TestCase):
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
 
+	def testCountHBondsFixedGroup(self):
+		currBinResObj = self.binResObjA #Built for counting h-bonds regardless
+		currArgs = [ currBinResObj, self.fromNonHy, self.fromHy, self.toNonHy, self.toHy ]
+		currKwargs = {"maxOO":self.maxOOHBond,"maxAngle":self.maxAngleHBond}
+		self.distrOptObjs = [ distrOptObjHelp.CountHBondsBetweenGenericGroupsOptions(*currArgs,**currKwargs) ]
+		self.useGroups = [ [0] ]
+		self.createTestObjs()
+
+		#Run + check
+		expVals = [ (1,) ]
+		actVals = self._runTestFunct()
+
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
+
+	def testCountHBondsInterGroup(self):
+		currBinResObj = self.binResObjA #Built for counting h-bonds regardless
+		currArgs = [ currBinResObj, self.fromNonHy, self.fromHy, self.toNonHy, self.toHy ]
+		currKwargs = {"maxOO":self.maxOOHBond,"maxAngle":self.maxAngleHBond}
+		self.distrOptObjs = [ distrOptObjHelp.CountHBondsBetweenGenericGroupsOptions(*currArgs,**currKwargs) ]
+		self.useGroups = [ [0,1] ]
+		self.createTestObjs()
+
+		#Run + check
+		expVals = [ (0,) ]
+		actVals = self._runTestFunct()
+
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
 

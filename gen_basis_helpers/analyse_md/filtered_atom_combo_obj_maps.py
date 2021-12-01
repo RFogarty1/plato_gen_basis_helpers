@@ -271,31 +271,6 @@ def _(populator, optsObj, toIdxType):
 	populator.toNonHyIndices, populator.toHyIndices = [[x] for x in optsObj.oxyIndices], optsObj.hyIndices
 
 
-@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
-def _(populator, optsObj):
-	populator.fromIndices = optsObj.atomIndices
-
-	#We modify the toIndices if they wont get used OR if .fromIndices will be used for them (e.g. for calcualting distributions BETWEEN groups)
-	outToIndices = list()
-	bothGroupsUsed, singleGroupUsed = False, False
-
-	#Step 1: Figure out if we have have only len-2/len-1 for useGroups; in which case we EITHER use original .toIndices or the .fromIndices
-	#NOTE: This will populate MORE values than needed in some cases but really shouldnt ever populate LESS
-	for idx,currDistrOpts in enumerate(optsObj.distrOpts):
-		if len(optsObj.useGroups[idx]) == 1:
-			singleGroupUsed = True
-		else:
-			bothGroupsUsed = True
-
-	#Modify the toIndices
-	if bothGroupsUsed:
-		outToIndices = optsObj.atomIndices
-	if singleGroupUsed:
-		outToIndices = list( set(outToIndices + populator.toIndices ) )
-
-	populator.toIndices = outToIndices
-
-
 
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
@@ -309,7 +284,7 @@ def _(populator, optsObj):
 	populator.indices = optsObj.atomIndices
 
 
-#
+# The generic nonhy/hy h-bond one
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._WaterOrientationPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
 def _(populator, optsObj):
 	outOxyIndices, outHyIndices = list(), list()
@@ -326,4 +301,49 @@ def _(populator, optsObj):
 
 	populator.oxyIndices = outOxyIndices
 	populator.hyIndices = outHyIndices
+
+
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
+def _(populator, optsObj):
+	populator.fromIndices = optsObj.atomIndices
+
+	#We modify the toIndices if they wont get used OR if .fromIndices will be used for them (e.g. for calcualting distributions BETWEEN groups)
+	outToIndices = list()
+	bothGroupsUsed, singleGroupUsed = _areSingleAndOrTwoGroupsUsed(optsObj.useGroups)
+
+	if bothGroupsUsed:
+		outToIndices = optsObj.atomIndices
+	if singleGroupUsed:
+		outToIndices = list( set(outToIndices + populator.toIndices ) )
+
+	populator.toIndices = outToIndices
+
+
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
+def _(populator, optsObj):
+	populator.fromNonHyIndices = optsObj.fromNonHyIndices
+	populator.fromHyIndices = optsObj.fromHyIndices
+
+	#
+	outToNonHyIndices, outToHyIndices = list(), list()
+	bothGroupsUsed, singleGroupUsed = _areSingleAndOrTwoGroupsUsed(optsObj.useGroups)
+	if bothGroupsUsed:
+		outToNonHyIndices, outToHyIndices = optsObj.fromNonHyIndices, optsObj.fromHyIndices
+	if singleGroupUsed:
+		outToNonHyIndices = list( set([tuple(x) for x in outToNonHyIndices] + [tuple(x) for x in populator.toNonHyIndices]) )
+		outToHyIndices = list( set([tuple(x) for x in outToHyIndices] + [tuple(x) for x in populator.toHyIndices]) )
+
+	#
+	populator.toNonHyIndices, populator.toHyIndices = outToNonHyIndices, outToHyIndices
+
+
+def _areSingleAndOrTwoGroupsUsed(useGroups):
+	bothGroupsUsed, singleGroupUsed = False, False
+	for currGroups in useGroups:
+		if len(currGroups)==1:
+			singleGroupUsed = True
+		else:
+			bothGroupsUsed = True
+
+	return bothGroupsUsed, singleGroupUsed
 
