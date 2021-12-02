@@ -206,6 +206,11 @@ def _(inpObj):
 	currKwargs = {"acceptor":True, "donor":True, "maxOO":inpObj.maxOOHBond}
 	return atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj)
+def _(inpObj):
+	currArgs = [inpObj.oxyIndices, inpObj.hyIndices]
+	distMatrixPopulator = atomComboPopulatorHelp._DistMatrixPopulator(*currArgs)
+	return distMatrixPopulator
 
 
 #Registration of standard binners below
@@ -292,6 +297,7 @@ def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.angleType]
 	return binValGettersHelp._WaterOrientationBinValGetter(*currArgs)
 
+
 @TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts)
 def _(inpObj):
 	outObjs = list()
@@ -335,6 +341,17 @@ def _(inpObj):
 		outObjs.append(currObj)
 
 	return outObjs
+
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj)
+def _(inpObj):
+	outObjs = list()
+	for idx,unused in enumerate(inpObj.nNebs):
+		currArgs = [inpObj.oxyIndices, inpObj.hyIndices]
+		currKwargs = {"maxOHDist":inpObj.maxOHDist,"nNebs":inpObj.nNebs[idx]}
+		currObj = classBinvalGetterHelp._CountWaterDerivativeDistanceOnlyBinvalGetter(*currArgs, **currKwargs)
+		outObjs.append(currObj)
+	return outObjs
+
 
 
 

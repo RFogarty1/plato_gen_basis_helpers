@@ -5,6 +5,7 @@ from . import atom_combo_core as atomComboCoreHelp
 from . import atom_combo_binval_getters as atomComboBinvalGetterHelp
 
 from . import classifier_objs as classifierObjHelp
+from . import water_derivative_species_classifiers as waterDerivClassifierHelp
 
 class _AtomsWithMinDistRangeCountBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
@@ -126,6 +127,14 @@ class _GenericCountTypesBasedOnNumberHBondsToGroup(classifierObjHelp._GenericNon
 	def getValsToBin(self, sparseMatrixCalculator):
 		nonHyIndices,hyIndices = self.classify(sparseMatrixCalculator)
 
+		return [len(nonHyIndices)]
+
+
+class _CountWaterDerivativeDistanceOnlyBinvalGetter(waterDerivClassifierHelp._WaterDerivativeDistanceOnlyClassifierGeneric, atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+	pass
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		nonHyIndices, hyIndices = self.classify(sparseMatrixCalculator)
 		return [len(nonHyIndices)]
 
 

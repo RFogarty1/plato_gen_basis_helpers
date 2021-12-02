@@ -327,10 +327,25 @@ class ClassifyBasedOnHBondingToGroup_simple():
 			raise ValueError("Inconsistent lengths in relLengths")
 
 
+class WaterDerivativeBasedOnDistanceClassifierOptsObj():
+	""" Classify water-derivatives based on how many hydrogen neighbours each oxygen has. A hydrogen is considered a neighbour if its within a cutoff and closest to THAT oxygen out of all oxyIndices. General purpose is to get indices for water/similar from a trajectory step """
 
+	def __init__(self, binResObjs, oxyIndices, hyIndices, maxOHDist=1.3, nNebs=2):
+		""" Initializer
+		
+		Args:
+			binResObjs: (iter of BinnedResultsStandard objects) One bin for each type of water you want to count (determined by the "Ranges" parameters)
+			oxyIndices: (iter of ints) Indices of all oxygen atoms to consider
+			hyIndices: (iter of ints) Indices of all hydrogen atoms to consider
+			maxOHDist: (float) Maximum distance between oxygen/hydrogen for them to be considered "bonded"
+			nNebs: (iter of int) Number of hydrogen neighbours needed. 0=free oxygen, 1=hydroxyl, 2=water, 3=hydronium. One entry per type you want to count
 
-
-
+		"""
+		self.binResObjs = binResObjs
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.maxOHDist = maxOHDist
+		self.nNebs = nNebs
 
 
 class WaterMinDistAndHBondsFilterObj():

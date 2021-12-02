@@ -272,3 +272,49 @@ class TestClassifyByHBondsToGenericGroup(unittest.TestCase):
 		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
 		self.assertEqual(expBinVals, actBinVals)
 
+
+class TestWaterDerivDistanceBasedCounter(unittest.TestCase):
+
+	def setUp(self):
+		#Geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		self.water = [ [0,0,0,"O"], [0.5,0.5,0,"H"], [0.5,-0.5,0,"H"] ]
+		self.hydroxylA = [ [5,5,0,"O"], [5,6,0,"H"] ]
+		self.hydroxylB = [ [6,0,0,"O"], [7,0,0,"H"] ]
+		self.cartCoords = self.water + self.hydroxylA + self.hydroxylB
+
+		#Options for classifier object
+		self.binResObjs = [None,None] #Irrelevent to these tests so....
+		self.oxyIndices = [0,3,5]
+		self.hyIndices = [1,2,4,6]
+		self.maxOHDist = 1.5
+		self.nNebs = [2,1]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create an options object
+		currArgs = [self.binResObjs,self.oxyIndices, self.hyIndices]
+		currKwargs = {"maxOHDist":self.maxOHDist, "nNebs":self.nNebs}
+		self.optObj = classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj(*currArgs, **currKwargs)
+		
+		#Get sparse matrix populator + populate it
+		self.sparseMatrixCalculator = optObjMaps.getSparseMatrixCalculatorFromOptsObjIter([self.optObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binner object
+		self.testObj = optObjMaps.getMultiDimBinValGetterFromOptsObjs([self.optObj])
+
+
+	def testExpected_waterAndHydroxyl(self):
+		expBinVals = [(1,2)]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+
+
