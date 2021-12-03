@@ -9,6 +9,7 @@ from . import classification_distr_opt_objs as classDistrOptObjHelp
 from . import classification_binval_getters as classBinvalGetterHelp
 from . import classifier_objs as classifierObjHelp
 from . import filtered_atom_combo_binval_getters as filteredAtomBinvalGetterHelp
+from . import water_derivative_species_classifiers as waterDerivClassifierHelp
 
 from ..shared import register_key_decorator as regKeyDecoHelp
 
@@ -70,7 +71,19 @@ def _(inpObj):
 		classifiers.append( currObj )
 	return classifiers
 
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj)
+def _(inpObj):
+	classifiers = list()
+	for idx, unused in enumerate(inpObj.nNebs):
+		currArgs = [inpObj.oxyIndices, inpObj.hyIndices]
+		currKwargs = {"maxOHDist":inpObj.maxOHDist, "nNebs": inpObj.nNebs[idx]}
+		currObj = waterDerivClassifierHelp._WaterDerivativeDistanceOnlyClassifierGeneric(*currArgs, **currKwargs)
+		classifiers.append( currObj )
+	return classifiers
 
+
+
+#
 @atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric)
 def _(inpObj):
 	distrOptsPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(optObj) for optObj in inpObj.distrOpts]
@@ -107,6 +120,7 @@ def _(inpObj):
 	return outPopulator
 
 #NOTE: Same as for "FilteredAtomComboOptsObjGeneric" initially; put separately still though
+@atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.WaterDerivativeFilteredOptsObj_simple)
 @atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple)
 def _(inpObj):
 	distrOptsPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(optObj) for optObj in inpObj.distrOpts]
@@ -155,6 +169,7 @@ def _(inpObj):
 
 
 #Only the "GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple" line differs from the atomic case
+@atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.WaterDerivativeFilteredOptsObj_simple)
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple)
 def _(inpObj):
 
@@ -346,4 +361,16 @@ def _areSingleAndOrTwoGroupsUsed(useGroups):
 			bothGroupsUsed = True
 
 	return bothGroupsUsed, singleGroupUsed
+
+
+#The water derivative classifier options cases
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._PlanarDistMatrixPopulator, filteredAtomComboOptHelp.WaterDerivativeFilteredOptsObj_simple) )
+def _(populator, optsObj):
+	if optsObj.useNonHyIdx:
+		outIndices = optsObj.oxyIndices
+	else:
+		outIndices = optsObj.hyIndices
+	populator.indices = outIndices
+
+
 

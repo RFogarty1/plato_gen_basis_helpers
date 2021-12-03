@@ -330,7 +330,7 @@ class ClassifyBasedOnHBondingToGroup_simple():
 class WaterDerivativeBasedOnDistanceClassifierOptsObj():
 	""" Classify water-derivatives based on how many hydrogen neighbours each oxygen has. A hydrogen is considered a neighbour if its within a cutoff and closest to THAT oxygen out of all oxyIndices. General purpose is to get indices for water/similar from a trajectory step """
 
-	def __init__(self, binResObjs, oxyIndices, hyIndices, maxOHDist=1.3, nNebs=2):
+	def __init__(self, binResObjs, oxyIndices, hyIndices, maxOHDist=1.3, nNebs=None):
 		""" Initializer
 		
 		Args:

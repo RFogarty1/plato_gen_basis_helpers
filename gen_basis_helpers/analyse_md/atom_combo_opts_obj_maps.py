@@ -353,9 +353,6 @@ def _(inpObj):
 	return outObjs
 
 
-
-
-
 #Utility functions
 def _getDefaultPlaneEquation():
 	return planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0)

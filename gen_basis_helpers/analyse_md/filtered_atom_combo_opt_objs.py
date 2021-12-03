@@ -83,7 +83,7 @@ class WaterToWaterFilteredAtomComboOptsObjGeneric():
 #TODO: Probably want a separate class for dealing with dynamic "to" indices? Or maybe i 
 #TODO: Should likely merge the "WaterToWaterFilteredAtomComboOptsObjGeneric" with this in future; at least make use the same backends
 class GenericNonHyAndHyFilteredOptsObj_simple():
-	""" Class used to specify optiosn for how to calculate distributions between dynamically assigned groups of molecules, where classsification returns non-hydrogen/hydrogen atom indices separately (generally the case when counting h-bonds or similar)
+	""" Class used to specify options for how to calculate distributions between dynamically assigned groups of molecules, where classsification returns non-hydrogen/hydrogen atom indices separately (generally the case when counting h-bonds or similar)
 
 	"""
 
@@ -123,6 +123,42 @@ class GenericNonHyAndHyFilteredOptsObj_simple():
 	@property
 	def atomIndices(self):
 		return self.primaryIndices
+
+	@property
+	def binResObj(self):
+		return [x.binResObj for x in self.distrOpts]
+
+
+class WaterDerivativeFilteredOptsObj_simple():
+	""" Class used to get properties for water-derivative molecules (e.g. hydroxyl/hydronium). Original use was finding planar positions of products for H2O->OH- + H+
+
+	"""
+
+	def __init__(self, oxyIndices, hyIndices, classificationOpts, distrOpts, useGroups, useNonHyIdx=True, useIdxEach=0):
+		""" Initializer
+		
+		Args:
+			oxyIndices: (iter of ints)
+			hyIndices: (iter of ints)
+			classificationOpts: (Options object for classification) This contains options for how we classify the indices into N-groups 
+			distrOpts: (iter of CalcDistribOptionsBase) Each defines a distribution we want calculated using filtered list of oxyIndices
+			useGroups: (iter of int-iters) Groups to calculate between. The group indices are determined by "classificationOpts". E.g. [ [0,1], [0] ] Would indicate to calculate distribution between groups [0,1] for distrOpts[0] and for group 0 for distrOpts[1]
+			useNonHyIdx: (Bool) If True we represent our group with one of the non-hydrogen indices (if false we use a hydrogen index)
+			useIdxEach: (Int) The index to use in the list of hy/nonHyIndices.
+				 
+		"""
+		self.oxyIndices = oxyIndices
+		self.hyIndices = hyIndices
+		self.classificationOpts = classificationOpts
+		self.distrOpts = distrOpts
+		self.useGroups = useGroups
+		self.useNonHyIdx = useNonHyIdx
+		self.useIdxEach = useIdxEach
+
+	#Used so it still works with atom-combo distribution stuff.
+	@property
+	def primaryIndices(self):
+		return self.oxyIndices
 
 	@property
 	def binResObj(self):

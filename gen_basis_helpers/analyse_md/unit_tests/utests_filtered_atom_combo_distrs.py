@@ -14,6 +14,7 @@ import gen_basis_helpers.analyse_md.filtered_atom_combo_opt_objs as filteredComb
 import gen_basis_helpers.analyse_md.filtered_atom_combo_obj_maps as filteredAtomComboObjMaps
 import gen_basis_helpers.analyse_md.atom_combo_opts_obj_maps as optsObjMapHelp
 import gen_basis_helpers.analyse_md.classifier_objs as classifierObjsHelp
+import gen_basis_helpers.analyse_md.water_derivative_species_classifiers as waterDerivSpeciesClassifierHelp
 
 import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 
@@ -930,7 +931,7 @@ class TestGetBinvalsWaterWaterFilteredVariousDistribs(unittest.TestCase):
 			[self.assertAlmostEqual(exp,act, places=6) for exp,act in it.zip_longest(expIter, actIter)]
 
 
-class TestGenericNonHyAndHyFilteredAtomComboDistribs(unittest.TestCase):
+class TestGenericNonHyAndHyFilteredAtomComboDistribs_varyDistrOpts(unittest.TestCase):
 
 	def setUp(self):
 		#Define the geometry; 2 "free" water/hydroxyl and 2 hydrogen bonded to each other
@@ -1111,4 +1112,64 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs(unittest.TestCase):
 
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
+
+
+class TestWaterDerivativeFilteredOptsDistr(unittest.TestCase):
+
+	def setUp(self):
+		#Define the geometry; 2 "free" water/hydroxyl and 2 hydrogen bonded to each other
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.waterA = [ [0,0,0,"O"], [0,0.5,0,"H"], [0,-0.5,0,"H"] ]
+		self.hydroxylA = [ [2,2,4,"O"], [2,2,5,"H"] ]
+		self.hydroxylB = [ [5,5,6,"O"], [5,5,7,"H"] ]
+
+		self.cartCoords = self.waterA + self.hydroxylA + self.hydroxylB
+
+		#Options for the classifier
+		self.binResObjA = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5,0.5,1.5,2.5,3.5,4.5])
+		self.oxyIndices = [0,3,5]
+		self.hyIndices = [1,2,4,6]
+		self.maxOHDist = 1.5
+		self.nNebs = [1,2]
+
+		#Options for the planar distribution
+		currArgs = [ self.binResObjA, self.hyIndices ] #Neither arg should actually matter; hence I've set the wrong value for the 2nd arg on purpose
+		self.distrOptObjs = [distrOptObjHelp.CalcPlanarDistOptions(*currArgs, planeEqn=planeEqnHelp.ThreeDimPlaneEquation(0,0,1,1))]
+
+		#Extra Options for the filtered Distr options object
+		self.useGroups = [ [0] ]
+		self.useNonHyIdx, self.useIdxEach = True, 0
+
+		self.createTestObjs()
+		
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create the classifier options object
+		currArgs = [ [self.binResObjA, self.binResObjA], self.oxyIndices, self.hyIndices ]
+		currKwargs = {"maxOHDist":self.maxOHDist, "nNebs":self.nNebs}
+		self.classifierOptsObj = clsDistrOptObjs.WaterDerivativeBasedOnDistanceClassifierOptsObj(*currArgs, **currKwargs)
+
+		#Create the main options object
+		currArgs = [ self.oxyIndices, self.hyIndices, self.classifierOptsObj, self.distrOptObjs, self.useGroups]
+		currKwargs = {"useNonHyIdx":self.useNonHyIdx, "useIdxEach":self.useIdxEach}
+		self.optsObjFilteredCombo = filteredComboOptObjHelp.WaterDerivativeFilteredOptsObj_simple(*currArgs, **currKwargs)
+
+		#Create the sparse matrix calculator and populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObjFilteredCombo])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjFilteredCombo])
+
+	def _runTestFunct(self):
+		return self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+	def testExpectedHydroxylPlanarDistr(self):
+		expVals = [ (3,), (5,) ]
+		actVals = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 

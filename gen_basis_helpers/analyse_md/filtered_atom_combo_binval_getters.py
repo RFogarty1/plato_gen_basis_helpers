@@ -10,11 +10,12 @@ from ..shared import register_key_decorator as regKeyDecoHelp
 _BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_DICT = dict()
 _BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_DICT = dict()
 _BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_DICT = dict()
+_BINVAL_GETTER_TYPE_TO_WATER_DERIVATIVE_MOD_DICT = dict()
 
 BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_DICT)
 BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_BINVAL_GETTER_TYPE_TO_WATER_WATER_MOD_DICT)
 BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO = regKeyDecoHelp.RegisterKeyValDecorator(_BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_DICT)
-
+BINVAL_GETTER_TYPE_TO_WATER_DERIVATIVE_MOD_DICT = regKeyDecoHelp.RegisterKeyValDecorator(_BINVAL_GETTER_TYPE_TO_WATER_DERIVATIVE_MOD_DICT)
 
 def _modBinvalGetterWithFilterIndicesAtomAtomDict(binValGetter, groupIndices, useGroups,**kwargs):
 	_BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_DICT[type(binValGetter)](binValGetter, groupIndices, useGroups, **kwargs)
@@ -26,6 +27,9 @@ def _modBinvalGetterWithFilterIndicesWaterWaterDict(binValGetter, groupIndices, 
 	
 def _modBinvalGetterWithFilterIndicesNonHyAndHyGenericDict(binvalGetter, groupIndices, useGroups, **kwargs):
 	_BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_DICT[type(binvalGetter)](binvalGetter, groupIndices, useGroups, **kwargs)
+
+def _modBinvalGetterWithFilterIndicesForWaterDerivativeDict(binvalGetter, groupIndices, useGroups, **kwargs):
+	_BINVAL_GETTER_TYPE_TO_WATER_DERIVATIVE_MOD_DICT[type(binvalGetter)](binvalGetter, groupIndices, useGroups, **kwargs)
 
 
 class FilteredAtomComboBinvalGetterGeneric(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
@@ -118,6 +122,7 @@ class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple(atomComboCoreHelp._G
 
 		return outVals
 
+
 #Modification for atom-atom case
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._RadialDistsGetValsToBin)
 def _(binValGetter, groupIndices, useGroups):
@@ -185,6 +190,14 @@ def _getAtomicIndicesForNonHyToHyGeneric(inpIndices, useNonHyIdx, useIdxEach):
 	typeIdx = 0 if useNonHyIdx else 1
 	outIndices = [ inpVals[useIdxEach] for inpVals in inpIndices[typeIdx] ]
 	return outIndices
+
+
+#Modification functions for generic water derivative
+@BINVAL_GETTER_TYPE_TO_WATER_DERIVATIVE_MOD_DICT(atomComboBinvalGetterHelp._PlanarDistsGetOneDimValsToBin)
+def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
+	raise NotImplementedError("")
+
+
 
 
 #Modification functions for water-water case
