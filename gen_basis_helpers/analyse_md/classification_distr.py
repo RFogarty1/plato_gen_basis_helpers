@@ -27,3 +27,39 @@ def getClassDistrCountsOverTraj(inpTraj, optsObj):
 
 	return outList
 
+
+
+def getFilteredScatterDataOverTime(inpTraj, optsObj, foldOneDimData=True):
+	""" Gets data [ [timeA,valsA], [timeA,valsB], [timeB,valsC] ] for filterered groups. Original goal was to track planar positions of self-ionised water groups (hydroxyl/hydronium) which spontaneously appeared in an MD run
+	
+	Args:
+		inpTraj: (TrajectoryInMemory) (Actually probably also works for TrajectoryBase)
+		optsObj: Provides options for what values we want. In original example we use "WaterDerivativeFilteredOptsObj_simple"
+		foldOneDimData: (Bool, Optional) If True, for one-dimensional output data (e.g. just finding planar position of filtered) instead of returning an iter of [time, [value]] we return [time,value], where value is a float of interest
+
+	Returns
+		outVals: Returns [time,values] pair for each. Note: individual time values appear N times, where N is the number of relevant groups at that time (e.g. timestep=3000fs may appear 5 times if 5 hydroxyl groups are found in that one, in the case we want to track hydroxyls) 
+ 
+	"""
+	sparseMatrixCalculator = atomComboOptObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([optsObj])
+	binValGetter = atomComboOptObjMapHelp.getMultiDimBinValGetterFromOptsObjs([optsObj])
+	outList = list()
+
+	for trajStep in inpTraj:
+		sparseMatrixCalculator.calcMatricesForGeom(trajStep.unitCell)
+		currTime = trajStep.time
+		currBinnedVals = binValGetter.getValsToBin(sparseMatrixCalculator)
+		currVals = [ [currTime, val] for val in currBinnedVals ]
+		outList.extend(currVals)
+
+	if foldOneDimData:
+		if len(outList)>0:
+			if len(outList[0][1])==1:
+				outList = [ [t,val[0]] for t,val in outList ]
+
+
+
+	return outList
+
+
+
