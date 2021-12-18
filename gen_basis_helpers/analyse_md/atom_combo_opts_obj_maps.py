@@ -206,6 +206,14 @@ def _(inpObj):
 	currKwargs = {"acceptor":True, "donor":True, "maxOO":inpObj.maxOOHBond}
 	return atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup)
+def _(inpObj):
+	staticallyAssignedPopulator = getMatrixPopulatorFromOptsObj(inpObj.dynGroupOptObj)
+	dynamicallyAssignedPopulator = getMatrixPopulatorFromOptsObj(inpObj.thisGroupOptObj)
+	outPopulator = coreComboHelp._SparseMatrixPopulatorComposite([staticallyAssignedPopulator, dynamicallyAssignedPopulator])
+	return outPopulator
+
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj)
 def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices]
@@ -341,6 +349,24 @@ def _(inpObj):
 		outObjs.append(currObj)
 
 	return outObjs
+
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup)
+def _(inpObj):
+	assert len(inpObj.dynGroupOptObj.nDonorFilterRanges)==len(inpObj.thisGroupOptObj.nDonorFilterRanges)
+	firstGroupObjs = getOneDimBinValGetterFromOptsObj(inpObj.dynGroupOptObj)
+	secondGroupObjs = getOneDimBinValGetterFromOptsObj(inpObj.thisGroupOptObj) #We only get bin values from this group
+
+	outObjs = list()
+	for idx, (firstGroup, secondGroup) in enumerate(it.zip_longest(firstGroupObjs, secondGroupObjs)):
+		currKwargs = {"mutuallyExclusive":inpObj.mutuallyExclusive}
+		currObj = classBinvalGetterHelp._CountTypesBasedOnNumberHBondsToDynamicGroup(firstGroup, secondGroup, **currKwargs)
+		if inpObj.firstClassifierObjs is not None:
+			currObj.firstGroupClassifier = inpObj.firstClassifierObjs[idx]
+
+		outObjs.append(currObj)
+
+	return outObjs
+
 
 @TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj)
 def _(inpObj):

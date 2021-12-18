@@ -263,6 +263,64 @@ class _WaterClassifierMinDistHBondsAndAdsSiteHozDists(_WaterClassifierBase):
 		return outOxyIndices, outHyIndices
 
 
+
+
+class _ClassiferUsingHBondsToDynamicGroup(ClassifierBase):
+
+	def __init__(self, firstGroupClassifier, secondGroupClassifier, execCount=0, mutuallyExclusive=True):
+		""" Initialzier
+		
+		Args:
+			firstGroupClassifier: (_GenericNonHyAndHyClassiferUsingHBondsToGroup_simple) Used to figure out the first group
+			secondGroupClassifier: (_GenericNonHyAndHyClassiferUsingHBondsToGroup_simple) This is the classifier used; it works via figuring out h-bonds between fromIndices and the firstGroupClassifier toIndices.
+			mutuallyExclusive: (Bool) If True, then any group returned by firstGroupClassifier CANT be returned by secondGroupClassifier
+
+		Notes:
+			The attributes in secondGroupClassifier are changed IN PLACE to classify groups at a given step
+ 
+		"""
+		self.firstGroupClassifier = firstGroupClassifier
+		self.secondGroupClassifier = secondGroupClassifier
+		self.mutuallyExclusive = mutuallyExclusive
+		self.execCount = execCount
+
+
+	def classify(self, sparseMatrixCalculator):
+		#1) Figure out the first group
+		toNonHyIndices, toHyIndices = self.firstGroupClassifier.classify(sparseMatrixCalculator)
+
+		#2)Update the second classifier attributes
+		self.secondGroupClassifier.toNonHyIndices = toNonHyIndices
+		self.secondGroupClassifier.toHyIndices = toHyIndices
+
+		#3) Figure out the correct things + return them
+		outVals = self.secondGroupClassifier.classify(sparseMatrixCalculator)
+
+		#4) If requested; remove outputs which are part of firstGroupClassifier
+		if self.mutuallyExclusive:
+			outVals = self._getFilteredIndices(outVals, toNonHyIndices, toHyIndices)
+
+		outNonHyIndices, outHyIndices = outVals[0], outVals[1]
+
+		return outNonHyIndices, outHyIndices
+
+	def _getFilteredIndices(self, outVals, toNonHyIndices, toHyIndices):
+		newOutVals = list(), list()
+
+		#We loop over non-hy indices only
+		for outIdx,outVal in enumerate(outVals[0]):
+
+			keepVal = True
+			for toNonHyIdxList in toNonHyIndices:
+				if sorted(outVal) == sorted(toNonHyIdxList):
+					keepVal = False
+			if keepVal:
+				newOutVals[0].append( outVals[0][outIdx] )
+				newOutVals[1].append( outVals[1][outIdx] )
+
+		return newOutVals
+
+
 class _GenericNonHyAndHyClassiferUsingHBondsToGroup_simple(ClassifierBase):
 
 	def __init__(self, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, nDonorFilterRange,

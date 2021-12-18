@@ -119,6 +119,13 @@ class _AdsorbedWaterCountTypeWithAdsSiteHozDistsBinvalGetter(atomComboCoreHelp._
 		return [len(oxyIndices)]
 
 
+
+class _CountTypesBasedOnNumberHBondsToDynamicGroup(classifierObjHelp._ClassiferUsingHBondsToDynamicGroup, atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		nonHyIndices, hyIndices = self.classify(sparseMatrixCalculator)
+		return [len(nonHyIndices)]
+
 #Inherit interface from "_GetOneDimValsToBinFromSparseMatricesBase" and behaviour from "_GenericNonHyAndHyClassiferUsingHBondsToGroup_simple"
 class _GenericCountTypesBasedOnNumberHBondsToGroup(classifierObjHelp._GenericNonHyAndHyClassiferUsingHBondsToGroup_simple, atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 	pass
@@ -136,5 +143,8 @@ class _CountWaterDerivativeDistanceOnlyBinvalGetter(waterDerivClassifierHelp._Wa
 	def getValsToBin(self, sparseMatrixCalculator):
 		nonHyIndices, hyIndices = self.classify(sparseMatrixCalculator)
 		return [len(nonHyIndices)]
+
+
+
 
 

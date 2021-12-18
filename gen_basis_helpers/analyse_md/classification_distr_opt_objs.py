@@ -248,10 +248,57 @@ class WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj(Wate
 		return cls(*currArgs, **currKwargs)
 
 
+class ClassifyBasedOnHBondingToDynamicGroup():
+	""" Class designed to classift molecules (e.g. water/hydroxyl) based on number of hydrogen bonds they have to a dynamically assigned group.
+
+		Original purpose was to filter to water molecules (solCon) h-bonded to a dynamically-assinged group of water which had h-bonds to hydroxyl groups (solAds). This was for the hydroxylated Mg/water interface
+	"""
+
+	def __init__(self, dynGroupOptObj, thisGroupOptObj, mutuallyExclusive=True, checkConsistent=True, firstClassifierObjs=None):
+		""" Initializer
+		
+		Args:
+			dynGroupOptObj: (ClassifyBasedOnHBondingToGroup_simple options obj) This contains options for dynamically assigning the first group
+			thisGroupOptObj: (ClassifyBasedOnHBondingToGroup_simple options obj) This contains options for assigning this group based on h-bonding with the "dynamic" group
+			mututallyExclusive: (Bool) If True then a molecule cant be in both groups; it will be assigned to ONLY dynGroupOptObj
+			checkConsistent: (Bool) Carries out various tests to catch possible inconsistencies between the two input opts objects (for example, .toIndices on thisGroupOptObj need to match .fromIndices on dynGroupOptObj)
+			firstClassifierObj: (iter of ClassifierBase object) This is the classifier used to get the first group (dynGroupOptObj). Passing here is just a possible way of speeding things up (assuming you pass a byReference classifier; will avoid redoing painful classification work). NOTE: Need one per nTotalFilterRange element on your input groups
+
+		Notes:
+			1) Length of filter ranges on dynGroupOptObj and thisGroupOptObj need to be the same (checked with checkConsisten=True)
+			2) The thisGroupObjObj toIndices need to be the same as dynGroupOptObj fromIndices (checked with checkConsistent=True)
+			3) Dont RELY on checkConsistent too much; I havent really tested every way you can get input wrong.
+ 
+		"""
+		self.dynGroupOptObj = dynGroupOptObj
+		self.thisGroupOptObj = thisGroupOptObj
+		self.mutuallyExclusive = mutuallyExclusive
+		self.firstClassifierObjs = firstClassifierObjs
+
+		if checkConsistent:
+			self._checkInputConsistent()
+
+	def _checkInputConsistent(self):
+		#Check the to/from Indices are conssitent
+		if self.dynGroupOptObj.fromNonHyIndices != self.thisGroupOptObj.toNonHyIndices:
+			valsA, valsB = self.dynGroupOptObj.fromNonHyIndices, self.thisGroupOptObj.toNonHyIndices
+			raise ValueError("fromNonHyIndices != toNonHyIndices; values are \n {} and {}".format(valsA, valsB))
+
+		if self.dynGroupOptObj.fromHyIndices != self.thisGroupOptObj.toHyIndices:
+			valsA, valsB = self.dynGroupOptObj.fromHyIndices, self.thisGroupOptObj.toHyIndices
+			raise ValueError("fromHyIndices != toHyIndices; values are \n {} and {}".format(valsA,valsB))
+
+		#Check the filter ranges are consistent
+		filterAttrs = ["nDonorFilterRanges", "nAcceptorFilterRanges", "nTotalFilterRanges"]
+		for filterAttr in filterAttrs:
+			lenA, lenB = len( getattr(self.dynGroupOptObj, filterAttr) ), len( getattr(self.thisGroupOptObj, filterAttr) )
+			if lenA != lenB:
+				currArgs = [filterAttr, lenA, lenB]
+				raise ValueError("Different length filter ranges detected for {}; lengths are {} and {}".format(*currArgs))
 
 
 class ClassifyBasedOnHBondingToGroup_simple():
-	""" Class designed to classify moleculeses (e.g. water/hydroxyl) based on the number of hydrogen bonds they have to a static group. 
+	""" Class designed to classify molecules (e.g. water/hydroxyl) based on the number of hydrogen bonds they have to a static group. 
 
 	Original purpose was to classify water based on number of h-bonds to hydroxyl and vice-versa
 	"""

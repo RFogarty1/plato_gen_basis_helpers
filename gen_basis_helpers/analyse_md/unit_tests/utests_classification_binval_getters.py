@@ -1,5 +1,5 @@
 
-
+import copy
 import unittest
 
 import plato_pylib.shared.ucell_class as uCellHelp
@@ -7,7 +7,7 @@ import plato_pylib.shared.ucell_class as uCellHelp
 import gen_basis_helpers.analyse_md.atom_combo_opts_obj_maps as optObjMaps
 import gen_basis_helpers.analyse_md.classification_distr_opt_objs as classDistrOptObjHelp
 import gen_basis_helpers.analyse_md.binned_res as binResHelp
-
+import gen_basis_helpers.analyse_md.filtered_atom_combo_obj_maps as filteredObjMapHelp
 
 
 class TestCountAtomClassify(unittest.TestCase):
@@ -271,6 +271,114 @@ class TestClassifyByHBondsToGenericGroup(unittest.TestCase):
 		expBinVals = [ (1,1) ]
 		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
 		self.assertEqual(expBinVals, actBinVals)
+
+class TestClassifyByHBondingToDynamicGroup(unittest.TestCase):
+
+	def setUp(self):
+		#The geometry(left OH donates 1-hbond to middle water; middle water donates one to right-hand water)
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.hydroxylA =  [ [2,2,2,"O"], [3,2,2,"H"] ]
+		self.waterA    = [ [4,2,2,"O"], [5,2,2,"H"], [3.5,1.5,2,"H"] ]
+		self.waterB    = [ [6,2,2,"O"], [7,2,2,"H"], [5.5,1.5,2,"H"] ]
+
+		self.cartCoords = self.hydroxylA + self.waterA + self.waterB
+
+		#Options for the classifiers [some options shared]
+		self.binResObjs = [None, None] #Irrelevant to these tests so...
+		self.fromNonHyIndices, self.fromHyIndices = [ [2], [5] ], [ [3,4], [6,7]  ] #Used in both the objects
+		self.toNonHyIndices, self.toHyIndices = [ [0] ], [ [1] ]
+		self.maxOOHBond = 2.1
+		self.maxAngleHBond = 30 #Angle doesnt matter in original 3-molecule geom
+		self.nTotalFilterRangesStatic  = [ [-1,0.1], [-1 ,0.1] ] 
+		self.nTotalFilterRangesDynamic = [ [-1,0.1], [0.1,1.1] ] #Count those with 0 h-bonds and those with 1 h-bond
+
+		self.dynToNonHyIndices = copy.deepcopy(self.fromNonHyIndices)
+		self.dynToHyIndices = copy.deepcopy(self.fromHyIndices)
+
+		#Any extra options for the combined classifier options object
+		self.mutuallyExclusive = True
+		self.firstClassifierObjs = None
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create the first classifier options object [For the group with static indices]
+		currArgs = [self.binResObjs, self.fromNonHyIndices, self.fromHyIndices, self.toNonHyIndices, self.toHyIndices]
+		currKwargs = {"nTotalFilterRanges":self.nTotalFilterRangesStatic, "maxOOHBond":self.maxOOHBond,
+		              "maxAngleHBond":self.maxAngleHBond}
+		self.staticGroupOptObj = classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+		#Create the second classifier options object
+		#Note we pass the .fromIndices of classifier 1 as "toIndices" here; since they ARE our target
+		currArgs = [self.binResObjs, self.fromNonHyIndices, self.fromHyIndices, self.dynToNonHyIndices, self.dynToHyIndices]
+		currKwargs = {"nTotalFilterRanges":self.nTotalFilterRangesDynamic, "maxOOHBond":self.maxOOHBond,
+		              "maxAngleHBond":self.maxAngleHBond}
+		self.dynamicGroupOptObj = classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+
+		#Create the overall classifier options
+		currArgs = [self.staticGroupOptObj, self.dynamicGroupOptObj]
+		currKwargs = {"mutuallyExclusive":self.mutuallyExclusive, "firstClassifierObjs":self.firstClassifierObjs}
+		self.optObj = classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup(*currArgs, **currKwargs)
+
+		#Get sparse matrix populator + populate it
+		self.sparseMatrixCalculator = optObjMaps.getSparseMatrixCalculatorFromOptsObjIter([self.optObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binner object
+		self.testObj = optObjMaps.getMultiDimBinValGetterFromOptsObjs([self.optObj])
+
+	def testExpectedCaseA(self):
+		expBinVals = [ (0,1) ] #Second bin; accepts 1 h-bond from a species with 1 h-bond to the hydroxyl 
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals,actBinVals)
+
+	#First water has 0 h-bonds to first group (since its the ONLY member); hence goes in first bin
+	#Second water has 1 h-bond to the first group
+	def testExpectedNotMutuallyExclusive(self):
+		self.mutuallyExclusive = False
+		self.createTestObjs()
+		expBinVals = [ (1,1) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testWhenClassifierOptObjPassed(self):
+		self.firstClassifierObjs = [filteredObjMapHelp.getClassifiersFromOptsObj(self.staticGroupOptObj)[0] for x in range(len(self.nTotalFilterRangesStatic))]
+		self.createTestObjs()
+
+		expBinVals = [ (0,1) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+	
+		self.assertEqual(expBinVals, actBinVals)
+		for classifierObj in self.firstClassifierObjs:
+			self.assertEqual( classifierObj.execCount, 1 )
+
+	def testWhenDynamicallyAssignedGroupEmpty(self):
+		self.maxOOHBond = 0.1
+		self.mutuallyExclusive = False
+		self.createTestObjs()
+
+		expBinVals = [ (2,0) ] #Both have 0 h-bonds; means first bin in both cases. And since we allow them to be in both groups its [(2,0)]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testRaisesForInconsitentIndices(self):
+		""" Slightly flawed; could have failed for breaking EITHER 1 of 2 (so only half tests what i want really) """
+		self.dynToNonHyIndices[0][0] += 1
+		self.dynToHyIndices[0][0] += 1
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
+
+	def testRaisesForInconsistentFilterRanges(self):
+		""" Different length filter indices should raise an error; i only test ONE type explicitly though """
+		self.nTotalFilterRangesDynamic.append( [0,2] )
+		with self.assertRaises(ValueError):
+			self.createTestObjs()
 
 
 class TestWaterDerivDistanceBasedCounter(unittest.TestCase):
