@@ -71,6 +71,24 @@ def _(inpObj):
 		classifiers.append( currObj )
 	return classifiers
 
+#Note: Not too sure about the inpObj.firstClassifierObjs argument; untested at time of writing
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup)
+def _(inpObj):
+
+	firstGroupClassifiers  = getClassifiersFromOptsObj(inpObj.dynGroupOptObj)
+	secondGroupClassifiers = getClassifiersFromOptsObj(inpObj.thisGroupOptObj)
+	outClassifiers = list()
+
+
+	for firstClass, secondClass in it.zip_longest(firstGroupClassifiers, secondGroupClassifiers):
+		currArgs = [firstClass, secondClass]
+		currKwargs = {"mutuallyExclusive":inpObj.mutuallyExclusive}
+		currClassifier = classifierObjHelp._ClassiferUsingHBondsToDynamicGroup(*currArgs, **currKwargs)
+		outClassifiers.append( currClassifier )
+
+	return outClassifiers
+
+
 @TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj)
 def _(inpObj):
 	classifiers = list()

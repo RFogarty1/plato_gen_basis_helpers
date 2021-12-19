@@ -1,4 +1,5 @@
 
+import copy
 import math
 import itertools as it
 import unittest
@@ -1112,6 +1113,86 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs_varyDistrOpts(unittest.Test
 
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
+
+class TestHBondedToDynamicGroup_varyDistrOpts(unittest.TestCase):
+
+	def setUp(self):
+		#The geometry(left OH donates 1-hbond to middle water; middle water donates one to right-hand water)
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.hydroxylA =  [ [2,2,2,"O"], [3,2,2,"H"] ]
+		self.waterA    = [ [4,2,2.1,"O"], [5,2,2,"H"], [3.5,1.5,2,"H"] ]
+		self.waterB    = [ [6,2,2.2,"O"], [7,2,2,"H"], [5.5,1.5,2,"H"] ]
+
+		self.cartCoords = self.hydroxylA + self.waterA + self.waterB
+
+		#Options for the individual classifiers [some options shared]
+		self.binResObjA = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5,0.5,1.5,2.5,3.5,4.5])
+		self.fromNonHyIndices, self.fromHyIndices = [ [2], [5] ], [ [3,4], [6,7]  ] #Used in both the objects
+		self.toNonHyIndices, self.toHyIndices = [ [0] ], [ [1] ]
+		self.maxOOHBond = 2.4
+		self.maxAngleHBond = 30 #Angle doesnt matter in original 3-molecule geom
+		self.nTotalFilterRangesStatic  = [ [-1,0.1], [0.1,1.1] ] #Second one filters to 1 h-bond to hydroxyl 
+		self.nTotalFilterRangesDynamic = [ [-1,0.1], [0.1,1.1] ] #Second group filters to 1 h-bond to atoms with 1 h-bond to hydroxyl
+
+		self.dynToNonHyIndices = copy.deepcopy(self.fromNonHyIndices)
+		self.dynToHyIndices = copy.deepcopy(self.fromHyIndices)
+
+		#Any extra options for the combined classifier options object
+		self.mutuallyExclusive = True
+		self.firstClassifierObjs = None
+
+		#Create a distribution object; will likely change each test but...
+		currArgs = [ self.binResObjA, [x[0] for x in self.toNonHyIndices] ] #Neither arg should actually matter; hence I've set the wrong value for the 2nd arg on purpose
+		self.distrOptObjs = [distrOptObjHelp.CalcPlanarDistOptions(*currArgs, planeEqn=planeEqnHelp.ThreeDimPlaneEquation(0,0,1,4))]
+
+		#Some final options
+		self.useGroups = [ [1] ]
+		self.useNonHyIdx, self.useIdxEach = True, 0
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create the first classifier options object [For the group with static indices]
+		currArgs = [ [self.binResObjA, self.binResObjA], self.fromNonHyIndices, self.fromHyIndices, self.toNonHyIndices, self.toHyIndices]
+		currKwargs = {"nTotalFilterRanges":self.nTotalFilterRangesStatic, "maxOOHBond":self.maxOOHBond,
+		              "maxAngleHBond":self.maxAngleHBond}
+		self.staticGroupOptObj = clsDistrOptObjs.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+		#Classifier options for the second group (which is based on h-bond relationships to the first)
+		#Note we pass the .fromIndices of classifier 1 as "toIndices" here; since they ARE our target
+		currArgs = [ [self.binResObjA, self.binResObjA], self.fromNonHyIndices, self.fromHyIndices, self.dynToNonHyIndices, self.dynToHyIndices]
+		currKwargs = {"nTotalFilterRanges":self.nTotalFilterRangesDynamic, "maxOOHBond":self.maxOOHBond,
+		              "maxAngleHBond":self.maxAngleHBond}
+		self.dynamicGroupOptObj = clsDistrOptObjs.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+		#Overall classifier options object
+		currArgs = [self.staticGroupOptObj, self.dynamicGroupOptObj]
+		currKwargs = {"mutuallyExclusive":self.mutuallyExclusive, "firstClassifierObjs":self.firstClassifierObjs}
+		self.classifierOptObj = clsDistrOptObjs.ClassifyBasedOnHBondingToDynamicGroup(*currArgs,**currKwargs)
+
+		#Create the main options object
+		currArgs = [self.fromNonHyIndices, self.fromHyIndices, self.classifierOptObj, self.distrOptObjs, self.useGroups]
+		currKwargs = {"useNonHyIdx":self.useNonHyIdx, "useIdxEach":self.useIdxEach}
+		self.optsObjFilteredCombo = filteredComboOptObjHelp.GenericNonHyAndHyFilteredOptsObj_simple(*currArgs, **currKwargs)
+
+		#Create the sparse matrix calculator and populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObjFilteredCombo])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjFilteredCombo])
+
+	def _runTestFunct(self):
+		return self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+	def testExpectedPlanarA(self):
+		expVals = [ (1.8,) ]
+		actVals = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
 
 class TestWaterDerivativeFilteredOptsDistr(unittest.TestCase):
