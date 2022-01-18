@@ -29,7 +29,7 @@ class TestParseLammpsDumpFile(unittest.TestCase):
 		self.timeStep = 1
 		self.createTestObjs()
 		mockGetFileAsList.side_effect = lambda *args: self.dumpFileAsListA
-		actTrajObj = tCode.getTrajectoryFromLammpsDumpFile("fake_file_path", timeStep=self.timeStep)
+		actTrajObj = tCode.getTrajectoryFromLammpsDumpFile("fake_file_path", timeStep=self.timeStep, nCores=2)
 		expTrajObj = self.expTrajObjA
 		self.assertEqual(expTrajObj, actTrajObj)
 

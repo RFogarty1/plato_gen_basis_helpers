@@ -34,6 +34,23 @@ class TestParseLogFileData(unittest.TestCase):
 		              "eTotal":expETot, "pressure":expPressure}
 		return thermoDataObjs.ThermoDataStandard.fromStdKwargs(**currKwargs)
 
+	def testParseThermoSectionWithPotAndKinEnergy(self):
+		thermoSection = _loadThermoSectStrB().split("\n")
+		inpLineIdx = 0
+		expObj = self._loadExpThermoObjWithPotAndKinEnergy()
+		unused, actObj = tCode._parseThermoSection(thermoSection, inpLineIdx)
+		self.assertEqual(expObj, actObj)
+
+	def _loadExpThermoObjWithPotAndKinEnergy(self):
+		expSteps = [0, 50, 100, 150, 200]
+		expTemp = [300, 299.96484, 384.28311, 413.1955, 452.95121]
+		expETot = [-438.07601, -438.26344, -438.33272, -438.49712, -438.99766]
+		expKinE = [334.44689, 334.40769, 428.40764, 460.63983, 504.9604]
+		expPotE = [-772.5229, -772.67113, -866.74036, -899.13695, -943.95807]
+		currKwargs = {"step":expSteps, "temp":expTemp, "eTotal":expETot,
+		              "eKinetic":expKinE, "ePot":expPotE}
+		return thermoDataObjs.ThermoDataStandard.fromStdKwargs(**currKwargs)
+
 
 def _loadThermoSectStrA():
 	outStr="""Step Temp E_pair E_mol TotEng Press 
@@ -44,6 +61,19 @@ def _loadThermoSectStrA():
      200    698.04681     674.3612    96.113385     993.1143    40100.158 
 Loop time of 23.25 on 1 procs for 50000 steps with 108 atoms"""
 	return outStr
+
+def _loadThermoSectStrB():
+	outStr ="""Step Temp PotEng KinEng TotEng 
+       0          300    -772.5229    334.44689   -438.07601 
+      50    299.96484   -772.67113    334.40769   -438.26344 
+     100    384.28311   -866.74036    428.40764   -438.33272 
+     150     413.1955   -899.13695    460.63983   -438.49712 
+     200    452.95121   -943.95807     504.9604   -438.99766 
+Loop time of 28.906 on 1 procs for 10000 steps with 375 atoms"""
+	return outStr
+
+
+
 
 def _loadSmallFullFileStrA():
 	outStr = """LAMMPS (29 Oct 2020)
