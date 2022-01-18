@@ -85,6 +85,52 @@ class LammpsSimulationBox():
 		return True
 
 
+#NOTE: Largely stolen from GetDataDictFromLammpsGeomAtomStyleFull
+class GetDataDictFromLammpsGeomAtomStyleAtomic():
+	""" Callable class. f(LammpsGeom instance)->OrderedDict is the interface, where the OrderedDict contains keys/values for the data file
+
+	"""
+
+	def __init__(self, numbFmtCoords="{:.5f}", numbFmtCharge="{:.4f}", numbFmtMasses="{:.4f}", modTiltFactors=None):
+		""" Initializer
+		
+		Args:
+			numbFmtCoords: (str) format string for atomic co-ordinates
+			numbFmtCharge: (str) format string for atomic charges
+			numbFmtMasses: (str) format string for atomic masses
+			modTiltFactors: f([xy,xz,yz])->[xy,xz,yz] This is useful to deal with small float errors in xy for hexagonal cells. A perfect hexagonal cell has xy=0.5*xhi which is the MAXIMUM value allowed. Thus if a float error is in the wrong direction it can lead to an error. Setting modTiltFactors can deal with this by (for example) multiplying xy by 0.999 or similar
+ 
+		"""
+		self.numbFmtCoords = numbFmtCoords
+		self.numbFmtCharge = numbFmtCharge
+		self.numbFmtMasses = numbFmtMasses
+		self.modTiltFactors = modTiltFactors
+
+	def getDataDict(self, lammpsGeomInstance):
+		#Generate some useful mapping functions
+		mapFuncts = createMapGeomInfoToDataDictObjFromAtomStyle("atomic", modTiltFactors=self.modTiltFactors)
+		outDict = collections.OrderedDict()
+
+		#Get the info dict
+		massDict = dict()
+		for key in lammpsGeomInstance.eleToTypeIdx:
+			currType = lammpsGeomInstance.eleToTypeIdx[key]
+			currMass = lammpsGeomInstance.eleToMass[key]
+			massDict[currType] = currMass
+
+		currKwargDict = {"numbFmt":self.numbFmtCoords}
+		outDict["LAMMPS Atom File"] = mapFuncts.getHeaderStrFromUnitCellAndKwargs(lammpsGeomInstance.unitCell, **currKwargDict)
+		outDict["Masses"] = mapFuncts.getMassesDictStrFromMassDict(massDict, numbFmt=self.numbFmtMasses)
+
+		currKwargDict = {"eleToTypeIdx":lammpsGeomInstance.eleToTypeIdx, "coordNumbFmt":self.numbFmtCoords}
+		outDict["Atoms"] = mapFuncts.getAtomsStrFromUnitCell(lammpsGeomInstance.unitCell, **currKwargDict)
+
+		return outDict
+
+	def __call__(self, lammpsGeomInstance):
+		return self.getDataDict(lammpsGeomInstance)
+
+
 class GetDataDictFromLammpsGeomAtomStyleFull():
 	""" Callable class. f(LammpsGeom instance)->OrderedDict is the interface, where the OrderedDict contains keys/values for the data file
 
@@ -139,6 +185,55 @@ class GetDataDictFromLammpsGeomAtomStyleFull():
 
 
 
+class GetDataDictFromLammpsGeomAtomStyleCharge():
+	""" Callable class. f(LammpsGeom instance)->OrderedDict is the interface, where the OrderedDict contains keys/values for the data file
+
+	"""
+
+	def __init__(self, numbFmtCoords="{:.5f}", numbFmtCharge="{:.4f}", numbFmtMasses="{:.4f}", modTiltFactors=None):
+		""" Initializer
+		
+		Args:
+			numbFmtCoords: (str) format string for atomic co-ordinates
+			numbFmtCharge: (str) format string for atomic charges
+			numbFmtMasses: (str) format string for atomic masses
+			modTiltFactors: f([xy,xz,yz])->[xy,xz,yz] This is useful to deal with small float errors in xy for hexagonal cells. A perfect hexagonal cell has xy=0.5*xhi which is the MAXIMUM value allowed. Thus if a float error is in the wrong direction it can lead to an error. Setting modTiltFactors can deal with this by (for example) multiplying xy by 0.999 or similar
+ 
+		"""
+		self.numbFmtCoords = numbFmtCoords
+		self.numbFmtCharge = numbFmtCharge
+		self.numbFmtMasses = numbFmtMasses
+		self.modTiltFactors = modTiltFactors
+
+	def getDataDict(self, lammpsGeomInstance):
+		mapFuncts = createMapGeomInfoToDataDictObjFromAtomStyle("charge", modTiltFactors=self.modTiltFactors)
+		outDict = collections.OrderedDict()
+
+		#Get the various info dict
+		massDict = dict()
+		for key in lammpsGeomInstance.eleToTypeIdx:
+			currType = lammpsGeomInstance.eleToTypeIdx[key]
+			currMass = lammpsGeomInstance.eleToMass[key]
+			massDict[currType] = currMass
+
+
+		currKwargDict = {"numbFmt":self.numbFmtCoords}
+		outDict["LAMMPS Atom File"] = mapFuncts.getHeaderStrFromUnitCellAndKwargs(lammpsGeomInstance.unitCell, **currKwargDict)
+		outDict["Masses"] = mapFuncts.getMassesDictStrFromMassDict(massDict, numbFmt=self.numbFmtMasses)
+
+		currKwargDict = {"eleToTypeIdx":lammpsGeomInstance.eleToTypeIdx, "eleToChargeIdx":lammpsGeomInstance.eleToCharge,
+		                 "coordNumbFmt":self.numbFmtCoords, "chargeNumbFmt":self.numbFmtCharge}
+		outDict["Atoms"] = mapFuncts.getAtomsStrFromUnitCell(lammpsGeomInstance.unitCell, **currKwargDict)
+
+		return outDict
+
+
+
+	def __call__(self, lammpsGeomInstance):
+		return self.getDataDict(lammpsGeomInstance)
+
+
+
 class MapGeomInfoToDataDictBase():
 	
 	def getMassesDictStrFromMassDict(self, massDict, numbFmt="{:.4f}"):
@@ -160,8 +255,166 @@ def createMapGeomInfoToDataDictObjFromAtomStyle(atomStyle, modTiltFactors=None):
 	"""
 	if atomStyle.lower()=="full":
 		return _MapGeomInfoToDataDict_atomTypeFull(modTiltFactors=modTiltFactors)
+	elif atomStyle.lower()=="atomic":
+		return _MapGeomIntoToDataDict_atomTypeAtom(modTiltFactors=modTiltFactors)
+	elif atomStyle.lower()=="charge":
+		return _MapGeomInfoToDataDict_atomTypeCharge(modTiltFactors=modTiltFactors)
 	else:
 		raise KeyError(atomStyle)
+
+
+class _MapGeomInfoToDataDict_atomTypeCharge(MapGeomInfoToDataDictBase):
+
+	def __init__(self,modTiltFactors=None):
+		self.modTiltFactors = modTiltFactors
+
+	#TODO: Can likely factor into the base class
+	def getMassesDictStrFromMassDict(self, massDict, numbFmt="{:.4f}"):
+		""" Get the body string for the "Masses" entry from a dict of masses
+		
+		Args:
+			massDict: (dict) Keys are atomType indices (1,2,3..) while values are masses to assign to those types
+			numbFmt: (str) Define how we format the mass into a string
+ 
+		Returns
+			massStr: (str) The string used to define masses in the output data file. Note these values will always be in the order of atom indices
+	 
+		"""
+		lineFmtStr = "\t{}\t"+numbFmt+"\n"
+		outStr = ""
+		for key,val in massDict.items():
+			outStr += lineFmtStr.format(key,val)
+		return outStr
+
+	def getAtomsStrFromUnitCell(self, unitCell, eleToTypeIdx=None, coordNumbFmt="{:.5f}"):
+
+		if eleToTypeIdx is None:
+			raise ValueError(eleToTypeIdx)
+
+		outFmt = "\t{} {}" + " " + " ".join([coordNumbFmt for x in range(3)]) + "\n"
+		cartCoords = unitCell.cartCoords
+		outStr = ""
+
+		for idx,coord in enumerate(cartCoords,start=1):
+			currEle = coord[-1]
+			currType = eleToTypeIdx[currEle]
+			currLine = outFmt.format(idx,currType, *coord[:3])
+			outStr += currLine
+		return outStr
+
+	def getAtomsStrFromUnitCell(self, unitCell, eleToTypeIdx=None, eleToChargeIdx=None, moleculeIds=None,
+	                            coordNumbFmt="{:.5f}", chargeNumbFmt="{:.4f}"):
+
+		if eleToTypeIdx is None:
+			raise ValueError(eleToTypeIdx) 
+		elif eleToChargeIdx is None:
+			raise ValueError(eleToChargeIdx)
+	
+		outFmt = "\t{} {} " + chargeNumbFmt + " " + " ".join([coordNumbFmt for x in range(3)]) + "\n"
+		cartCoords = unitCell.cartCoords
+		outStr = ""
+		for idx,coord in enumerate(cartCoords, start=1):
+			currEle = coord[-1]
+			currType, currCharge = eleToTypeIdx[currEle], eleToChargeIdx[currEle]
+			currLine = outFmt.format(idx, currType, currCharge, *coord[:3])
+			outStr += currLine
+		return outStr
+
+
+	#TODO: Can likely be factored into base class
+	def getHeaderStrFromUnitCellAndKwargs(self, unitCell, numbFmt="{:.4f}"):
+		cellDimsStr = self._getHeaderCellDimsPartFromUnitCell(unitCell, numbFmt=numbFmt)
+		nAtomTypes =len( getEleToTypeIdxMapFromUnitCell(unitCell).keys() )
+		outStr = ""
+		outStr += "\t{} atoms\n".format(len(unitCell.cartCoords))
+		outStr += "\t{} atom types\n".format(nAtomTypes)
+		outStr += cellDimsStr
+		return outStr
+
+	def _getHeaderCellDimsPartFromUnitCell(self, unitCell, numbFmt="{:.4f}"):
+		simBox = LammpsSimulationBox.fromUnitCell(unitCell)
+		outStr = self._getHeaderCellDimsPartFromLammpsSimBox(simBox, numbFmt=numbFmt)
+		return outStr
+
+	def _getHeaderCellDimsPartFromLammpsSimBox(self, simBox, numbFmt="{:.4f}"):
+		rangeFmtPrefix = "\t" + numbFmt + "\t" + numbFmt +"\t"
+		tiltFactorFmt = "\t" + numbFmt + "\t" + numbFmt + "\t" + numbFmt +"\txy xz yz"
+		outStr = ""
+		outStr += rangeFmtPrefix.format(*simBox.xRange) + "xlo xhi\n"
+		outStr += rangeFmtPrefix.format(*simBox.yRange) + "ylo yhi\n"
+		outStr += rangeFmtPrefix.format(*simBox.zRange) + "zlo zhi\n"
+		tiltFactors = simBox.tiltFactors if self.modTiltFactors is None else self.modTiltFactors(simBox.tiltFactors)
+		outStr += tiltFactorFmt.format(*tiltFactors)
+		return outStr
+
+
+
+class _MapGeomIntoToDataDict_atomTypeAtom(MapGeomInfoToDataDictBase):
+
+	def __init__(self,modTiltFactors=None):
+		self.modTiltFactors = modTiltFactors
+
+	#TODO: Can likely factor into the base class
+	def getMassesDictStrFromMassDict(self, massDict, numbFmt="{:.4f}"):
+		""" Get the body string for the "Masses" entry from a dict of masses
+		
+		Args:
+			massDict: (dict) Keys are atomType indices (1,2,3..) while values are masses to assign to those types
+			numbFmt: (str) Define how we format the mass into a string
+ 
+		Returns
+			massStr: (str) The string used to define masses in the output data file. Note these values will always be in the order of atom indices
+	 
+		"""
+		lineFmtStr = "\t{}\t"+numbFmt+"\n"
+		outStr = ""
+		for key,val in massDict.items():
+			outStr += lineFmtStr.format(key,val)
+		return outStr
+
+	def getAtomsStrFromUnitCell(self, unitCell, eleToTypeIdx=None, coordNumbFmt="{:.5f}"):
+
+		if eleToTypeIdx is None:
+			raise ValueError(eleToTypeIdx)
+
+		outFmt = "\t{} {}" + " " + " ".join([coordNumbFmt for x in range(3)]) + "\n"
+		cartCoords = unitCell.cartCoords
+		outStr = ""
+
+		for idx,coord in enumerate(cartCoords,start=1):
+			currEle = coord[-1]
+			currType = eleToTypeIdx[currEle]
+			currLine = outFmt.format(idx,currType, *coord[:3])
+			outStr += currLine
+		return outStr
+
+
+	#TODO: Can likely be factored into base class
+	def getHeaderStrFromUnitCellAndKwargs(self, unitCell, numbFmt="{:.4f}"):
+		cellDimsStr = self._getHeaderCellDimsPartFromUnitCell(unitCell, numbFmt=numbFmt)
+		nAtomTypes =len( getEleToTypeIdxMapFromUnitCell(unitCell).keys() )
+		outStr = ""
+		outStr += "\t{} atoms\n".format(len(unitCell.cartCoords))
+		outStr += "\t{} atom types\n".format(nAtomTypes)
+		outStr += cellDimsStr
+		return outStr
+
+	def _getHeaderCellDimsPartFromUnitCell(self, unitCell, numbFmt="{:.4f}"):
+		simBox = LammpsSimulationBox.fromUnitCell(unitCell)
+		outStr = self._getHeaderCellDimsPartFromLammpsSimBox(simBox, numbFmt=numbFmt)
+		return outStr
+
+	def _getHeaderCellDimsPartFromLammpsSimBox(self, simBox, numbFmt="{:.4f}"):
+		rangeFmtPrefix = "\t" + numbFmt + "\t" + numbFmt +"\t"
+		tiltFactorFmt = "\t" + numbFmt + "\t" + numbFmt + "\t" + numbFmt +"\txy xz yz"
+		outStr = ""
+		outStr += rangeFmtPrefix.format(*simBox.xRange) + "xlo xhi\n"
+		outStr += rangeFmtPrefix.format(*simBox.yRange) + "ylo yhi\n"
+		outStr += rangeFmtPrefix.format(*simBox.zRange) + "zlo zhi\n"
+		tiltFactors = simBox.tiltFactors if self.modTiltFactors is None else self.modTiltFactors(simBox.tiltFactors)
+		outStr += tiltFactorFmt.format(*tiltFactors)
+		return outStr
+
 
 
 class _MapGeomInfoToDataDict_atomTypeFull(MapGeomInfoToDataDictBase):
