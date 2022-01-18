@@ -782,7 +782,7 @@ def addProbabilityDensitiesToNDimBinsSimple(binObj, countKey="counts", outKey="p
 	binObj.binVals[outKey] = outMatrix
 
 
-
+#TODO: Should explicitly put a note in about how to set numbAtomsTo if calculating g_{AA} rdf; I THINK nAtomsTo should be nAtomsFrom-1 in this case
 def addCircularRdfToNDimBins(inpBinObj, numbAtomsFrom, numbAtomsTo, areas=None):
 	""" Adds "circular rdf" values to NDimensionalBinnedResults using normalised_counts. "Circular rdf" is the same as a normal rdf except its assumed that the other molecules all lie within a single plane; meaning we have circular shells rather than spherical shells. Hence each bin maps to an area-shell (centred around its central value) rather than a volume-shell
 	
@@ -996,7 +996,10 @@ def getWeightedIntegralOverRdf(binEdges, rdfVals, betweenVals=None, prefactor=1,
 	def _surfAreaWeightFunction(r):
 		return 4*math.pi*(r**2)
 
-	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _surfAreaWeightFunction, betweenVals=betweenVals, prefactor=prefactor,
+	def _volumeWeightFunction(r):
+		return (4/3)*math.pi*(r**3)
+
+	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _volumeWeightFunction, betweenVals=betweenVals, prefactor=prefactor,
 	                                              useCentreForBetweenVals=useCentreForBetweenVals,linInterp=linInterp)
 
 
@@ -1018,16 +1021,23 @@ def getWeightedIntegralOverCircularRdf(binEdges, rdfVals, betweenVals=None, pref
 	def _circumferenceWeightFunction(r):
 		return 2*math.pi*r
 
-	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _circumferenceWeightFunction, betweenVals=betweenVals, prefactor=prefactor,
+	def _areaWeightFunction(r):
+		return math.pi*(r**2)
+
+	return _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, _areaWeightFunction, betweenVals=betweenVals, prefactor=prefactor,
 	                                              useCentreForBetweenVals=useCentreForBetweenVals, linInterp=linInterp)
 
 
 
-def _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, centreWeightFunction, betweenVals=None, prefactor=1,useCentreForBetweenVals=True, linInterp=True):
-	#Get the weighted rdf values
+def _getIntegralOverWeightedRdfLikeDistrib(binEdges, rdfVals, volumeWeightFunction, betweenVals=None, prefactor=1,useCentreForBetweenVals=True, linInterp=True):
+	#Get the weighted rdf values [This is g(r)* <4pi r**2> for an rdf; which is the same as binVol/binWidth
 	binEdgePairs = _getBinEdgePairsFromBinEdges(binEdges)
-	binCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in binEdgePairs ]
-	weightedRdf = [rdf*centreWeightFunction(r) for rdf,r in it.zip_longest(rdfVals, binCentres)]
+	binWidths = [ max(currPair)-min(currPair) for currPair in binEdgePairs ]
+#	binCentres = [ min([b,a]) + (abs(b-a)/2) for a,b in binEdgePairs ]
+#	weightedRdf = [rdf*centreWeightFunction(r) for rdf,r in it.zip_longest(rdfVals, binCentres)]
+
+	binPseudoVolumes = [ ( volumeWeightFunction(max(currPair)) - volumeWeightFunction(min(currPair)) ) / width for currPair, width in it.zip_longest(binEdgePairs,binWidths)  ]
+	weightedRdf = [rdf*weight for rdf,weight in it.zip_longest(rdfVals,binPseudoVolumes)]
 
 	#Use the zeroth-moment pdf integrator to do the rest of the work; then multiply by prefactor
 	integral = _getNthMomentFromPdf(binEdges, weightedRdf, betweenVals=betweenVals, nthMoment=0,useCentreForBetweenVals=useCentreForBetweenVals, linInterp=linInterp)

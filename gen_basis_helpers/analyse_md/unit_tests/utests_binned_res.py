@@ -503,13 +503,13 @@ class TestIntegrateOverRdf(unittest.TestCase):
 		return tCode.getWeightedIntegralOverRdf(*currArgs, **currKwargs)
 
 	def testExpectedCaseA(self):
-		expVal = 5510.3535143965
+		expVal = 5625.545245028123
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
 
 	def testExpected_betweenVals(self):
 		self.betweenVals = [-1,6]
-		expVal = 731.991088286422
+		expVal = 762.3598172711231
 		actVal = self._runTestFunct()
 		self.assertAlmostEqual(expVal, actVal)
 
