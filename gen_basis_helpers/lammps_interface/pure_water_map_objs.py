@@ -45,6 +45,8 @@ class PureWaterCellToLammpsGeomMapperCentralOnly():
 
 		if self.atomStyle=="full":
 			getDataDictFunct = lammpsGeomHelp.GetDataDictFromLammpsGeomAtomStyleFull(modTiltFactors=modTiltFactorsFunct)
+		elif self.atomStyle=="charge":
+			getDataDictFunct = lammpsGeomHelp.GetDataDictFromLammpsGeomAtomStyleCharge(modTiltFactors=modTiltFactorsFunct)
 		else:
 			raise ValueError("{} is an invalid atomStyle".format(self.atomStyle))
 

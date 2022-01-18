@@ -23,6 +23,9 @@ class LammpsCalcObjFactorySimple(baseObjs.CalcMethodFactoryBase):
 	registeredKwargs.add("dumpOptions")
 	registeredKwargs.add("boundaries")
 	registeredKwargs.add("walls")
+	registeredKwargs.add("chargeEqualisation")
+	registeredKwargs.add("groups")
+	registeredKwargs.add("velocityRescaling")
 
 	#KEY FUNCTION
 	def _createFromSelf(self):
@@ -66,9 +69,31 @@ class LammpsCalcObjFactorySimple(baseObjs.CalcMethodFactoryBase):
 		outStr = ""
 		currFixIdx = 1
 
-		if self.ensembleObj is not None:
-			outStr +=  str(currFixIdx) + " " + self.ensembleObj.fixStr
-			currFixIdx+= 1
+		def _appendStdFixCommandForAttr(attr, outStr, currFixIdx):
+			currVal = getattr(self,attr)
+			if currVal is not None:
+				if outStr!="":
+					outStr += "\nfix "
+
+				try:
+					iter(currVal)
+				except TypeError:
+					outStr += str(currFixIdx) + " " + currVal.fixStr
+					currFixIdx += 1
+				else:
+					for idx,currObj in enumerate(currVal):
+						if idx==0:
+							outStr += str(currFixIdx) + " " + currObj.fixStr
+						else:
+							outStr += "\nfix " + str(currFixIdx) + " " + currObj.fixStr
+						currFixIdx += 1
+
+			return outStr, currFixIdx
+
+		outStr, currFixIdx = _appendStdFixCommandForAttr("ensembleObj", outStr, currFixIdx)
+		outStr, currFixIdx = _appendStdFixCommandForAttr("chargeEqualisation", outStr, currFixIdx)
+		outStr, currFixIdx = _appendStdFixCommandForAttr("velocityRescaling", outStr, currFixIdx)
+
 
 		if self.walls is not None:
 			for wall in self.walls:
@@ -85,11 +110,15 @@ class LammpsCalcObjFactorySimple(baseObjs.CalcMethodFactoryBase):
 	
 	def _getSettingsCommandDict(self):
 		outDict = collections.OrderedDict()
+
+		if self.groups is not None:
+			outDict["group"] = self._getAllGroupsCommand()
+
 		if self.velocityObj is not None:
 			outDict["velocity"] = self.velocityObj.commandStr
 
 		if self.timeStep is not None:
-			outDict["timestep"] = "{:.1f}".format(self.timeStep)
+			outDict["timestep"] = "{:.4f}".format(self.timeStep)
 
 		if self.thermoStyle is not None:
 			outDict["thermo_style"] = self.thermoStyle
@@ -99,4 +128,19 @@ class LammpsCalcObjFactorySimple(baseObjs.CalcMethodFactoryBase):
 
 		return outDict
 
+	def _getAllGroupsCommand(self):
+		
+		try:
+			iter(self.groups)
+		except TypeError:
+			outStr = self.groups.groupStr
+		else:
+			outStr = ""
+			for idx,obj in enumerate(self.groups):
+				if idx==0:
+					outStr += obj.groupStr
+				else:
+					outStr += "\ngroup " + obj.groupStr
+
+		return outStr
 

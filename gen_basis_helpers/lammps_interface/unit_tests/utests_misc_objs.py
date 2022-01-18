@@ -72,6 +72,62 @@ class TestNPTEnsemble(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			self.testObjA.fixStr
 
+class TestVelocityRescalingObj(unittest.TestCase):
+
+	def setUp(self):
+		self.groupId = "groupA"
+		self.nEvery = 5
+		self.tempStart = 340
+		self.tempEnd = None
+		self.maxDeviation = 50
+		self.fraction = 1
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currKwargs = {"groupId":self.groupId, "nEvery":self.nEvery, "tempStart":self.tempStart,
+		              "tempEnd":self.tempEnd, "maxDeviation":self.maxDeviation, "fraction":self.fraction}
+		self.testObjA = tCode.RescaleVelocitiesSimple(**currKwargs)
+
+	def testExpectedA(self):
+		expStr = "groupA temp/rescale 5 340.00 340.00 50.00 1.00"
+		actStr = self.testObjA.fixStr
+		self.assertEqual(expStr, actStr)
+
+
+class TestCombChargeEquilibrationObj(unittest.TestCase):
+
+	def setUp(self):
+		self.groupId = "Mg"
+		self.nEvery = 75
+		self.precision = 1e-3
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"groupId":self.groupId, "nEvery":self.nEvery, "precision":self.precision}
+		self.testObjA = tCode.CombChargeNeutralisationOpts(**kwargDict)
+
+	def testExpStrFromSimpleOptsA(self):
+		expStr = "Mg qeq/comb 75 0.00100"
+		actStr = self.testObjA.fixStr
+		self.assertEqual(expStr,actStr)
+
+
+class TestAtomGroupByTypesObj(unittest.TestCase):
+
+	def setUp(self):
+		self.groupId = "water"
+		self.atomTypes = [1,2]
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currArgs = [self.groupId, self.atomTypes]
+		self.testObjA = tCode.AtomGroupByType(*currArgs)
+
+	def testExpStrFromSimpleOptsA(self):
+		expStr = "water type 1 2"
+		actStr = self.testObjA.groupStr
+		self.assertEqual(expStr,actStr)
+
 
 class TestCreateVelocityObj(unittest.TestCase):
 

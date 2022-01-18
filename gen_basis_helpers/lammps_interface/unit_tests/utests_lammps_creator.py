@@ -80,7 +80,7 @@ class TestLammpsCalcObjFactory(unittest.TestCase):
 		self.timeStep = 2
 		self.createTestObjs()
 
-		expDictArgs = [ ["velocity",expVelocityStr], ["timestep", "{:.1f}".format(self.timeStep)],
+		expDictArgs = [ ["velocity",expVelocityStr], ["timestep", "{:.4f}".format(self.timeStep)],
 		                ["thermo_style",self.thermoStyle], ["thermo",str(self.printThermoEveryNSteps)] ] 
 		expDict = collections.OrderedDict(expDictArgs)
 		actDict = self.testObjA._getScriptFileDict()

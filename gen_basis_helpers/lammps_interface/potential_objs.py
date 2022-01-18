@@ -165,6 +165,7 @@ class PriceTIP3PPotential(PotentialParamsLJAndHarmonicBase):
 			forceConstOH: Force constant for OH bond
 			eqmAngleHOH: Angle (Degrees) of the equilibrium H-O-H bond
 			forceConstHOH: Force constant for the H-O-H bond
+			extraLJ: (iter of LennardJonesPotential objects) LennardJonesPotential objects which are appended to lennardJonesPots. Original use was to easily add metal-water parameters
 
 		"""
 		self.ljOO = [0.102,3.188] if ljOO is None else ljOO
@@ -174,6 +175,7 @@ class PriceTIP3PPotential(PotentialParamsLJAndHarmonicBase):
 		self.forceConstOH = forceConstOH
 		self.eqmAngleHOH = eqmAngleHOH
 		self.forceConstHOH = forceConstHOH
+		self.extraLJ = list()
 
 	#Empty list by default would make it easier to extend
 	@property
@@ -191,7 +193,7 @@ class PriceTIP3PPotential(PotentialParamsLJAndHarmonicBase):
 		potOO = LennardJonesPotential(["O","O"], *self.ljOO)
 		potOH = LennardJonesPotential(["O","H"], *self.ljOH)
 		potHH = LennardJonesPotential(["H","H"], *self.ljHH)
-		return [potOO, potOH, potHH]
+		return [potOO, potOH, potHH] + self.extraLJ
 
 
 class Jorg1983TIP3PPotential(PriceTIP3PPotential):
@@ -217,6 +219,7 @@ class Jorg1983TIP3PPotential(PriceTIP3PPotential):
 		self.forceConstOH = forceConstOH
 		self.eqmAngleHOH = eqmAngleHOH
 		self.forceConstHOH = forceConstHOH
+		self.extraLJ = list()
 
 
 class InternalMoleculeHarmonicPotential():
