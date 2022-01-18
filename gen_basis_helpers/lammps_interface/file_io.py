@@ -18,6 +18,8 @@ def getUCellObjectFromDataFile(inpPath, atomStyle="full", massDict=None):
 		typeIdxToEle = _getTypeIdxToEleFromMassesSectionAndMassDict(tokenizedFile["Masses"],massDict)
 		cartCoords = _getCartCoordsFromAtomsSection_atomStyleFull(tokenizedFile["Atoms"], typeIdxToEle)
 		outCell.cartCoords = cartCoords
+	else:
+		raise NotImplementedError("atomStyle={} is not implemented yet".format(atomStyle))
 
 	return outCell
 
