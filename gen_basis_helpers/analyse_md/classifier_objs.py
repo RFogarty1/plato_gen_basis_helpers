@@ -85,6 +85,7 @@ class _AtomsWithinMinDistRangeClassifier():
 			execCount: (int) Used to track how many times .classify is called; used as a safety check when using "byReference" classifiers
 
 		"""
+		self._eqTol = 1e-5
 		self.atomIndices = atomIndices
 		self.distFilterIndices = distFilterIndices
 		self.distFilterRange = distFilterRange
@@ -111,7 +112,37 @@ class _AtomsWithinMinDistRangeClassifier():
 
 		return outIndices
 
+	#Implemented to make it easier to test certain options objects
+	def __eq__(self, other):
+		eqTol = min(self._eqTol, other._eqTol)
+		directCmpAttrs = ["atomIndices", "distFilterIndices", "execCount"]
+		floatListAttrs = ["distFilterRange"]
+		floatAttrs = ["minDistVal"]
 
+		#Check easy-to-compare attrs
+		for currAttr in directCmpAttrs:
+			valA, valB = getattr(self,currAttr), getattr(other,currAttr)
+			if valA != valB:
+				return False
+
+		#Check other attrs
+		for currAttr in floatAttrs:
+			valA, valB = getattr(self,currAttr), getattr(other,currAttr)
+			diffVal = abs(valB-valA)
+			if (diffVal > eqTol):
+				return False
+
+		for currAttr in floatListAttrs:
+			valsA, valsB = getattr(self,currAttr), getattr(other,currAttr)
+			if len(valsA)!=len(valsB):
+				return False
+			else:
+				for valA,valB in zip(valsA,valsB):
+					currDiffVal = abs(valA-valB)
+					if currDiffVal > eqTol:
+						return False
+
+		return True
 
 
 class _WaterClassifierMinDistAndNumberHBonds(_WaterClassifierBase):

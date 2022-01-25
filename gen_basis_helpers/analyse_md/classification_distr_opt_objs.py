@@ -6,6 +6,24 @@ from . import calc_distrib_core as calcDistrCoreHelp
 from . import distr_opt_objs as distrOptObjHelp
 
 
+class CompositeClassiferOptsSimple():
+	""" Class for when you need to mix multiple types of classification opts; such as assigning one group based on planar distance and another on number of h-bonds """
+
+	def __init__(self, optsObjs):
+		""" Initializer
+		
+		Args:
+			optsObjs: (iter of options objects) e.g. original purpose was to combine [ClassifyBasedOnHBondingToGroup_simple, ClassifyBasedOnHBondingToDynamicGroup]
+				
+		Notes:
+			The optsObjs should probably lead to classifiers with the same interface; but i wont check that in any way.
+ 
+		"""
+		self.optsObjs = optsObjs
+
+
+
+
 class AtomClassifyBasedOnDistsFromIndicesSimpleOpts():
 	""" Simple classification options for individual atoms based on their minimum distance from another group of atoms """
 

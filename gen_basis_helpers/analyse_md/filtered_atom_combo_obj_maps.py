@@ -25,6 +25,14 @@ def getClassifiersFromOptsObj(inpOptsObj):
 	return _CLASSIFIER_FROM_OPTS_OBJ_FROM_TYPE_DICT[type(inpOptsObj)](inpOptsObj)
 
 
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.CompositeClassiferOptsSimple)
+def _(inpObj):
+	classifiers = list()
+	for optsObj in inpObj.optsObjs:
+		currClassifiers = getClassifiersFromOptsObj(optsObj)
+		classifiers.extend(currClassifiers)
+	return classifiers
+
 @TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
 def _(inpObj):
 	classifiers = list()

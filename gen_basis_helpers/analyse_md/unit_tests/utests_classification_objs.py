@@ -1,4 +1,5 @@
 
+import copy
 import types
 import unittest
 
@@ -71,4 +72,46 @@ class _StubClassifier():
 		self.execCount += 1
 		self.storedClassifyResult = self.outputVals
 		return self.outputVals
+
+
+class TestEqualityForAtomsWithinMinDistRange(unittest.TestCase):
+
+
+	def setUp(self):
+		self.atomIndices = [1,3,4]
+		self.distFilterIndices = [ 5,6 ]
+		self.distFilterRange = [2.2, 5.6]
+		self.minDistVal = -0.05
+		self.execCount = 2
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currArgs = [self.atomIndices, self.distFilterIndices, self.distFilterRange]
+		currKwargs = {"minDistVal":self.minDistVal, "execCount":self.execCount}
+		self.testObjA = tCode._AtomsWithinMinDistRangeClassifier(*currArgs, **currKwargs)
+
+	def testCmpEqualA(self):
+		objA, objB = self.testObjA, copy.deepcopy(self.testObjA)
+		self.assertEqual(objA, objB)
+
+	def testDiffIndicesCmpNotEqual(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.atomIndices[-1] += 2
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testDiffMinDistCmpNotEqual(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.minDistVal -= 0.4
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA, objB)
+
+	def testDiffFilterRangeCmpNotEqual(self):
+		objA = copy.deepcopy(self.testObjA)
+		self.distFilterRange[-1] += 0.2
+		self.createTestObjs()
+		objB = self.testObjA
+		self.assertNotEqual(objA,objB)
 

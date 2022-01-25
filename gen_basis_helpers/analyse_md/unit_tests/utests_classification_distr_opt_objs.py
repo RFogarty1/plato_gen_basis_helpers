@@ -5,6 +5,8 @@ import unittest
 import plato_pylib.shared.ucell_class as uCellHelp
 
 import gen_basis_helpers.analyse_md.binned_res as binResHelp
+import gen_basis_helpers.analyse_md.filtered_atom_combo_obj_maps as filterAtomComboObjMapHelp
+
 
 import gen_basis_helpers.analyse_md.classification_distr_opt_objs as tCode
 
@@ -237,5 +239,44 @@ class TestWaterCountsOptions(unittest.TestCase):
 		self.nDonorFilterRanges.append( [4,1] )
 		with self.assertRaises(ValueError):
 			self.createTestObjs()
+
+
+
+class TestCompositeClassifierOpts(unittest.TestCase):
+
+	def setUp(self):
+		#First set of options
+		self.binResA = [None, None]
+		self.atomIndicesA = [3,4,5]
+		self.distFilterIndicesA = [7,8]
+		self.distFilterRangesA = [ [3.3,5.6], [5.6,8.9] ] 
+		self.minDistValA = 1.1
+
+		#Second set of options
+		self.binResB = [None]
+		self.atomIndicesB = [4,5]
+		self.distFilterIndicesB = [7]
+		self.distFilterRangesB = [ [0.0,2.2] ]
+		self.minDistValB = -0.02
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		currArgs = [self.binResA, self.atomIndicesA, self.distFilterIndicesA, self.distFilterRangesA]
+		self.optsA = tCode.AtomClassifyBasedOnDistsFromIndicesSimpleOpts(*currArgs, minDistVal=self.minDistValA)
+
+		currArgs = [self.binResB, self.atomIndicesB, self.distFilterIndicesB, self.distFilterRangesB]
+		self.optsB = tCode.AtomClassifyBasedOnDistsFromIndicesSimpleOpts(*currArgs, minDistVal=self.minDistValB)
+
+		self.compositeObj = tCode.CompositeClassiferOptsSimple([self.optsA, self.optsB])
+
+	def testExpectedClassifiersA(self):
+		objsA = filterAtomComboObjMapHelp.getClassifiersFromOptsObj(self.optsA)
+		objsB = filterAtomComboObjMapHelp.getClassifiersFromOptsObj(self.optsB)
+
+		expObjs = objsA + objsB
+		actObjs = filterAtomComboObjMapHelp.getClassifiersFromOptsObj(self.compositeObj)
+
+		self.assertEqual(expObjs, actObjs)
 
 
