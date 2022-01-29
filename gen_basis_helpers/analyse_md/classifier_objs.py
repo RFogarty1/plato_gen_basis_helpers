@@ -333,6 +333,9 @@ class _ClassiferUsingHBondsToDynamicGroup(ClassifierBase):
 
 		outNonHyIndices, outHyIndices = outVals[0], outVals[1]
 
+		self.execCount += 1
+		self.storedClassifyResult = (outNonHyIndices, outHyIndices)
+
 		return outNonHyIndices, outHyIndices
 
 	def _getFilteredIndices(self, outVals, toNonHyIndices, toHyIndices):
