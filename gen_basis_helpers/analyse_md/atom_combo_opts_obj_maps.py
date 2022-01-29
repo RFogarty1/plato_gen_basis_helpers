@@ -195,6 +195,11 @@ def _(inpObj):
 	return compositePopulator
 
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.CompositeClassiferOptsSimple)
+def _(inpObj):
+	outPopulators = [getMatrixPopulatorFromOptsObj(x) for x in inpObj.optsObjs]
+	return coreComboHelp._SparseMatrixPopulatorComposite(outPopulators)
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts)
 def _(inpObj):
 	fromIndices, toIndices = inpObj.atomIndices, inpObj.distFilterIndices
