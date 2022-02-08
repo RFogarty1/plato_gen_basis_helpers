@@ -344,6 +344,7 @@ def _(populator, optsObj):
 	populator.hyIndices = outHyIndices
 
 
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator,    filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
 def _(populator, optsObj):
 	populator.fromIndices = optsObj.atomIndices

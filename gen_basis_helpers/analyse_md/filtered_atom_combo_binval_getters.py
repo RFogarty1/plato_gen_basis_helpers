@@ -160,6 +160,21 @@ def _(binvalGetter, groupIndices, useGroups, **kwargs):
 	oxyIndices = [x[0] for x in allIndices[0]]
 	binvalGetter.oxyIndices = oxyIndices
 
+
+#Same as hozdist except attrs are indicesA/indicesB instead of fromIndices/toIndices
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._RadialDistsGetValsToBin)
+def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
+	allFromIndices = groupIndices[useGroups[0]] #indicesA
+	useFromIndices = _getAtomicIndicesForNonHyToHyGeneric(allFromIndices, useNonHyIdx, useIdxEach)
+	binvalGetter.indicesA = useFromIndices
+
+	if len(useGroups)==1:
+		pass
+	else:
+		allToIndices = groupIndices[useGroups[1]]
+		useToIndices = _getAtomicIndicesForNonHyToHyGeneric(allToIndices, useNonHyIdx, useIdxEach)
+		binvalGetter.indicesB = useToIndices
+
 @BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._HozDistsGetValsToBin)
 @BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._MinHozDistsGetValsToBin)
 def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
