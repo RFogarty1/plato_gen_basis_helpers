@@ -366,6 +366,31 @@ class CountHBondsBetweenGenericGroupsOptions(calcDistrCoreHelp.CalcDistribOption
 		else:
 			return self._primaryIndices
 
+
+
+class GetOODistsForHBondsBetweenGenericGroups(CountHBondsBetweenGenericGroupsOptions):
+	""" Options for getting Oxy-Oxy (or more generally NonHy-NonHy) distances for every H-bond found;
+
+	IMPORTANT: This bins 1 value PER H-BOND; rather than per primary index. Therefore these options cant be combined with (for example) the h-bond counting case though it wont neccesarily throw an error if you try """
+
+
+	def __init__(self, *args,**kwargs):
+		super().__init__(*args, **kwargs)
+		self.distribKey = "hbondOODists"
+
+
+class GetOOHAnglesForHBondsBetweenGenericGroups(CountHBondsBetweenGenericGroupsOptions):
+	""" Options for getting O_A-O_D-H_D (or more generally NonHy_A-NonHy_D-Hy_D) angles for every H-bond found;
+
+	IMPORTANT: This bins 1 value PER H-BOND; rather than per primary index. Therefore these options cant be combined with (for example) the h-bond counting case though it wont neccesarily throw an error if you try """
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.distribKey = "hbondOOHDists"
+
+
+
+
 class CountHBondsBetweenWaterGroupsOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 	""" Options for counting number of hydrogen bonds between groups of water """
 

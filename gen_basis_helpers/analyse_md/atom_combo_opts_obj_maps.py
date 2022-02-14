@@ -127,6 +127,8 @@ def _(inpObj):
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
 	return atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetOOHAnglesForHBondsBetweenGenericGroups)
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetOODistsForHBondsBetweenGenericGroups)
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenGenericGroupsOptions)
 def _(inpObj):
 	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
@@ -265,6 +267,18 @@ def _(inpObj):
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
 	return binValGettersHelp._CountHBondsBetweenGenericGroupsBinValGetter(*currArgs, **currKwargs)
 
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetOODistsForHBondsBetweenGenericGroups)
+def _(inpObj):
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
+	return binValGettersHelp._GetNonHyDistsForHBondsBinValGetter(*currArgs, **currKwargs)
+
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetOOHAnglesForHBondsBetweenGenericGroups)
+def _(inpObj):
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
+	return binValGettersHelp._GetOOHAnglesForHBondsBinValGetter(*currArgs, **currKwargs)
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenWaterGroupsOptions)
 def _(inpObj):

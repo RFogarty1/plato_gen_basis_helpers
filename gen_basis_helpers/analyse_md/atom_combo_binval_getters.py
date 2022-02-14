@@ -385,6 +385,8 @@ class _WaterPlanarMinDistBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromS
 
 
 
+
+
 class _CountHBondsBetweenGenericGroupsBinValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
 	def __init__(self, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
@@ -423,6 +425,42 @@ class _CountHBondsBetweenGenericGroupsBinValGetter(atomComboCoreHelp._GetOneDimV
 
 		return outVals
 
+
+class _HBondsPropertiesBetweenGenericGroupsBinValGetter(_CountHBondsBetweenGenericGroupsBinValGetter):
+
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		distMatrix = sparseMatrixCalculator.outDict["distMatrix"]
+		angleMatrix = sparseMatrixCalculator.outDict["angleMatrix"]
+
+		outVals = list()
+		sharedKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO, "maxAngle":self.maxAngle}
+		for fromNonHy, fromHy in it.zip_longest(self.fromNonHyIndices, self.fromHyIndices):
+			currArgs = [fromNonHy, fromHy, self.toNonHyIndices, self.toHyIndices, distMatrix, angleMatrix]
+			currIndices = _getHBondIndicesForOneGenericFromGroup(*currArgs, **sharedKwargs)
+			currVals = self._getValsFromIndices( distMatrix, angleMatrix, currIndices )
+			outVals.extend(currVals)
+
+		return outVals
+
+	def _getValsFromIndices(self, distMatrix, angleMatrix, indices):
+		raise NotImplementedError("")
+
+
+
+
+class _GetNonHyDistsForHBondsBinValGetter(_HBondsPropertiesBetweenGenericGroupsBinValGetter):
+
+	def _getValsFromIndices(self, distMatrix, angleMatrix, indices):
+		outDists = [ distMatrix[currIndices[0]][currIndices[1]] for currIndices in indices ]
+		return outDists
+
+
+class _GetOOHAnglesForHBondsBinValGetter(_HBondsPropertiesBetweenGenericGroupsBinValGetter):
+	
+	def _getValsFromIndices(self, distMatrix, angleMatrix, indices):
+		outAngles = [ angleMatrix[currIndices[0]][currIndices[1]][currIndices[2]] for currIndices in indices ]
+		return outAngles
 
 
 class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
@@ -486,7 +524,13 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCo
 
 #Tons of overlap with _getFullOutAngleIndicesRequired_GENERIC in the populators file
 def _getNumberHBondsForOneGenericFromGroup(fromNonHyIndices, fromHyIndices, allToNonHyIndices, allToHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
-	outVal = 0
+
+	return len( _getHBondIndicesForOneGenericFromGroup(fromNonHyIndices, fromHyIndices, allToNonHyIndices, allToHyIndices, distMatrix, angleMatrix, acceptor=acceptor, donor=donor, maxOO=maxOO, maxAngle=maxAngle) )
+
+
+#Gives values [O_A, O_D, H_D]
+def _getHBondIndicesForOneGenericFromGroup(fromNonHyIndices, fromHyIndices, allToNonHyIndices, allToHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
+	outIndices = list()
 
 	atomComboPopulatorHelp._checkGenericNonHyAndHyIndicesHaveValidValues(fromNonHyIndices, fromHyIndices)
 	for toNonHyIndices, toHyIndices in it.zip_longest(allToNonHyIndices, allToHyIndices):
@@ -500,7 +544,7 @@ def _getNumberHBondsForOneGenericFromGroup(fromNonHyIndices, fromHyIndices, allT
 					if currDist < maxOO:
 						currAngle = angleMatrix[acceptorIdx][donorPair[0]][donorPair[1]]
 						if currAngle < maxAngle:
-							outVal += 1
+							outIndices.append( [acceptorIdx,donorPair[0],donorPair[1]] )
 		
 			if acceptor:
 				donorPairs = [ [nonHy,hy] for nonHy, hy in it.product(toNonHyIndices, toHyIndices) ]
@@ -509,9 +553,9 @@ def _getNumberHBondsForOneGenericFromGroup(fromNonHyIndices, fromHyIndices, allT
 					if currDist < maxOO:
 						currAngle = angleMatrix[acceptorIdx][donorPair[0]][donorPair[1]]
 						if currAngle < maxAngle:
-							outVal += 1
+							outIndices.append( [acceptorIdx,donorPair[0],donorPair[1]] )
 
-	return outVal
+	return outIndices
 
 def _getNumberHBondsForOneOxyIdx(fromOxyIdx, fromHyIdxPair, toOxyIndices, toHyIndices, distMatrix, angleMatrix, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):
 	

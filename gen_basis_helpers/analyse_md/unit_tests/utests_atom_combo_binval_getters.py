@@ -1,6 +1,7 @@
 
 import copy
 import itertools as it
+import math
 import unittest
 
 import numpy as np
@@ -595,6 +596,72 @@ class TestWaterPlanarDistBinValGetter(unittest.TestCase):
 		actVals = self._runTestFunct()
 		[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expVals, actVals)]
 
+
+#Testing classes that try to bin distances/angles for hydrogen bonds
+class TestGetHBondParametersBetweenGenericGroups(unittest.TestCase):
+
+	#Stolen from TestCountHBondsBetweenGenericGroups
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		#Coords; 
+		co2Coords =   [ [0,0,0,"O"], [1,0,0,"C"], [2,0,0,"O"] ]
+		waterCoords = [ [3,1,0,"H"], [4,2,0,"O"], [5,1,0,"H"] ]
+		hfCoords =    [ [6,0,0,"F"], [7,0,0,"H"] ]
+
+		self.cartCoords = co2Coords + waterCoords + hfCoords
+
+		#from water; to co2 AND hf
+		self.fromNonHyIndices = [ [4] ]
+		self.fromHyIndices = [ [3,5] ]
+		self.toNonHyIndices = [ [0,1,2], [6] ] #CO2 indices, then HF indices  
+		self.toHyIndices = [ [], [7] ] 
+
+		#Options for defining a h-bond; setting to slightly unphysical values to make the test simpler
+		self.maxOO = 3 #O is actually sqrt(8)~2.8 away from the CO2 oxygen and HF Fluorine
+		self.maxAngle = 50
+		self.acceptor, self.donor = True, True
+
+		#Misc
+		self.binResObj = None
+		self.primaryIndices = None
+		self.optsObjInitializer = distrOptObjHelp.GetOODistsForHBondsBetweenGenericGroups
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Options object
+		currArgs = [self.binResObj, self.fromNonHyIndices, self.fromHyIndices, self.toNonHyIndices, self.toHyIndices]
+		currKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO, "maxAngle":self.maxAngle, "primaryIndices":self.primaryIndices}
+		self.optsObj = self.optsObjInitializer(*currArgs,**currKwargs)
+
+		#Get a sparse matrix populator + populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObj])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseCalculator)
+
+	def testExpectedOOLengths(self):
+		expVals = [(math.sqrt(8),), (math.sqrt(8),)]
+		actVals = self._runTestFunct()
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
+	def testExpectedAngles(self):
+		self.optsObjInitializer = distrOptObjHelp.GetOOHAnglesForHBondsBetweenGenericGroups
+		self.createTestObjs()
+		expVals = [ (0,), (0,) ]
+		actVals = self._runTestFunct()
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
 
 
 class TestCountHBondsBetweenGenericGroups(unittest.TestCase):

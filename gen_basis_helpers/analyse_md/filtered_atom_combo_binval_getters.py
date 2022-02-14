@@ -189,6 +189,9 @@ def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
 		useToIndices = _getAtomicIndicesForNonHyToHyGeneric(allToIndices, useNonHyIdx, useIdxEach)
 		binvalGetter.toIndices = useToIndices
 
+
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._GetOOHAnglesForHBondsBinValGetter)
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._GetNonHyDistsForHBondsBinValGetter)
 @BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._CountHBondsBetweenGenericGroupsBinValGetter)
 def _(binvalGetter, groupIndices, useGroups, **unused):
 	fromNonHyIndices, fromHyIndices = groupIndices[useGroups[0]][0], groupIndices[useGroups[0]][1]
