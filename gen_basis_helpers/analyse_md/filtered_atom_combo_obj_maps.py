@@ -97,6 +97,26 @@ def _(inpObj):
 	return outClassifiers
 
 
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.ClassifyNonHyAndHyBasedOnMinHozDistsToAtomGroups)
+def _(inpObj):
+	outClassifiers = list()
+
+	sharedKwargs = {"useIndicesFrom":inpObj.useIndicesFrom, "useIndicesTo":inpObj.useIndicesTo, "minDistVal":inpObj.minDistVal}
+	for idx,unused in enumerate(inpObj.distFilterRanges):
+		currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices,
+		            inpObj.distFilterRanges[idx]]
+		currClassifier = classifierObjHelp._NonHyAndHyClassifierBasedOnMinHozDistToGroup(*currArgs, **sharedKwargs)
+		outClassifiers.append( currClassifier )
+
+	return outClassifiers
+
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.ClassifyNonHyAndHyChainedAllCommon)
+def _(inpObj):
+	useClassifiers = [x for x in it.chain(*[getClassifiersFromOptsObj(x) for x in inpObj.classifierOpts])]
+	outClassifier = classifierObjHelp._NonHyAndHyChainedClassifier_allCommon(useClassifiers)
+	return [outClassifier]
+
+
 @TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj)
 def _(inpObj):
 	classifiers = list()

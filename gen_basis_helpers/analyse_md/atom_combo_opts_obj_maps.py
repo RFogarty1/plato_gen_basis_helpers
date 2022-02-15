@@ -16,9 +16,12 @@ from . import filtered_atom_combo_binval_getters as filteredAtomBinvalGetterHelp
 from ..shared import register_key_decorator as regKeyDecoHelp
 from ..shared import plane_equations as planeEqnHelp
 
-#NOTE:Registration imports occur at the bottom of this file
+#NOTE:Registration imports used to occur at the bottom of this file
+# But i moved it up a little so we could access filter_atom_combo_obj_maps earlier
+# The imports didnt seem to be covered by the unit tests at the time so no 100% sure this didnt break anything
 def _importRegistrationModules():
-	from . import filtered_atom_combo_obj_maps
+	global filteredAtomComboObjMapHelp
+	from . import filtered_atom_combo_obj_maps as filteredAtomComboObjMapHelp
 
 
 #Globals here + Decorators here
@@ -100,6 +103,9 @@ def getOneDimBinValGetterFromOptsObj(optsObj):
 
 
 
+
+#Imports
+_importRegistrationModules()
 
 #Registration of some standard options below
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CalcRdfOptions)
@@ -219,6 +225,7 @@ def _(inpObj):
 			outIndices = [idx for idx in it.chain(*hyIndices)]
 		else:
 			raise ValueError("{} is an invalid type".format(inpType))
+		return outIndices
 
 	fromType, toType = inpObj.useIndicesFrom, inpObj.useIndicesTo
 	fromIndices = _getIndicesBasedOnTypeAndVals(fromType, inpObj.fromNonHyIndices, inpObj.fromHyIndices)
@@ -237,6 +244,13 @@ def _(inpObj):
 	staticallyAssignedPopulator = getMatrixPopulatorFromOptsObj(inpObj.dynGroupOptObj)
 	dynamicallyAssignedPopulator = getMatrixPopulatorFromOptsObj(inpObj.thisGroupOptObj)
 	outPopulator = coreComboHelp._SparseMatrixPopulatorComposite([staticallyAssignedPopulator, dynamicallyAssignedPopulator])
+	return outPopulator
+
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.ClassifyNonHyAndHyChainedAllCommon)
+def _(inpObj):
+	inpOptsObjs = inpObj.classifierOpts
+	populators = [getMatrixPopulatorFromOptsObj(x) for x in inpOptsObjs]
+	outPopulator = coreComboHelp._SparseMatrixPopulatorComposite(populators)
 	return outPopulator
 
 
@@ -355,6 +369,12 @@ def _(inpObj):
 	return outObjs
 
 
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.ClassifyNonHyAndHyChainedAllCommon)
+def _(inpObj):
+	classifiers = [filteredAtomComboObjMapHelp.getClassifiersFromOptsObj(x) for x in inpObj.classifierOpts]
+	classifiers = [x for x in it.chain(*classifiers)]
+	return classBinvalGetterHelp._CountNonHyUsingChainedClassificationsCommon(classifiers)
+
 @TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
 def _(inpObj):
 	outObjs = list()
@@ -437,5 +457,3 @@ def _getDefaultPlaneEquation():
 
 
 
-#Imports
-_importRegistrationModules()

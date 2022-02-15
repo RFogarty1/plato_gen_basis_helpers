@@ -1,7 +1,6 @@
 
 import copy
 import unittest
-import unittest.mock as mock
 
 import plato_pylib.shared.ucell_class as uCellHelp
 
@@ -202,6 +201,65 @@ class TestWaterCountTypesMinDistAndHBond(unittest.TestCase):
 		expBinVals = [ (2,2) ]
 		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
 		self.assertEqual(expBinVals,actBinVals)
+
+
+class TestChainedClassifyUsingMinHozDists(unittest.TestCase):
+
+	def setUp(self):
+		#
+		self.lattParams, self.lattAngles = [13,13,13], [90,90,90]
+
+		self.hydroxylA = [ [0,0,0,"O"], [1,0,0,"H"] ]
+		self.hydroxylB = [ [1,0,1,"O"], [2,0,1,"H"] ]
+		self.hydroxylC = [ [2,0,2,"O"], [3,0,2,"H"] ]
+		self.hydroxylD = [ [3,0,3,"O"], [4,0,3,"H"] ]
+		self.hydroxylE = [ [4,0,4,"O"], [5,0,4,"H"] ]
+
+		self.cartCoords = self.hydroxylA + self.hydroxylB + self.hydroxylC + self.hydroxylD + self.hydroxylE
+
+		#Options for classifiers
+		self.binResObjs = [None]
+		self.fromNonHyA, self.fromNonHyB = [ [0], [2] ], [ [0], [2] ]
+		self.fromHyA, self.fromHyB       = [ [1], [3] ], [ [1], [3] ]
+		self.toNonHyA, self.toNonHyB = [ [4], [6], [8] ], [ [4], [6], [8] ]
+		self.toHyA, self.toHyB       = [ [5], [7], [9] ], [ [5], [7], [9] ]
+
+		#
+		self.minHozDistRangesA, self.minHozDistRangesB = [ [-0.1,2.5] ], [ [0.5,2.5] ] #Essentially only the narrower one matters here
+		self.useIndicesFromA, self.useIndicesFromB = "all", "all"
+		self.useIndicesToA, self.useIndicesToB = "all", "all"
+		self.minDistValA, self.minDistValB = -0.01, -0.01
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create both options objects
+		currArgs = [self.binResObjs, self.fromNonHyA, self.fromHyA, self.toNonHyA, self.toHyA, self.minHozDistRangesA]
+		currKwargs = {"useIndicesFrom":self.useIndicesFromA, "useIndicesTo":self.useIndicesToA, "minDistVal":self.minDistValA}
+		self.optObjA = classDistrOptObjHelp.ClassifyNonHyAndHyBasedOnMinHozDistsToAtomGroups(*currArgs, **currKwargs)
+
+		currArgs = [self.binResObjs, self.fromNonHyB, self.fromHyB, self.toNonHyB, self.toHyB, self.minHozDistRangesB]
+		currKwargs = {"useIndicesFrom":self.useIndicesFromB, "useIndicesTo":self.useIndicesToA, "minDistVal":self.minDistValB}
+		self.optObjB = classDistrOptObjHelp.ClassifyNonHyAndHyBasedOnMinHozDistsToAtomGroups(*currArgs, **currKwargs)
+
+		#
+		self.optObjCombo = classDistrOptObjHelp.ClassifyNonHyAndHyChainedAllCommon([self.optObjA,self.optObjB])
+
+		#Get the sparse matrix calculator and populate it
+		self.sparseMatrixCalculator = optObjMaps.getSparseMatrixCalculatorFromOptsObjIter([self.optObjCombo])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binner object
+		self.testObj = optObjMaps.getMultiDimBinValGetterFromOptsObjs([self.optObjCombo])
+
+	def testExpectedCaseA(self):
+		expBinVals = [(1,)]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
 
 
 class TestNonHyClassifyByMinHozDist(unittest.TestCase):

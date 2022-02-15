@@ -1,7 +1,9 @@
 
 import copy
+import itertools as it
 import types
 import unittest
+import unittest.mock as mock
 
 import gen_basis_helpers.analyse_md.classifier_objs as tCode
 
@@ -114,4 +116,73 @@ class TestEqualityForAtomsWithinMinDistRange(unittest.TestCase):
 		self.createTestObjs()
 		objB = self.testObjA
 		self.assertNotEqual(objA,objB)
+
+
+
+class TestNonHyChainedClassifierAllCommon(unittest.TestCase):
+
+	def setUp(self):
+		self.nonHyA = [ [3], [6,5], [4] ]
+		self.nonHyB = [ [5,6], [3] ]
+
+		self.hyA = [ [10]   , [11,12], [13] ]
+		self.hyB = [ [11,12], [10] ]
+
+		self.dudSparseMatrixObj = 4 #Just want something that normal equalities work with
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.classA, self.classB = mock.Mock(), mock.Mock()
+		self.classA.classify.side_effect = lambda x: (self.nonHyA, self.hyA)
+		self.classB.classify.side_effect = lambda x: (self.nonHyB, self.hyB)
+
+		self.testObj = tCode._NonHyAndHyChainedClassifier_allCommon([self.classA, self.classB])
+
+	def _checkExpAndActEqual(self, expNonHy, expHy, actNonHy, actHy):
+		for expHy,actHy in it.zip_longest(expHy, actHy):
+			self.assertEqual( list(expHy), list(actHy) )
+
+		for expNonHy, actNonHy in it.zip_longest(expNonHy, actNonHy):
+			self.assertEqual( list(expNonHy), list(actNonHy) )
+
+	def testExpectedCaseA(self):
+		expNonHy = [ [3] , [5,6]   ]
+		expHy =    [ [10], [11,12] ]
+
+		actNonHy, actHy = self.testObj.classify(self.dudSparseMatrixObj)
+		self.classA.classify.assert_called_with(self.dudSparseMatrixObj)
+		self.classB.classify.assert_called_with(self.dudSparseMatrixObj)
+
+		self._checkExpAndActEqual(expNonHy, expHy, actNonHy, actHy)
+
+	def testExpected_noHyIndices(self):
+		self.hyA = [ list(), list(), list() ]
+		self.hyB = [ list(), list() ]
+		self.createTestObjs()
+		expNonHy = [ [3], [5,6] ]
+		expHy = [ list(), list() ]
+
+		actNonHy, actHy = self.testObj.classify(self.dudSparseMatrixObj)
+		self._checkExpAndActEqual(expNonHy, expHy, actNonHy, actHy)
+
+	def testExpected_noNonHyIndices(self):
+		self.nonHyA, self.nonHyB = [ list(), list(), list()], [list(), list()]
+		self.createTestObjs()
+		expNonHy, expHy = [list(), list()], [ [10], [11,12] ]
+
+		actNonHy, actHy = self.testObj.classify(self.dudSparseMatrixObj)
+		self._checkExpAndActEqual(expNonHy, expHy, actNonHy, actHy)
+
+	def testExpected_reversedOrderIndices(self):
+		self.nonHyA, self.nonHyB = [x for x in reversed(self.nonHyA)], [x for x in reversed(self.nonHyB)]
+		self.hyA, self.hyB = [x for x in reversed(self.hyA)], [x for x in reversed(self.hyB)]
+
+		expNonHy = [ [5,6], [3] ]
+		expHy = [ [11,12], [10] ]  
+		actNonHy, actHy = self.testObj.classify(self.dudSparseMatrixObj)
+		self._checkExpAndActEqual(expNonHy, expHy, actNonHy, actHy)
+
+
+
 

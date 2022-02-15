@@ -153,5 +153,12 @@ class _CountNonHyAndHyBasedOnMinHozDistToGroup(classifierObjHelp._NonHyAndHyClas
 		return [len(nonHyIndices)]
 
 
+class _CountNonHyUsingChainedClassificationsCommon(classifierObjHelp._NonHyAndHyChainedClassifier_allCommon, atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		nonHyIndices,hyIndices = self.classify(sparseMatrixCalculator)
+
+		return [len(nonHyIndices)]
+
 
 

@@ -266,6 +266,20 @@ class WaterAdsorbedClassifier_usingMinHozDistsBetweenAdsorptionSitesOptsObj(Wate
 		return cls(*currArgs, **currKwargs)
 
 
+class ClassifyNonHyAndHyChainedAllCommon():
+	""" Classifies based on criterion being fulfilled from multiple input options objects. For example, an object for minmum number of h-bonds to one group AND min horizontal-distances to another.
+
+	"""
+
+	def __init__(self, classifierOpts):
+		""" Initializer
+		
+		Args:
+			classifierOpts: (iter of classifier options) These need to  lead to classifiers that return ([NonHyIndices],[HyIndices]) from their classify method
+				 
+		"""
+		self.classifierOpts = classifierOpts
+
 class ClassifyBasedOnHBondingToDynamicGroup():
 	""" Class designed to classift molecules (e.g. water/hydroxyl) based on number of hydrogen bonds they have to a dynamically assigned group.
 

@@ -297,7 +297,7 @@ class _WaterClassifierMinDistHBondsAndAdsSiteHozDists(_WaterClassifierBase):
 
 
 
-class _NonHyAndHyChainedANDClassifier(ClassifierBase):
+class _NonHyAndHyChainedClassifier_allCommon(ClassifierBase):
 	""" Class used to combine classifiers for NonHy/Hy groups such that only those molecules in ALL relevant groups are returned """
 
 	def __init__(self, classifiers, execCount=0):
@@ -312,8 +312,52 @@ class _NonHyAndHyChainedANDClassifier(ClassifierBase):
 		self.execCount = execCount
 
 	def classify(self, sparseMatrixCalculator):
-		raise NotImplementedError("")
+		#1) Get the individual indices + find all the unique values
+		allIndividualIndices = [x.classify(sparseMatrixCalculator) for x in self.classifiers]
+		uniqueCombos, numbUniqueCombos = dict(), 0
 
+
+		#We ONLY need to worry about the indices in the first set (any not in first set wont be in output)
+		for currIdxSet in [allIndividualIndices[0]]:
+			for currNonHy, currHy in it.zip_longest(currIdxSet[0],currIdxSet[1]):
+				uniqueCombos[numbUniqueCombos] = [currNonHy, currHy]
+				numbUniqueCombos += 1
+
+
+		#2) Check which unique values are in ALL the returned indices
+		outUniqueIndices = list()
+
+		def _comboInClassifierOutputVals(currCombo, classifierVals):
+			currNonHy, currHy = currCombo[0], currCombo[1]
+
+			classAllNonHy, classAllHy = classifierVals
+			for classNonHy, classHy in it.zip_longest(classAllNonHy, classAllHy):
+				if sorted(list(currNonHy)) == sorted(list(classNonHy)):
+					if sorted(list(currHy)) == sorted(list(classHy)):
+						return True
+			return False
+
+		for outIdx, uniqueCombo in uniqueCombos.items():
+			includeCurrent = True
+			for currIdxSet in allIndividualIndices[1:]:
+				if not _comboInClassifierOutputVals(uniqueCombo, currIdxSet):
+					includeCurrent = False
+					break
+			if includeCurrent:
+				outUniqueIndices.append(outIdx)
+
+		#3) Create the output values based on previous step
+		outNonHyIndices, outHyIndices = list(), list()
+		for currKey in sorted(outUniqueIndices):
+			currCombo = uniqueCombos[currKey]
+			outNonHyIndices.append(sorted(currCombo[0]))
+			outHyIndices.append(sorted(currCombo[1]))	
+
+		#Some admin
+		self.execCount += 1
+		self.storedClassifyResult = (outNonHyIndices, outHyIndices)
+
+		return outNonHyIndices, outHyIndices
 
 class _ClassiferUsingHBondsToDynamicGroup(ClassifierBase):
 
