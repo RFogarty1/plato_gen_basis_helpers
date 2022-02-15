@@ -1,6 +1,7 @@
 
 import copy
 import unittest
+import unittest.mock as mock
 
 import plato_pylib.shared.ucell_class as uCellHelp
 
@@ -201,6 +202,125 @@ class TestWaterCountTypesMinDistAndHBond(unittest.TestCase):
 		expBinVals = [ (2,2) ]
 		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
 		self.assertEqual(expBinVals,actBinVals)
+
+
+class TestNonHyClassifyByMinHozDist(unittest.TestCase):
+
+	def setUp(self):
+		self.lattParams, self.lattAngles = [13,13,13], [90,90,90]
+
+		self.hydroxylA = [ [0,0,0,"O"], [1,0,0,"H"] ]
+		self.hydroxylB = [ [1,0,1,"O"], [2,0,1,"H"] ]
+		self.hydroxylC = [ [2,0,2,"O"], [3,0,2,"H"] ]
+		self.hydroxylD = [ [3,0,3,"O"], [4,0,3,"H"] ]
+		self.hydroxylE = [ [4,0,4,"O"], [5,0,4,"H"] ]
+
+		self.cartCoords = self.hydroxylA + self.hydroxylB + self.hydroxylC + self.hydroxylD + self.hydroxylE
+
+		#Options for the classifier
+		self.binResObjs = [ None, None] #Irrelevant for these tests so....
+		self.fromNonHyIndices = [ [0], [2] ]
+		self.fromHyIndices    = [ [1], [3] ]
+		self.toNonHyIndices   = [ [4], [6], [8] ]
+		self.toHyIndices      = [ [5], [7], [9] ] 
+		self.minHozDistRanges = [ [-0.1,1.5], [1.5,7.5] ] #Need to use <0 at lower end for edge case of exactly zero
+		self.useIndicesFrom = "all"
+		self.useIndicesTo = "all"
+		self.minDistVal = -0.01
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create an options object
+		currArgs = [self.binResObjs, self.fromNonHyIndices, self.fromHyIndices, self.toNonHyIndices, self.toHyIndices,
+		            self.minHozDistRanges]
+		currKwargs = {"useIndicesFrom":self.useIndicesFrom, "useIndicesTo":self.useIndicesTo, "minDistVal":self.minDistVal}
+		self.optObj = classDistrOptObjHelp.ClassifyNonHyAndHyBasedOnMinHozDistsToAtomGroups(*currArgs, **currKwargs)
+
+		#Get sparse matrix populator + populate it
+		self.sparseMatrixCalculator = optObjMaps.getSparseMatrixCalculatorFromOptsObjIter([self.optObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binner object
+		self.testObj = optObjMaps.getMultiDimBinValGetterFromOptsObjs([self.optObj])
+
+	def testExpected_fromAllToAll(self):
+		""" Test we get expected when using all indices on both source and target molecules """
+		expBinVals = [ (2,0) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testExpected_fromOxyToAll(self):
+		self.useIndicesFrom = "nonHy"
+		self.createTestObjs()
+
+		expBinVals = [ (1,1) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testExpected_fromOxyToHy(self):
+		self.useIndicesFrom = "nonHy"
+		self.useIndicesTo = "hy"
+		self.createTestObjs()
+
+		expBinVals = [ (0,2) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testExpected_fromOxyToNonHy(self):
+		self.useIndicesFrom, self.useIndicesTo = "nonHy", "nonHy"
+		self.createTestObjs()
+
+		expBinVals = [ (1,1) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testExpected_fromHyToAll(self):
+		self.useIndicesFrom, self.useIndicesTo = "hy", "all"
+		self.createTestObjs()
+
+		expBinVals = [ (2,0) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testExpected_reverseOrder(self):
+		self.useIndicesFrom = "nonHy"
+		self.fromNonHyIndices = [x for x in reversed([ [0], [2] ])]
+		self.fromHyIndices    = [x for x in reversed([ [1], [3] ])]
+		self.createTestObjs()
+
+		expBinVals = [ (1,1) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testExpected_overlappingGroups_minDistValOff(self):
+		self.useIndicesFrom, self.indicesTo = "nonHy", "nonHy"
+		self.fromNonHyIndices = [ [0], [2] ]
+		self.fromHyIndices    = [ [1], [3] ]
+		self.toNonHyIndices   = [ [0], [4], [6], [8] ]
+		self.toHyIndices      = [ [1], [5], [7], [9] ] 
+		self.createTestObjs()
+
+		expBinVals = [ (2,0) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
+
+	def testExpected_overlappingGroups_minDistValOn(self):
+		self.useIndicesFrom, self.useIndicesTo = "nonHy", "nonHy"
+		self.fromNonHyIndices = [ [0], [2] ]
+		self.fromHyIndices    = [ [1], [3] ]
+		self.toNonHyIndices   = [ [0], [4], [6], [8] ]
+		self.toHyIndices      = [ [1], [5], [7], [9] ] 
+		self.minDistVal = 0.02
+		self.createTestObjs()
+
+		expBinVals = [ (1,1) ]
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
 
 
 class TestClassifyByHBondsToGenericGroup(unittest.TestCase):

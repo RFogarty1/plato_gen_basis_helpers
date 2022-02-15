@@ -207,6 +207,25 @@ def _(inpObj):
 	fromIndices, toIndices = inpObj.atomIndices, inpObj.distFilterIndices
 	return atomComboPopulatorHelp._DistMatrixPopulator(fromIndices, toIndices)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.ClassifyNonHyAndHyBasedOnMinHozDistsToAtomGroups)
+def _(inpObj):
+
+	def _getIndicesBasedOnTypeAndVals(inpType, nonHyIndices, hyIndices):
+		if inpType.lower()=="all":
+			outIndices = [idx for idx in it.chain(*nonHyIndices)] + [idx for idx in it.chain(*hyIndices)]
+		elif inpType.lower()=="nonHy".lower():
+			outIndices = [idx for idx in it.chain(*nonHyIndices)]	
+		elif inpType.lower()=="hy":
+			outIndices = [idx for idx in it.chain(*hyIndices)]
+		else:
+			raise ValueError("{} is an invalid type".format(inpType))
+
+	fromType, toType = inpObj.useIndicesFrom, inpObj.useIndicesTo
+	fromIndices = _getIndicesBasedOnTypeAndVals(fromType, inpObj.fromNonHyIndices, inpObj.fromHyIndices)
+	toIndices = _getIndicesBasedOnTypeAndVals(toType, inpObj.toNonHyIndices, inpObj.toHyIndices)
+	return atomComboPopulatorHelp._HozDistMatrixPopulator(fromIndices, toIndices)
+
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple)
 def _(inpObj):
 	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
@@ -335,6 +354,7 @@ def _(inpObj):
 		outObjs.append(currObj)
 	return outObjs
 
+
 @TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
 def _(inpObj):
 	outObjs = list()
@@ -356,6 +376,18 @@ def _(inpObj):
 		currObj = classBinvalGetterHelp._AdsorbedWaterCountTypeWithAdsSiteHozDistsBinvalGetter(*currArgs)
 		outObjs.append(currObj)
 	return outObjs
+
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.ClassifyNonHyAndHyBasedOnMinHozDistsToAtomGroups)
+def _(inpObj):
+	outObjs = list()
+	for idx, unused in enumerate(inpObj.distFilterRanges):
+		currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices,
+		            inpObj.distFilterRanges[idx]]
+		currKwargs = {"useIndicesFrom":inpObj.useIndicesFrom, "useIndicesTo":inpObj.useIndicesTo,"minDistVal":inpObj.minDistVal}
+		currObj = classBinvalGetterHelp._CountNonHyAndHyBasedOnMinHozDistToGroup(*currArgs, **currKwargs)
+		outObjs.append(currObj)
+	return outObjs
+
 
 @TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple)
 def _(inpObj):

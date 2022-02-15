@@ -145,6 +145,13 @@ class _CountWaterDerivativeDistanceOnlyBinvalGetter(waterDerivClassifierHelp._Wa
 		return [len(nonHyIndices)]
 
 
+class _CountNonHyAndHyBasedOnMinHozDistToGroup(classifierObjHelp._NonHyAndHyClassifierBasedOnMinHozDistToGroup, atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		nonHyIndices,hyIndices = self.classify(sparseMatrixCalculator)
+
+		return [len(nonHyIndices)]
+
 
 
 

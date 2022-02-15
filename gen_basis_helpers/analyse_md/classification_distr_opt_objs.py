@@ -315,6 +315,38 @@ class ClassifyBasedOnHBondingToDynamicGroup():
 				raise ValueError("Different length filter ranges detected for {}; lengths are {} and {}".format(*currArgs))
 
 
+
+class ClassifyNonHyAndHyBasedOnMinHozDistsToAtomGroups():
+	""" Class designed to filter NonHy/Hy indices out based on their horizontal distances with other atoms
+	
+	"""
+
+	def __init__(self, binResObjs, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, distFilterRanges, useIndicesFrom="nonHy", useIndicesTo="nonHy" ,minDistVal=-0.01):
+		""" Initializer
+		
+		Args:
+			binResObjs: (iter of BinnedResultsStandard objects) One bin for each type of water you want to count (determined by the "Ranges" parameters)
+			fromNonHyIndices: (iter of iter of ints) The non-hydrogen indices of each molecule we're filtering
+			fromHyIndices: (iter of iter of ints) Same length as nonHyFromIndices, but contain the relevant hydrogen indices
+			toNonHyIndices: (iter of iter of ints) The non-hydrogen indices for all molecules we're counting hydrogen bonds TO (e.g could be hydroxyl molecules if we're filtering for water molecules with h-bonds TO hydroxyls)
+			toHyIndices: (iter of iter of ints) The hydrogen indices for all molecules we're counting hydrogen bonds TO
+			distFilterRanges: (iter of len-2 float iters) Each contains [minDist, maxDist] for a molecule
+			useIndicesFrom: (str) - "nonHy", "hy" or "all". Which atoms we need to include for "fromNonHyIndices" and "fromHyIndices"
+			useIndicesTo: (str) - "nonHy", "hy" or "all". See above
+			minDistVal: (float) If set to a +ve number we ignore distances smaller than it when figuring out minimum. Useful to avoid getting zeros when atomIndices and distFilterIndices overlap
+
+		"""
+		self.binResObjs = binResObjs
+		self.fromNonHyIndices = fromNonHyIndices
+		self.fromHyIndices = fromHyIndices
+		self.toNonHyIndices = toNonHyIndices
+		self.toHyIndices = toHyIndices
+		self.distFilterRanges = distFilterRanges
+		self.useIndicesFrom = useIndicesFrom
+		self.useIndicesTo = useIndicesTo
+		self.minDistVal = minDistVal
+
+
 class ClassifyBasedOnHBondingToGroup_simple():
 	""" Class designed to classify molecules (e.g. water/hydroxyl) based on the number of hydrogen bonds they have to a static group. 
 

@@ -1,4 +1,6 @@
 
+import itertools as it
+
 import numpy as np
 
 from . import atom_combo_binval_getters as atomComboBinvalGetterHelp
@@ -295,6 +297,23 @@ class _WaterClassifierMinDistHBondsAndAdsSiteHozDists(_WaterClassifierBase):
 
 
 
+class _NonHyAndHyChainedANDClassifier(ClassifierBase):
+	""" Class used to combine classifiers for NonHy/Hy groups such that only those molecules in ALL relevant groups are returned """
+
+	def __init__(self, classifiers, execCount=0):
+		""" Initializer
+		
+		Args:
+			classifiers: (iter of ClassifierBase objs) In this case .classify needs to return (outNonHyIndices, outHyIndices) in each case
+				 
+		"""
+
+		self.classifiers = classifiers
+		self.execCount = execCount
+
+	def classify(self, sparseMatrixCalculator):
+		raise NotImplementedError("")
+
 
 class _ClassiferUsingHBondsToDynamicGroup(ClassifierBase):
 
@@ -353,6 +372,89 @@ class _ClassiferUsingHBondsToDynamicGroup(ClassifierBase):
 				newOutVals[1].append( outVals[1][outIdx] )
 
 		return newOutVals
+
+
+class _NonHyAndHyClassifierBasedOnMinHozDistToGroup(ClassifierBase):
+
+	def __init__(self, fromNonHyIndices, fromHyIndices, toNonHyIndices, toHyIndices, distFilterRanges, useIndicesFrom="nonHy", useIndicesTo="nonHy" ,minDistVal=-0.01, execCount=0):
+		""" Initializer
+		
+		Args:
+			binResObjs: (iter of BinnedResultsStandard objects) One bin for each type of water you want to count (determined by the "Ranges" parameters)
+			fromNonHyIndices: (iter of iter of ints) The non-hydrogen indices of each molecule we're filtering
+			fromHyIndices: (iter of iter of ints) Same length as nonHyFromIndices, but contain the relevant hydrogen indices
+			toNonHyIndices: (iter of iter of ints) The non-hydrogen indices for all molecules we're counting hydrogen bonds TO (e.g could be hydroxyl molecules if we're filtering for water molecules with h-bonds TO hydroxyls)
+			toHyIndices: (iter of iter of ints) The hydrogen indices for all molecules we're counting hydrogen bonds TO
+			distFilterRanges: (iter of len-2 float iters) Each contains [minDist, maxDist] for a molecule
+			useIndicesFrom: (str) - "nonHy", "hy" or "all". Which atoms we need to include for "fromNonHyIndices" and "fromHyIndices"
+			useIndicesTo: (str) - "nonHy", "hy" or "all". See above
+			minDistVal: (float) If set to a +ve number we ignore distances smaller than it when figuring out minimum. Useful to avoid getting zeros when atomIndices and distFilterIndices overlap
+
+		"""
+		self.fromNonHyIndices = fromNonHyIndices
+		self.fromHyIndices = fromHyIndices
+		self.toNonHyIndices = toNonHyIndices
+		self.toHyIndices = toHyIndices
+		self.distFilterRanges = distFilterRanges
+		self.useIndicesFrom = useIndicesFrom
+		self.useIndicesTo = useIndicesTo
+		self.minDistVal = minDistVal
+		self.execCount = execCount
+
+	def classify(self, sparseMatrixCalculator):
+		#0) Figure out the indices we need to look from in each
+		fromIndicesGrouped, currStartIdx = list(), 0
+		fromIndicesSlices = list()
+		for fromNonHy, fromHy in it.zip_longest(self.fromNonHyIndices, self.fromHyIndices):
+			if self.useIndicesFrom.lower() == "all":
+				currGroup = fromHy+fromNonHy
+			elif self.useIndicesFrom.lower() == "nonHy".lower():
+				currGroup = fromNonHy
+#				raise NotImplementedError("")
+			elif self.useIndicesFrom.lower() == "hy".lower():
+				currGroup = fromHy
+			else:
+				raise ValueError("")
+
+			fromIndicesGrouped.append( currGroup )
+			fromIndicesSlices.append( (currStartIdx,currStartIdx+len(currGroup)) )
+			currStartIdx += len(currGroup)  
+
+		fromIndicesFlat = [ idx for idx in it.chain(*fromIndicesGrouped) ]
+
+		#Get all "to" indices
+		if self.useIndicesTo.lower()=="all": 
+			toIndicesFlat = [idx for idx in it.chain(*(self.toNonHyIndices + self.toHyIndices))]
+		elif self.useIndicesTo.lower() == "nonHy".lower():
+			toIndicesFlat = [idx for idx in it.chain(*self.toNonHyIndices)]
+		elif self.useIndicesTo.lower() == "hy":
+			toIndicesFlat = [idx for idx in it.chain(*self.toHyIndices)]
+		else:
+			raise ValueError("")
+
+
+		#TODO: Next get a binner object using fromIndices and toIndices
+		#1) Get a binner object so we can get all the min hoz-dists we need
+		currArgs = [fromIndicesFlat, toIndicesFlat]
+		currKwargs = {"minVal":self.minDistVal}
+		minHozDistBinner = atomComboBinvalGetterHelp._MinHozDistsGetValsToBin(*currArgs, **currKwargs)
+
+		#2) Get the relevant values and classify accordingly
+		minDistVals = minHozDistBinner.getValsToBin(sparseMatrixCalculator)
+		outNonHyIndices, outHyIndices = list(), list()
+		for groupIdx, groupSlice in enumerate(fromIndicesSlices):
+			currSlice = slice(*groupSlice)
+			currMinDist = min( minDistVals[currSlice] )
+			if currMinDist <= max(self.distFilterRanges):
+				if currMinDist > min(self.distFilterRanges):
+					outNonHyIndices.append( self.fromNonHyIndices[groupIdx] )
+					outHyIndices.append( self.fromHyIndices[groupIdx] )
+
+		#Step 3- Random admin/cleanup
+		self.execCount += 1
+		self.storedClassifyResult = (outNonHyIndices,outHyIndices)
+
+		return outNonHyIndices, outHyIndices
 
 
 class _GenericNonHyAndHyClassiferUsingHBondsToGroup_simple(ClassifierBase):
