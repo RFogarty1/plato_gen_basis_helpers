@@ -649,6 +649,51 @@ class NDimensionalBinnedResults():
 
 
 
+def getLowerDimBinObj_weightedAverageMethod(inpBinObj, keepDims, useCountKey="counts", outKey="weighted_average"):
+	""" Function takes an NDimensionalBinnedResults instance, and returns a similar object with a lower number of dimensions. Includes a "weighted_average" for the output binVals, which contains the mean value for the removed dimension. Original purpose was to get average numbers of h-bonds for varying planar positions
+	
+	Args:
+		inpBinObj: (NDimensionalBinnedResults)
+		keepDims: (iter of ints) The indices of dimensions to keep (e.g. [0] may the input for turning 2-D data into 1-D data)
+		countKey: (str) Where to find counts for using to calculate probability
+		outKey: (str) The key to use for storing the output data
+			 
+	Returns
+		 outBinObj: (NDimensionalBinnedResults) Lower dimensionality bin. Contains a "weighted_average" field 
+ 
+	Raises:
+		NotImplementedError: If the input bin has >2 dimensions. I'm not sure how to deal with that yet
+
+	"""
+	if len(inpBinObj.edges)>2:
+		raise NotImplementedError("Only implemented for bins with 2 dimensions at current")
+	assert len(keepDims)==1
+	keepDim = keepDims[0]
+
+	outBinObj = getLowerDimNDimBinObj_integrationMethod(inpBinObj, keepDims)
+	
+
+	outVals = np.zeros( (inpBinObj.binVals[useCountKey].shape[keepDim],) )
+	useDim = 0 if keepDim==1 else 1
+
+
+	nOutBins = inpBinObj.binVals[useCountKey].shape[keepDim]
+	for targIdx in range(nOutBins):
+		tempUseBins = getLowerDimNDimBinObj_takeSingleBinFromOthers(inpBinObj, [useDim], [targIdx])
+		addProbabilityDensitiesToNDimBinsSimple(tempUseBins, countKey=useCountKey)
+		#Get pdf vals with any np.nan set to zero
+		widths = [abs( x[0][0] - x[0][1]) for x in tempUseBins.binEdgesArray]
+		probVals = [w*pdf for w,pdf in it.zip_longest(widths,tempUseBins.binVals["pdf"])]
+		currVal = sum( [p*centralVal[0] for p,centralVal in it.zip_longest(probVals, tempUseBins.binCentresArray)] )
+		outVals[targIdx] += currVal
+
+
+	outBinObj.binVals[outKey] = outVals
+
+
+	return outBinObj
+
+
 #We can extend this to allow different options for "integrating" over dimensions later
 #(e.g. averaging based on bin widths etc.)
 def getLowerDimNDimBinObj_integrationMethod(inpBinObj, keepDims):

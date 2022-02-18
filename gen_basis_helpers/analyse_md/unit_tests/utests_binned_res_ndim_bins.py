@@ -266,6 +266,53 @@ class TestGetLowerDimBinObj(unittest.TestCase):
 		self.assertEqual(expBins, actBins)
 
 
+class TestGetLowerDimObj_weightedAverageMethod(unittest.TestCase):
+
+	def setUp(self):
+		#define bins
+		self.edgesA = [10,11,12] # e.g. planar distances
+		self.edgesB = [0,1,2,3]  # e.g. number of hydrogen bonds
+
+		#Run options
+		self.keepDims = [0]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.comboEdges = [self.edgesA, self.edgesB]
+		self.binObjA = tCode.NDimensionalBinnedResults(self.comboEdges)
+
+		#Put various values there
+		#Use a weird key to make sure we dont rely on it being the default value
+		self.binObjA.initialiseCountsMatrix(countKey="fake_counts")
+		self.binObjA.binVals["fake_counts"][0][0] = 2
+		self.binObjA.binVals["fake_counts"][0][1] = 5
+		self.binObjA.binVals["fake_counts"][0][2] = 1
+		self.binObjA.binVals["fake_counts"][1][0] = 8
+		self.binObjA.binVals["fake_counts"][1][1] = 1
+
+	def _runTestFunct(self):
+		return tCode.getLowerDimBinObj_weightedAverageMethod(self.binObjA, self.keepDims, useCountKey="fake_counts")
+
+	def testRaisesForMoreThanTwoDims(self):
+		""" Not sure what to do for >2 dims at the moment (likely it'd be pointless anyway though) """
+		self.binObjA = tCode.NDimensionalBinnedResults( self.comboEdges + [[6,7]] )
+		with self.assertRaises(NotImplementedError):
+			self._runTestFunct()
+
+	def testExpectedValsA(self):
+		#Create the expected output bin object
+		expBinObj = tCode.NDimensionalBinnedResults([self.edgesA])
+		expBinObj.initialiseCountsMatrix(countKey="fake_counts")
+		expBinObj.binVals["fake_counts"][0] = self.binObjA.binVals["fake_counts"][0][0] + self.binObjA.binVals["fake_counts"][0][1] + self.binObjA.binVals["fake_counts"][0][2]
+		expBinObj.binVals["fake_counts"][1] = self.binObjA.binVals["fake_counts"][1][0] + self.binObjA.binVals["fake_counts"][1][1]
+		expBinObj.binVals["weighted_average"] = np.array( [sum([ (2/8)*0.5, (5/8)*1.5, (1/8)*2.5 ]),
+		                                                  sum([ (8/9)*0.5, (1/9)*1.5 ])] )   
+
+		actBinObj = self._runTestFunct()
+		self.assertEqual(expBinObj,actBinObj)
+
+
 class TestGetLowerDimObj_integrationMethod(unittest.TestCase):
 
 	def setUp(self):
