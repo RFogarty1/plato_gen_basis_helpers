@@ -11,6 +11,7 @@ from . import mdanalysis_interface as mdAnalysisInter
 
 from ..shared import plane_equations as planeEqnHelp
 from ..shared import cart_coord_utils as cartHelp
+from ..shared import simple_vector_maths as vectHelp
 
 import plato_pylib.shared.ucell_class as uCellHelp
 
@@ -39,8 +40,40 @@ def calcNearestDistanceBetweenTwoSetsOfIndices(inpCell, indicesA=None, indicesB=
 
 
 
+def calcSparseDiatomAngleWithArbVectorMatrix(inpCell, inpIndices, inpVector, bothDirs=True):
+	""" Gets a matrix of angles between pairs of atoms and an arbitrary vector. Original use case was looking at hydroxyl angles with a surface normal
+	
+	Args:
+		inpCell: (plato_pylib UnitCell object)
+		inpIndices: (iter of len-2 int iters) Each are indices for a pair of atoms
+		inpVector: (len-3 iter) The vector we want the angle with
+		bothDirs: (Bool) If true calculate for each reversed(inpIndex); e.g. calculate the vector/(b-a) AND vector/(a-b) angles
+ 
+	Returns
+		outMatrix: (NxN np.array) Element [a][b] contains the angle of (b-a) with inpVector. N is the number of atoms in the cell. Matrix takes values np.nan for values which wernt calculated 
+ 
+	"""
+	cartCoords = inpCell.cartCoords
+	outMatrix = np.empty( (len(cartCoords),len(cartCoords)) )
+	outMatrix[:] = np.nan
 
+	#Step 1) Get all the nearest image coords
+	useCoords = list()
+	for indices in inpIndices:
+		firstCoord = cartCoords[indices[0]]
+		secondCoord	= getNearestImageNebCoordsBasic(inpCell, firstCoord, cartCoords[indices[1]])
+		useCoords.append( [firstCoord, secondCoord] )
 
+	#Step 2) Get the angles for each
+	for indices, useCoords in it.zip_longest(inpIndices, useCoords):
+		forwardVector = [b-a for a,b in it.zip_longest(useCoords[0][:3], useCoords[1][:3])]
+		currAngle = vectHelp.getAngleTwoVectors(inpVector, forwardVector)
+		outMatrix[tuple(indices)] = currAngle
+		if bothDirs:
+			backwardVector = [b-a for a,b in it.zip_longest(useCoords[1][:3],useCoords[0][:3])]
+			outMatrix[tuple(reversed(indices))] = vectHelp.getAngleTwoVectors(inpVector, backwardVector)
+
+	return outMatrix
 
 def calcDistanceMatrixForCell_minImageConv(inpCell, indicesA=None, indicesB=None, sparseMatrix=False):
 	""" Calculates the distance matrix for coords in inpCell using the nearest image convention

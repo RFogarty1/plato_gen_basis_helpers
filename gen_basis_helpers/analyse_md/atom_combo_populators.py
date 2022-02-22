@@ -12,6 +12,8 @@ from . import water_rotations as waterRotHelp
 
 from ..shared import simple_vector_maths as vectHelp
 
+
+
 class _DistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 	""" Populator meant for calculating distances between sets of indices """
 
@@ -25,7 +27,7 @@ class _DistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 		"""
 		self.fromIndices = fromIndices
 		self.toIndices = toIndices
-		self.level = 0
+		self.level = level
 
 	@property
 	def maxLevel(self):
@@ -206,6 +208,80 @@ class _PlanarDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
 		return True
 
+
+class _DiatomAngleWithVectorPopulator(atomComboCoreHelp._SparseMatrixPopulator):
+	""" Populator meant for calculating angles for diatoms (e.g. hydroxyl O->H vector) with arbitrary vectors
+
+	"""
+
+	def __init__(self, diatomIndices, inpVector, level=0):
+		""" Initializer
+		
+		Args:
+			diatomIndices: (iter of len-2 int-iters) e.g. [ [0,1], [4,5] ] 
+			inpVector: (len-3 float iter) Vector we want the angle with
+
+		"""
+		self.diatomIndices = diatomIndices
+		self.inpVector = inpVector
+		self.level = level
+
+	@property
+	def maxLevel(self):
+		return self.level
+
+	def populateMatrices(self, inpGeom, outDict, level):
+		if level != self.level:
+			pass
+		else:
+			self._populateMatrices(inpGeom, outDict)
+
+	def _populateMatrices(self, inpGeom, outDict):
+		try:
+			matrices = outDict["diatom_arbitrary_angle_matrices"]
+		except KeyError:
+			self._populateForNoMatricesExistCase(inpGeom, outDict)
+		else:
+			self._populateForMatricesExistCase(inpGeom, outDict)
+
+	def _populateForNoMatricesExistCase(self, inpGeom, outDict):
+		outMatrices = list()
+		currDict = {"inpVector":self.inpVector}
+
+		currArgs = [inpGeom, self.diatomIndices, self.inpVector]
+		currDict["matrix"] = calcDistsHelp.calcSparseDiatomAngleWithArbVectorMatrix(*currArgs)
+		outDict["diatom_arbitrary_angle_matrices"] = [currDict]
+
+	def _populateForMatricesExistCase(self, inpGeom, outDict):
+		#Check if matrix is present
+		relIdx = self._getRelevantMatrixIdx(outDict)
+		if relIdx is None:
+			self._populateIfRelevantMatrixMissing(inpGeom, outDict)
+		else:
+			self._populateIfRelevantMatrixExists(inpGeom, outDict)
+
+	#NOTE: Will be efficient ONLY if populating matrix is faster than checking for overlapping indices, which is unlikely here
+	#[it works for other cases since pre-compiled C-code is used to build the matrices]
+	def _populateIfRelevantMatrixExists(self, inpGeom, outDict):
+		newMatrix = calcDistsHelp.calcSparseDiatomAngleWithArbVectorMatrix(inpGeom, self.diatomIndices, self.inpVector)
+		relIdx = self._getRelevantMatrixIdx(outDict)
+
+		useMatrix = outDict["diatom_arbitrary_angle_matrices"][relIdx]["matrix"]
+		outMatrix = np.where( np.isnan(useMatrix), newMatrix, useMatrix )
+		outDict["diatom_arbitrary_angle_matrices"][relIdx]["matrix"] = outMatrix
+
+
+	def _populateIfRelevantMatrixMissing(self, inpGeom, outDict):
+		raise NotImplementedError("")
+ 
+	def _getRelevantMatrixIdx(self, outDict):
+		matrixDicts = outDict["diatom_arbitrary_angle_matrices"]
+		relIdx = None
+		for idx,currDict in enumerate(matrixDicts):
+			if np.allclose( np.array(self.inpVector), np.array(currDict["inpVector"]) ):
+				relIdx = idx
+				break
+		return relIdx
 
 #Populate roll/pitch/azimuthal matrices simultaneously
 #water_orientations_roll, water_orientations_pitch, water_orientations_azimuthal

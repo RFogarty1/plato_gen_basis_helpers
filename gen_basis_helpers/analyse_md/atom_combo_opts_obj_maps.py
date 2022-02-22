@@ -176,6 +176,24 @@ def _(inpObj):
 	currArgs = [inpObj.indicesFrom, inpObj.indicesTo]
 	return atomComboPopulatorHelp._HozDistMatrixPopulator(*currArgs)
 
+
+#Diatom cases 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetDistsForDiatomOpts)
+def _(inpObj):
+	#This calculates WAAAAAY more distances than required but minimises calls to distance matrix populators
+	#Probably USUALLY the best way (since it wont break memoization + calculating lots of distances in one call is relatively fast)
+	indicesFrom = list(set([x[0] for x in inpObj.diatomIndices]))
+	indicesTo = list(set([x[1] for x in inpObj.diatomIndices]))
+
+	return atomComboPopulatorHelp._DistMatrixPopulator(indicesFrom, indicesTo)
+
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetAngleWithGenericVectorForDiatomOpts)
+def _(inpObj):
+	currArgs = [inpObj.diatomIndices, inpObj.inpVector]
+	return atomComboPopulatorHelp._DiatomAngleWithVectorPopulator(*currArgs)
+
+
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
 def _(inpObj):
 	#Need a DiscHBondCounter (with ridic filter things?) and a distFilter counter i guess
@@ -259,6 +277,7 @@ def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.hyIndices]
 	distMatrixPopulator = atomComboPopulatorHelp._DistMatrixPopulator(*currArgs)
 	return distMatrixPopulator
+
 
 
 #Registration of standard binners below
@@ -356,6 +375,17 @@ def _(inpObj):
 def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.angleType]
 	return binValGettersHelp._WaterOrientationBinValGetter(*currArgs)
+
+#Diatom versions
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetDistsForDiatomOpts)
+def _(inpObj):
+	return binValGettersHelp._GetDiatomDistsBinvalGetter( inpObj.diatomIndices )
+
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetAngleWithGenericVectorForDiatomOpts)
+def _(inpObj):
+	currArgs = [inpObj.diatomIndices,inpObj.inpVector,inpObj.leftToRight]
+	return binValGettersHelp._GetDiatomAngleWithVectorBinvalGetter(*currArgs)
 
 
 @TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.AtomClassifyBasedOnDistsFromIndicesSimpleOpts)

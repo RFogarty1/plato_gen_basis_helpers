@@ -953,3 +953,126 @@ class TestDiscHBondCounterBetweenGroupsOxyDistFilter(unittest.TestCase):
 		self.assertEqual(expVals, actVals)
 
 
+
+class TestGetDistsForDiatomOpts(unittest.TestCase):
+
+	def setUp(self):
+		#All geometric params
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.hydroxylA = [ [0,0,0,"O"], [0,0,1,"H"] ] #1 length; 0 degree angle
+		self.hydroxylB = [ [3,0,0,"O"], [3,1,1,"H"] ] #sqrt(2) length; 45 degree angle
+		self.hydroxylC = [ [5,0,0,"O"], [7,0,0,"H"] ] #2 length;90 degrees angle
+
+		self.coords = self.hydroxylA + self.hydroxylB + self.hydroxylC
+
+		#
+		self.binResObj = None
+		self.diatomicIndices = [ [0,1], [2,3], [4,5] ] 
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create an options object
+		self.optsObj = distrOptObjHelp.GetDistsForDiatomOpts(self.binResObj, self.diatomicIndices)
+
+		#Get a sparse matrix populator + populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObj])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseCalculator)
+
+	def testExpectedValsA(self):
+
+		expVals = [ (1,), (math.sqrt(2),), (2,) ]
+		actVals = self._runTestFunct()
+
+		for exp,act in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+
+class TestGetAngleWithGenericVectorForDiatomOpts(unittest.TestCase):
+
+	def setUp(self):
+		#All geometric params
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.hydroxylA = [ [0,0,0,"O"], [0,0,1,"H"] ] #1 length; 0 degree angle
+		self.hydroxylB = [ [3,0,0,"O"], [3,1,1,"H"] ] #sqrt(2) length; 45 degree angle
+		self.hydroxylC = [ [5,0,0,"O"], [7,0,0,"H"] ] #2 length;90 degrees angle
+
+		self.coords = self.hydroxylA + self.hydroxylB + self.hydroxylC
+
+		#
+		self.binResObj = None
+		self.diatomicIndices = [ [0,1], [2,3], [4,5] ] 
+		self.leftToRight = True
+		self.inpVector = [ 0,0,1 ] 
+		self.createTestObjs()
+
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create an options object
+		currArgs = [self.binResObj,self.diatomicIndices, self.inpVector]
+		currKwargs = {"leftToRight":self.leftToRight}
+		self.optsObj = distrOptObjHelp.GetAngleWithGenericVectorForDiatomOpts(*currArgs, **currKwargs)
+
+		#Get a sparse matrix populator + populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObj])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseCalculator)
+
+	def testExpectedValsA(self):
+		expVals = [(0,), (45,), (90,)]
+		actVals = self._runTestFunct()
+		for exp,act in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+	def testExpectedReversedDirection(self):
+		self.leftToRight=False
+		self.createTestObjs()
+		expVals = [(180,), (135,), (90,)]
+		actVals = self._runTestFunct()
+		for exp,act in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+	def testExpectedFromOverlappingOpts_sameVector(self):
+		""" Testing we get the correct results when using two options objects with same inpVector; mainly test for the populator for filling in a partially populated matrix """
+		#Create the first populator
+		self.diatomicIndices = [ [0,1], [2,3] ]
+		self.createTestObjs()
+		matrixCalcA = copy.deepcopy(self.sparseCalculator)
+
+		#Create the second populator
+		self.diatomicIndices = [ [4,5] ]
+		self.createTestObjs()
+		matrixCalcB = copy.deepcopy(self.sparseCalculator)
+
+		#Create the total populator and a binval getter that encompasses all
+		self.diatomicIndices = [ [0,1], [2,3], [4,5] ]
+		self.createTestObjs()
+		self.sparseCalculator = atomComboCoreHelp._SparseMatrixCalculatorStandard(matrixCalcA.populators + matrixCalcB.populators) 
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		expVals = [(0,), (45,), (90,)]
+		actVals = self._runTestFunct()
+		for exp,act in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+
+
+

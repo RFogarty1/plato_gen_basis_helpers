@@ -389,6 +389,59 @@ class GetOOHAnglesForHBondsBetweenGenericGroups(CountHBondsBetweenGenericGroupsO
 		self.distribKey = "hbondOOHDists"
 
 
+#
+class GetDistsForDiatomOpts(calcDistrCoreHelp.CalcDistribOptionsBase):
+	"""Options for binning distances between diatoms. Useful, for example, for looking at bondlengths
+
+	IMPORTANT: This bins 1 value PER DIATOM rather than per primary index. Therefore these options should only really be combined with other "1-value per diatom" options, though you wont neccesarily hit an error if you dont
+	"""
+	
+	def __init__(self, binResObj, diatomIndices):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			diatomIndices: (iter of len-2 ints) Indices of diatoms (e.g. [ [0,1], [2,3] ])
+				 
+		"""
+		self.distribKey = "diatom_dist"
+		self.binResObj = binResObj
+		self.diatomIndices = diatomIndices
+
+	@property
+	def primaryIndices(self):
+		return [x[0] for x in self.diatomIndices]
+
+
+class GetAngleWithGenericVectorForDiatomOpts(calcDistrCoreHelp.CalcDistribOptionsBase):
+	"""The summary line for a class docstring should fit on one line.
+
+	IMPORTANT: This bins 1 value PER DIATOM rather than per primary index. Therefore these options should only really be combined with other "1-value per diatom" options, though you wont neccesarily hit an error if you dont
+	"""
+
+	def __init__(self, binResObj, diatomIndices, inpVector, leftToRight=True):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			diatomIndices: (iter of len-2 ints) Indices of diatoms (e.g. [ [0,1], [2,3] ])
+			inpVector: (len-3 iter) Vector we take the angle with.	 
+			leftToRight: (Bool) If True we generate vectors as diatom[1]-diatom[0]; if False we do diatom[0]-diatom[1]
+
+		Notes:
+			a) The angle we calculate should have domain [0,180]
+			b) We calculate the angle after shifting the diatom vector to zero
+
+		"""
+		self.distribKey = "diatom_dist"
+		self.binResObj = binResObj
+		self.diatomIndices = diatomIndices
+		self.inpVector = inpVector
+		self.leftToRight = leftToRight
+
+	@property
+	def primaryIndices(self):
+		return [x[0] for x in self.diatomIndices]
 
 
 class CountHBondsBetweenWaterGroupsOptions(calcDistrCoreHelp.CalcDistribOptionsBase):

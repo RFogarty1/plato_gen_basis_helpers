@@ -633,8 +633,44 @@ class TestCalcNearestImageVectorMatrix(unittest.TestCase):
 
 		self.assertTrue( np.allclose(np.array(expMatrix), np.array(actMatrix), equal_nan=True) )
 
+class TestCalcAnglesWithArbitraryVector(unittest.TestCase):
 
+	def setUp(self):
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.diatomA = [ [0,0,4,"X"], [0,0,5,"Y"] ]
+		self.diatomB = [ [0,0,9,"X"], [0,2,1,"Y"] ] #Second should go to [0,11,2]
 
+		#
+		self.cartCoords = [ [0,0,0,"A"] ] + self.diatomA + [ [5,5,5,"B"] ] + self.diatomB  
+		self.inpIndices = [ [1,2], [4,5] ]
+		self.inpVector = [0,0,1]
+		self.bothDirs = True #For every [1,2] also calculate the [2,1] angle
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		self.geomA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.geomA.cartCoords = self.cartCoords
+
+	def _runTestFunct(self):
+		currArgs = [self.geomA, self.inpIndices, self.inpVector]
+		return tCode.calcSparseDiatomAngleWithArbVectorMatrix(*currArgs, bothDirs=self.bothDirs)
+
+	def testExpOutputA(self):
+		expMatrix = np.empty( (6,6) )
+		expMatrix[:] = np.nan
+		expMatrix[1][2], expMatrix[2][1] = 0,180 
+		expMatrix[4][5], expMatrix[5][4] = 45, 135
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose(np.array(expMatrix), np.array(actMatrix), equal_nan=True) )
+
+	def testExpOutputB(self):
+		self.bothDirs = False
+		expMatrix = np.empty( (6,6) )
+		expMatrix[:] = np.nan
+		expMatrix[1][2], expMatrix[4][5] = 0, 45
+		actMatrix = self._runTestFunct()
+		self.assertTrue( np.allclose(np.array(expMatrix), np.array(actMatrix), equal_nan=True) )
 
 
 

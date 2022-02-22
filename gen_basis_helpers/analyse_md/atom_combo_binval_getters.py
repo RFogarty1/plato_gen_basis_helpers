@@ -5,6 +5,7 @@ import numpy as np
 from . import atom_combo_core as atomComboCoreHelp
 from . import atom_combo_populators as atomComboPopulatorHelp
 
+
 class _PlanarDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
 	def __init__(self, planeEqn, planeDistIndices):
@@ -581,6 +582,68 @@ def _getNumberHBondsForOneOxyIdx(fromOxyIdx, fromHyIdxPair, toOxyIndices, toHyIn
 					outVal += 1
 
 	return outVal
+
+
+
+class _GetDiatomDistsBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, diatomIndices):
+		self.diatomIndices = diatomIndices
+
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		relevantMatrix = sparseMatrixCalculator.outDict["distMatrix"]
+		outVals = list()
+		for currIndices in self.diatomIndices:
+			fromIdx,toIdx = currIndices
+			outVals.append( relevantMatrix[fromIdx][toIdx] )
+
+		return outVals
+
+
+class _GetDiatomAngleWithVectorBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, diatomIndices, inpVector, leftToRight):
+		""" Initializer
+		
+		Args:
+			diatomIndices: (iter of len-2 int-iters) Contains indices of diatoms we want angles for
+			inpVector: (len-3 iter) The vector we want the angle with
+			leftToRight: (Bool) If True then for indices [a,b] we do angle for (b-a); else we do angle for (a-b)
+
+		"""
+		self.diatomIndices = diatomIndices
+		self.inpVector = inpVector
+		self.leftToRight = leftToRight
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		#1) Get the relevant matrix
+		relevantDicts = sparseMatrixCalculator.outDict["diatom_arbitrary_angle_matrices"]
+		relevantIdx = None
+		for idx,currDict in enumerate(relevantDicts):
+			if np.allclose( np.array(self.inpVector), np.array(currDict["inpVector"]) ):
+				relevantIdx = idx
+				break
+
+		#1.5) Raise if we didnt find the correct matrix
+		if relevantIdx is None:
+			raise ValueError("Couldnt find the relevant matrix")
+
+		#2) Get the values
+		outVals = list()
+		relevantMatrix = sparseMatrixCalculator.outDict["diatom_arbitrary_angle_matrices"][relevantIdx]["matrix"]
+		for currIndices in self.diatomIndices:
+			if self.leftToRight:
+				useIndices = currIndices
+			else:
+				useIndices = reversed(currIndices)
+
+			outVals.append( relevantMatrix[tuple(useIndices)] )  
+
+		return outVals
+
+
+
 
 
 
