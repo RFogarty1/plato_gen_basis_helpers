@@ -663,6 +663,15 @@ class TestGetHBondParametersBetweenGenericGroups(unittest.TestCase):
 		for expIter,actIter in it.zip_longest(expVals,actVals):
 			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
 
+	def testExpectedNonHyToHyDist(self):
+		self.optsObjInitializer = distrOptObjHelp.GetNonHyToHyDistanceForHBonds
+		self.createTestObjs()
+		expVals = [ (math.sqrt(2),), (math.sqrt(2),) ]
+		actVals = self._runTestFunct()
+
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
 
 class TestCountHBondsBetweenGenericGroups(unittest.TestCase):
 

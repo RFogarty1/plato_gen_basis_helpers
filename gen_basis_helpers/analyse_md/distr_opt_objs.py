@@ -389,6 +389,13 @@ class GetOOHAnglesForHBondsBetweenGenericGroups(CountHBondsBetweenGenericGroupsO
 		self.distribKey = "hbondOOHDists"
 
 
+class GetNonHyToHyDistanceForHBonds(CountHBondsBetweenGenericGroupsOptions):
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args,**kwargs)
+		self.distribKey = "hbondNonHyToHyDists"
+
+
 #
 class GetDistsForDiatomOpts(calcDistrCoreHelp.CalcDistribOptionsBase):
 	"""Options for binning distances between diatoms. Useful, for example, for looking at bondlengths

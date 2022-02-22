@@ -464,6 +464,14 @@ class _GetOOHAnglesForHBondsBinValGetter(_HBondsPropertiesBetweenGenericGroupsBi
 		return outAngles
 
 
+class _GetNonHyToHyDistsForHBondsBinValGetter(_HBondsPropertiesBetweenGenericGroupsBinValGetter):
+
+	def _getValsFromIndices(self, distMatrix, angleMatrix, indices):
+#		pass
+		outVals = [ distMatrix[currIndices[0]][currIndices[2]] for currIndices in indices ] 
+		return outVals
+
+
 class _DiscHBondCounterBetweenGroupsWithOxyDistFilterOneDimValGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
 	def __init__(self, oxyIndices, hyIndices, distFilterIndices, distFilterVals, acceptor=True, donor=True, maxOO=3.5, maxAngle=35):

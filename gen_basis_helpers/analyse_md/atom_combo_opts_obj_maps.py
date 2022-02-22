@@ -142,6 +142,25 @@ def _(inpObj):
 	return atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
 
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetNonHyToHyDistanceForHBonds)
+def _(inpObj):
+	#Get the populator needed to detect hydrogen bonds
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
+	firstPopulator = atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
+
+	#Get the populator for finding O-H distances
+	fromIndices = [x for x in it.chain(*inpObj.fromNonHyIndices)] + [x for x in it.chain(*inpObj.toNonHyIndices)]
+	fromIndices = list(set(fromIndices))
+
+	toIndices = [x for x in it.chain(*inpObj.fromHyIndices)] + [x for x in it.chain(*inpObj.toHyIndices)]
+	toIndices = list(set(toIndices))
+
+	secondPopulator = atomComboPopulatorHelp._DistMatrixPopulator(fromIndices, toIndices)
+
+	return coreComboHelp._SparseMatrixPopulatorComposite([firstPopulator,secondPopulator])
+
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.WaterPlanarDistOptions)
 def _(inpObj):
 	planeEqn =  _getDefaultPlaneEquation() if inpObj.planeEqn is None else inpObj.planeEqn
@@ -324,6 +343,12 @@ def _(inpObj):
 	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
 	return binValGettersHelp._GetNonHyDistsForHBondsBinValGetter(*currArgs, **currKwargs)
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetNonHyToHyDistanceForHBonds)
+def _(inpObj):
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
+	return binValGettersHelp._GetNonHyToHyDistsForHBondsBinValGetter(*currArgs, **currKwargs)
 
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetOOHAnglesForHBondsBetweenGenericGroups)
