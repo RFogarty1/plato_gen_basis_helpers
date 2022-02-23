@@ -123,6 +123,7 @@ class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple(atomComboCoreHelp._G
 		return outVals
 
 
+
 #Modification for atom-atom case
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._RadialDistsGetValsToBin)
 def _(binValGetter, groupIndices, useGroups):
@@ -209,12 +210,20 @@ def _getAtomicIndicesForNonHyToHyGeneric(inpIndices, useNonHyIdx, useIdxEach):
 	outIndices = [ inpVals[useIdxEach] for inpVals in inpIndices[typeIdx] ]
 	return outIndices
 
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._GetDiatomAngleWithVectorBinvalGetter)
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._GetDiatomDistsBinvalGetter)
+def _(binvalGetter, groupIndices, useGroups, **unused):
+	nonHyIndices, hyIndices = groupIndices[useGroups[0]]
+	assert all([len(x)==1 for x in nonHyIndices])
+	assert all([len(x)==1 for x in hyIndices])
+	outDiatomIndices = [ [nonHyIdx[0],hyIdx[0]] for nonHyIdx,hyIdx in it.zip_longest(nonHyIndices,hyIndices) ]
+	binvalGetter.diatomIndices = outDiatomIndices
+
 
 #Modification functions for generic water derivative
 @BINVAL_GETTER_TYPE_TO_WATER_DERIVATIVE_MOD_DICT(atomComboBinvalGetterHelp._PlanarDistsGetOneDimValsToBin)
 def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
 	raise NotImplementedError("")
-
 
 
 

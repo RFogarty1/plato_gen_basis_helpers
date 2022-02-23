@@ -129,6 +129,56 @@ class GenericNonHyAndHyFilteredOptsObj_simple():
 		return [x.binResObj for x in self.distrOpts]
 
 
+class HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple():
+	""" Class used to look at hydroxyl O-H properties based on classifications given by NonHy/hy classifiers. Original use case is to look at O-H/surface normal angle based on whether a hydrogen bond is formed or not
+
+	This MIGHT be possible to do with the normal GenericNonHyAndHyFilteredOptsObj_simple aswell if you simply use len-1 indices for hy/nonhy. Likely that this options object is redundant.....
+
+	"""
+
+	def __init__(self, fromNonHyIndices, fromHyIndices, classificationOpts, distrOpts, useGroups, useNonHyIdx=True, classificationObjs=None):
+		""" Initializer
+		
+		Args:
+			fromNonHyIndices: (iter of int-iters) Each is the non-hydrogen indices from one group (e.g. may be [ [0] ] for a single water)
+			fromHyIndices: (iter of int-iters) Each is hydrogen indices for one group (e.g. may be [ [1,2] ] for a single water)
+			classificationOpts: (Options object for classification) This contains options for how we classify the indices into N-groups. Should lead to something that 
+			distrOpts: (iter of CalcDistribOptionsBase) Each defines a distribution we want calculated using filtered list; SHOULD INVOLVE DIATOMS
+			useGroups: (iter of int-iters) Groups to calculate between. The group indices are determined by "classificationOpts". E.g. [ [0,1], [0] ] Would indicate to calculate distribution between groups [0,1] for distrOpts[0] and for group 0 for distrOpts[1]
+			useNonHyIdx: (Bool) If True we represent our group with the non-hydrogen indices (if false we use a hydrogen index)
+			classificationObjs: (iter of ClassifierBase objects) If present these take priority over classificationOpts. Original purpose was to allow "byReference" classifiers to be used to speed up code when multiple of the same classifiers were used
+
+		"""
+		self.fromNonHyIndices = fromNonHyIndices
+		self.fromHyIndices = fromHyIndices
+		self.classificationOpts = classificationOpts
+		self.distrOpts = distrOpts
+		self.useGroups = useGroups
+		self.useNonHyIdx = useNonHyIdx
+		self.classificationObjs = classificationObjs
+		self.useIdxEach = 0 #Needed to reuse some "GenericNonHyAndHyFilteredOptsObj_simple" interfaces
+
+	@property
+	def primaryIndices(self):
+		if self.useNonHyIdx:
+			outVals = [x[0] for x in self.fromNonHyIndices]
+		else:
+			outVals = [x[0] for x in self.fromHyIndices]
+
+		return outVals
+
+	@property
+	def atomIndices(self):
+		return self.primaryIndices
+
+	@property
+	def binResObj(self):
+		return [x.binResObj for x in self.distrOpts]
+
+
+
+
+
 class WaterDerivativeFilteredOptsObj_simple():
 	""" Class used to get properties for water-derivative molecules (e.g. hydroxyl/hydronium). Original use was finding planar positions of products for H2O->OH- + H+
 

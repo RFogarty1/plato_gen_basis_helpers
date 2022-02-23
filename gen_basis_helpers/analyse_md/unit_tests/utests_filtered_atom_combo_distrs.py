@@ -1195,6 +1195,86 @@ class TestHBondedToDynamicGroup_varyDistrOpts(unittest.TestCase):
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
 
+class TestHydroxylDiatomFromNonHyAndHyFilteredVaryDistr(unittest.TestCase):
+
+	def setUp(self):
+		#All geometric params
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.hydroxylA = [ [0,0,0,"O"], [0,0,1,"H"] ] #1 length; 0 degree angle
+		self.hydroxylB = [ [3,0,0,"O"], [3,1,1,"H"] ] #sqrt(2) length; 45 degree angle
+		self.hydroxylC = [ [5,0,0,"O"], [7,0,0,"H"] ] #2 length;90 degrees angle
+
+		self.coords = self.hydroxylA + self.hydroxylB + self.hydroxylC
+
+		#Sort some classifiers using min-hoz distance [since its sort of simplest
+		self.binResObjA = binResHelp.BinnedResultsStandard.fromBinEdges([0,4,10])
+		self.fromNonHyIndices, self.fromHyIndices = [ [0], [2], [4] ], [ [1], [3], [5] ]
+		self.toNonHyIndices, self.toHyIndices = [ [0] ], [ [1] ]
+		self.distFilterRanges = [ [3.5,10] ] #Should leave only ONE hydroxyl to look at 
+		self.useIndicesFrom, self.useIndicesTo = "nonHy", "nonHy"
+
+
+		#Create a distribution object; will likely change each test but...
+		currArgs = [ self.binResObjA, [ [0,1] ] ] #Neither arg should actually matter; hence I've set the wrong value for the 2nd arg on purpose
+		self.distrOptObjs = [distrOptObjHelp.GetDistsForDiatomOpts(*currArgs)]
+
+		#Some final options
+		self.useGroups = [ [0] ]
+		self.useNonHyIdx = True
+		self.createTestObjs()
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create the Classifier opts obj
+		currArgs = [self.binResObjA, self.fromNonHyIndices, self.fromHyIndices, self.toNonHyIndices, self.toHyIndices, self.distFilterRanges]
+		currKwargs = {"useIndicesFrom":self.useIndicesFrom, "useIndicesTo":self.useIndicesTo}
+		self.classifierOptsA = clsDistrOptObjs.ClassifyNonHyAndHyBasedOnMinHozDistsToAtomGroups(*currArgs, **currKwargs)
+
+		#Create the filtered options obj
+		currArgs = [self.fromNonHyIndices, self.fromHyIndices, self.classifierOptsA, self.distrOptObjs, self.useGroups]
+		currKwargs = {"useNonHyIdx":self.useNonHyIdx}
+		self.filteredOptsObj = filteredComboOptObjHelp.HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple(*currArgs, **currKwargs)
+
+		#Create the sparse matrix calculator and populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.filteredOptsObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.filteredOptsObj])
+
+	def _runTestFunct(self):
+		return self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+	#TODO: Use the "HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple" object in filtered_atom_combo_opt_objs
+	def testExpectedBondLengthsA(self):
+		expVals = [ (2,) ]
+		actVals = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
+	def testExpectedBonLengthsB(self):
+		self.distFilterRanges = [ [-0.1,3.5] ]
+		self.createTestObjs()
+		expVals = [(1,),(math.sqrt(2),)]
+		actVals = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
+	def testExpectedAnglesA(self):
+		currArgs = [ self.binResObjA, [ [0,1] ] ] #Neither arg should actually matter; hence I've set the wrong value for the 2nd arg on purpose
+		inpVector = [0,0,1]
+		self.distrOptObjs = [distrOptObjHelp.GetAngleWithGenericVectorForDiatomOpts(*currArgs,inpVector)]
+		self.createTestObjs()
+
+		expVals = [(90,)]
+		actVals = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
+
+
 class TestWaterDerivativeFilteredOptsDistr(unittest.TestCase):
 
 	def setUp(self):

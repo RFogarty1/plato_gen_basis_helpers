@@ -166,6 +166,7 @@ def _(inpObj):
 	return outPopulator
 
 #NOTE: Same as for "FilteredAtomComboOptsObjGeneric" initially; put separately still though
+@atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple)
 @atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.WaterDerivativeFilteredOptsObj_simple)
 @atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple)
 def _(inpObj):
@@ -215,6 +216,7 @@ def _(inpObj):
 
 
 #Only the "GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple" line differs from the atomic case
+@atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple)
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.WaterDerivativeFilteredOptsObj_simple)
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple)
 def _(inpObj):
@@ -379,6 +381,19 @@ def _(populator, optsObj):
 		outToIndices = list( set(outToIndices + populator.toIndices ) )
 
 	populator.toIndices = outToIndices
+
+
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator, filteredAtomComboOptHelp.HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple) )
+def _(populator, optsObj):
+	populator.fromIndices = [x[0] for x in optsObj.fromNonHyIndices]
+	populator.toIndices = [ x[0] for x in optsObj.fromHyIndices ]
+
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DiatomAngleWithVectorPopulator, filteredAtomComboOptHelp.HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple) )
+def _(populator, optsObj):
+	assert all([len(x)==1 for x in optsObj.fromNonHyIndices])
+	assert all([len(x)==1 for x in optsObj.fromHyIndices])
+	diatomIndices = [ [nonHy[0],hy[0]] for nonHy,hy in it.zip_longest(optsObj.fromNonHyIndices, optsObj.fromHyIndices) ] 
+	populator.diatomIndices = diatomIndices
 
 
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
