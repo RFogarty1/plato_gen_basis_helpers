@@ -421,7 +421,7 @@ class GetDistsForDiatomOpts(calcDistrCoreHelp.CalcDistribOptionsBase):
 
 
 class GetAngleWithGenericVectorForDiatomOpts(calcDistrCoreHelp.CalcDistribOptionsBase):
-	"""The summary line for a class docstring should fit on one line.
+	"""Options for binning angles of diatoms with a generic vector (e.g. original use case is hydroxyl angle with surface normal)
 
 	IMPORTANT: This bins 1 value PER DIATOM rather than per primary index. Therefore these options should only really be combined with other "1-value per diatom" options, though you wont neccesarily hit an error if you dont
 	"""
@@ -445,6 +445,31 @@ class GetAngleWithGenericVectorForDiatomOpts(calcDistrCoreHelp.CalcDistribOption
 		self.diatomIndices = diatomIndices
 		self.inpVector = inpVector
 		self.leftToRight = leftToRight
+
+	@property
+	def primaryIndices(self):
+		return [x[0] for x in self.diatomIndices]
+
+
+
+class GetHozDistsForDiatomOpts(calcDistrCoreHelp.CalcDistribOptionsBase):
+	""" Options for binning horizontal distances between the two atoms of a diatom (e.g. between O and H in hydroxyl)
+
+	IMPORTANT: This bins 1 value PER DIATOM rather than per primary index. Therefore these options should only really be combined with other "1-value per diatom" options, though you wont neccesarily hit an error if you dont
+
+	"""
+
+	def __init__(self, binResObj, diatomIndices):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			diatomIndices: (iter of len-2 ints) Indices of diatoms (e.g. [ [0,1], [2,3] ])
+				 
+		"""
+		self.distribKey = "diatom_dist"
+		self.binResObj = binResObj
+		self.diatomIndices = diatomIndices
 
 	@property
 	def primaryIndices(self):

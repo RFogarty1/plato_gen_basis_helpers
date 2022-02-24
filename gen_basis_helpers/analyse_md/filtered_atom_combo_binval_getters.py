@@ -210,6 +210,7 @@ def _getAtomicIndicesForNonHyToHyGeneric(inpIndices, useNonHyIdx, useIdxEach):
 	outIndices = [ inpVals[useIdxEach] for inpVals in inpIndices[typeIdx] ]
 	return outIndices
 
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._GetDiatomHozDistsBinvalGetter)
 @BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._GetDiatomAngleWithVectorBinvalGetter)
 @BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._GetDiatomDistsBinvalGetter)
 def _(binvalGetter, groupIndices, useGroups, **unused):

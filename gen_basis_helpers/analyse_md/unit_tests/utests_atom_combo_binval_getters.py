@@ -977,6 +977,7 @@ class TestGetDistsForDiatomOpts(unittest.TestCase):
 		#
 		self.binResObj = None
 		self.diatomicIndices = [ [0,1], [2,3], [4,5] ] 
+		self.initOptsClass = distrOptObjHelp.GetDistsForDiatomOpts
 		self.createTestObjs()
 
 	def createTestObjs(self):
@@ -985,7 +986,7 @@ class TestGetDistsForDiatomOpts(unittest.TestCase):
 		self.cellA.cartCoords = self.coords
 
 		#Create an options object
-		self.optsObj = distrOptObjHelp.GetDistsForDiatomOpts(self.binResObj, self.diatomicIndices)
+		self.optsObj = self.initOptsClass(self.binResObj, self.diatomicIndices)
 
 		#Get a sparse matrix populator + populate it
 		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
@@ -1000,6 +1001,16 @@ class TestGetDistsForDiatomOpts(unittest.TestCase):
 	def testExpectedValsA(self):
 
 		expVals = [ (1,), (math.sqrt(2),), (2,) ]
+		actVals = self._runTestFunct()
+
+		for exp,act in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
+
+	def testHozDistExpectedVals(self):
+		self.initOptsClass = distrOptObjHelp.GetHozDistsForDiatomOpts
+		self.createTestObjs()
+
+		expVals = [ (0,), (1,), (2,) ]
 		actVals = self._runTestFunct()
 
 		for exp,act in it.zip_longest(expVals, actVals):

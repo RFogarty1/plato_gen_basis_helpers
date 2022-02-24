@@ -211,6 +211,11 @@ def _(inpObj):
 	currArgs = [inpObj.diatomIndices, inpObj.inpVector]
 	return atomComboPopulatorHelp._DiatomAngleWithVectorPopulator(*currArgs)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetHozDistsForDiatomOpts)
+def _(inpObj):
+	indicesFrom = list(set([x[0] for x in inpObj.diatomIndices]))
+	indicesTo = list(set([x[1] for x in inpObj.diatomIndices]))
+	return atomComboPopulatorHelp._HozDistMatrixPopulator(indicesFrom, indicesTo)
 
 
 @TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.WaterCountTypesMinDistAndHBondSimpleOpts)
@@ -406,6 +411,9 @@ def _(inpObj):
 def _(inpObj):
 	return binValGettersHelp._GetDiatomDistsBinvalGetter( inpObj.diatomIndices )
 
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetHozDistsForDiatomOpts)
+def _(inpObj):
+	return binValGettersHelp._GetDiatomHozDistsBinvalGetter( inpObj.diatomIndices )
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetAngleWithGenericVectorForDiatomOpts)
 def _(inpObj):

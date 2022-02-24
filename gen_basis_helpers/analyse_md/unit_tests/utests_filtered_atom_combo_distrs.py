@@ -1274,6 +1274,15 @@ class TestHydroxylDiatomFromNonHyAndHyFilteredVaryDistr(unittest.TestCase):
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
 
+	def testExpectedHozDistsA(self):
+		self.coords[-1][-2] += 1 #Should only change the absolute(not horizontal) distance
+		self.distrOptObjs = [distrOptObjHelp.GetHozDistsForDiatomOpts( self.binResObjA, [ [0,1] ] )] #Neither arg should actually matter; hence I've set the wrong value for the 2nd arg on purpose
+		self.createTestObjs()
+
+		expVals = [ (2,) ]
+		actVals = self._runTestFunct()
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
 
 class TestWaterDerivativeFilteredOptsDistr(unittest.TestCase):
 

@@ -383,6 +383,7 @@ def _(populator, optsObj):
 	populator.toIndices = outToIndices
 
 
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._HozDistMatrixPopulator, filteredAtomComboOptHelp.HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._DistMatrixPopulator, filteredAtomComboOptHelp.HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple) )
 def _(populator, optsObj):
 	populator.fromIndices = [x[0] for x in optsObj.fromNonHyIndices]

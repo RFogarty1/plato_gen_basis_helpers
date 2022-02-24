@@ -608,6 +608,20 @@ class _GetDiatomDistsBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSpars
 
 		return outVals
 
+class _GetDiatomHozDistsBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self,diatomIndices):
+		self.diatomIndices = diatomIndices
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		relevantMatrix = sparseMatrixCalculator.outDict["hozDistMatrix"]
+		outVals = list()
+		for currIndices in self.diatomIndices:
+			fromIdx,toIdx = currIndices
+			outVals.append( relevantMatrix[fromIdx][toIdx] )
+
+		return outVals
+
 
 class _GetDiatomAngleWithVectorBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
