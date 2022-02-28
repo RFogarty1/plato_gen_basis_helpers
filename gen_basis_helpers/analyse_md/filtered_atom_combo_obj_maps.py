@@ -288,6 +288,14 @@ def _checkGroupIndicesConsistent(inpObj):
 
 
 #Functions for modifying populators; this needs doing at creation time (since we populate matrices BEFORE we filter atoms into groups for a given geometry)
+
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (coreComboHelp._SparseMatrixPopulatorComposite, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
+def _(populator, optsObj):
+	for subPopulator in populator.populators:
+		_MOD_POPULATOR_BASED_ON_TYPE_DICT[type(subPopulator), type(optsObj)] (populator, optsObj)
+
+
+
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._WaterMinDistPopulator,filteredAtomComboOptHelp.WaterToWaterFilteredAtomComboOptsObjGeneric) )
 def _(populator, optsObj, toIdxType):
 	populator.toIndices = _getToIndicesFromWaterToWaterOptsObjAndToIdxType(optsObj, toIdxType)
