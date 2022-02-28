@@ -476,6 +476,29 @@ class _GetNonHyDistsForHBondsBinValGetter(_HBondsPropertiesBetweenGenericGroupsB
 		outDists = [ distMatrix[currIndices[0]][currIndices[1]] for currIndices in indices ]
 		return outDists
 
+#Since we dont have a hoz-distance matrix passed in usually inherited-from class I just duplicate some code here
+#TODO: I could probably remove this duplication by just passing hoz-matrix as a kwarg to the standard _getValsFromIndices
+class _GetHozDistsBetweenNonHyForHBondsBinValGetter(_CountHBondsBetweenGenericGroupsBinValGetter):
+
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		distMatrix = sparseMatrixCalculator.outDict["distMatrix"]
+		angleMatrix = sparseMatrixCalculator.outDict["angleMatrix"]
+		hozDistMatrix = sparseMatrixCalculator.outDict["hozDistMatrix"]
+
+		outVals = list()
+		sharedKwargs = {"acceptor":self.acceptor, "donor":self.donor, "maxOO":self.maxOO, "maxAngle":self.maxAngle}
+		for fromNonHy, fromHy in it.zip_longest(self.fromNonHyIndices, self.fromHyIndices):
+			currArgs = [fromNonHy, fromHy, self.toNonHyIndices, self.toHyIndices, distMatrix, angleMatrix]
+			currIndices = _getHBondIndicesForOneGenericFromGroup(*currArgs)
+			currVals = self._getValsFromIndices( hozDistMatrix, currIndices )
+			outVals.extend(currVals)
+
+		return outVals
+
+	def _getValsFromIndices(self, hozDistMatrix, indices):
+		outDists = [ hozDistMatrix[currIndices[0]][currIndices[1]] for currIndices in indices]
+		return outDists
 
 class _GetOOHAnglesForHBondsBinValGetter(_HBondsPropertiesBetweenGenericGroupsBinValGetter):
 	

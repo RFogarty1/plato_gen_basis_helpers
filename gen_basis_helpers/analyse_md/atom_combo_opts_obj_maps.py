@@ -137,6 +137,7 @@ def _(inpObj):
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
 	return atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
 
+
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetOOHAnglesForHBondsBetweenGenericGroups)
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetOODistsForHBondsBetweenGenericGroups)
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenGenericGroupsOptions)
@@ -164,6 +165,21 @@ def _(inpObj):
 
 	return coreComboHelp._SparseMatrixPopulatorComposite([firstPopulator,secondPopulator])
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetOOHozDistsForHBondsBetweenGenericGroups)
+def _(inpObj):
+	#Get the populator needed to detect hydrogen bonds
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO}
+	firstPopulator = atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator(*currArgs, **currKwargs)
+
+	#Get the populator for getting the horizontal distances between non-hy indices; this will make it pretty slow....
+	fromIndices = list(set([x for x in it.chain(*inpObj.fromNonHyIndices)]))
+
+	toIndices = list(set([x for x in it.chain(*inpObj.toNonHyIndices)]))
+
+	secondPopulator = atomComboPopulatorHelp._HozDistMatrixPopulator(fromIndices,toIndices)
+
+	return coreComboHelp._SparseMatrixPopulatorComposite([firstPopulator,secondPopulator])
 
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.WaterPlanarDistOptions)
 def _(inpObj):
@@ -364,6 +380,12 @@ def _(inpObj):
 	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
 	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
 	return binValGettersHelp._GetNonHyToHyDistsForHBondsBinValGetter(*currArgs, **currKwargs)
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetOOHozDistsForHBondsBetweenGenericGroups)
+def _(inpObj):
+	currArgs = [inpObj.fromNonHyIndices, inpObj.fromHyIndices, inpObj.toNonHyIndices, inpObj.toHyIndices]
+	currKwargs = {"acceptor":inpObj.acceptor, "donor":inpObj.donor, "maxOO":inpObj.maxOO, "maxAngle":inpObj.maxAngle}
+	return binValGettersHelp._GetHozDistsBetweenNonHyForHBondsBinValGetter(*currArgs, **currKwargs)
 
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetOOHAnglesForHBondsBetweenGenericGroups)

@@ -734,6 +734,24 @@ class TestGetHBondParametersBetweenGenericGroups(unittest.TestCase):
 		for expIter,actIter in it.zip_longest(expVals,actVals):
 			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
 
+	def testExpectedHozDists(self):
+		#Modify the input coords so the hoz-dist != total dist
+		#I've just shifted the water up by +0.2 along z. 
+		co2Coords =   [ [0,0,0,"O"], [1,0,0,"C"], [2,0,0,"O"] ]
+		waterCoords = [ [3,1,0+0.2,"H"], [4,2,0+0.2,"O"], [5,1,0+0.2,"H"] ]
+		hfCoords =    [ [6,0,0,"F"], [7,0,0,"H"] ]
+
+		self.cartCoords = co2Coords + waterCoords + hfCoords
+		self.optsObjInitializer = distrOptObjHelp.GetOOHozDistsForHBondsBetweenGenericGroups
+		self.createTestObjs()
+
+		#
+		expVals = [(math.sqrt(8),), (math.sqrt(8),)]
+		actVals = self._runTestFunct()
+
+		for expIter,actIter in it.zip_longest(expVals,actVals):
+			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
+
 
 class TestCountHBondsBetweenGenericGroups(unittest.TestCase):
 
