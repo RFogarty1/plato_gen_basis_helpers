@@ -952,6 +952,7 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs_varyDistrOpts(unittest.Test
 		self.toNonHy = [ [4], [7] ]
 		self.toHy    = [ [5,6],[8,9] ]
 
+		#Only 1st hydroxyl in 1st group; 2nd hydroxyl in the other
 		self.nTotalFilterRanges = [ [0.5,100], [-0.5,0.5] ] #>0 h-bonds and 0 hbonds are the criteria
 		self.maxOOHBond = 3
 		self.maxAngleHBond = 50
@@ -1113,6 +1114,46 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs_varyDistrOpts(unittest.Test
 
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
+	def testExpectedNumbNearestHozNebs_valsA(self):
+		currBinResObj = binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(0,10,1) #Shouldnt REALLY matter much
+		dudIndicesFrom, indicesTo = [0], list() 
+		self.useGroups = [ [0,1] ] #Hydroxyl to hydroxyl
+
+		#
+		currArgs = [currBinResObj, dudIndicesFrom, indicesTo]
+		hozSepDistrOpts = distrOptObjHelp.CalcHozDistOptions(*currArgs)
+		distRange = [0.1,3]
+		useDistrOpts = distrOptObjHelp.CountNWithinDistOptions(currBinResObj, hozSepDistrOpts, distRange)
+		self.distrOptObjs = [useDistrOpts]
+		self.createTestObjs()
+
+		#
+		expVals = [(0,)]
+		actVals = self._runTestFunct()
+
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
+	def testExpectedNumbNearestHozNebs_valsB(self):
+		currBinResObj =  binResHelp.getEmptyBinResultsFromMinMaxAndWidthStandard(0,10,1) #Shouldnt REALLY matter much
+		dudIndicesFrom, indicesTo = [0], [4,7] #Only second val matters; these are the non-hy indices we look towards 
+		self.useGroups = [ [0] ]
+
+		#
+		currArgs = [currBinResObj, dudIndicesFrom, indicesTo]
+		hozSepDistrOpts = distrOptObjHelp.CalcHozDistOptions(*currArgs)
+		distRange = [0.1,3.1]
+		useDistrOpts = distrOptObjHelp.CountNWithinDistOptions(currBinResObj, hozSepDistrOpts, distRange)
+		self.distrOptObjs = [useDistrOpts]
+		self.createTestObjs()
+
+		#
+		expVals = [(1,)]
+		actVals = self._runTestFunct()
+
+		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
+
+
 
 class TestHBondedToDynamicGroup_varyDistrOpts(unittest.TestCase):
 
@@ -1193,6 +1234,7 @@ class TestHBondedToDynamicGroup_varyDistrOpts(unittest.TestCase):
 		expVals = [ (1.8,) ]
 		actVals = self._runTestFunct()
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
+
 
 
 class TestHydroxylDiatomFromNonHyAndHyFilteredVaryDistr(unittest.TestCase):

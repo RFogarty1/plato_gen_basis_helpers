@@ -37,6 +37,30 @@ class CalcHozDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
 	def primaryIndices(self):
 		return self.indicesFrom
 
+
+class CountNWithinDistOptions(calcDistrCoreHelp.CalcDistribOptionsBase):
+	""" Options class to bin the number of atoms within certain distances (planar/horiznotal/total) 
+
+	"""
+	def __init__(self, binResObj, calcDistOpts, distRanges):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			calcDistOpts: (CalcDistribOptionsBase) Options for how to calculate the distances (e.g. CalcHozDistOptions)
+			distRanges: (len-2 float iter) We count the number of atoms, N, satisfying distRanges[0] < N <= distRanges[1] 
+		
+		NOTES:
+			a) The bins in calcDistOpts MUST span the range distRanges, but no error is thrown if they dont
+
+ 
+		"""
+		self.binResObj = binResObj
+		self.calcDistOpts = calcDistOpts
+		self.distRanges = distRanges
+		if self.distRanges[0]<=0:
+			print("WARNING: lower distance range ={:.2f} may lead to self-counting".format(self.distRanges[0]))
+
 class _WaterOptsMixin():
 
 	@property

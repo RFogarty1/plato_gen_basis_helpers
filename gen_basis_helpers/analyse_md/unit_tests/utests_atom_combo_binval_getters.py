@@ -125,6 +125,68 @@ class TestHozMinDistsGetter(unittest.TestCase):
 			[self.assertAlmostEqual(exp,act) for exp,act in it.zip_longest(expIter,actIter)]
 
 
+class TestCountNWithinDist(unittest.TestCase):
+
+	def setUp(self):
+		#Create geometry
+		#For the initial test range:
+		#i) All are within hoz-dist values of A
+		#ii) BDC are within planar distance
+		#iii) BD are within the total distance
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		self.coords = [ [1,0,0,"A"],
+		                [0,0,0,"B"],
+		                [0,0,1,"C"],
+		                [2,0,0,"D"],
+		                [1,0,5,"E"] ]
+
+		#Create the distribution object
+		binResObj = None #Shouldnt matter for these tests
+		fromIndices, toIndices = [0], [1,2,3,4]
+		self.distOpts = distrOptObjHelp.CalcRdfOptions(binResObj, fromIndices, toIndices, filterBasedOnBins=False)
+
+		#Options for the overall options object
+		self.distRanges = [-1,1.1]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geom
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create opts object
+		tempBinResObj = None
+		self.optsObj = distrOptObjHelp.CountNWithinDistOptions(tempBinResObj, self.distOpts, self.distRanges)
+
+		#Get matrix calculator + populate
+		self.sparseMatrixObj = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseMatrixObj.calcMatricesForGeom(self.cellA)
+
+		#get binval getter
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObj])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseMatrixObj)
+
+	def testExpected_totDistA(self):
+		expVals = [(2,)]
+		actVals = self._runTestFunct()
+		self.assertTrue( np.allclose(np.array(expVals), np.array(actVals)) )
+
+	def testExpected_hozDistA(self):
+		#Setup the horizonal options thingies
+		binResObj = None #Shouldnt matter for these tests
+		fromIndices, toIndices = [0], [1,2,3,4]
+		self.distOpts = distrOptObjHelp.CalcHozDistOptions(binResObj, fromIndices, toIndices) 
+		self.createTestObjs()
+		#Run test
+		expVals = [(4,)]
+		actVals = self._runTestFunct()
+		self.assertTrue( np.allclose(np.array(expVals), np.array(actVals)) )
+
+
 class TestRadialDistribWithPlanarDists(unittest.TestCase):
 	""" Testing radial distrib binner alone misses too much, hence want a planar dist val too """ 
 

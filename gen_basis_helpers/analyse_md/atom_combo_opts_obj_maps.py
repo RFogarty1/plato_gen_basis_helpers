@@ -119,6 +119,10 @@ def _(inpObj):
 	planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0) if inpObj.planeEqn is None else inpObj.planeEqn
 	return atomComboPopulatorHelp._PlanarDistMatrixPopulator(inpObj.indices, planeEqn)
 
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.CountNWithinDistOptions)
+def _(inpObj):
+	outPopulator = getMatrixPopulatorFromOptsObj(inpObj.calcDistOpts)
+	return outPopulator
 
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.DiscHBondCounterWithOxyDistFilterOptions)
 def _(inpObj):
@@ -335,6 +339,12 @@ def _(inpObj):
 def _(inpObj):
 	planeEqn = planeEqnHelp.ThreeDimPlaneEquation(0,0,1,0) if inpObj.planeEqn is None else inpObj.planeEqn
 	return binValGettersHelp._PlanarDistsGetOneDimValsToBin(planeEqn, inpObj.indices)
+
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CountNWithinDistOptions)
+def _(inpObj):
+	getDistsBinvalGetter = getOneDimBinValGetterFromOptsObj(inpObj.calcDistOpts)
+	outBinvalGetter = binValGettersHelp._CountNWithinDistancesGetValsToBin(getDistsBinvalGetter, inpObj.distRanges)
+	return outBinvalGetter
 
 
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CountHBondsBetweenGenericGroupsOptions)

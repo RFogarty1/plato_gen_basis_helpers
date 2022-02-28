@@ -162,6 +162,32 @@ def _(binvalGetter, groupIndices, useGroups, **kwargs):
 	binvalGetter.oxyIndices = oxyIndices
 
 
+@BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._CountNWithinDistancesGetValsToBin)
+def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):
+	#Sort out mapping to attributes
+	typeToFromAttr = {atomComboBinvalGetterHelp._RadialDistsGetValsToBin:"indicesA",
+	                  atomComboBinvalGetterHelp._HozDistsGetValsToBin:"fromIndices"}
+
+	typeToToAttr = {atomComboBinvalGetterHelp._RadialDistsGetValsToBin:"indicesB",
+	                  atomComboBinvalGetterHelp._HozDistsGetValsToBin:"toIndices"}
+
+	fromIndicesAttr = typeToFromAttr[type(binvalGetter.getDistsBinValGetter)]
+	toIndicesAttr = typeToToAttr[type(binvalGetter.getDistsBinValGetter)]
+
+	#Figure out the indices to use and modify the binval getter
+	allFromIndices = groupIndices[useGroups[0]]
+	useFromIndices = _getAtomicIndicesForNonHyToHyGeneric(allFromIndices, useNonHyIdx, useIdxEach)
+	setattr(binvalGetter.getDistsBinValGetter, fromIndicesAttr, useFromIndices)
+
+	if len(useGroups)==1:
+		pass
+	else:
+		allToIndices = groupIndices[useGroups[1]]
+		useToIndices = _getAtomicIndicesForNonHyToHyGeneric(allToIndices, useNonHyIdx, useIdxEach)
+		setattr(binvalGetter.getDistsBinValGetter, toIndicesAttr, useToIndices)
+
+
+
 #Same as hozdist except attrs are indicesA/indicesB instead of fromIndices/toIndices
 @BINVAL_GETTER_TYPE_TO_NONHY_HY_GENERIC_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._RadialDistsGetValsToBin)
 def _(binvalGetter, groupIndices, useGroups, useNonHyIdx, useIdxEach):

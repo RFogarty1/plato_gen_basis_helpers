@@ -115,6 +115,26 @@ def _getRdfValsToBinFromMatrix(relevantMatrix, indicesA, indicesB, minVal=None, 
 	return filteredOutVals
 
 
+class _CountNWithinDistancesGetValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, getDistsBinValGetter, distRange):
+		self.getDistsBinValGetter = getDistsBinValGetter 
+		self.distRange = distRange
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		allDists = self.getDistsBinValGetter.getValsToBin(sparseMatrixCalculator)
+
+		#We do for one "from" index at once
+		minDist, maxDist = sorted(self.distRange)
+		outCounts = list()
+
+		for currDists in allDists:
+			outDists = [x for x in currDists if (minDist<x) and (maxDist>=x)]
+			currOutVal = len(outDists)
+			outCounts.append( (currOutVal,) )
+		return outCounts
+
+
 class _MinDistsGetOneDimValsToBin(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
 	def __init__(self, fromIndices, toIndices, minVal=-0.01):
