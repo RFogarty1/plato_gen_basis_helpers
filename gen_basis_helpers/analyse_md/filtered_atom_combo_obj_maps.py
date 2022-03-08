@@ -1,4 +1,5 @@
 
+import copy
 import itertools as it
 
 from . import atom_combo_core as coreComboHelp
@@ -183,6 +184,20 @@ def _(inpObj):
 
 	return outPopulator
 
+#SLIGHTLY different to *_simple since we're only allowed 1 distrOpts here
+@atomComboOptObjMaps.TYPE_TO_POPULATOR_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_getAverageVal)
+def _(inpObj):
+	distrOptsPopulator = atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(inpObj.distrOpts)
+	classifierPopulators = [atomComboOptObjMaps.getMatrixPopulatorFromOptsObj(inpObj.classificationOpts)]
+
+	#Want to ensure the indices on populators match that of the primaryIndices for what we're filtering
+	#Probably a similar problem for the classifier populators too actually but....
+	_MOD_POPULATOR_BASED_ON_TYPE_DICT[type(distrOptsPopulator), type(inpObj)](distrOptsPopulator, inpObj)
+
+	#Combine individual into a composite
+	outPopulator = coreComboHelp._SparseMatrixPopulatorComposite( [distrOptsPopulator] + classifierPopulators )
+
+	return outPopulator
 
 #Note 1: The binval getters are only really partially created at this stage; they are modified each step to take into account which
 #group each atom belongs to
@@ -219,7 +234,7 @@ def _(inpObj):
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple)
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.WaterDerivativeFilteredOptsObj_simple)
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple)
-def _(inpObj):
+def _tempBinvalGetter_genericNonHyAndHyFiltered(inpObj):
 
 	_checkGroupIndicesConsistent(inpObj)
 
@@ -249,6 +264,17 @@ def _(inpObj):
 
 	return outObjs
 
+@atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_getAverageVal)
+def _(inpObj):
+	useObj = copy.deepcopy(inpObj)
+#	import pdb
+#	pdb.set_trace()
+	useObj.distrOpts = [inpObj.distrOpts]
+	basicObjs = _tempBinvalGetter_genericNonHyAndHyFiltered(useObj)
+	outObjs = [filteredAtomBinvalGetterHelp.GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple_getAverage(x) for x in basicObjs]
+	if len(outObjs)>1:
+		raise NotImplementedError("Likely no harm just removing this line; but i couldnt be bothered to think about if thatd cause any issues")
+	return outObjs
 
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric)
 def _(inpObj):
@@ -349,6 +375,7 @@ def _(populator, optsObj):
 	populator.fromIndices = optsObj.atomIndices
 	populator.toIndices = optsObj.atomIndices
 
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._PlanarDistMatrixPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_getAverageVal) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._PlanarDistMatrixPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._PlanarDistMatrixPopulator, filteredAtomComboOptHelp.FilteredAtomComboOptsObjGeneric) )
 def _(populator, optsObj):
@@ -404,7 +431,7 @@ def _(populator, optsObj):
 	diatomIndices = [ [nonHy[0],hy[0]] for nonHy,hy in it.zip_longest(optsObj.fromNonHyIndices, optsObj.fromHyIndices) ] 
 	populator.diatomIndices = diatomIndices
 
-
+@MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_getAverageVal) )
 @MOD_POPULATOR_BASED_ON_TYPE_DICT_REGISTER_DECO( (atomComboPopulatorHelp._CountHBondsBetweenGenericGroupsPopulator, filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_simple) )
 def _(populator, optsObj):
 	populator.fromNonHyIndices = optsObj.fromNonHyIndices

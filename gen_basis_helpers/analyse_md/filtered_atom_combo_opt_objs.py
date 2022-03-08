@@ -129,6 +129,52 @@ class GenericNonHyAndHyFilteredOptsObj_simple():
 		return [x.binResObj for x in self.distrOpts]
 
 
+class GenericNonHyAndHyFilteredOptsObj_getAverageVal():
+	""" Class used to specify options for how to calculate an average value between dynamically assigned groups of molecules, where classsification returns non-hydrogen/hydrogen atom indices separately (generally the case when counting h-bonds or similar)
+
+	Original use case was to count the average number of h-bonds formed for all water in a group (so you can plot time vs <h-bonds> for adsorbed water for example)
+
+	"""
+	def __init__(self, fromNonHyIndices, fromHyIndices, classificationOpts, distrOpts, useGroups, useNonHyIdx=True, useIdxEach=0, classificationObjs=None):
+		""" Initializer
+		
+		Args:
+			fromNonHyIndices: (iter of int-iters) Each is the non-hydrogen indices from one group (e.g. may be [ [0] ] for a single water)
+			fromHyIndices: (iter of int-iters) Each is hydrogen indices for one group (e.g. may be [ [1,2] ] for a single water)
+			classificationOpts: (Options object for classification) This contains options for how we classify the indices into N-groups. Should lead to something that 
+			distrOpts: (CalcDistribOptionsBase) Each defines a distribution we want calculated using filtered list of indices
+			useGroups: (int-iter) Groups to calculate between. The group indices are determined by "classificationOpts". E.g. [0,1] Would indicate to calculate distribution between groups zero and one
+			useNonHyIdx: (Bool) If True we represent our group with one of the non-hydrogen indices (if false we use a hydrogen index)
+			useIdxEach: (Int) The index to use in the list of hy/nonHyIndices.
+			classificationObjs: (iter of ClassifierBase objects) If present these take priority over classificationOpts. Original purpose was to allow "byReference" classifiers to be used to speed up code when multiple of the same classifiers were used
+
+		"""
+		self.fromNonHyIndices = fromNonHyIndices
+		self.fromHyIndices = fromHyIndices
+		self.classificationOpts = classificationOpts
+		self.distrOpts = distrOpts
+		self.useGroups = useGroups
+		self.useNonHyIdx = useNonHyIdx
+		self.useIdxEach = useIdxEach
+		self.classificationObjs = classificationObjs
+
+	@property
+	def primaryIndices(self):
+		if self.useNonHyIdx:
+			outVals = [x[self.useIdxEach]  for x in self.fromNonHyIndices]
+		else:
+			outVals = [x[self.useIdxEach] for x in self.fromHyIndices]
+
+		return outVals
+
+	#Used to match the interface of FilteredAtomComboOptsObjGeneric as close as possible (lets me resue some other functions)
+	@property
+	def atomIndices(self):
+		return self.primaryIndices
+
+
+
+
 class HydroxylDiatomFromNonHyAndHyFilteredOptsObj_simple():
 	""" Class used to look at hydroxyl O-H properties based on classifications given by NonHy/hy classifiers. Original use case is to look at O-H/surface normal angle based on whether a hydrogen bond is formed or not
 

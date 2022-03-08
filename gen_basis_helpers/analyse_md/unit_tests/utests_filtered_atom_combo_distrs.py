@@ -1153,7 +1153,99 @@ class TestGenericNonHyAndHyFilteredAtomComboDistribs_varyDistrOpts(unittest.Test
 		self.assertTrue( np.allclose( np.array(expVals), np.array(actVals) ) )
 
 
+class TestGenericNonHyAndHyFilteredAtomComboDistribs_varyDistrOpts(unittest.TestCase):
 
+	def setUp(self):
+		#Define the geometry; 2 "free" water/hydroxyl and 2 hydrogen bonded to each other
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+
+		self.hydroxylA = [ [0,0,0,"O"], [0,1,0.2,"H"] ]
+		self.hydroxylB = [ [5,0,0.1,"O"], [5,1,0.3,"H"] ]
+		self.waterA = [ [1,2,0,"O"], [0.5,3,0,"H"], [1.5,3,0,"H"] ]
+		self.waterB = [ [6,6,0,"O"], [5.5,7,0,"H"], [6.5,7,0,"H"] ]
+
+		self.cartCoords = self.hydroxylA + self.hydroxylB + self.waterA + self.waterB
+
+		#Options for the classifier
+		self.binResObjA = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5,0.5,1.5,2.5,3.5,4.5])
+		self.fromNonHy = [ [0], [2] ]
+		self.fromHy    = [ [1], [3] ]
+		self.toNonHy = [ [4], [7] ]
+		self.toHy    = [ [5,6],[8,9] ]
+
+		#Sort out filter criterion
+		self.nTotalFilterRanges = [ [-0.5,100], [10,100] ] #Any number of h-bonds allowed for first; insane number for the 2nd (so all hydroxyl are in group 0)
+		self.maxOOHBond = 3
+		self.maxAngleHBond = 50
+
+		#Create the distribution object; which will change in each test but...
+		currArgs = [ self.binResObjA, [x[0] for x in self.toNonHy] ] #Neither arg should actually matter; hence I've set the wrong value for the 2nd arg on purpose
+		self.distrOptObjs = distrOptObjHelp.CalcPlanarDistOptions(*currArgs, planeEqn=planeEqnHelp.ThreeDimPlaneEquation(0,0,1,4))
+		self.useGroups = [ [0] ]
+		self.useNonHyIdx, self.useIdxEach = True, 0
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create the classifier options object
+		currArgs = [ [self.binResObjA, self.binResObjA], self.fromNonHy, self.fromHy, self.toNonHy, self.toHy ]
+		currKwargs = {"nTotalFilterRanges":self.nTotalFilterRanges, "maxOOHBond":self.maxOOHBond, "maxAngleHBond":self.maxAngleHBond}
+		self.classifierOptsObj = clsDistrOptObjs.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+		#Create the main options object
+		currArgs = [self.fromNonHy, self.fromHy, self.classifierOptsObj, self.distrOptObjs, self.useGroups]
+		currKwargs = {"useNonHyIdx":self.useNonHyIdx, "useIdxEach":self.useIdxEach}
+		self.optsObjFilteredCombo = filteredComboOptObjHelp.GenericNonHyAndHyFilteredOptsObj_getAverageVal(*currArgs, **currKwargs)
+
+		#Create the sparse matrix calculator and populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObjFilteredCombo])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObjFilteredCombo])
+
+	def _runTestFunct(self):
+		return self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+
+	def _checkExpAndActValsEqual(self, expVals, actVals):
+		#Check we really have 1 value in each
+		self.assertTrue(len(expVals)==1)
+		self.assertTrue(len(expVals[0])==1)
+		self.assertEqual(len(expVals),len(actVals))
+		self.assertEqual(len(expVals[0]),len(actVals[0]))
+
+		#Then check we get the expected
+		self.assertAlmostEqual(expVals[0][0],actVals[0][0])
+
+	def testExpectedPlanarDistrA_singleValue(self):
+		#Only 1st hydroxyl in 1st group; 2nd hydroxyl in the other
+		self.nTotalFilterRanges = [ [0.5,100], [-0.5,0.5] ] #>0 h-bonds and 0 hbonds are the criteria
+		self.createTestObjs()
+		expVals = [ (4,) ]
+		actVals = self._runTestFunct()
+		self._checkExpAndActValsEqual(expVals,actVals)
+
+	def testExpectedPlanarDistrA_twoValues(self):
+		expVals = [ (3.95,) ]
+		actVals = self._runTestFunct()
+		self._checkExpAndActValsEqual(expVals,actVals)
+
+	def testExpectedTotalHBonds(self):
+		#Setup the h-bond counting distr opts
+		dudIndices = [ [1] ], [ [1] ] #Use these for values that SHOULD get overwritten
+		currArgs = [ self.binResObjA, dudIndices, dudIndices, self.toNonHy, self.toHy]
+		currKwargs = {"acceptor":True, "donor":True}
+		self.distrOptObjs = distrOptObjHelp.CountHBondsBetweenGenericGroupsOptions(*currArgs, **currKwargs)
+		self.createTestObjs()
+
+		#Sort the test out
+		expVals = [ (0.5,) ]
+		actVals = self._runTestFunct()
+		self._checkExpAndActValsEqual(expVals,actVals)
 
 class TestHBondedToDynamicGroup_varyDistrOpts(unittest.TestCase):
 

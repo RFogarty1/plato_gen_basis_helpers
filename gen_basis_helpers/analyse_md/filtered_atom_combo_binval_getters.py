@@ -89,6 +89,22 @@ class WaterToWaterFilteredAtomComboBinvalGetterGeneric(atomComboCoreHelp._GetOne
 
 		return outVals
 
+
+class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple_getAverage(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, standardBinvalGetter):
+		""" Initializer
+		
+		Args:
+			standardBinvalGetter: (GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple)
+				 
+		"""
+		self.standardBinvalGetter = standardBinvalGetter
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		nonAveraged = self.standardBinvalGetter.getValsToBin(sparseMatrixCalculator)
+		return [sum(nonAveraged)/len(nonAveraged)]
+
 #TODO: I should probably make the water-water use the same code in the backend really 
 class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 
