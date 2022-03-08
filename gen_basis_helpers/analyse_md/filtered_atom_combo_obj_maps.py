@@ -266,11 +266,12 @@ def _tempBinvalGetter_genericNonHyAndHyFiltered(inpObj):
 
 @atomComboOptObjMaps.TYPE_TO_BINNER_REGISTER_DECO(filteredAtomComboOptHelp.GenericNonHyAndHyFilteredOptsObj_getAverageVal)
 def _(inpObj):
-	useObj = copy.deepcopy(inpObj)
-#	import pdb
-#	pdb.set_trace()
-	useObj.distrOpts = [inpObj.distrOpts]
-	basicObjs = _tempBinvalGetter_genericNonHyAndHyFiltered(useObj)
+	#Temporarily changing distrOpts so it works with old interface; using copy destroys classification obj use
+	inpObj.distrOpts = [inpObj.distrOpts]
+	basicObjs = _tempBinvalGetter_genericNonHyAndHyFiltered(inpObj)
+	inpObj.distrOpts = inpObj.distrOpts[0]
+
+
 	outObjs = [filteredAtomBinvalGetterHelp.GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple_getAverage(x) for x in basicObjs]
 	if len(outObjs)>1:
 		raise NotImplementedError("Likely no harm just removing this line; but i couldnt be bothered to think about if thatd cause any issues")
