@@ -1,6 +1,6 @@
 
-
-
+import collections
+import copy
 import itertools as it
 
 import numpy as np
@@ -621,8 +621,6 @@ class _CountHBondsBetweenGenericGroupsPopulator(atomComboCoreHelp._SparseMatrixP
 
 
 
-
-
 class _DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 	""" Populates matrices to allow number of hydrogen bonds between specific groups of water indices to be counted """
 
@@ -759,6 +757,13 @@ def _getFullOutAngleIndicesRequired_GENERIC(groupANonHyIndices, groupBNonHyIndic
 
 	def _getAngleIndicesForSingleGroupABPair(groupANonHy, groupBNonHy, groupAHy, groupBHy):
 		outAngleIndices = list()
+
+		#0) Special case - small optimisation. 
+		if (len(groupANonHy)==1) and (len(groupBNonHy)==1):
+			currDist = distMatrix[groupANonHy[0]][groupBNonHy[0]]
+			if currDist >= maxOO:
+				return outAngleIndices
+
 		#1) Do the error checks
 		_checkGenericNonHyAndHyIndicesHaveValidValues(groupANonHy, groupAHy)
 		_checkGenericNonHyAndHyIndicesHaveValidValues(groupBNonHy, groupBHy)
@@ -795,6 +800,49 @@ def _getFullOutAngleIndicesRequired_GENERIC(groupANonHyIndices, groupBNonHyIndic
 			outAngleIndices.extend(currAngleIndices)
 
 	return outAngleIndices
+
+#NOTE: Not explicitly unit tested at time of writing
+#Also theres more calls to copy than required
+#class _MemoizationWrapperForGettingOutAngleIndices():
+#
+#	def __init__(self, maxEntries=20):
+#		self.argCache = collections.deque(list(), maxlen=maxEntries)
+#		self.funct = _getFullOutAngleIndicesRequired_GENERIC
+#
+#	def __call__(self, groupANonHyIndices, groupBNonHyIndices, hyIndicesA, hyIndicesB, maxOO, countAcceptor, countDonor, distMatrix):
+#		#1) Check if args already in cache
+#		inpArgs = [groupANonHyIndices, groupBNonHyIndices, hyIndicesA, hyIndicesB, maxOO, countAcceptor, countDonor, distMatrix]
+#		directCmpIndices = [0,1,2,3,4,5,6]
+#		npCmpIndices = [7]
+#
+#		for prevArgs,output in self.argCache:
+#			match = True
+#			#simple to compare args
+#			for idx,val in enumerate(prevArgs):
+#				if idx in directCmpIndices:
+#					if val!=inpArgs[idx]:
+#						match = False
+#						break
+#				elif idx in npCmpIndices:
+#					if not np.allclose(val,inpArgs[idx]):
+#						match = False
+#						break
+#				else:
+#					raise ValueError("Should never hit this point")
+#
+#			if match:
+#				return copy.deepcopy(output)
+#
+#		#2) If not, run the function and add to cache
+#		output = self.funct(*inpArgs)
+#		toAppend = [inpArgs, copy.deepcopy(output)]
+#		self.argCache.appendleft(toAppend)
+#
+#		return copy.deepcopy(output)
+
+
+#Jus a single entry; this covers most cases where a speedup is possible + comparing distance matrices is SLOW
+#_memoized_getFullOutAngleIndicesRequired_GENERIC = _MemoizationWrapperForGettingOutAngleIndices( maxEntries=1 )
 
 
 def _checkGenericNonHyAndHyIndicesHaveValidValues(nonHyIndices, hyIndices):
