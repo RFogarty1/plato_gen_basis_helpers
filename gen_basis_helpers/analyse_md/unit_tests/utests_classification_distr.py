@@ -1,4 +1,5 @@
 
+import os
 import itertools as it
 import unittest
 
@@ -14,6 +15,75 @@ import gen_basis_helpers.analyse_md.traj_core as trajCoreHelp
 import gen_basis_helpers.shared.plane_equations as planeEqnHelp
 
 import gen_basis_helpers.analyse_md.classification_distr as tCode
+
+
+class TestReadWriteIterOfCounts(unittest.TestCase):
+
+	def setUp(self):
+		self.writeData = [ [3.4,2.6], [8.1,9.2] ] #They should always be same length really
+		self.outFileName = "_temp_file_iter_counts.txt"
+		self._runTestFunct()
+
+	def tearDown(self):
+		os.remove(self.outFileName)
+
+	def _runTestFunct(self):
+		tCode.writeIterOfCountsToFile(self.outFileName, self.writeData)
+		self.readData = tCode.readIterOfCountsFromFile(self.outFileName)
+
+	def _checkExpAndActEqual(self, exp, act):
+		self.assertTrue( np.allclose( np.array(exp),np.array(act) ) )
+
+	def testReadAndWriteConsistent_simpleA(self):
+		self._checkExpAndActEqual(self.writeData, self.readData)
+
+class TestGetClassDistrCountsOverTraj_iterOfOptsObjs(unittest.TestCase):
+
+	def setUp(self):
+		#Geometry options
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.coordsA = [ [0,0,-1,"X"], [0,0,1,"O"], [0,1,3,"H"], [0,-1,3,"H"] ]
+		self.coordsB = [ [0,0,-1,"X"], [0,0,6,"O"], [0,1,6,"H"], [0,-1,6,"H"] ] 
+
+		#Options object
+		self.binResObjA, self.binResObjB = [None, None] #Not actually needed for this; but non-optional arg for opts object 
+		self.oxyIndices, self.hyIndices = [1], [[2,3]]
+		self.distFilterIndicesA, self.distFilterIndicesB = [[0],[0]] #Means we filter based on distance from "X"
+
+		self.distRangesA = [ [0,2.1] ] #1,0 (i.e. 1 count on first geom; zero counts on second)
+		self.distRangesB = [ [2.9,8] ] #0,1 (i.e. 0 count on first geom; one count on second)
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geom/Trajectory
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellB = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords, self.cellB.cartCoords = self.coordsA, self.coordsB
+
+		trajStepA = trajCoreHelp.TrajStepFlexible(unitCell=self.cellA, step=0, time=10)
+		trajStepB = trajCoreHelp.TrajStepFlexible(unitCell=self.cellB, step=1, time=20)
+
+		self.traj = trajCoreHelp.TrajectoryInMemory([trajStepA,trajStepB])
+
+		#Option objects
+		currArgs = [self.binResObjA, self.oxyIndices, self.hyIndices, self.distFilterIndicesA, self.distRangesA]
+		optObjA = classDistrOptObjs.WaterCountTypesMinDistAndHBondSimpleOpts(*currArgs)
+
+		currArgs = [self.binResObjB, self.oxyIndices, self.hyIndices, self.distFilterIndicesB, self.distRangesB]
+		optObjB = classDistrOptObjs.WaterCountTypesMinDistAndHBondSimpleOpts(*currArgs)
+
+		self.optObjs = [optObjA, optObjB]
+
+	def _runTestFunct(self):
+		return tCode.getIterOfClassDistrCountsOverTraj(self.traj, self.optObjs)
+
+	def testExpectedValsB(self):
+
+		expVals = [ [1,0], [0,1] ]
+		actVals = self._runTestFunct()
+		self.assertEqual(expVals,actVals)
+
 
 class TestGetClassDistrCountsOverTraj(unittest.TestCase):
 
