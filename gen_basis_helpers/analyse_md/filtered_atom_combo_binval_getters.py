@@ -1,5 +1,6 @@
 
 import itertools as it
+import numpy as np
 
 from . import atom_combo_core as atomComboCoreHelp
 from . import atom_combo_opts_obj_maps as atomComboOptObjMapHelp
@@ -103,7 +104,10 @@ class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple_getAverage(atomCombo
 
 	def getValsToBin(self, sparseMatrixCalculator):
 		nonAveraged = self.standardBinvalGetter.getValsToBin(sparseMatrixCalculator)
-		return [sum(nonAveraged)/len(nonAveraged)]
+		if len(nonAveraged)==0:
+			return [np.nan]
+		else:
+			return [sum(nonAveraged)/len(nonAveraged)]
 
 #TODO: I should probably make the water-water use the same code in the backend really 
 class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
