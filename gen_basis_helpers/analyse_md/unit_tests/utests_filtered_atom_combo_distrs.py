@@ -84,6 +84,57 @@ class TestGetBinValsAtomFilteredVariousDistribs(unittest.TestCase):
 
 
 
+class TestGetBinValsAtomFilteredVaryClassifier(unittest.TestCase):
+
+	def setUp(self):
+		#Geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		waterA = [ [0.0,0.0,0.0,"O"], [0.5,0.5,0.1,"H"], [0.5,-0.5,-0.2,"H"] ]
+		freeH = [ [6,6,6,"H"] ] 
+		self.coords = waterA + freeH
+
+		#The default classification options
+		unusedBinObjs = [ None ]
+		self.fromIndices, self.toIndices = [1,2,3,], [0,1,2,3]
+		nebRanges = [ [0.9,2.5] ]
+		minDist, maxDist = 0.1, 1
+		currArgs = [unusedBinObjs, self.fromIndices, self.toIndices]
+		currKwargs = {"minDist":minDist, "maxDist":maxDist, "nebRanges":nebRanges}
+		self.classOptObj = clsDistrOptObjs.ClassifyByNumberNebsWithinDistanceOptsObj(*currArgs, **currKwargs)
+
+		#Options for the overall classifier
+		self.useGroups = [ [0] ]
+
+		#Distribution options
+		dudBinObj = None
+		dudIndices = [20] #Pick a stupid value; since it should NOT be used anyway
+		self.distrOpts = [ distrOptObjHelp.CalcPlanarDistOptions(dudBinObj, dudIndices) ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create the filter option object
+		currArgs = [self.fromIndices, self.classOptObj, self.distrOpts, self.useGroups]
+		self.filterOptObj = filteredComboOptObjHelp.FilteredAtomComboOptsObjGeneric(*currArgs)
+
+		#Create the sparse matrix calcualtor and populate it
+		self.sparseMatrixCalculator = optsObjMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.filterOptObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binval getter
+		self.binValGetter = optsObjMapHelp.getMultiDimBinValGetterFromOptsObjs([self.filterOptObj])
+
+	def testNumberOfNebsClassificationOpts(self):
+		expVals = [(0.1,),(0.2,)]
+		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
+		self.assertTrue( np.allclose(expVals,actVals) )
+		self.assertTrue(False)
+
+
 #TODO: Move thiss into the TestGetBinValsAtomFilteredVariousDistribs
 class TestGetBinValsAtomFilteredRdfAndHozDists(unittest.TestCase):
 

@@ -33,6 +33,11 @@ class _AtomsWithMinDistRangeCountBinvalGetter(atomComboCoreHelp._GetOneDimValsTo
 		return [len(relIndices)]
 
 
+class _NumberAtomsWithNNebsWithinDistBinvalGetter(classifierObjHelp._AtomsWithNNebsWithinDistsClassifier,atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		outIndices = self.classify(sparseMatrixCalculator)
+		return [len(outIndices)]
 
 #Some water options below
 class _WaterCountTypeBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):

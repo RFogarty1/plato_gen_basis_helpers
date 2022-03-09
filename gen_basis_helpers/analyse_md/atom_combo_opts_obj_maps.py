@@ -322,7 +322,11 @@ def _(inpObj):
 	distMatrixPopulator = atomComboPopulatorHelp._DistMatrixPopulator(*currArgs)
 	return distMatrixPopulator
 
-
+@TYPE_TO_POPULATOR_REGISTER_DECO(classDistrOptObjHelp.ClassifyByNumberNebsWithinDistanceOptsObj)
+def _(inpObj):
+	currArgs = [inpObj.fromIndices, inpObj.toIndices]
+	distMatrixPopulator = atomComboPopulatorHelp._DistMatrixPopulator(*currArgs)
+	return distMatrixPopulator
 
 #Registration of standard binners below
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.CalcRdfOptions)
@@ -533,6 +537,16 @@ def _(inpObj):
 
 	return outObjs
 
+
+@TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.ClassifyByNumberNebsWithinDistanceOptsObj)
+def _(inpObj):
+	outObjs = list()
+	sharedArgs = [inpObj.fromIndices, inpObj.toIndices, inpObj.minDist, inpObj.maxDist]
+	for idx, unused in enumerate(inpObj.nebRanges):
+		currArgs = sharedArgs + [inpObj.nebRanges[idx]]
+		currObj = classBinvalGetterHelp._NumberAtomsWithNNebsWithinDistBinvalGetter(*currArgs)
+		outObjs.append(currObj)
+	return outObjs
 
 @TYPE_TO_BINNER_REGISTER_DECO(classDistrOptObjHelp.WaterDerivativeBasedOnDistanceClassifierOptsObj)
 def _(inpObj):

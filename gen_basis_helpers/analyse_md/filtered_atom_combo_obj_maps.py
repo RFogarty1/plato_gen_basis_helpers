@@ -68,6 +68,14 @@ def _(inpObj):
 		classifiers.append( currObj )
 	return classifiers
 
+@TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.ClassifyByNumberNebsWithinDistanceOptsObj)
+def _(inpObj):
+	classifiers = list()
+	for idx,nebRange in enumerate(inpObj.nebRanges):
+		currArgs = [inpObj.fromIndices, inpObj.toIndices, inpObj.minDist, inpObj.maxDist, nebRange]
+		currObj = classifierObjHelp._AtomsWithNNebsWithinDistsClassifier(*currArgs)
+		classifiers.append( currObj )
+	return classifiers
 
 @TYPE_TO_CLASSIFIER_REGISTER_DECO(classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple)
 def _(inpObj):

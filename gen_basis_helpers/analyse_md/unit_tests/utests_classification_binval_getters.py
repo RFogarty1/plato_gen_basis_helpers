@@ -602,5 +602,46 @@ class TestWaterDerivDistanceBasedCounter(unittest.TestCase):
 		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
 		self.assertEqual(expBinVals, actBinVals)
 
+class TestClassifyByNumberNebsWithinDistance(unittest.TestCase):
+
+	def setUp(self):
+		#Geometry
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.water = [ [0,0,0,"O"], [0.5,0.5,0,"H"], [0.5,-0.5,0,"H"] ]
+		self.freeH = [ [5,5,5,"H"] ]
+
+		self.cartCoords = self.water + self.freeH
+
+		#Options for classifier object
+		self.binResObjs = [None,None] #Irrelevent to these tests so....
+		self.fromIndices = [1,2,3]
+		self.toIndices = [0,1]
+		self.minDist = 0.1
+		self.maxDist = 1
+		self.nNebs = [ [-0.1,0.1],[0.9,1.1] ]
+
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.cartCoords
+
+		#Create an options object
+		currArgs = [self.binResObjs,self.fromIndices, self.toIndices]
+		currKwargs = {"maxDist":self.maxDist, "minDist":self.minDist,"nebRanges":self.nNebs}
+		self.optObj = classDistrOptObjHelp.ClassifyByNumberNebsWithinDistanceOptsObj(*currArgs, **currKwargs)
+		
+		#Get sparse matrix populator + populate it
+		self.sparseMatrixCalculator = optObjMaps.getSparseMatrixCalculatorFromOptsObjIter([self.optObj])
+		self.sparseMatrixCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the binner object
+		self.testObj = optObjMaps.getMultiDimBinValGetterFromOptsObjs([self.optObj])
+
+	def testExpectedGeomA(self):
+		expBinVals = [(1,2)] #1 has zero neighbours; 2 have one neighbour
+		actBinVals = self.testObj.getValsToBin(self.sparseMatrixCalculator)
+		self.assertEqual(expBinVals, actBinVals)
 
 

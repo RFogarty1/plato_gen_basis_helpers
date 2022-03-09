@@ -74,6 +74,50 @@ class _WaterClassifierBase():
 
 
 #Specific implementations of classifiers here
+
+class _AtomsWithNNebsWithinDistsClassifier():
+
+	def __init__(self, fromIndices, toIndices, minDist, maxDist, minMaxNebs, execCount=0):
+		""" Initializer
+		
+		Args:
+			fromIndices: (iter of ints) Classify returns fromIndices which match the classification criteria (N-neighbours falling betwen minMaxNebs)
+			toIndices: (iter of ints) Indices of atoms which can be considered neighbours
+			minDist: (float) An atom must be >minDist to be considered a neighbour
+			maxDist: (float) An atom must be <=maxDist to be considered a neighbour
+			minMaxNebs: (len-2 float-iter) Number of nebs must be >=0th entry and <=1st entry
+			execCount: (int) Used to track how many times .classify is called; used as a safety check when using "byReference" classifiers
+ 
+		"""
+		self.fromIndices = fromIndices
+		self.toIndices = toIndices
+		self.minDist = minDist
+		self.maxDist = maxDist
+		self.minMaxNebs = minMaxNebs
+		self.execCount = execCount
+
+	def classify(self, sparseMatrixCalculator):
+		#1) Figure out number of neighbours in each
+		numbNebs = list()
+		distMatrix = sparseMatrixCalculator.outDict["distMatrix"]
+
+		for fromIdx in self.fromIndices:
+			currDists = distMatrix[fromIdx][np.array(self.toIndices)]
+			counts = 0
+			for currDist in currDists:
+				if (currDist>self.minDist) and (currDist<=self.maxDist):
+					counts += 1
+			numbNebs.append(counts)
+		
+		#2) Figure out which atoms have the correct number of neighbours
+		outIndices = list()
+		for idx,numbNeb in enumerate(numbNebs):
+			if (numbNeb>=self.minMaxNebs[0]) and (numbNeb<=self.minMaxNebs[1]):
+				outIndices.append(self.fromIndices[idx])
+
+		return outIndices	
+
+
 class _AtomsWithinMinDistRangeClassifier():
 
 	def __init__(self, atomIndices, distFilterIndices, distFilterRange, minDistVal=-0.01, execCount=0):

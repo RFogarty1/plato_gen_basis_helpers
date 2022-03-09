@@ -438,6 +438,7 @@ class ClassifyBasedOnHBondingToGroup_simple():
 			raise ValueError("Inconsistent lengths in relLengths")
 
 
+
 class WaterDerivativeBasedOnDistanceClassifierOptsObj():
 	""" Classify water-derivatives based on how many hydrogen neighbours each oxygen has. A hydrogen is considered a neighbour if its within a cutoff and closest to THAT oxygen out of all oxyIndices. General purpose is to get indices for water/similar from a trajectory step """
 
@@ -457,6 +458,36 @@ class WaterDerivativeBasedOnDistanceClassifierOptsObj():
 		self.hyIndices = hyIndices
 		self.maxOHDist = maxOHDist
 		self.nNebs = nNebs
+
+
+class ClassifyByNumberNebsWithinDistanceOptsObj():
+	""" Classify hydrogen ATOMS based on whether it has a neighbour within cutoff in the target groups.
+
+	Original use case was to find free hydrogen and H2 within a simulation where water split
+	"""
+
+	def __init__(self, binResObjs, fromIndices, toIndices, maxDist=1.3, minDist=0.01, nebRanges=None):
+		""" Description of function
+		
+		Args:
+			binResObjs: (iter of BinnedResultsStandard objects) One bin for each type of water you want to count (determined by the "Ranges" parameters)
+			fromIndices: (iter of ints) Indices of all hydrogen atoms to consider
+			toIndices: (iter of ints) Indices of all OTHER atoms to consider (i.e. all atoms that might be considered neghbours). toIndices=fromIndices is allowed
+			maxDist: (float) The maximum distance for an atom to be considered as a neighbour
+			minDist: (float) The minimum distance for an atom to be considered as a neighbour; useful to have set low to avoid self-counting
+			nebRanges: (iter of len-2 floats) Number of neighbours needed to fit into a classification. e.g. [ [-0.1,0.1], [0.9,1.1] ] will have one group with zero neighbours and one group with a single neighbour 
+ 
+		"""
+		self.binResObjs = binResObjs
+		self.fromIndices = fromIndices
+		self.toIndices = toIndices
+		self.maxDist = maxDist
+		self.minDist = minDist
+		self.nebRanges = nebRanges
+
+	@property
+	def atomIndices(self):
+		return self.fromIndices
 
 
 class WaterMinDistAndHBondsFilterObj():
