@@ -132,7 +132,6 @@ class TestGetBinValsAtomFilteredVaryClassifier(unittest.TestCase):
 		expVals = [(0.1,),(0.2,)]
 		actVals = self.binValGetter.getValsToBin(self.sparseMatrixCalculator)
 		self.assertTrue( np.allclose(expVals,actVals) )
-		self.assertTrue(False)
 
 
 #TODO: Move thiss into the TestGetBinValsAtomFilteredVariousDistribs

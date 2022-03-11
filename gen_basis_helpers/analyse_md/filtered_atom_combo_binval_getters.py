@@ -148,18 +148,25 @@ class GenericNonHyAndHyFilteredAtomComboBinvalGetter_simple(atomComboCoreHelp._G
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._RadialDistsGetValsToBin)
 def _(binValGetter, groupIndices, useGroups):
 	fromIndices = groupIndices[useGroups[0]]
-	toIndices = groupIndices[useGroups[1]]
+	binValGetter.indicesA = fromIndices
 
-	binValGetter.indicesA, binValGetter.indicesB = fromIndices, toIndices
+	if len(useGroups)==2:
+		toIndices = groupIndices[useGroups[1]]
+		binValGetter.indicesB = toIndices
+#	binValGetter.indicesA, binValGetter.indicesB = fromIndices, toIndices
 
 
+@BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._MinDistsGetOneDimValsToBin)
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._MinHozDistsGetValsToBin)
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._HozDistsGetValsToBin)
 def _(binValGetter, groupIndices, useGroups):
 	fromIndices = groupIndices[useGroups[0]]
-	toIndices = groupIndices[useGroups[1]]
+	binValGetter.fromIndices = fromIndices
 
-	binValGetter.fromIndices, binValGetter.toIndices = fromIndices, toIndices
+	if len(useGroups)==2:
+		toIndices = groupIndices[useGroups[1]]
+		binValGetter.toIndices = toIndices
+
 
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._PlanarDistsGetOneDimValsToBin)
 def _(binValGetter, groupIndices, useGroups):
