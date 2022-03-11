@@ -155,6 +155,27 @@ def _(binValGetter, groupIndices, useGroups):
 		binValGetter.indicesB = toIndices
 #	binValGetter.indicesA, binValGetter.indicesB = fromIndices, toIndices
 
+#Mostly stolen from the nonhy/hy case
+@BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._CountNWithinDistancesGetValsToBin)
+def _(binValGetter, groupIndices, useGroups):
+	#Sort out mapping to attributes
+	typeToFromAttr = {atomComboBinvalGetterHelp._RadialDistsGetValsToBin:"indicesA",
+					  atomComboBinvalGetterHelp._HozDistsGetValsToBin:"fromIndices"}
+
+	typeToToAttr = {atomComboBinvalGetterHelp._RadialDistsGetValsToBin:"indicesB",
+					  atomComboBinvalGetterHelp._HozDistsGetValsToBin:"toIndices"}
+
+	fromIndicesAttr = typeToFromAttr[type(binValGetter.getDistsBinValGetter)]
+	toIndicesAttr = typeToToAttr[type(binValGetter.getDistsBinValGetter)]
+
+
+	#Figure out indices and modify the binval getter
+	fromIndices = groupIndices[useGroups[0]]
+	setattr(binValGetter.getDistsBinValGetter, fromIndicesAttr, fromIndices)
+
+	if len(useGroups)==2:
+		toIndices = groupIndices[useGroups[1]]
+		setattr(binValGetter.getDistsToBinValGetter, toIndicesAttrs, toIndices)
 
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._MinDistsGetOneDimValsToBin)
 @BINVAL_GETTER_TYPE_TO_ATOM_ATOM_MOD_REGISTER_DECO(atomComboBinvalGetterHelp._MinHozDistsGetValsToBin)
