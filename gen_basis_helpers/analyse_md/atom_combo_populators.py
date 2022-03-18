@@ -208,6 +208,58 @@ class _PlanarDistMatrixPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 
 		return True
 
+class _TriAtomAnglesPopulator(atomComboCoreHelp._SparseMatrixPopulator):
+	""" Populator for calculating angles for triatoms (e.g. H-O-H angles)
+
+	"""
+
+	def __init__(self, triAtomIndices, level=0):
+		""" Initializer
+		
+		Args:
+			triAtomIndices: (iter of len-3 int-iters)
+				 
+		"""
+		self.triAtomIndices = triAtomIndices
+		self.level = level
+
+	@property
+	def maxLevel(self):
+		return self.level
+
+	def populateMatrices(self, inpGeom, outDict, level):
+		if level != self.level:
+			pass
+		else:
+			self._populateMatrices(inpGeom, outDict)
+
+	def _populateMatrices(self, inpGeom, outDict):
+		try:
+			unused = outDict["angleMatrix"]
+		except KeyError:
+			self._populateAngleMatrixWhenNonePresent(inpGeom, outDict)
+		else:
+			self._poulateAngleMatrixWhenSomePresent(inpGeom, outDict)
+
+	def _populateAngleMatrixWhenNonePresent(self, inpGeom, outDict):
+		#Iniitialise the matrix
+		cartCoords = inpGeom.cartCoords
+		outMatrix = np.empty( (len(cartCoords), len(cartCoords), len(cartCoords)) )
+		outMatrix[:] = np.nan #Almost the FULL runtime for large systems (since the matrix gets SO large + its so sparsely populated)
+
+		outDict["angleMatrix"] = outMatrix
+
+		#Populate it
+		self._populateAngleMatrixWhenSomePresent(inpGeom, outDict)
+
+	def _populateAngleMatrixWhenSomePresent(self, inpGeom, outDict):
+		useMatrix = outDict["angleMatrix"]
+		allAngleIndices = self.triAtomIndices
+		allNewAngles = calcDistsHelp.getInterAtomicAnglesForInpGeom(inpGeom, allAngleIndices)
+
+		for currIdx, currAngle in it.zip_longest(allAngleIndices, allNewAngles):
+			useMatrix[tuple(currIdx)] = currAngle
+
 
 class _DiatomAngleWithVectorPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 	""" Populator meant for calculating angles for diatoms (e.g. hydroxyl O->H vector) with arbitrary vectors
@@ -337,7 +389,7 @@ class _WaterOrientationPopulator(atomComboCoreHelp._SparseMatrixPopulator):
 	def _populateLevelOneMatrices(self, inpGeom, outDict):
 		try:
 			unused = outDict["water_rotations_roll_matrix"]
-		except:
+		except KeyError:
 			self._populateLevelOneMatrices_nonePresent(inpGeom, outDict)
 		else:
 			self._populateLevelOneMatrices_partiallyPresent(inpGeom, outDict)
@@ -673,7 +725,7 @@ class _DiscHBondCounterBetweenGroupsWithOxyDistFilterPopulator(atomComboCoreHelp
 	def _populateAngleMatrices(self, inpGeom, outDict):
 		try:
 			unused = outDict["angleMatrix"]
-		except:
+		except KeyError:
 			self._populateAngleMatrixWhenNonePresent(inpGeom, outDict)
 		else:
 			self._populateAngleMatrixWhenSomePresent(inpGeom, outDict)

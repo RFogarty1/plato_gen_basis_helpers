@@ -1175,4 +1175,45 @@ class TestGetAngleWithGenericVectorForDiatomOpts(unittest.TestCase):
 
 
 
+class TestTriAtomAngles(unittest.TestCase):
+
+	def setUp(self):
+		#All geometric params
+		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
+		self.waterA = [ [0,0,0,"H"], [0,0,1,"O"], [0,0,2,"H"] ] #180 degrees
+		self.waterB = [ [0,0,5,"H"], [0,0,6,"O"], [0,1,6,"H"] ] #90 degrees
+		self.waterC = [ [3,3,0,"H"], [3,4,0,"O"], [3,2,0,"H"] ] #Ridic 0 degrees structure
+
+		self.coords = self.waterA + self.waterB + self.waterC
+
+		#
+		self.binResObj = None
+		self.triAtomIndices = [ [0,1,2], [3,4,5], [6,7,8] ]
+		self.initOptsClass = distrOptObjHelp.GetAnglesForTriatomOpts
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		#Create the geometry
+		self.cellA = uCellHelp.UnitCell(lattParams=self.lattParams, lattAngles=self.lattAngles)
+		self.cellA.cartCoords = self.coords
+
+		#Create an options object
+		self.optsObj = self.initOptsClass(self.binResObj, self.triAtomIndices)
+
+		#Get a sparse matrix populator + populate it
+		self.sparseCalculator = atomComboObjsMapHelp.getSparseMatrixCalculatorFromOptsObjIter([self.optsObj])
+		self.sparseCalculator.calcMatricesForGeom(self.cellA)
+
+		#Create the test object
+		self.testObj = atomComboObjsMapHelp.getMultiDimBinValGetterFromOptsObjs([self.optsObj])
+
+	def _runTestFunct(self):
+		return self.testObj.getValsToBin(self.sparseCalculator)
+
+	def testExpectedAnglesA(self):
+		expVals = [ (180,), (90,), (0,) ]
+		actVals = self._runTestFunct()
+
+		for exp,act in it.zip_longest(expVals, actVals):
+			[self.assertAlmostEqual(e,a) for e,a in it.zip_longest(exp,act)]
 

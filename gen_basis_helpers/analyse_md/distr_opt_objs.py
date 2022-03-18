@@ -433,6 +433,28 @@ class GetNonHyToHyDistanceForHBonds(CountHBondsBetweenGenericGroupsOptions):
 
 
 #
+class GetAnglesForTriatomOpts(calcDistrCoreHelp.CalcDistribOptionsBase):
+	""" Options for binning angles between triAtoms. Useful, for example, for looking at bond angles over a simulation
+
+	"""
+
+	def __init__(self, binResObj, triAtomIndices):
+		""" Initializer
+		
+		Args:
+			binResObj: (BinnedResultsStandard object) Note that this may get modified in place
+			triAtomIndices: (iter of len-3 ints) Indices of atoms we want angles between. e.g. triAtomIndices = [ [1,2,3] ] will bin angles between atoms 1-2-3
+				 
+		"""
+		self.distribKey = "triatom_angle"
+		self.binResObj = binResObj
+		self.triAtomIndices = triAtomIndices
+
+	@property
+	def primaryIndices(self):
+		return [x[0] for x in self.triAtomIndices]
+
+#
 class GetDistsForDiatomOpts(calcDistrCoreHelp.CalcDistribOptionsBase):
 	"""Options for binning distances between diatoms. Useful, for example, for looking at bondlengths
 

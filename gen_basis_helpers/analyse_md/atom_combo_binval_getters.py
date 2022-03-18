@@ -635,6 +635,18 @@ def _getNumberHBondsForOneOxyIdx(fromOxyIdx, fromHyIdxPair, toOxyIndices, toHyIn
 	return outVal
 
 
+class _GetTriatomAnglesBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
+
+	def __init__(self, triAtomIndices):
+		self.triAtomIndices = triAtomIndices
+
+	def getValsToBin(self, sparseMatrixCalculator):
+		relevantMatrix = sparseMatrixCalculator.outDict["angleMatrix"]
+		outVals = list()
+		for currIndices in self.triAtomIndices:
+			outVals.append( relevantMatrix[tuple(currIndices)] )
+
+		return outVals
 
 class _GetDiatomDistsBinvalGetter(atomComboCoreHelp._GetOneDimValsToBinFromSparseMatricesBase):
 

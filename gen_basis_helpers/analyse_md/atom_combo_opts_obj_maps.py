@@ -215,6 +215,10 @@ def _(inpObj):
 	currArgs = [inpObj.indicesFrom, inpObj.indicesTo]
 	return atomComboPopulatorHelp._HozDistMatrixPopulator(*currArgs)
 
+#Triatom cases
+@TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetAnglesForTriatomOpts)
+def _(inpObj):
+	return atomComboPopulatorHelp._TriAtomAnglesPopulator(inpObj.triAtomIndices)
 
 #Diatom cases 
 @TYPE_TO_POPULATOR_REGISTER_DECO(distrOptsObjHelp.GetDistsForDiatomOpts)
@@ -441,6 +445,11 @@ def _(inpObj):
 def _(inpObj):
 	currArgs = [inpObj.oxyIndices, inpObj.angleType]
 	return binValGettersHelp._WaterOrientationBinValGetter(*currArgs)
+
+#Triatom versions
+@TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetAnglesForTriatomOpts)
+def _(inpObj):
+	return binValGettersHelp._GetTriatomAnglesBinvalGetter(inpObj.triAtomIndices)
 
 #Diatom versions
 @TYPE_TO_BINNER_REGISTER_DECO(distrOptsObjHelp.GetDistsForDiatomOpts)
