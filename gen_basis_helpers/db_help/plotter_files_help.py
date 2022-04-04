@@ -18,3 +18,9 @@ def getPlottersFromRecordStandard_mgWaterRepo(record, baseDbDir=cfgVars.MG_WATER
 	outPath = os.path.join(baseDbDir, record["plotter_path_ext"])
 	return dPlotHelp.readStandardDataPlottersFromJson(outPath)
 
+def getPlottersFromRecordStandard_createBasisRepo(record, baseDbDir=cfgVars.CP2K_BASIS_PAPER_2020_DB_REPO_PATH):
+	""" See getPlottersFromRecordStandard_mgWaterRepo """
+	outPath = os.path.join(baseDbDir, record["plotter_path_ext"])
+	return dPlotHelp.readStandardDataPlottersFromJson(outPath)
+
+

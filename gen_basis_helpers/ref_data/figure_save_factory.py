@@ -26,3 +26,6 @@ def createFigureSaver_mgWaterMdPaper2021():
 	baseFolder = configVars.MG_WATER_MD_PAPER_2021_FIG_SAVE_FOLDER
 	return baseObjs.StandardFigureSaver.fromDefaultPlusKwargs(baseFolder=baseFolder)
 
+def createFigureSaver_hydroxylMgWaterMdPaper2022():
+	baseFolder = configVars.HYDROXYL_MG_WATER_MD_PAPER_2022_FIG_SAVE_FOLDER
+	return baseObjs.StandardFigureSaver.fromDefaultPlusKwargs(baseFolder=baseFolder)
