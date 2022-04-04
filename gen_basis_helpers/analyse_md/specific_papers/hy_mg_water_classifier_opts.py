@@ -5,6 +5,152 @@ from .. import binned_res as binResHelp
 from .. import classification_distr_opt_objs as classDistrOptObjHelp
 
 
+def getSolOtherOrCon1ClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices):
+	""" Gets classifier options object for solConFar; these are water which
+
+	a) Are not solAds
+	b) Have <=1 hydrogen bond to solAds
+	
+	Args:
+		hydroxylNonHyIndices: (iter of len-1 int iters) Contains indices for hydroxyl oxygen atoms; e.g. [ [2], [5] ]  
+		hydroxylHyIndices: (iter len-1 int iters) Contains indices for hydroxyl hydrogen atoms; e.g. [ [3], [6] ]
+		waterNonHyIndices: (iter of len-1 int iters) Contains indices for water oxygen atoms; e.g. [ [7], [8] ] 
+		waterHyIndices: (iter of len-2 int iters) Contains indices for water hydrogen atoms; e.g. [ [9,10], [11,12] ] 
+
+	"""
+	#1) Get solAds classifier opts
+	hBondsCountBins = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5]) #Likely could pass a dud here really
+	solAdsOpts = getSolAdsClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices)
+
+	#2)Create the second classifier, which counts h-bonds to solAds
+	currArgs = [ [hBondsCountBins], waterNonHyIndices, waterHyIndices, waterNonHyIndices, waterHyIndices ]
+	currKwargs = {"nTotalFilterRanges": [[-0.1,1.1]]}
+	secondClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+	#3) Combine the two
+	currArgs = [solAdsOpts, secondClassifierOpts]
+	outClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup(*currArgs)
+
+	return outClassifierOpts
+
+
+def getSolCon1ClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices):
+	""" Gets classifier options object for solCon1; these are water which
+
+	a) Are not solAds
+	b) Have 1 hydrogen bond to solAds
+	
+	Args:
+		hydroxylNonHyIndices: (iter of len-1 int iters) Contains indices for hydroxyl oxygen atoms; e.g. [ [2], [5] ]  
+		hydroxylHyIndices: (iter len-1 int iters) Contains indices for hydroxyl hydrogen atoms; e.g. [ [3], [6] ]
+		waterNonHyIndices: (iter of len-1 int iters) Contains indices for water oxygen atoms; e.g. [ [7], [8] ] 
+		waterHyIndices: (iter of len-2 int iters) Contains indices for water hydrogen atoms; e.g. [ [9,10], [11,12] ] 
+
+	"""
+	#1) Get solAds classifier opts
+	hBondsCountBins = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5]) #Likely could pass a dud here really
+	solAdsOpts = getSolAdsClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices)
+
+	#2) Create the second classifier; which counts h-bonds to solAds
+	currArgs = [ [hBondsCountBins], waterNonHyIndices, waterHyIndices, waterNonHyIndices, waterHyIndices ]
+	currKwargs = {"nTotalFilterRanges": [[0.1,1.1]]}
+	secondClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+	#3) Combine the two
+	currArgs = [solAdsOpts,secondClassifierOpts]
+	outClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup(*currArgs)
+
+	return outClassifierOpts
+
+def getSolCon2ClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices):
+	""" Gets classifier options object for solCon2; these are water which
+
+	a) Are not solAds
+	b) Have >=2 hydrogen bond to solAds
+	
+	Args:
+		hydroxylNonHyIndices: (iter of len-1 int iters) Contains indices for hydroxyl oxygen atoms; e.g. [ [2], [5] ]  
+		hydroxylHyIndices: (iter len-1 int iters) Contains indices for hydroxyl hydrogen atoms; e.g. [ [3], [6] ]
+		waterNonHyIndices: (iter of len-1 int iters) Contains indices for water oxygen atoms; e.g. [ [7], [8] ] 
+		waterHyIndices: (iter of len-2 int iters) Contains indices for water hydrogen atoms; e.g. [ [9,10], [11,12] ] 
+
+	"""
+	#1) Get solAds classifier opts
+	hBondsCountBins = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5]) #Likely could pass a dud here really
+	solAdsOpts = getSolAdsClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices)
+
+	#2) Create the second classifier; which counts h-bonds to solAds
+	currArgs = [ [hBondsCountBins], waterNonHyIndices, waterHyIndices, waterNonHyIndices, waterHyIndices ]
+	currKwargs = {"nTotalFilterRanges": [[1.1,200]]}
+	secondClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+	#3) Combine the two
+	currArgs = [solAdsOpts,secondClassifierOpts]
+	outClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup(*currArgs)
+
+	return outClassifierOpts
+
+
+def getSolLinkAAClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices):
+	""" Gets classifier options object for solConFar; these are water which
+
+	a) Are not solAds
+	b) Have >=2 hydrogen bond to solAds
+	c) Have >=2 ACCEPTOR h-bonds to solAds
+	
+	Args:
+		hydroxylNonHyIndices: (iter of len-1 int iters) Contains indices for hydroxyl oxygen atoms; e.g. [ [2], [5] ]  
+		hydroxylHyIndices: (iter len-1 int iters) Contains indices for hydroxyl hydrogen atoms; e.g. [ [3], [6] ]
+		waterNonHyIndices: (iter of len-1 int iters) Contains indices for water oxygen atoms; e.g. [ [7], [8] ] 
+		waterHyIndices: (iter of len-2 int iters) Contains indices for water hydrogen atoms; e.g. [ [9,10], [11,12] ] 
+
+	"""
+	#1) Get solAds classifier opts
+	hBondsCountBins = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5]) #Likely could pass a dud here really
+	solAdsOpts = getSolAdsClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices)
+
+	#2) Create the second classifier; which counts h-bonds to solAds
+	currArgs = [ [hBondsCountBins], waterNonHyIndices, waterHyIndices, waterNonHyIndices, waterHyIndices ]
+	currKwargs = {"nTotalFilterRanges": [[1.1,200]], "nAcceptorFilterRanges":[[1.1,200]]}
+	secondClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+	#3) Combine the two
+	currArgs = [solAdsOpts,secondClassifierOpts]
+	outClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup(*currArgs)
+
+	return outClassifierOpts
+
+def getSolLinkDClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices):
+	""" Gets classifier options object for solConFar; these are water which
+
+	a) Are not solAds
+	b) Have >=2 hydrogen bond to solAds
+	c) Has <2 ACCEPTOR h-bonds to solAds [In practice theyll have 1-donor and 1-acceptor
+	
+	Args:
+		hydroxylNonHyIndices: (iter of len-1 int iters) Contains indices for hydroxyl oxygen atoms; e.g. [ [2], [5] ]  
+		hydroxylHyIndices: (iter len-1 int iters) Contains indices for hydroxyl hydrogen atoms; e.g. [ [3], [6] ]
+		waterNonHyIndices: (iter of len-1 int iters) Contains indices for water oxygen atoms; e.g. [ [7], [8] ] 
+		waterHyIndices: (iter of len-2 int iters) Contains indices for water hydrogen atoms; e.g. [ [9,10], [11,12] ] 
+
+	"""
+	#1) Get solAds classifier opts
+	hBondsCountBins = binResHelp.BinnedResultsStandard.fromBinEdges([-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5]) #Likely could pass a dud here really
+	solAdsOpts = getSolAdsClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices)
+
+	#2) Create the second classifier; which counts h-bonds to solAds
+	currArgs = [ [hBondsCountBins], waterNonHyIndices, waterHyIndices, waterNonHyIndices, waterHyIndices ]
+	currKwargs = {"nTotalFilterRanges": [[1.1,200]], "nAcceptorFilterRanges":[[-0.1,1.1]]}
+	secondClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToGroup_simple(*currArgs, **currKwargs)
+
+	#3) Combine the two
+	currArgs = [solAdsOpts,secondClassifierOpts]
+	outClassifierOpts = classDistrOptObjHelp.ClassifyBasedOnHBondingToDynamicGroup(*currArgs)
+
+	return outClassifierOpts
+
+
+
 def getSolConFarClassifierOpts(hydroxylNonHyIndices, hydroxylHyIndices, waterNonHyIndices, waterHyIndices):
 	""" Gets classifier options object for solConFar; these are water which
 
