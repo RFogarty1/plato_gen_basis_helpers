@@ -100,7 +100,7 @@ def getTrajBetweenTimes(inpTraj, minTime=0, maxTime=None, timeTol=1e-5):
 			outSteps.append(currStep)
 	return trajCoreHelp.TrajectoryInMemory(outSteps)
 
-def addVelocitiesToTrajInMemNVT(inpTraj, posConvFactor=1, timeConvFactor=1, velKey="velocities_from_pos"):
+def addVelocitiesToTrajInMemNVT(inpTraj, posConvFactor=1, timeConvFactor=1, velKey="velocities_from_pos", everyN=1):
 	""" Calculates velocities based on differences in positions between steps and adds to the trajectory object. Note that this means that the last traj step wont have a velocity associated with it
 	
 	Args:
@@ -108,6 +108,7 @@ def addVelocitiesToTrajInMemNVT(inpTraj, posConvFactor=1, timeConvFactor=1, velK
 		posConvFactor: (float, Optional) Multiply delta(positions) by this factor when calculating velocities
 		timeConvFactor: (float, Optional) Multiply delta(time) by this factor when calculating velocities
 		velKey: (str, Optional) The key under which these velocities are stored
+		everyN: (int, Optional) Add velocities to every N steps. Original use was when traj + velocities didnt fit in RAM
 
 	Returns
 		Nothing; works in place. inpTraj is modified so that all steps (except the last one) contain a velKey attribute. For each step this is a list of velocities matching the order of atoms in unitCell.cartCoords
@@ -117,14 +118,15 @@ def addVelocitiesToTrajInMemNVT(inpTraj, posConvFactor=1, timeConvFactor=1, velK
 	convFactor = posConvFactor / timeConvFactor
 
 	for idx in range(1, len(trajSteps)):
-		#Figure out the velocities
-		currStartCoords = trajSteps[idx-1].unitCell.cartCoords
-		currEndCoords = trajSteps[idx].unitCell.cartCoords
-		currDeltaT = trajSteps[idx].time - trajSteps[idx-1].time
-		currVels = _getCoordsAMinusCoordsB(currEndCoords, currStartCoords, multByFactor=convFactor/currDeltaT)
+		if (idx-1)%everyN == 0:
+			#Figure out the velocities
+			currStartCoords = trajSteps[idx-1].unitCell.cartCoords
+			currEndCoords = trajSteps[idx].unitCell.cartCoords
+			currDeltaT = trajSteps[idx].time - trajSteps[idx-1].time
+			currVels = _getCoordsAMinusCoordsB(currEndCoords, currStartCoords, multByFactor=convFactor/currDeltaT)
 
-		#Add the current velocities to the traj steps
-		trajSteps[idx-1].addExtraAttrDict( {velKey: {"value":currVels, "cmpType":"numericalArray"}} ) 
+			#Add the current velocities to the traj steps
+			trajSteps[idx-1].addExtraAttrDict( {velKey: {"value":currVels, "cmpType":"numericalArray"}} ) 
 
 
 def _getCoordsAMinusCoordsB(coordsA, coordsB, multByFactor=1):

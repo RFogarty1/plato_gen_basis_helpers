@@ -100,6 +100,7 @@ class TestAddVelocitiesToTrajInMem(unittest.TestCase):
 	def setUp(self):
 		self.posConvFactor = 1
 		self.timeConvFactor = 1
+		self.everyN = 1
 
 		#Global cell
 		self.lattParams, self.lattAngles = [10,10,10], [90,90,90]
@@ -128,7 +129,7 @@ class TestAddVelocitiesToTrajInMem(unittest.TestCase):
 	def _runTestFunct(self):
 		args = [self.inpTraj]
 		kwargs = {"posConvFactor":self.posConvFactor, "timeConvFactor":self.timeConvFactor,
-		          "velKey":self.velKey}
+		          "velKey":self.velKey, "everyN":self.everyN}
 		return tCode.addVelocitiesToTrajInMemNVT(*args, **kwargs)
 
 	def _loadVelocitiesCaseA(self):
@@ -151,9 +152,19 @@ class TestAddVelocitiesToTrajInMem(unittest.TestCase):
 		expTraj.trajSteps[0].addExtraAttrDict( {self.velKey: {"value":expVelocities[0], "cmpType":"numericalArray"} })
 		expTraj.trajSteps[1].addExtraAttrDict( {self.velKey: {"value":expVelocities[1], "cmpType":"numericalArray"} })
 		self._runTestFunct()
+
 		self.assertEqual(expTraj, self.inpTraj)
 		self.assertEqual(self.inpTraj, expTraj)
 
+	def testExpectedEveryTwo(self):
+		self.everyN = 2
+
+		expTraj = copy.deepcopy(self.inpTraj)
+		expVelocities = self._loadVelocitiesCaseA()
+		expTraj.trajSteps[0].addExtraAttrDict( {self.velKey: {"value":expVelocities[0], "cmpType":"numericalArray"} } )
+		self._runTestFunct()
+		self.assertEqual(expTraj, self.inpTraj)
+		self.assertEqual(self.inpTraj, expTraj)
 
 	def testExpectedCaseA_plusConversionFactors(self):
 		self.posConvFactor = 2
