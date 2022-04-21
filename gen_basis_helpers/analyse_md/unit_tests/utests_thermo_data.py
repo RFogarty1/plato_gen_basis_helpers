@@ -193,6 +193,40 @@ class TestSampleEveryN(unittest.TestCase):
 			self._runTestFunct()
 
 
+class TestGetThermoDataBetweenTimes(unittest.TestCase):
+
+	def setUp(self):
+		self.inpSteps = [1,2,3,4]
+		self.inpTimes = [10,20,30,40]
+		self.timesProp = "time"
+		self.betweenTimes = [15,40]
+		self.timeTol = 1e-5
+		self.createTestObjs()
+
+	def createTestObjs(self):
+		kwargDict = {"step": self.inpSteps, "time":self.inpTimes}
+		self.inpObj = tCode.ThermoDataStandard(kwargDict)
+
+	def _runTestFunct(self):
+		currArgs = [ self.inpObj, self.betweenTimes[0], self.betweenTimes[1] ]
+		return tCode.getThermoDataBetweenTimes(*currArgs, timeTol=self.timeTol, timeKey=self.timesProp) 
+
+	def testExpValsA(self):
+		kwargDict = {"step":[2,3,4], "time":[20,30,40]}
+		expObj = tCode.ThermoDataStandard(kwargDict)
+		actObj = self._runTestFunct()
+		self.assertEqual(expObj, actObj)
+
+	def testRaisesIfMaxTimeBelowMinTime(self):
+		self.betweenTimes[1] = self.betweenTimes[0]-1
+		with self.assertRaises(ValueError):
+			self._runTestFunct()
+
+	def testRaisesIfTimesNotAProp(self):
+		self.timesProp = "fake_prop"
+		with self.assertRaises(KeyError):
+			self._runTestFunct()
+
 
 
 

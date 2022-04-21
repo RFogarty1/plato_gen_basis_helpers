@@ -245,3 +245,44 @@ def getThermoDataObjSampledEveryN(inpObj, sampleEveryN):
 
 	return ThermoDataStandard(outDataDict)
 
+
+def getThermoDataBetweenTimes(inpObj, minTime=0, maxTime=np.inf, timeTol=1e-5, timeKey="time"):
+	""" Gets a thermoData object with only data between minTime and maxTime 
+	
+	Args:
+		inpObj: (ThermoDataStandard)
+		minTime: (float, Optional) Minimum time to include in the trajectory. 
+		maxTime: (float, Optional) Maximum time to include in the trajectory; default in np.inf
+		timeTol: (float, Optional) A time is considered outside the range iff time+timeTol>maxTime and time-timeTol<minTime
+		timeKey: (str, Optional) The key used to store the times in
+	
+	Raises:
+		KeyError: If timeKey is not found in the thermo object data dict
+		ValueError: If minTime > maxTime		
+
+	"""
+	#0) Check maxTime > minTime
+	maxTime = np.inf if maxTime is None else maxTime
+
+	if maxTime < minTime:
+		raise ValueError("maxTime > minTime required; Actual values are minTime={}, maxTime={}".format(minTime,maxTime))
+		
+
+	#1) Figure out the indices we need
+	assert inpObj.dataListLengthsAllEqual
+	targPropVals = inpObj.dataDict[timeKey]
+	outIndices = list()
+	for idx,time in enumerate(targPropVals):
+		if time-abs(timeTol)<maxTime:
+			if time+abs(timeTol)>minTime:
+				outIndices.append(idx)
+
+	#2) Create new prop lists with these
+	outDataDict = dict()
+	for prop in inpObj.props:
+		currUnfilteredVals = inpObj.dataDict[prop]
+		currFiltered = [ currUnfilteredVals[idx] for idx in outIndices ]
+		outDataDict[prop] = currFiltered 
+
+	return ThermoDataStandard(outDataDict)
+
