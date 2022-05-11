@@ -253,6 +253,7 @@ def _getStandardRotationMatrixFromTwoOHVectors(vectA, vectB):
 	#The rotation matrix rotates the standard orientation to the actual vectors; thus can simply use matrix inversion to find it
 	useVectA, useVectB = (vectHelp.getUnitVectorFromInpVector(x) for x in [vectA,vectB])
 	useVectC = np.cross( np.array(useVectA), np.array(useVectB) ) #up/down is arbitrary; "wrong" direction will simply cause roll to be +180
+	useVectC = vectHelp.getUnitVectorFromInpVector(useVectC)
 
 	stdArray = np.array([stdVectA,stdVectB, stdVectC]).transpose() #We want a different vector in each column; hence transpose is correct
 	finalArray = np.array([useVectA,useVectB, useVectC]).transpose()

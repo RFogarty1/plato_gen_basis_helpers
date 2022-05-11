@@ -374,7 +374,7 @@ class TestWaterOrientationBinValsGetter(unittest.TestCase):
 		expVals = [ [0                  , 0                ,90],
 		            [0                  , 0                ,119.88652694042403],
 		            [-70.11483488614456 , 0                ,0],
-		            [-0.23900590074245542, 79.98644481907608,19.686775804346176] ]
+		            [-0.23098327512843753, 79.98644481907608,19.686775804346176] ]
 		actVals = self.testObj.getValsToBin(self.sparseCalculator)
 
 		self.assertTrue( np.allclose(np.array(expVals), np.array(actVals)) )
@@ -388,7 +388,7 @@ class TestWaterOrientationBinValsGetter(unittest.TestCase):
 		expVals = [ [0                  , 0                ,90],
 		            [0                  , 0                ,119.88652694042403],
 		            [ 70.11483488614456 , 0                ,0],
-		            [ 0.23900590074245542, 79.98644481907608,19.686775804346176] ]
+		            [ 0.23098327512843753, 79.98644481907608,19.686775804346176] ]
 		actVals = self.testObj.getValsToBin(self.sparseCalculator)
 
 		self.assertTrue( np.allclose(np.array(expVals), np.array(actVals)) )
